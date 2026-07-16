@@ -45,7 +45,12 @@ export default function LoginPage() {
       }
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.message || (mode === 'signup' ? 'Signup failed' : 'Login failed'));
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setError('Email not confirmed — check your inbox for the confirmation link, or use "Continue with Google" to sign in.');
+      } else {
+        setError(msg || (mode === 'signup' ? 'Signup failed' : 'Login failed'));
+      }
     } finally {
       setSubmitting(false);
     }
