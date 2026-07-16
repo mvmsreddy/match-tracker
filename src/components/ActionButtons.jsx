@@ -55,7 +55,7 @@ export default function ActionButtons({
   }
 
   async function handleGeneratePdf() {
-    if (!matchSaved) { showStatus('Complete & save the match first'); return; }
+    if (points.length === 0) { showStatus('Log at least one point first'); return; }
     setGenerating(true);
     try {
       const doc = buildMatchPdf({
@@ -131,9 +131,9 @@ export default function ActionButtons({
         </button>
         <button
           className="action-btn"
-          disabled={generating || !matchSaved}
+          disabled={generating || points.length === 0}
           onClick={handleGeneratePdf}
-          title={!matchSaved ? 'Save the match first' : ''}
+          title={points.length === 0 ? 'Log at least one point first' : ''}
         >
           {generating ? 'Generating...' : 'Generate PDF'}
         </button>
