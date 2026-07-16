@@ -62,7 +62,7 @@ src/
     index.js             picks mockApi or supabaseApi automatically (see below)
     mockApi.js           local no-setup fallback (localStorage)
     supabaseApi.js       real Postgres-backed implementation
-
+#Dele
   context/
     AuthContext.jsx      current-user state, wraps api/index.js
 
