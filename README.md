@@ -146,7 +146,7 @@ comparable on the **Compare** page.
 
 ## Mock APIs — how they work, and how to replace them later
 
-Everything backend-shaped lives in **`src/api/`**:
+1Everything backend-shaped lives in **`src/api/`**:
 
 - `mockApi.js` — the local, no-setup fallback described above
 - `supabaseApi.js` — the real Postgres-backed implementation
