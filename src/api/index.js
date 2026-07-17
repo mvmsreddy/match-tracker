@@ -67,6 +67,15 @@ export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : asy
 export const getQualifyingWinners = hasSupabaseConfig ? supabaseApi.getQualifyingWinners : async () => null;
 export const promoteQualifiers    = hasSupabaseConfig ? supabaseApi.promoteQualifiers    : async () => [];
 
+// Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
+export const setEntryWithdrawn      = hasSupabaseConfig ? supabaseApi.setEntryWithdrawn      : noSupabase;
+export const callInReplacement      = hasSupabaseConfig ? supabaseApi.callInReplacement      : noSupabase;
+export const processWalkoverIfNeeded = hasSupabaseConfig ? supabaseApi.processWalkoverIfNeeded : async () => null;
+export const clearScheduleForEntry  = hasSupabaseConfig ? supabaseApi.clearScheduleForEntry  : async () => ({ ok: true });
+export const getQualifyingLosers    = hasSupabaseConfig ? supabaseApi.getQualifyingLosers    : async () => null;
+export const randomizeLuckyLosers   = hasSupabaseConfig ? supabaseApi.randomizeLuckyLosers   : async () => [];
+export const getLuckyLosers         = hasSupabaseConfig ? supabaseApi.getLuckyLosers         : async () => [];
+
 // Order of Play — Phase 7
 export const getWeekMatches      = hasSupabaseConfig ? supabaseApi.getWeekMatches      : async () => [];
 export const updateMatchSchedule = hasSupabaseConfig ? supabaseApi.updateMatchSchedule : async () => {};

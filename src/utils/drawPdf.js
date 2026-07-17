@@ -155,14 +155,18 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
       const isSeed = !!entry.seed;
       doc.setFont('helvetica', isSeed ? 'bold' : 'normal');
       doc.setFontSize(6.5);
+      if (entry.isWithdrawn) doc.setTextColor(180, 180, 180);
 
       let text = isSeed ? `[${entry.seed}]  ` : '';
       text += entry.familyName || '';
       if (entry.firstName) text += `, ${entry.firstName.charAt(0)}.`;
       if (entry.playerState) text += `  (${entry.playerState})`;
       if (entry.statusCode && entry.statusCode !== '') text += `  ${entry.statusCode}`;
+      if (entry.isAlternate) text += '  (ALT)';
+      if (entry.isWithdrawn) text += '  (WD)';
 
       doc.text(text, x0 + 1.5, y - 1);
+      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
     }
   }

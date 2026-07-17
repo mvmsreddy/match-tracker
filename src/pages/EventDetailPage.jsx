@@ -22,6 +22,15 @@ function nextEmptyPos(entries, maxPos) {
   return maxPos + 1;
 }
 
+// Alternates live at positions beyond the draw size — position order IS
+// priority order (lowest = called first).
+function nextAlternateSlot(entries, maxPos) {
+  const taken = new Set(entries.filter(e => e.isAlternate).map(e => e.position));
+  let p = maxPos + 1;
+  while (taken.has(p)) p++;
+  return p;
+}
+
 function parseBulk(text, existingPositions, maxPos) {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
   const entries = [];
@@ -53,8 +62,9 @@ function parseBulk(text, existingPositions, maxPos) {
 // ---------------------------------------------------------------------------
 function BulkImportModal({ event, drawType, existingEntries, onImport, onClose }) {
   const maxPos = drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32);
-  const existingPositions = new Set(existingEntries.map(e => e.position));
-  const remaining = maxPos - existingEntries.length;
+  const realEntries = existingEntries.filter(e => e.position <= maxPos);
+  const existingPositions = new Set(realEntries.map(e => e.position));
+  const remaining = maxPos - realEntries.length;
 
   const [text, setText] = useState('');
   const [preview, setPreview] = useState(null);
@@ -214,6 +224,15 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Alternates occupy positions beyond the draw size — auto-assign/keep that
+  // slot instead of the normal 1..maxPos position field.
+  useEffect(() => {
+    if (form.isAlternate && !editingEntry) {
+      setForm(prev => ({ ...prev, position: nextAlternateSlot(existingEntries, maxPos) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.isAlternate]);
+
   // Debounced platform search
   useEffect(() => {
     if (searchQuery.length < 2) { setSearchResults([]); return; }
@@ -256,15 +275,20 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
       setError('Partner family name is required for doubles.'); return;
     }
 
-    const posNum = Number(form.position);
-    if (!posNum || posNum < 1 || posNum > maxPos) {
-      setError(`Position must be 1 – ${maxPos}.`); return;
-    }
-    const conflict = existingEntries.find(
-      en => en.position === posNum && (!editingEntry || en.id !== editingEntry.id)
-    );
-    if (conflict) {
-      setError(`Position ${posNum} is already taken by ${conflict.familyName}.`); return;
+    let posNum;
+    if (form.isAlternate) {
+      posNum = editingEntry ? editingEntry.position : nextAlternateSlot(existingEntries, maxPos);
+    } else {
+      posNum = Number(form.position);
+      if (!posNum || posNum < 1 || posNum > maxPos) {
+        setError(`Position must be 1 – ${maxPos}.`); return;
+      }
+      const conflict = existingEntries.find(
+        en => en.position === posNum && (!editingEntry || en.id !== editingEntry.id)
+      );
+      if (conflict) {
+        setError(`Position ${posNum} is already taken by ${conflict.familyName}.`); return;
+      }
     }
 
     // Participation limit check
@@ -310,8 +334,12 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
               <input
                 type="number" min="1" max={maxPos}
                 value={form.position}
+                disabled={form.isAlternate}
                 onChange={e => set('position', e.target.value)}
               />
+              {form.isAlternate && (
+                <div className="t-alt-pos-hint">Alternate #{form.position - maxPos}</div>
+              )}
             </div>
             <div className="field" style={{ maxWidth: 110 }}>
               <label>Seed</label>
@@ -508,13 +536,15 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
 // ---------------------------------------------------------------------------
 // EntryRow  (players list view)
 // ---------------------------------------------------------------------------
-function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete }) {
+function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw }) {
   const isBye = entry.isBye;
+  const isWithdrawn = entry.isWithdrawn;
   return (
     <tr
       className={
         't-entry-row' +
         (isBye ? ' t-entry-bye' : '') +
+        (isWithdrawn ? ' t-entry-withdrawn' : '') +
         (selected ? ' t-entry-selected' : '') +
         (swapMode && !isBye ? ' t-entry-swappable' : '')
       }
@@ -532,6 +562,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
             <div className="t-entry-name-main">
               {entry.familyName}
               {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+              {isWithdrawn && <span className="t-wd-label"> WD</span>}
             </div>
             {isDoubles && entry.partnerFamilyName && (
               <div className="t-entry-partner">
@@ -554,10 +585,225 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
       {isOwner && !swapMode && (
         <td className="t-entry-actions">
           {!isBye && <button className="t-icon-btn" onClick={() => onEdit(entry)} title="Edit">✎</button>}
+          {!isBye && !isWithdrawn && (
+            <button className="t-icon-btn t-icon-btn-wd" onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
+          )}
           <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
         </td>
       )}
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AlternateRow  (alternates list — positions beyond the draw size)
+// ---------------------------------------------------------------------------
+function AlternateRow({ entry, maxPos, isOwner, onDelete }) {
+  return (
+    <tr className="t-entry-row">
+      <td className="t-entry-pos">#{entry.position - maxPos}</td>
+      <td className="t-entry-name">
+        <div className="t-entry-name-main">
+          {entry.familyName}
+          {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+        </div>
+      </td>
+      <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
+      <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
+      <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
+      {isOwner && (
+        <td className="t-entry-actions">
+          <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
+        </td>
+      )}
+    </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WithdrawModal  (Phase 10 — withdraw a player, optionally call in a
+// replacement: an alternate before play starts, a lucky loser after)
+// ---------------------------------------------------------------------------
+function WithdrawModal({ entry, event, drawType, matches, alternateEntries, luckyLosers, onNoReplacement, onCallInAlternate, onCallInLuckyLoser, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const hasPlayed = matches.some(
+    m => m.status === 'complete' && (m.entry1Id === entry.id || m.entry2Id === entry.id)
+  );
+  const waitingLuckyLosers = (luckyLosers || []).filter(ll => ll.status === 'waiting');
+
+  const showAlternates   = drawType === 'main' && !hasPlayed;
+  const showLuckyLosers  = drawType === 'main' && hasPlayed && event.hasQualifying;
+
+  async function run(action) {
+    setSaving(true);
+    setError('');
+    try {
+      await action();
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Action failed');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="t-modal-overlay" onClick={onClose}>
+      <div className="t-modal" onClick={e => e.stopPropagation()}>
+        <div className="t-modal-header">
+          <span className="t-modal-title">
+            Withdraw {entry.familyName}{entry.firstName ? `, ${entry.firstName}` : ''}
+          </span>
+          <button className="drawer-close" onClick={onClose}>✕</button>
+        </div>
+
+        {hasPlayed && (
+          <div className="t-withdraw-note">
+            This player has already completed a match — an alternate cannot fill this spot.
+          </div>
+        )}
+
+        {showAlternates && (
+          <>
+            <div className="t-section-label">Call In an Alternate</div>
+            {alternateEntries.length === 0 ? (
+              <div className="t-withdraw-empty">No alternates entered for this draw.</div>
+            ) : (
+              <div className="t-withdraw-list">
+                {alternateEntries.map(alt => (
+                  <div key={alt.id} className="t-withdraw-item">
+                    <span>{alt.familyName}{alt.firstName ? `, ${alt.firstName}` : ''}</span>
+                    <button
+                      className="action-btn primary"
+                      disabled={saving}
+                      onClick={() => run(() => onCallInAlternate(alt))}
+                    >
+                      Call In
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {showLuckyLosers && (
+          <>
+            <div className="t-section-label">Call In a Lucky Loser</div>
+            {waitingLuckyLosers.length === 0 ? (
+              <div className="t-withdraw-empty">
+                No lucky losers available. Run Random Draw on the Lucky Losers tab once qualifying is decided.
+              </div>
+            ) : (
+              <div className="t-withdraw-list">
+                {waitingLuckyLosers.map(ll => (
+                  <div key={ll.id} className="t-withdraw-item">
+                    <span>#{ll.priority} — {ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</span>
+                    <button
+                      className="action-btn primary"
+                      disabled={saving}
+                      onClick={() => run(() => onCallInLuckyLoser(ll))}
+                    >
+                      Call In
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {error && <div className="login-error" style={{ marginTop: 8 }}>{error}</div>}
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <button className="action-btn" disabled={saving} onClick={() => run(onNoReplacement)}>
+            {hasPlayed ? 'Grant Walkover to Opponent' : 'Withdraw — No Replacement'}
+          </button>
+          <button className="action-btn" onClick={onClose} disabled={saving}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LuckyLosersPanel  (Phase 10 — random-draw priority pool + call-in)
+// ---------------------------------------------------------------------------
+function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandomDraw, onCallIn }) {
+  const [pickedTarget, setPickedTarget] = useState({});
+
+  const unresolvedWithdrawn = mainEntries.filter(e => e.isWithdrawn && !e.isAlternate);
+  const hasAny = luckyLosers.length > 0;
+
+  return (
+    <div className="page-scroll">
+      {isOwner && (
+        <div style={{ padding: '8px 16px' }}>
+          <button className="action-btn t-engine-btn" onClick={onRandomDraw} disabled={drawing}>
+            {drawing ? 'Drawing…' : hasAny ? '↺ Re-Draw' : '🎲 Random Draw'}
+          </button>
+        </div>
+      )}
+      {luckyLosers.length === 0 ? (
+        <div className="history-empty">
+          No lucky losers drawn yet. Run Random Draw once the qualifying deciding round is complete.
+        </div>
+      ) : (
+        <div className="t-entry-table-wrap">
+          <table className="t-entry-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Player</th><th>AITA Reg</th><th>Status</th>
+                {isOwner && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {luckyLosers.map(ll => (
+                <tr key={ll.id}>
+                  <td>{ll.priority}</td>
+                  <td>{ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</td>
+                  <td>{ll.entry?.aitaReg || <span className="t-entry-dash">—</span>}</td>
+                  <td>
+                    {ll.status === 'called_in'
+                      ? <span className="t-ll-status-badge t-ll-called">Called In</span>
+                      : <span className="t-ll-status-badge t-ll-waiting">Waiting</span>}
+                  </td>
+                  {isOwner && (
+                    <td>
+                      {ll.status === 'waiting' && (
+                        unresolvedWithdrawn.length === 0 ? (
+                          <span className="t-entry-dash">No open slot</span>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <select
+                              value={pickedTarget[ll.id] || ''}
+                              onChange={e => setPickedTarget(prev => ({ ...prev, [ll.id]: e.target.value }))}
+                            >
+                              <option value="">Fill which slot?</option>
+                              {unresolvedWithdrawn.map(e => (
+                                <option key={e.id} value={e.id}>Pos {e.position} — {e.familyName}</option>
+                              ))}
+                            </select>
+                            <button
+                              className="action-btn primary"
+                              disabled={!pickedTarget[ll.id]}
+                              onClick={() => onCallIn(pickedTarget[ll.id], ll)}
+                            >
+                              Call In
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -567,12 +813,14 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
 function DrawLinePlayer({ entry, pos, selected, swapMode, onClick }) {
   const isBye   = !entry || entry.isBye;
   const isEmpty = !entry;
+  const isWithdrawn = entry?.isWithdrawn;
   return (
     <div
       className={
         't-ds-player' +
         (isBye   ? ' t-ds-bye'      : '') +
         (isEmpty  ? ' t-ds-empty'    : '') +
+        (isWithdrawn ? ' t-ds-withdrawn' : '') +
         (selected ? ' t-ds-selected' : '') +
         (swapMode && !isBye && !isEmpty ? ' t-ds-swappable' : '')
       }
@@ -585,6 +833,7 @@ function DrawLinePlayer({ entry, pos, selected, swapMode, onClick }) {
          isBye    ? 'BYE'                                      :
          `${entry.familyName}${entry.firstName ? ', ' + entry.firstName : ''}`}
       </span>
+      {isWithdrawn && <span className="t-wd-label"> WD</span>}
       {!isBye && !isEmpty && entry.playerState && (
         <span className="t-ds-state">{entry.playerState}</span>
       )}
@@ -778,6 +1027,7 @@ function BracketMatchCard({ match, entry1, entry2, isClickable, onClick }) {
             <span className={`t-bmc-name${isWinner ? ' t-bmc-winner' : ''}`}>
               {entry.familyName}{entry.firstName ? ', ' + entry.firstName : ''}
             </span>
+            {entry.isWithdrawn && <span className="t-wd-label"> WD</span>}
             {entry.playerState && <span className="t-bmc-state">{entry.playerState}</span>}
           </>;
     return (
@@ -889,6 +1139,7 @@ export default function EventDetailPage() {
   const [event,   setEvent]   = useState(null);
   const [entries, setEntries] = useState([]);
   const [drawType, setDrawType] = useState('main');
+  const [activeTab, setActiveTab] = useState('main'); // 'main' | 'qualifying' | 'lucky_losers'
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
 
@@ -906,6 +1157,11 @@ export default function EventDetailPage() {
   const [generating,   setGenerating]   = useState(false);
   const [scoringMatch, setScoringMatch] = useState(null);
   const [fillingByes,    setFillingByes]    = useState(false);
+
+  // Phase 10 — withdrawals, alternates, lucky losers
+  const [withdrawingEntry, setWithdrawingEntry] = useState(null);
+  const [luckyLosers,      setLuckyLosers]      = useState([]);
+  const [drawingLL,        setDrawingLL]        = useState(false);
 
   // Load week + event once
   useEffect(() => {
@@ -941,6 +1197,17 @@ export default function EventDetailPage() {
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
 
+  // Load the lucky-loser pool whenever this event has qualifying — kept
+  // independent of drawType/activeTab so the Withdraw modal can always see it.
+  useEffect(() => {
+    if (!event?.hasQualifying) return;
+    let cancelled = false;
+    api.getLuckyLosers(eventId)
+      .then(data => { if (!cancelled) setLuckyLosers(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [eventId, event?.hasQualifying]);
+
   const isOwner     = !!(week && user && week.createdBy === user.id);
   const maxPos      = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
   const numSeeds    = event?.numSeeds || 4;
@@ -955,13 +1222,18 @@ export default function EventDetailPage() {
     && qualDecidingRound > 0
     && qualDecidingMatches.length === event?.qualifyingSpots
     && qualDecidingMatches.every(m => m.status === 'complete');
-  const sortedEntries = [...entries].sort((a, b) => a.position - b.position);
-  const playerCount = entries.filter(e => !e.isBye).length;
-  const byeCount    = entries.filter(e => e.isBye).length;
-  const fillPct     = maxPos > 0 ? Math.min(Math.round(entries.length / maxPos * 100), 100) : 0;
-  const hasSeededPlayers = entries.some(e => e.seed && !e.isBye);
-  const hasGaps     = entries.length < maxPos;
-  const drawFull    = entries.length === maxPos && maxPos > 0;
+  // Alternates live at positions beyond the draw size — keep them out of the
+  // main bracket entries (fill %, BYE count, drawFull, DrawSheet/Bracket math).
+  const mainEntries      = entries.filter(e => e.position <= maxPos);
+  const alternateEntries = entries.filter(e => e.position > maxPos)
+    .sort((a, b) => a.position - b.position);
+  const sortedEntries = [...mainEntries].sort((a, b) => a.position - b.position);
+  const playerCount = mainEntries.filter(e => !e.isBye).length;
+  const byeCount    = mainEntries.filter(e => e.isBye).length;
+  const fillPct     = maxPos > 0 ? Math.min(Math.round(mainEntries.length / maxPos * 100), 100) : 0;
+  const hasSeededPlayers = mainEntries.some(e => e.seed && !e.isBye);
+  const hasGaps     = mainEntries.length < maxPos;
+  const drawFull    = mainEntries.length === maxPos && maxPos > 0;
 
   // ---- CRUD ----------------------------------------------------------------
   async function handleSaveEntry(entryId, formData) {
@@ -995,8 +1267,10 @@ export default function EventDetailPage() {
     setSeeding(true);
     setError('');
     try {
-      const reseeded = applySeeding(entries, maxPos, numSeeds);
-      const saved    = await api.saveDrawEntries(eventId, drawType, reseeded);
+      // saveDrawEntries replaces ALL rows for this draw — reseed only the
+      // real bracket positions, then carry the (untouched) alternates along.
+      const reseeded = applySeeding(mainEntries, maxPos, numSeeds);
+      const saved    = await api.saveDrawEntries(eventId, drawType, [...reseeded, ...alternateEntries]);
       setEntries(saved);
     } catch (err) { setError(err.message); }
     finally { setSeeding(false); }
@@ -1144,6 +1418,74 @@ export default function EventDetailPage() {
     setSelectedEntry(null);
   }
 
+  // ---- WITHDRAWALS / ALTERNATES / LUCKY LOSERS (Phase 10) -------------------
+  async function reloadAfterWithdrawal() {
+    const [freshEntries, freshMatches] = await Promise.all([
+      api.getDrawEntries(eventId, drawType),
+      api.getEventMatches(eventId, drawType),
+    ]);
+    setEntries(freshEntries);
+    setMatches(freshMatches);
+    if (event?.hasQualifying) {
+      api.getLuckyLosers(eventId).then(setLuckyLosers).catch(() => {});
+    }
+  }
+
+  async function handleWithdrawNoReplacement() {
+    const target = withdrawingEntry;
+    await api.setEntryWithdrawn(target.id, true);
+    const walkover = await api.processWalkoverIfNeeded(eventId, drawType, target.id);
+    if (walkover && walkover.round < totalRounds) {
+      await api.advanceWinner(eventId, drawType, walkover.round, walkover.matchSlot, walkover.winnerEntryId);
+    }
+    await api.clearScheduleForEntry(target.id);
+    await reloadAfterWithdrawal();
+  }
+
+  async function handleCallInAlternate(altEntry) {
+    const target = withdrawingEntry;
+    await api.callInReplacement(target.id, altEntry, 'alternate');
+    await api.clearScheduleForEntry(target.id);
+    await reloadAfterWithdrawal();
+  }
+
+  async function handleCallInLuckyLoser(ll) {
+    const target = withdrawingEntry;
+    await api.callInReplacement(target.id, ll.entry, 'lucky_loser');
+    await api.clearScheduleForEntry(target.id);
+    await reloadAfterWithdrawal();
+  }
+
+  async function handleRandomDrawLuckyLosers() {
+    setDrawingLL(true);
+    setError('');
+    try {
+      await api.randomizeLuckyLosers(eventId);
+      const ll = await api.getLuckyLosers(eventId);
+      setLuckyLosers(ll);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDrawingLL(false);
+    }
+  }
+
+  async function handleCallInLuckyLoserFromTab(targetEntryId, ll) {
+    setError('');
+    try {
+      await api.callInReplacement(targetEntryId, ll.entry, 'lucky_loser');
+      await api.clearScheduleForEntry(targetEntryId);
+      const [freshEntries, freshLL] = await Promise.all([
+        api.getDrawEntries(eventId, 'main'),
+        api.getLuckyLosers(eventId),
+      ]);
+      setEntries(freshEntries);
+      setLuckyLosers(freshLL);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   // ---- RENDER --------------------------------------------------------------
   if (loading) return (
     <div className="root"><TopNav />
@@ -1177,6 +1519,7 @@ export default function EventDetailPage() {
           </div>
 
           {/* Action buttons — context-aware */}
+          {activeTab !== 'lucky_losers' && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {isOwner && viewMode !== 'bracket' && (
               <>
@@ -1204,7 +1547,7 @@ export default function EventDetailPage() {
                     Clear BYEs
                   </button>
                 )}
-                {entries.length > 0 && !hasGaps && (
+                {mainEntries.length > 0 && !hasGaps && (
                   <button
                     className={'action-btn t-swap-btn' + (swapMode ? ' active' : '')}
                     onClick={toggleSwapMode}
@@ -1231,7 +1574,7 @@ export default function EventDetailPage() {
               </button>
             )}
             {/* PDF draw sheet — always available when entries exist */}
-            {entries.length > 0 && (
+            {mainEntries.length > 0 && (
               <button
                 className="action-btn t-pdf-btn"
                 onClick={() => generateDrawSheetPDF({
@@ -1245,29 +1588,35 @@ export default function EventDetailPage() {
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
 
       {/* Draw-type tabs */}
       {event?.hasQualifying && (
         <div className="t-draw-tabs">
-          <button className={'t-draw-tab' + (drawType === 'main' ? ' active' : '')}
-            onClick={() => { setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
+          <button className={'t-draw-tab' + (activeTab === 'main' ? ' active' : '')}
+            onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Main Draw ({event.drawSize})
           </button>
-          <button className={'t-draw-tab' + (drawType === 'qualifying' ? ' active' : '')}
-            onClick={() => { setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
+          <button className={'t-draw-tab' + (activeTab === 'qualifying' ? ' active' : '')}
+            onClick={() => { setActiveTab('qualifying'); setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Qualifying ({event.qualifyingSize || '—'})
+          </button>
+          <button className={'t-draw-tab' + (activeTab === 'lucky_losers' ? ' active' : '')}
+            onClick={() => { setActiveTab('lucky_losers'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
+            Lucky Losers
           </button>
         </div>
       )}
 
       {/* View toggle + stats */}
+      {activeTab !== 'lucky_losers' && (
       <div className="t-view-bar">
         <div className="t-view-stats">
           <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
           {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
-          {hasGaps && <span className="t-stat-gap"> · {maxPos - entries.length} open</span>}
+          {hasGaps && <span className="t-stat-gap"> · {maxPos - mainEntries.length} open</span>}
           {event?.status && event.status !== 'setup' && (
             <span className={`t-status-badge t-status-${event.status}`} style={{ marginLeft: 8 }}>
               {event.status.replace('_', ' ')}
@@ -1287,12 +1636,13 @@ export default function EventDetailPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Progress bar (hidden in bracket view) */}
-      {viewMode !== 'bracket' && (
+      {activeTab !== 'lucky_losers' && viewMode !== 'bracket' && (
         <div className="t-entry-progress">
           <div className="t-entry-progress-label">
-            <span><strong>{entries.length}</strong> / {maxPos} positions filled</span>
+            <span><strong>{mainEntries.length}</strong> / {maxPos} positions filled</span>
             <span className="t-entry-progress-pct">{fillPct}%</span>
           </div>
           <div className="t-progress-track">
@@ -1302,7 +1652,7 @@ export default function EventDetailPage() {
       )}
 
       {error && <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>{error}</div>}
-      {swapMode && (
+      {activeTab !== 'lucky_losers' && swapMode && (
         <div className="t-swap-hint">
           {selectedEntry ? `Click another player to swap with ${selectedEntry.familyName}.`
             : 'Click any player to select, then click another to swap positions.'}
@@ -1311,8 +1661,18 @@ export default function EventDetailPage() {
       )}
 
       {/* ---- Content ---- */}
+      {activeTab === 'lucky_losers' ? (
+        <LuckyLosersPanel
+          luckyLosers={luckyLosers}
+          mainEntries={mainEntries}
+          isOwner={isOwner}
+          drawing={drawingLL}
+          onRandomDraw={handleRandomDrawLuckyLosers}
+          onCallIn={handleCallInLuckyLoserFromTab}
+        />
+      ) : (
       <div className="page-scroll">
-        {entries.length === 0 ? (
+        {mainEntries.length === 0 ? (
           <div className="history-empty">
             {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
           </div>
@@ -1342,39 +1702,83 @@ export default function EventDetailPage() {
           />
 
         ) : (
-          <div className="t-entry-table-wrap">
-            <table className="t-entry-table">
-              <thead>
-                <tr>
-                  <th className="t-th-pos">Pos</th>
-                  <th className="t-th-seed">Seed</th>
-                  <th>{event?.isDoubles ? 'Team' : 'Player'}</th>
-                  <th className="t-th-aita">AITA Reg</th>
-                  <th className="t-th-state">State</th>
-                  <th className="t-th-rank">Rank</th>
-                  <th className="t-th-sc">SC</th>
-                  {isOwner && !swapMode && <th className="t-th-actions"></th>}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedEntries.map(entry => (
-                  <EntryRow
-                    key={entry.id}
-                    entry={entry}
-                    isDoubles={event?.isDoubles}
-                    isOwner={isOwner}
-                    swapMode={swapMode}
-                    selected={swapMode && selectedEntry?.id === entry.id}
-                    onSelect={handleSelectForSwap}
-                    onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
-                    onDelete={handleDeleteEntry}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="t-entry-table-wrap">
+              <table className="t-entry-table">
+                <thead>
+                  <tr>
+                    <th className="t-th-pos">Pos</th>
+                    <th className="t-th-seed">Seed</th>
+                    <th>{event?.isDoubles ? 'Team' : 'Player'}</th>
+                    <th className="t-th-aita">AITA Reg</th>
+                    <th className="t-th-state">State</th>
+                    <th className="t-th-rank">Rank</th>
+                    <th className="t-th-sc">SC</th>
+                    {isOwner && !swapMode && <th className="t-th-actions"></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedEntries.map(entry => (
+                    <EntryRow
+                      key={entry.id}
+                      entry={entry}
+                      isDoubles={event?.isDoubles}
+                      isOwner={isOwner}
+                      swapMode={swapMode}
+                      selected={swapMode && selectedEntry?.id === entry.id}
+                      onSelect={handleSelectForSwap}
+                      onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
+                      onDelete={handleDeleteEntry}
+                      onWithdraw={e => setWithdrawingEntry(e)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Alternates — only meaningful for the main draw */}
+            {activeTab === 'main' && !swapMode && (
+              <div style={{ marginTop: 18 }}>
+                <div className="t-section-label" style={{ padding: '0 16px' }}>
+                  Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
+                </div>
+                {alternateEntries.length === 0 ? (
+                  <div className="history-empty" style={{ padding: '8px 16px' }}>
+                    None yet — check "Alternate / replacement entry" in + Add Player.
+                  </div>
+                ) : (
+                  <div className="t-entry-table-wrap">
+                    <table className="t-entry-table">
+                      <thead>
+                        <tr>
+                          <th className="t-th-pos">#</th>
+                          <th>Player</th>
+                          <th className="t-th-aita">AITA Reg</th>
+                          <th className="t-th-state">State</th>
+                          <th className="t-th-rank">Rank</th>
+                          {isOwner && <th className="t-th-actions"></th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {alternateEntries.map(entry => (
+                          <AlternateRow
+                            key={entry.id}
+                            entry={entry}
+                            maxPos={maxPos}
+                            isOwner={isOwner}
+                            onDelete={handleDeleteEntry}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
+      )}
 
       {/* ---- Modals ---- */}
       {showAdd && (
@@ -1404,6 +1808,20 @@ export default function EventDetailPage() {
           />
         );
       })()}
+      {withdrawingEntry && (
+        <WithdrawModal
+          entry={withdrawingEntry}
+          event={event}
+          drawType={drawType}
+          matches={matches}
+          alternateEntries={alternateEntries}
+          luckyLosers={luckyLosers}
+          onNoReplacement={handleWithdrawNoReplacement}
+          onCallInAlternate={handleCallInAlternate}
+          onCallInLuckyLoser={handleCallInLuckyLoser}
+          onClose={() => setWithdrawingEntry(null)}
+        />
+      )}
     </div>
   );
 }

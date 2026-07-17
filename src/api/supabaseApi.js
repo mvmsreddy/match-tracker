@@ -395,6 +395,7 @@ function rowToEntry(row) {
     // Alternate
     isAlternate: row.is_alternate,
     replacingName: row.replacing_name,
+    isWithdrawn: row.is_withdrawn || false,
   };
 }
 
@@ -980,6 +981,217 @@ export async function getQualifyingWinners(eventId) {
     .map(m => entryMap.get(m.winner_entry_id))
     .filter(Boolean)
     .map(rowToEntry);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
+// ---------------------------------------------------------------------------
+
+export async function setEntryWithdrawn(entryId, isWithdrawn) {
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({ is_withdrawn: isWithdrawn })
+    .eq('id', entryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+// Overwrites targetEntryId's player fields with sourceEntry's (an alternate or
+// a lucky loser), marks it as an alternate slot with a "replaces X" label, and
+// consumes the source (deletes the alternate row, or marks the lucky_losers
+// row called_in). event_matches never changes — it references targetEntryId,
+// which keeps its id throughout.
+export async function callInReplacement(targetEntryId, sourceEntry, sourceKind) {
+  const { data: targetRow, error: tErr } = await supabase
+    .from('draw_entries')
+    .select('family_name, first_name')
+    .eq('id', targetEntryId)
+    .single();
+  if (tErr) throw new Error(tErr.message);
+  const originalName = targetRow.family_name + (targetRow.first_name ? `, ${targetRow.first_name}` : '');
+
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({
+      family_name: sourceEntry.familyName,
+      first_name: sourceEntry.firstName || null,
+      aita_reg: sourceEntry.aitaReg || null,
+      player_state: sourceEntry.playerState || null,
+      ranking: sourceEntry.ranking || null,
+      date_of_birth: sourceEntry.dateOfBirth || null,
+      player_id: sourceEntry.playerId || null,
+      status_code: sourceEntry.statusCode || null,
+      is_alternate: true,
+      replacing_name: originalName,
+      is_withdrawn: false,
+    })
+    .eq('id', targetEntryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  if (sourceKind === 'lucky_loser') {
+    await supabase
+      .from('lucky_losers')
+      .update({ status: 'called_in', called_into_entry_id: targetEntryId })
+      .eq('entry_id', sourceEntry.id);
+  }
+  await supabase.from('draw_entries').delete().eq('id', sourceEntry.id);
+
+  return rowToEntry(data);
+}
+
+// Finds the single pending match still holding withdrawnEntryId, awards it to
+// the opponent as a walkover. Returns null if there's no pending match yet
+// (opponent slot undetermined), or the opponent is a BYE / already withdrawn.
+// Caller is responsible for calling advanceWinner() with the returned info.
+export async function processWalkoverIfNeeded(eventId, drawType, withdrawnEntryId) {
+  const { data: match, error } = await supabase
+    .from('event_matches')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('draw_type', drawType)
+    .eq('status', 'pending')
+    .or(`entry1_id.eq.${withdrawnEntryId},entry2_id.eq.${withdrawnEntryId}`)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!match) return null;
+
+  const opponentId = match.entry1_id === withdrawnEntryId ? match.entry2_id : match.entry1_id;
+  if (!opponentId) return null;
+
+  const { data: opp, error: oErr } = await supabase
+    .from('draw_entries')
+    .select('is_bye, is_withdrawn')
+    .eq('id', opponentId)
+    .single();
+  if (oErr) throw new Error(oErr.message);
+  if (opp.is_bye || opp.is_withdrawn) return null;
+
+  const { error: uErr } = await supabase
+    .from('event_matches')
+    .update({ winner_entry_id: opponentId, outcome_type: 'walkover', status: 'complete', score: null })
+    .eq('id', match.id);
+  if (uErr) throw new Error(uErr.message);
+
+  return { round: match.round, matchSlot: match.match_slot, winnerEntryId: opponentId };
+}
+
+// Nulls scheduling fields on this entry's not-yet-complete matches so stale
+// Order-of-Play slots don't keep showing a withdrawn/replaced player.
+// Organizer re-runs Auto-Schedule afterward.
+export async function clearScheduleForEntry(entryId) {
+  const { error } = await supabase
+    .from('event_matches')
+    .update({ day_number: null, court_number: null, match_order: null })
+    .neq('status', 'complete')
+    .or(`entry1_id.eq.${entryId},entry2_id.eq.${entryId}`);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+// Losers of the qualifying deciding round — same round math as
+// getQualifyingWinners, but returns the entry that did NOT win each match.
+export async function getQualifyingLosers(eventId) {
+  const { data: evRow, error: evErr } = await supabase
+    .from('events')
+    .select('qualifying_size, qualifying_spots')
+    .eq('id', eventId)
+    .single();
+  if (evErr) throw new Error(evErr.message);
+
+  const { qualifying_size: qSize, qualifying_spots: qSpots } = evRow;
+  if (!qSize || !qSpots) throw new Error('Event has no qualifying configuration.');
+
+  const decidingRound = Math.round(Math.log2(qSize / qSpots));
+
+  const { data: roundMatches, error: mErr } = await supabase
+    .from('event_matches')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('draw_type', 'qualifying')
+    .eq('round', decidingRound)
+    .order('match_slot', { ascending: true });
+  if (mErr) throw new Error(mErr.message);
+
+  if (!roundMatches || roundMatches.length < qSpots) return null;
+  if (roundMatches.some(m => m.status !== 'complete' || !m.winner_entry_id)) return null;
+
+  const loserIds = roundMatches
+    .map(m => (m.winner_entry_id === m.entry1_id ? m.entry2_id : m.entry1_id))
+    .filter(Boolean);
+  if (loserIds.length === 0) return [];
+
+  const { data: entryRows, error: eErr } = await supabase
+    .from('draw_entries')
+    .select('*')
+    .in('id', loserIds);
+  if (eErr) throw new Error(eErr.message);
+
+  return entryRows.map(rowToEntry);
+}
+
+// Random-draw priority: shuffles newly-eligible qualifying losers (not
+// already in the lucky_losers pool for this event) and inserts them with
+// priority continuing after the current max. Never touches already-drawn rows.
+export async function randomizeLuckyLosers(eventId) {
+  const losers = await getQualifyingLosers(eventId);
+  if (!losers) throw new Error('Qualifying deciding round is not complete yet.');
+
+  const { data: existing, error: exErr } = await supabase
+    .from('lucky_losers')
+    .select('entry_id, priority')
+    .eq('event_id', eventId);
+  if (exErr) throw new Error(exErr.message);
+
+  const existingIds = new Set((existing || []).map(r => r.entry_id));
+  const newLosers = losers.filter(l => !existingIds.has(l.id));
+  if (newLosers.length === 0) return [];
+
+  // Fisher–Yates shuffle
+  for (let i = newLosers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newLosers[i], newLosers[j]] = [newLosers[j], newLosers[i]];
+  }
+
+  let nextPriority = (existing || []).reduce((max, r) => Math.max(max, r.priority), 0) + 1;
+  const rows = newLosers.map(l => ({
+    event_id: eventId,
+    entry_id: l.id,
+    priority: nextPriority++,
+    status: 'waiting',
+  }));
+
+  const { data, error } = await supabase.from('lucky_losers').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+function rowToLuckyLoser(row) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    entryId: row.entry_id,
+    priority: row.priority,
+    status: row.status,
+    calledIntoEntryId: row.called_into_entry_id,
+    createdAt: row.created_at,
+    entry: row.entry ? rowToEntry(row.entry) : null,
+  };
+}
+
+// lucky_losers has two FKs into draw_entries (entry_id, called_into_entry_id)
+// — the embed must name the constraint or PostgREST can't pick one.
+export async function getLuckyLosers(eventId) {
+  const { data, error } = await supabase
+    .from('lucky_losers')
+    .select('*, entry:draw_entries!lucky_losers_entry_id_fkey(*)')
+    .eq('event_id', eventId)
+    .order('priority', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.map(rowToLuckyLoser);
 }
 
 // Overwrites the Q placeholder entries in the main draw with qualifier player
