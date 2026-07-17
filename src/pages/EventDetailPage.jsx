@@ -626,6 +626,258 @@ function DrawSheet({ entries, drawSize, isOwner, swapMode, selectedEntry, onSele
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function roundLabel(round, total) {
+  const fromEnd = total - round;
+  if (fromEnd === 0) return 'Final';
+  if (fromEnd === 1) return 'Semi-Finals';
+  if (fromEnd === 2) return 'Quarter-Finals';
+  return `R${round}`;
+}
+
+// ---------------------------------------------------------------------------
+// ScoreModal
+// ---------------------------------------------------------------------------
+const OUTCOME_TYPES = ['score', 'walkover', 'retirement', 'default'];
+
+function ScoreModal({ match, entry1, entry2, onSave, onClose }) {
+  const [outcomeType, setOutcomeType] = useState(match.outcomeType || 'score');
+  const [score,       setScore]       = useState(match.score || '');
+  const [winnerId,    setWinnerId]    = useState(match.winnerEntryId || '');
+  const [umpire,      setUmpire]      = useState(match.umpire || '');
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState('');
+
+  const p1Name = entry1 ? `${entry1.familyName}${entry1.firstName ? ', ' + entry1.firstName : ''}${entry1.seed ? ` [${entry1.seed}]` : ''}` : '—';
+  const p2Name = entry2 ? `${entry2.familyName}${entry2.firstName ? ', ' + entry2.firstName : ''}${entry2.seed ? ` [${entry2.seed}]` : ''}` : '—';
+
+  async function handleSave(e) {
+    e.preventDefault();
+    if (!winnerId) { setError('Select the winner.'); return; }
+    if (outcomeType === 'score' && !score.trim()) { setError('Enter the score.'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(match.id, {
+        score: outcomeType === 'score' ? score.trim() : null,
+        winnerEntryId: winnerId,
+        outcomeType,
+        status: 'complete',
+        umpire: umpire.trim() || null,
+      });
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to save result');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="t-modal-overlay" onClick={onClose}>
+      <div className="t-modal" onClick={e => e.stopPropagation()}>
+        <div className="t-modal-header">
+          <span className="t-modal-title">Enter Result</span>
+          <button className="drawer-close" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Match players */}
+        <div className="t-score-matchup">
+          <div className="t-score-player">{p1Name}</div>
+          <div className="t-score-vs">vs</div>
+          <div className="t-score-player">{p2Name}</div>
+        </div>
+
+        <form onSubmit={handleSave} className="t-create-form">
+          {/* Outcome type */}
+          <div className="field">
+            <label>Outcome</label>
+            <div className="t-outcome-btns">
+              {OUTCOME_TYPES.map(o => (
+                <button key={o} type="button"
+                  className={'t-outcome-btn' + (outcomeType === o ? ' active' : '')}
+                  onClick={() => setOutcomeType(o)}>
+                  {o.charAt(0).toUpperCase() + o.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Score (shown only for "score" outcome) */}
+          {outcomeType === 'score' && (
+            <div className="field">
+              <label>Score</label>
+              <input
+                value={score}
+                onChange={e => setScore(e.target.value)}
+                placeholder="e.g. 6-3, 7-5  or  6-4, 3-6, 6-2"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* Winner */}
+          <div className="field">
+            <label>Winner</label>
+            <div className="t-winner-btns">
+              {entry1 && !entry1.isBye && (
+                <button type="button"
+                  className={'t-winner-btn' + (winnerId === match.entry1Id ? ' active' : '')}
+                  onClick={() => setWinnerId(match.entry1Id)}>
+                  {p1Name}
+                </button>
+              )}
+              {entry2 && !entry2.isBye && (
+                <button type="button"
+                  className={'t-winner-btn' + (winnerId === match.entry2Id ? ' active' : '')}
+                  onClick={() => setWinnerId(match.entry2Id)}>
+                  {p2Name}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Umpire */}
+          <div className="field">
+            <label>Umpire (optional)</label>
+            <input
+              value={umpire}
+              onChange={e => setUmpire(e.target.value)}
+              placeholder="Umpire name"
+            />
+          </div>
+
+          {error && <div className="login-error" style={{ marginTop: 8 }}>{error}</div>}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button type="submit" className="action-btn primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Save Result'}
+            </button>
+            <button type="button" className="action-btn" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BracketMatchCard
+// ---------------------------------------------------------------------------
+function BracketMatchCard({ match, entry1, entry2, isClickable, onClick }) {
+  const isBye1 = entry1?.isBye;
+  const isBye2 = entry2?.isBye;
+
+  function playerLine(entry, entryId, isWinner) {
+    const name = !entry
+      ? <span className="t-bmc-empty">TBD</span>
+      : entry.isBye
+        ? <span className="t-bmc-bye">BYE</span>
+        : <>{entry.seed && <span className="t-bmc-seed">[{entry.seed}]</span>}
+            <span className={`t-bmc-name${isWinner ? ' t-bmc-winner' : ''}`}>
+              {entry.familyName}{entry.firstName ? ', ' + entry.firstName : ''}
+            </span>
+            {entry.playerState && <span className="t-bmc-state">{entry.playerState}</span>}
+          </>;
+    return (
+      <div className={`t-bmc-player${isWinner ? ' t-bmc-player-won' : ''}${entry?.isBye ? ' t-bmc-player-bye' : ''}`}>
+        {name}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={
+        't-bmc' +
+        (isClickable ? ' t-bmc-clickable' : '') +
+        (match.status === 'complete' ? ' t-bmc-complete' : '')
+      }
+      onClick={isClickable ? onClick : undefined}
+    >
+      {playerLine(entry1, match.entry1Id, match.winnerEntryId === match.entry1Id)}
+      <div className="t-bmc-divider" />
+      {playerLine(entry2, match.entry2Id, match.winnerEntryId === match.entry2Id)}
+      {match.score && (
+        <div className="t-bmc-score">{match.score}</div>
+      )}
+      {match.outcomeType && match.outcomeType !== 'score' && match.status === 'complete' && (
+        <div className="t-bmc-outcome">{match.outcomeType.toUpperCase()}</div>
+      )}
+      {isClickable && !match.winnerEntryId && !isBye1 && !isBye2 && (
+        <div className="t-bmc-cta">+ Score</div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BracketView  — full multi-round bracket (absolute positioned)
+// ---------------------------------------------------------------------------
+const SLOT_H = 88;   // height each R1 match occupies (px)
+const CARD_H = 80;   // height of the match card itself (px)
+const COL_W  = 236;  // column width (px)
+const COL_GAP = 40;  // gap between columns (px)
+
+function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore }) {
+  const entryMap = new Map(entries.map(e => [e.id, e]));
+
+  const byRound = {};
+  for (let r = 1; r <= totalRounds; r++) {
+    byRound[r] = (matches.filter(m => m.round === r) || [])
+      .sort((a, b) => a.matchSlot - b.matchSlot);
+  }
+
+  const totalH = (drawSize / 2) * SLOT_H;
+  const totalW = totalRounds * COL_W + (totalRounds - 1) * COL_GAP;
+
+  return (
+    <div className="t-bracket-wrap">
+      {/* Round labels */}
+      <div className="t-bracket-labels" style={{ width: totalW }}>
+        {Array.from({ length: totalRounds }, (_, i) => i + 1).map(r => (
+          <div key={r} className="t-bracket-label"
+            style={{ width: COL_W, marginLeft: r === 1 ? 0 : COL_GAP }}>
+            {roundLabel(r, totalRounds)}
+          </div>
+        ))}
+      </div>
+
+      {/* Bracket grid */}
+      <div className="t-bracket-grid" style={{ width: totalW, height: totalH }}>
+        {Array.from({ length: totalRounds }, (_, i) => i + 1).map(round => {
+          const slotH  = Math.pow(2, round - 1) * SLOT_H;
+          const colLeft = (round - 1) * (COL_W + COL_GAP);
+          const roundMatches = byRound[round] || [];
+
+          return roundMatches.map(match => {
+            const top    = (match.matchSlot - 1) * slotH + (slotH - CARD_H) / 2;
+            const entry1 = entryMap.get(match.entry1Id);
+            const entry2 = entryMap.get(match.entry2Id);
+
+            // Clickable if organizer, not yet complete, and has at least one real player
+            const hasPlayers = (match.entry1Id || match.entry2Id);
+            const isClickable = isOwner && match.status !== 'complete' && !!hasPlayers;
+
+            return (
+              <div key={match.id} style={{ position: 'absolute', top, left: colLeft }}>
+                <BracketMatchCard
+                  match={match}
+                  entry1={entry1}
+                  entry2={entry2}
+                  isClickable={isClickable}
+                  onClick={() => onScore(match)}
+                />
+              </div>
+            );
+          });
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // EventDetailPage
 // ---------------------------------------------------------------------------
 export default function EventDetailPage() {
@@ -640,13 +892,18 @@ export default function EventDetailPage() {
   const [error,    setError]    = useState('');
 
   // View / interaction state
-  const [viewMode,       setViewMode]       = useState('list');   // 'list' | 'drawsheet'
+  const [viewMode,       setViewMode]       = useState('list');   // 'list' | 'drawsheet' | 'bracket'
   const [swapMode,       setSwapMode]       = useState(false);
   const [selectedEntry,  setSelectedEntry]  = useState(null);
   const [showAdd,        setShowAdd]        = useState(false);
   const [editingEntry,   setEditingEntry]   = useState(null);
   const [showBulk,       setShowBulk]       = useState(false);
   const [seeding,        setSeeding]        = useState(false);
+
+  // Phase 5 — bracket + score state
+  const [matches,      setMatches]      = useState([]);
+  const [generating,   setGenerating]   = useState(false);
+  const [scoringMatch, setScoringMatch] = useState(null);
   const [fillingByes,    setFillingByes]    = useState(false);
 
   // Load week + event once
@@ -668,15 +925,32 @@ export default function EventDetailPage() {
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
 
+  // Load matches whenever event status is past 'setup'
+  useEffect(() => {
+    if (!event || event.status === 'setup') return;
+    let cancelled = false;
+    api.getEventMatches(eventId, drawType)
+      .then(data => {
+        if (!cancelled) {
+          setMatches(data);
+          if (data.length > 0) setViewMode('bracket');
+        }
+      })
+      .catch(e => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
+  }, [eventId, drawType, event]);
+
   const isOwner     = !!(week && user && week.createdBy === user.id);
   const maxPos      = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
   const numSeeds    = event?.numSeeds || 4;
+  const totalRounds = maxPos > 0 ? Math.ceil(Math.log2(maxPos)) : 0;
   const sortedEntries = [...entries].sort((a, b) => a.position - b.position);
   const playerCount = entries.filter(e => !e.isBye).length;
   const byeCount    = entries.filter(e => e.isBye).length;
   const fillPct     = maxPos > 0 ? Math.min(Math.round(entries.length / maxPos * 100), 100) : 0;
   const hasSeededPlayers = entries.some(e => e.seed && !e.isBye);
   const hasGaps     = entries.length < maxPos;
+  const drawFull    = entries.length === maxPos && maxPos > 0;
 
   // ---- CRUD ----------------------------------------------------------------
   async function handleSaveEntry(entryId, formData) {
@@ -741,6 +1015,72 @@ export default function EventDetailPage() {
     } catch (err) { setError(err.message); }
   }
 
+  // ---- GENERATE BRACKET ---------------------------------------------------
+  async function handleGenerateBracket() {
+    const msg = matches.length > 0
+      ? 'Regenerate bracket? All existing match results will be lost.'
+      : 'Generate bracket from the current draw positions?';
+    if (!window.confirm(msg)) return;
+    setGenerating(true);
+    setError('');
+    try {
+      const sorted = [...entries].sort((a, b) => a.position - b.position);
+      const initialized = await api.initializeEventMatches(eventId, drawType, sorted);
+
+      // Auto-advance BYE matches (R1 only)
+      const entryMap = new Map(entries.map(e => [e.id, e]));
+      const r1 = initialized.filter(m => m.round === 1);
+      await Promise.all(r1.map(async match => {
+        const e1 = entryMap.get(match.entry1Id);
+        const e2 = entryMap.get(match.entry2Id);
+        const byeWin = (e1?.isBye && e2 && !e2.isBye) ? e2 : (e2?.isBye && e1 && !e1.isBye) ? e1 : null;
+        if (byeWin) {
+          await api.updateMatchScore(match.id, {
+            winnerEntryId: byeWin.id, outcomeType: 'walkover', status: 'complete', score: null, umpire: null,
+          });
+          await api.advanceWinner(eventId, drawType, 1, match.matchSlot, byeWin.id);
+        }
+      }));
+
+      // Mark event as draw_ready
+      const updated = await api.updateEvent(eventId, { status: 'draw_ready' });
+      setEvent(updated);
+
+      // Reload fresh matches (includes BYE advancements)
+      const fresh = await api.getEventMatches(eventId, drawType);
+      setMatches(fresh);
+      setViewMode('bracket');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ---- SCORE A MATCH -------------------------------------------------------
+  async function handleScoreMatch(matchId, { score, winnerEntryId, outcomeType, status, umpire }) {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    await api.updateMatchScore(matchId, { score, winnerEntryId, outcomeType, status, umpire });
+
+    // Advance winner (not for the final)
+    if (match.round < totalRounds) {
+      await api.advanceWinner(eventId, drawType, match.round, match.matchSlot, winnerEntryId);
+    }
+
+    // Set event status to in_progress on first score
+    if (event.status === 'draw_ready') {
+      const ev = await api.updateEvent(eventId, { status: 'in_progress' });
+      setEvent(ev);
+    }
+
+    // Reload matches to reflect DB state (especially next-round entry updates)
+    const fresh = await api.getEventMatches(eventId, drawType);
+    setMatches(fresh);
+    setScoringMatch(null);
+  }
+
   // ---- SWAP ----------------------------------------------------------------
   function handleSelectForSwap(entry) {
     if (!selectedEntry) {
@@ -803,9 +1143,9 @@ export default function EventDetailPage() {
             <div className="subtitle">{event?.ageGroup} · {week?.name}</div>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons — context-aware */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {isOwner && (
+            {isOwner && viewMode !== 'bracket' && (
               <>
                 <button className="action-btn primary"
                   onClick={() => { setEditingEntry(null); setShowAdd(true); }}>
@@ -826,12 +1166,12 @@ export default function EventDetailPage() {
                     {fillingByes ? 'Filling…' : '+ Fill BYEs'}
                   </button>
                 )}
-                {byeCount > 0 && (
+                {byeCount > 0 && !hasGaps && (
                   <button className="action-btn t-engine-btn" onClick={handleClearByes}>
                     Clear BYEs
                   </button>
                 )}
-                {entries.length > 0 && (
+                {entries.length > 0 && !hasGaps && (
                   <button
                     className={'action-btn t-swap-btn' + (swapMode ? ' active' : '')}
                     onClick={toggleSwapMode}
@@ -841,6 +1181,16 @@ export default function EventDetailPage() {
                 )}
               </>
             )}
+            {/* Generate / Re-generate Bracket */}
+            {isOwner && drawFull && (
+              <button
+                className="action-btn t-gen-btn"
+                onClick={handleGenerateBracket}
+                disabled={generating}
+              >
+                {generating ? 'Generating…' : matches.length > 0 ? '↺ Regenerate Bracket' : '▶ Generate Bracket'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -849,60 +1199,85 @@ export default function EventDetailPage() {
       {event?.hasQualifying && (
         <div className="t-draw-tabs">
           <button className={'t-draw-tab' + (drawType === 'main' ? ' active' : '')}
-            onClick={() => { setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
+            onClick={() => { setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Main Draw ({event.drawSize})
           </button>
           <button className={'t-draw-tab' + (drawType === 'qualifying' ? ' active' : '')}
-            onClick={() => { setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); }}>
+            onClick={() => { setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Qualifying ({event.qualifyingSize || '—'})
           </button>
         </div>
       )}
 
       {/* View toggle + stats */}
-      {entries.length > 0 && (
-        <div className="t-view-bar">
-          <div className="t-view-stats">
-            <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
-            {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
-            <span className="t-stat-gap"> · {maxPos - entries.length} slot{maxPos - entries.length !== 1 ? 's' : ''} open</span>
-          </div>
-          <div className="t-view-toggle">
-            <button className={'t-vtab' + (viewMode === 'list' ? ' active' : '')}
-              onClick={() => setViewMode('list')}>List</button>
+      <div className="t-view-bar">
+        <div className="t-view-stats">
+          <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
+          {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
+          {hasGaps && <span className="t-stat-gap"> · {maxPos - entries.length} open</span>}
+          {event?.status && event.status !== 'setup' && (
+            <span className={`t-status-badge t-status-${event.status}`} style={{ marginLeft: 8 }}>
+              {event.status.replace('_', ' ')}
+            </span>
+          )}
+        </div>
+        <div className="t-view-toggle">
+          <button className={'t-vtab' + (viewMode === 'list' ? ' active' : '')}
+            onClick={() => setViewMode('list')}>List</button>
+          {matches.length === 0 && (
             <button className={'t-vtab' + (viewMode === 'drawsheet' ? ' active' : '')}
               onClick={() => setViewMode('drawsheet')}>Draw Sheet</button>
+          )}
+          {matches.length > 0 && (
+            <button className={'t-vtab' + (viewMode === 'bracket' ? ' active' : '')}
+              onClick={() => setViewMode('bracket')}>Bracket</button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar (hidden in bracket view) */}
+      {viewMode !== 'bracket' && (
+        <div className="t-entry-progress">
+          <div className="t-entry-progress-label">
+            <span><strong>{entries.length}</strong> / {maxPos} positions filled</span>
+            <span className="t-entry-progress-pct">{fillPct}%</span>
+          </div>
+          <div className="t-progress-track">
+            <div className="t-progress-fill" style={{ width: `${fillPct}%` }} />
           </div>
         </div>
       )}
 
-      {/* Progress bar */}
-      <div className="t-entry-progress" style={{ paddingTop: entries.length > 0 ? 4 : 12 }}>
-        <div className="t-entry-progress-label">
-          <span><strong>{entries.length}</strong> / {maxPos} positions filled</span>
-          <span className="t-entry-progress-pct">{fillPct}%</span>
-        </div>
-        <div className="t-progress-track">
-          <div className="t-progress-fill" style={{ width: `${fillPct}%` }} />
-        </div>
-      </div>
-
       {error && <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>{error}</div>}
       {swapMode && (
         <div className="t-swap-hint">
-          {selectedEntry
-            ? `Click another player to swap with ${selectedEntry.familyName}.`
+          {selectedEntry ? `Click another player to swap with ${selectedEntry.familyName}.`
             : 'Click any player to select, then click another to swap positions.'}
           <button className="t-swap-cancel" onClick={toggleSwapMode}>Cancel</button>
         </div>
       )}
 
-      {/* Content */}
+      {/* ---- Content ---- */}
       <div className="page-scroll">
         {entries.length === 0 ? (
           <div className="history-empty">
             {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
           </div>
+
+        ) : viewMode === 'bracket' ? (
+          matches.length === 0 ? (
+            <div className="history-empty">Bracket not generated yet.</div>
+          ) : (
+            <BracketView
+              matches={matches}
+              entries={sortedEntries}
+              drawSize={maxPos}
+              totalRounds={totalRounds}
+              isOwner={isOwner}
+              onScore={match => setScoringMatch(match)}
+            />
+          )
+
         ) : viewMode === 'drawsheet' ? (
           <DrawSheet
             entries={sortedEntries}
@@ -912,6 +1287,7 @@ export default function EventDetailPage() {
             selectedEntry={selectedEntry}
             onSelectEntry={handleSelectForSwap}
           />
+
         ) : (
           <div className="t-entry-table-wrap">
             <table className="t-entry-table">
@@ -947,7 +1323,7 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ---- Modals ---- */}
       {showAdd && (
         <AddEntryModal
           event={event} week={week} drawType={drawType}
@@ -963,6 +1339,18 @@ export default function EventDetailPage() {
           onClose={() => setShowBulk(false)}
         />
       )}
+      {scoringMatch && (() => {
+        const entryMap = new Map(entries.map(e => [e.id, e]));
+        return (
+          <ScoreModal
+            match={scoringMatch}
+            entry1={entryMap.get(scoringMatch.entry1Id)}
+            entry2={entryMap.get(scoringMatch.entry2Id)}
+            onSave={handleScoreMatch}
+            onClose={() => setScoringMatch(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
