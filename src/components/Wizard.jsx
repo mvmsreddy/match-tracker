@@ -4,8 +4,6 @@ import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
-// Steps that show rally count footer for adjustment
-const RALLY_FOOTER_STEPS = new Set(['shotWing', 'shotType']);
 
 function getActiveStep(pending) {
   if (!pending.serviceChoice) return 'serviceScreen';
@@ -28,7 +26,7 @@ function shotLabel(type) {
   return type;
 }
 
-export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, canUndo, selfName, oppName }) {
+export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
@@ -49,10 +47,6 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     }
   }, [activeStep]);
 
-  function chooseServer(server) {
-    onServerChange(server);
-    setPending(freshPending(server));
-  }
 
   function commitAndReset(extra) {
     const entry = buildPointEntry({ ...pending, ...extra });
@@ -134,18 +128,15 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
   }
   if (pending.shotWing && pending.shotWing !== 'Other') breadcrumbs.push(pending.shotWing);
 
-  const showRallyFooter = RALLY_FOOTER_STEPS.has(activeStep);
 
   return (
     <div className="wizard">
-      {/* Server toggle */}
-      <div className="server-toggle">
-        <div className={'chip server-chip' + (pending.server === 'self' ? ' selected' : '')} onClick={() => chooseServer('self')}>
-          {selfName || 'You'} serving
-        </div>
-        <div className={'chip server-chip' + (pending.server === 'opp' ? ' selected' : '')} onClick={() => chooseServer('opp')}>
-          {oppName || 'Opponent'} serving
-        </div>
+      {/* Read-only server indicator */}
+      <div className="server-indicator">
+        <span className={pending.server === 'self' ? 'self-name' : 'opp-name'}>
+          {pending.server === 'self' ? (selfName || 'You') : (oppName || 'Opponent')}
+        </span>
+        <span className="server-indicator-label"> is serving</span>
       </div>
 
       {/* Breadcrumb */}
@@ -287,24 +278,6 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
           </>
         )}
 
-        {/* Rally counter footer — adjust rally count during wing/shot steps */}
-        {showRallyFooter && (
-          <div className="rally-footer">
-            <span className="rally-footer-label">Rally</span>
-            <div className="chip-row chip-grid-rally" style={{ margin: 0, flex: 1 }}>
-              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <div
-                  key={n}
-                  className={'chip' + (pending.rallyCount === n ? ' selected' : '')}
-                  style={{ textAlign: 'center', padding: '6px 4px', fontSize: '0.82rem' }}
-                  onClick={() => setPending((p) => ({ ...p, rallyCount: n }))}
-                >
-                  {n === 7 ? '7+' : n}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
 

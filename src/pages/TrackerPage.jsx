@@ -95,7 +95,7 @@ export default function TrackerPage() {
       {activeTab === 'track' && t.matchStarted && (
         <div className="tab-content">
           <Wizard
-            nextServer={t.nextServer} onServerChange={t.setServerChoice}
+            nextServer={t.nextServer}
             onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
             selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
           />
@@ -249,6 +249,19 @@ function SetupForm({ t, onStart }) {
               <option value="Right-Handed">Right-Handed</option>
               <option value="Left-Handed">Left-Handed</option>
             </select>
+          </div>
+        </div>
+      </div>
+
+      {/* First server */}
+      <div className="setup-section">
+        <div className="setup-section-label">Who Serves First?</div>
+        <div className="server-toggle" style={{ marginBottom: 0 }}>
+          <div className={'chip server-chip' + (t.nextServer === 'self' ? ' selected' : '')} onClick={() => t.setServerChoice('self')}>
+            {t.header.selfName || 'You'}
+          </div>
+          <div className={'chip server-chip' + (t.nextServer === 'opp' ? ' selected' : '')} onClick={() => t.setServerChoice('opp')}>
+            {t.header.oppName || 'Opponent'}
           </div>
         </div>
       </div>

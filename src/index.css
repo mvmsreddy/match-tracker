@@ -96,6 +96,10 @@ body { margin: 0; }
 .server-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
 .server-chip { flex: 1; text-align: center; min-height: 46px; border-radius: 6px; font-size: 0.87rem; }
 
+/* Read-only server indicator in Wizard */
+.server-indicator { display: flex; align-items: center; gap: 6px; padding: 8px 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.server-indicator-label { color: #6E8598; }
+
 .toggle-inline { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #9FB0BE; }
 .toggle-inline .chip { padding: 7px 14px; font-size: 0.74rem; }
 .undo-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
