@@ -1,5 +1,6 @@
 import { formatGameScore } from '../lib/engine';
 import { formatDuration } from '../lib/storage';
+import { getFormatConfig } from '../lib/constants';
 
 function getGameDisplay(engine, sessionType) {
   if (sessionType === 'practice') {
@@ -12,11 +13,16 @@ function getGameDisplay(engine, sessionType) {
   return formatGameScore(engine);
 }
 
-export default function Scorebar({ header, sessionType, pointTarget, engine, nextServer, matchStartTime, matchDurationMs }) {
+export default function Scorebar({ header, sessionType, formatPreset, pointTarget, engine, nextServer, matchStartTime, matchDurationMs }) {
   const isPractice = sessionType === 'practice';
   const selfName = header.selfName || 'Self';
   const oppName = header.oppName || 'Opponent';
   const gameDisplay = getGameDisplay(engine, sessionType);
+  const cfg = getFormatConfig(formatPreset || 'bo3-full');
+  // Max sets in match (e.g. Bo3 → 3, Bo5 → 5, proset → 1)
+  const maxSets = cfg.setsToWin * 2 - 1;
+  const completedSets = engine.sets.length;
+  const futureSets = engine.matchOver ? 0 : Math.max(0, maxSets - completedSets - 1);
 
   return (
     <div className="scorebar">
@@ -29,7 +35,7 @@ export default function Scorebar({ header, sessionType, pointTarget, engine, nex
               {selfName}
             </div>
             {isPractice ? (
-              <div className="atp-set atp-set-live" style={{ borderColor: '#C6E23D' }}>to {pointTarget}</div>
+              <div className="atp-set atp-set-live" style={{ borderColor: 'var(--accent)' }}>to {pointTarget}</div>
             ) : (
               <>
                 {engine.sets.map((st, i) => (
@@ -37,9 +43,14 @@ export default function Scorebar({ header, sessionType, pointTarget, engine, nex
                     {st.isMatchTiebreak ? st.tb.self : st.self}
                   </div>
                 ))}
-                <div className="atp-set atp-set-live">
-                  {engine.matchTiebreakActive ? engine.matchTiebreakPts.self : engine.setGames.self}
-                </div>
+                {!engine.matchOver && (
+                  <div className="atp-set atp-set-live">
+                    {engine.matchTiebreakActive ? engine.matchTiebreakPts.self : engine.setGames.self}
+                  </div>
+                )}
+                {Array.from({ length: futureSets }, (_, i) => (
+                  <div key={'f' + i} className="atp-set atp-set-future">-</div>
+                ))}
               </>
             )}
           </div>
@@ -55,9 +66,14 @@ export default function Scorebar({ header, sessionType, pointTarget, engine, nex
                     {st.isMatchTiebreak ? st.tb.opp : st.opp}
                   </div>
                 ))}
-                <div className="atp-set atp-set-live">
-                  {engine.matchTiebreakActive ? engine.matchTiebreakPts.opp : engine.setGames.opp}
-                </div>
+                {!engine.matchOver && (
+                  <div className="atp-set atp-set-live">
+                    {engine.matchTiebreakActive ? engine.matchTiebreakPts.opp : engine.setGames.opp}
+                  </div>
+                )}
+                {Array.from({ length: futureSets }, (_, i) => (
+                  <div key={'f' + i} className="atp-set atp-set-future">-</div>
+                ))}
               </>
             )}
           </div>

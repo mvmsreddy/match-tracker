@@ -35,7 +35,7 @@ export default function TrackerPage() {
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
         <Scorebar
-          header={t.header} sessionType={t.sessionType} pointTarget={t.pointTarget}
+          header={t.header} sessionType={t.sessionType} formatPreset={t.formatPreset} pointTarget={t.pointTarget}
           engine={t.engine} nextServer={t.nextServer}
           matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
         />
