@@ -13,6 +13,7 @@ export function freshPending(server) {
     stroke: null,               // combined: 'Ground Forehand', 'Net Touch', etc.
     rallyCount: null,           // null = not yet selected; must be chosen before ballInPlay
     infraction: null,           // null = not yet answered; 'none' = skipped; string = infraction type
+    firstFaultLocation: null,   // 'Long' | 'Wide' | 'Net' — location of the 1st serve fault
   };
 }
 
@@ -44,10 +45,10 @@ export function buildPointEntry(pending) {
       reason: 'DoubleFault',
       stroke: 'Serve',
       isReturn: false,
-      location: null,
+      location: pending.faultLocation || null,
       rally: 0,
       pointWinner: receiver,
-      firstFaultLocation: null,
+      firstFaultLocation: pending.firstFaultLocation || null,
     };
   }
 
@@ -63,7 +64,7 @@ export function buildPointEntry(pending) {
       location: null,
       rally: 1,
       pointWinner: server,
-      firstFaultLocation: null,
+      firstFaultLocation: pending.firstFaultLocation || null,
     };
   }
 
@@ -78,7 +79,7 @@ export function buildPointEntry(pending) {
       location: null,
       rally: 1,
       pointWinner: receiver,
-      firstFaultLocation: null,
+      firstFaultLocation: pending.firstFaultLocation || null,
     };
   }
 
@@ -97,7 +98,7 @@ export function buildPointEntry(pending) {
     location: null,
     rally: pending.rallyCount ?? 2,
     pointWinner,
-    firstFaultLocation: null,
+    firstFaultLocation: pending.firstFaultLocation || null,
     infraction: (pending.infraction && pending.infraction !== 'none') ? pending.infraction : null,
   };
 }

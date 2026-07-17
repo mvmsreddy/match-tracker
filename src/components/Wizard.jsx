@@ -7,6 +7,7 @@ const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Viola
 
 function getActiveStep(pending) {
   if (!pending.serviceChoice) return 'serviceScreen';
+  if (pending.serviceChoice === 'faultPending') return 'faultLocation';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
   if (pending.serviceChoice === 'ballIn' && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
@@ -61,16 +62,22 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   }
 
   function handleFault() {
+    setPending((p) => ({ ...p, serviceChoice: 'faultPending' }));
+  }
+
+  function handleFaultLocation(location) {
     if (pending.serveAttempt === '1st') {
-      setPending((p) => ({ ...freshPending(p.server), serveAttempt: '2nd' }));
+      // Record fault location, advance to 2nd serve
+      setPending(() => ({ ...freshPending(pending.server), serveAttempt: '2nd', firstFaultLocation: location }));
     } else {
-      commitAndReset({ serviceChoice: 'doubleFault' });
+      // Double fault — commit with both fault locations
+      commitAndReset({ serviceChoice: 'doubleFault', faultLocation: location });
     }
   }
 
   // Let: repeats the same serve attempt — no DB write, no state change
   function handleLet() {
-    setPending((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt }));
+    setPending((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt, firstFaultLocation: p.firstFaultLocation }));
   }
 
   function handleReturnWinner() {
@@ -117,7 +124,9 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   const receiver = pending.server === 'self' ? 'opp' : 'self';
 
   const breadcrumbs = [];
-  if (pending.serveAttempt === '2nd' && !pending.serviceChoice) breadcrumbs.push('Fault → 2nd Serve');
+  if (pending.serveAttempt === '2nd' && !pending.serviceChoice) {
+    breadcrumbs.push('Fault' + (pending.firstFaultLocation ? ' · ' + pending.firstFaultLocation : '') + ' → 2nd Serve');
+  }
   if (pending.serviceChoice === 'ballIn') {
     breadcrumbs.push('Ball In');
     if (pending.ballInReason) breadcrumbs.push(playerName(pending.ballInWho) + ': ' + pending.ballInReason);
@@ -146,6 +155,19 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
       {/* Active step card */}
       <div className="wizard-step-card" ref={stepCardRef}>
+
+        {activeStep === 'faultLocation' && (
+          <>
+            <div className="wizard-step-label">
+              {pending.serveAttempt === '2nd' ? 'Double Fault — Where?' : '1st Serve Fault — Where?'}
+            </div>
+            <div className="chip-row">
+              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Long')}>Long</div>
+              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Wide')}>Wide</div>
+              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Net')}>Net</div>
+            </div>
+          </>
+        )}
 
         {activeStep === 'serviceScreen' && (
           <>
