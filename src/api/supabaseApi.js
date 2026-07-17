@@ -58,6 +58,17 @@ export async function getSession() {
   return { token: data.session.access_token, user: publicUser(data.session.user) };
 }
 
+export function onAuthStateChange(callback) {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+      callback(publicUser(session.user));
+    } else if (event === 'SIGNED_OUT') {
+      callback(null);
+    }
+  });
+  return () => subscription.unsubscribe();
+}
+
 // ---------------------------------------------------------------------------
 // Match history
 // ---------------------------------------------------------------------------

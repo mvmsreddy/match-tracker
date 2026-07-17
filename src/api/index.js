@@ -16,6 +16,7 @@ const impl = hasSupabaseConfig ? supabaseApi : mockApi;
 export const login = impl.login;
 export const signup = impl.signup;
 export const loginWithGoogle = hasSupabaseConfig ? supabaseApi.loginWithGoogle : null;
+export const onAuthStateChange = hasSupabaseConfig ? supabaseApi.onAuthStateChange : null;
 export const logout = impl.logout;
 export const getSession = impl.getSession;
 export const listMatches = impl.listMatches;

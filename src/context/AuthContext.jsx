@@ -10,12 +10,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Initial session check (also processes OAuth hash on redirect)
     api.getSession().then((session) => {
       if (!cancelled) {
         setUser(session ? session.user : null);
         setLoading(false);
       }
     });
+
+    // Listen for OAuth sign-in events (fires when Google redirect completes)
+    if (api.onAuthStateChange) {
+      const unsubscribe = api.onAuthStateChange((authUser) => {
+        if (!cancelled) {
+          setUser(authUser);
+          setLoading(false);
+        }
+      });
+      return () => { cancelled = true; unsubscribe(); };
+    }
+
     return () => { cancelled = true; };
   }, []);
 
