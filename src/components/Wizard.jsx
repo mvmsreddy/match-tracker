@@ -120,6 +120,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Display helpers ──────────────────────────────────────────────────────
 
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
+  const colClass = (who) =>
+    'player-col-name ' + (who === 'self' ? 'self-name' : 'opp-name') + (pending.server === who ? ' player-serving' : '');
   const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
   const receiver = pending.server === 'self' ? 'opp' : 'self';
 
@@ -140,14 +142,6 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   return (
     <div className="wizard">
-      {/* Read-only server indicator */}
-      <div className="server-indicator">
-        <span className={pending.server === 'self' ? 'self-name' : 'opp-name'}>
-          {pending.server === 'self' ? (selfName || 'You') : (oppName || 'Opponent')}
-        </span>
-        <span className="server-indicator-label"> is serving</span>
-      </div>
-
       {/* Breadcrumb */}
       {breadcrumbs.length > 0 && (
         <div className="wizard-breadcrumb">{breadcrumbs.join(' → ')}</div>
@@ -175,7 +169,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
             <div className="ball-in-play-grid">
               {/* Left column: always self */}
               <div className="player-col">
-                <div className="player-col-name self-name">{playerName('self')}</div>
+                <div className={colClass('self')}>{playerName('self')}</div>
                 {pending.server === 'self' ? (
                   <>
                     <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
@@ -193,7 +187,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
               </div>
               {/* Right column: always opp */}
               <div className="player-col">
-                <div className="player-col-name opp-name">{playerName('opp')}</div>
+                <div className={colClass('opp')}>{playerName('opp')}</div>
                 {pending.server === 'opp' ? (
                   <>
                     <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
@@ -235,6 +229,14 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {activeStep === 'rallySelect' && (
           <>
             <div className="wizard-step-label">Rally Length</div>
+            <div className="ball-in-play-grid" style={{ marginBottom: 8 }}>
+              <div className="player-col">
+                <div className={colClass('self')}>{playerName('self')}</div>
+              </div>
+              <div className="player-col">
+                <div className={colClass('opp')}>{playerName('opp')}</div>
+              </div>
+            </div>
             <div className="chip-row chip-grid-rally">
               {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <div
@@ -256,7 +258,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
             <div className="ball-in-play-grid">
               {(['self', 'opp']).map((who) => (
                 <div key={who} className="player-col">
-                  <div className={'player-col-name ' + (who === 'self' ? 'self-name' : 'opp-name')}>
+                  <div className={colClass(who)}>
                     {playerName(who)}
                   </div>
                   <div className="chip chip-lg self-pt" onClick={() => handleBallInOutcome(who, 'Winner')}>
@@ -281,7 +283,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
               <div className="wizard-step-label">Select Wing</div>
               <div className="ball-in-play-grid">
                 <div className="player-col">
-                  <div className="player-col-name self-name">{playerName('self')}</div>
+                  <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && (
                     <>
                       <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
@@ -290,7 +292,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                   )}
                 </div>
                 <div className="player-col">
-                  <div className="player-col-name opp-name">{playerName('opp')}</div>
+                  <div className={colClass('opp')}>{playerName('opp')}</div>
                   {hitter === 'opp' && (
                     <>
                       <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
@@ -310,7 +312,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
               <div className="wizard-step-label">{pending.shotWing} — Select Shot</div>
               <div className="ball-in-play-grid">
                 <div className="player-col">
-                  <div className="player-col-name self-name">{playerName('self')}</div>
+                  <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && SHOT_TYPES.map((type) => (
                     <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
                       {shotLabel(type)}
@@ -318,7 +320,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                   ))}
                 </div>
                 <div className="player-col">
-                  <div className="player-col-name opp-name">{playerName('opp')}</div>
+                  <div className={colClass('opp')}>{playerName('opp')}</div>
                   {hitter === 'opp' && SHOT_TYPES.map((type) => (
                     <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
                       {shotLabel(type)}

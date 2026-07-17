@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMatchTracker } from '../hooks/useMatchTracker';
+import { getWeatherString } from '../lib/weather';
 import TopNav from '../components/TopNav';
 import Scorebar from '../components/Scorebar';
 import Wizard from '../components/Wizard';
@@ -175,6 +176,20 @@ function MatchRunningView({ t, onGoTrack }) {
 function SetupForm({ t, onStart }) {
   const selfName = t.header.selfName || '';
   const canStart = selfName.trim().length > 0;
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  async function handleGetWeather() {
+    setWeatherLoading(true);
+    try {
+      const w = await getWeatherString();
+      t.updateHeader({ weather: w });
+      t.showStatus('Weather updated');
+    } catch (e) {
+      t.showStatus(e.message);
+    } finally {
+      setWeatherLoading(false);
+    }
+  }
 
   return (
     <div className="setup-card">
@@ -249,6 +264,26 @@ function SetupForm({ t, onStart }) {
               <option value="Right-Handed">Right-Handed</option>
               <option value="Left-Handed">Left-Handed</option>
             </select>
+          </div>
+          <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <label>Weather</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                style={{ flex: 1 }}
+                placeholder="e.g. 24°C, Sunny, Wind 10 km/h"
+                value={t.header.weather}
+                onChange={(e) => t.updateHeader({ weather: e.target.value })}
+              />
+              <button
+                type="button"
+                className="action-btn"
+                style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}
+                disabled={weatherLoading}
+                onClick={handleGetWeather}
+              >
+                {weatherLoading ? 'Locating…' : 'Get Weather'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

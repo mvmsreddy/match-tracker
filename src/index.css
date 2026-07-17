@@ -79,6 +79,7 @@ body { margin: 0; }
 .player-col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 8px; border-bottom: 1px solid #2C4C68; margin-bottom: 2px; }
 .player-col-name.self-name { color: #C6E23D; }
 .player-col-name.opp-name { color: #E37B6B; }
+.player-col-name.player-serving { background: rgba(255,255,255,0.07); border-radius: 4px; padding: 3px 6px 6px; }
 
 /* Forced error chip — neutral amber */
 .chip.chip-forced { border-color: #B8922A; color: #D4A843; }
