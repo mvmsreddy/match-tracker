@@ -582,6 +582,8 @@ function rowToEventMatch(row) {
     umpire: row.umpire,
     status: row.status,
     dayNumber: row.day_number,
+    courtNumber: row.court_number,
+    matchOrder: row.match_order,
   };
 }
 
@@ -795,6 +797,144 @@ export async function advanceWinner(eventId, drawType, currentRound, currentSlot
 
   if (error) throw new Error(error.message);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — Order of Play (cross-event scheduling)
+// ---------------------------------------------------------------------------
+
+// Returns all matches for every event in a week, enriched with event + entry info.
+export async function getWeekMatches(weekId) {
+  const { data: events, error: evErr } = await supabase
+    .from('events')
+    .select('id, category, age_group, is_doubles, draw_size')
+    .eq('tournament_week_id', weekId);
+  if (evErr) throw new Error(evErr.message);
+  if (!events?.length) return [];
+
+  const eventIds = events.map(e => e.id);
+  const eventMap = new Map(events.map(e => [e.id, e]));
+
+  const { data: matches, error: mErr } = await supabase
+    .from('event_matches')
+    .select('*')
+    .in('event_id', eventIds)
+    .order('draw_type')
+    .order('round')
+    .order('match_slot');
+  if (mErr) throw new Error(mErr.message);
+  if (!matches?.length) return [];
+
+  const entryIds = [...new Set(
+    matches.flatMap(m => [m.entry1_id, m.entry2_id]).filter(Boolean)
+  )];
+  let entryMap = new Map();
+  if (entryIds.length > 0) {
+    const { data: entries, error: eErr } = await supabase
+      .from('draw_entries')
+      .select('id, family_name, first_name, aita_reg, player_state, seed, is_bye')
+      .in('id', entryIds);
+    if (eErr) throw new Error(eErr.message);
+    entryMap = new Map(entries.map(e => [e.id, {
+      id: e.id,
+      familyName: e.family_name,
+      firstName: e.first_name,
+      aitaReg: e.aita_reg,
+      playerState: e.player_state,
+      seed: e.seed,
+      isBye: e.is_bye,
+    }]));
+  }
+
+  return matches.map(m => {
+    const ev = eventMap.get(m.event_id);
+    const totalRounds = ev?.draw_size ? Math.ceil(Math.log2(ev.draw_size)) : 0;
+    return {
+      ...rowToEventMatch(m),
+      eventCategory: ev?.category || '',
+      eventAgeGroup: ev?.age_group || '',
+      eventIsDoubles: ev?.is_doubles || false,
+      totalRounds,
+      entry1: entryMap.get(m.entry1_id) || null,
+      entry2: entryMap.get(m.entry2_id) || null,
+    };
+  });
+}
+
+// Update scheduling fields for a single match.
+export async function updateMatchSchedule(matchId, { dayNumber, courtNumber, matchOrder }) {
+  const { data, error } = await supabase
+    .from('event_matches')
+    .update({ day_number: dayNumber, court_number: courtNumber, match_order: matchOrder })
+    .eq('id', matchId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToEventMatch(data);
+}
+
+// Greedy auto-schedule: assigns all unscheduled pending matches across numCourts courts,
+// avoiding player conflicts (same player in two concurrent time slots on the same day).
+export async function autoScheduleWeek(weekId, numCourts = 3) {
+  const allMatches = await getWeekMatches(weekId);
+
+  // Only schedule pending matches with at least one real (non-BYE) player
+  const schedulable = allMatches.filter(m =>
+    m.status !== 'complete' &&
+    !m.dayNumber &&
+    ((m.entry1 && !m.entry1.isBye) || (m.entry2 && !m.entry2.isBye))
+  );
+
+  // Sort: qualifying first, then lower round first, then by matchSlot
+  schedulable.sort((a, b) => {
+    if (a.drawType !== b.drawType) return a.drawType === 'qualifying' ? -1 : 1;
+    if (a.round !== b.round) return a.round - b.round;
+    return a.matchSlot - b.matchSlot;
+  });
+
+  // Greedy assignment
+  // courtNextOrder[`${day}-${court}`] = next order number for that court
+  const courtNextOrder = {};
+  // dayOrderPlayers[`${day}-${order}`] = Set of aitaReg already at that time slot
+  const dayOrderPlayers = {};
+  const assignments = [];
+
+  for (const match of schedulable) {
+    const p1 = match.entry1?.aitaReg;
+    const p2 = match.entry2?.aitaReg;
+    let placed = false;
+
+    for (let d = 1; d <= 14 && !placed; d++) {
+      for (let c = 1; c <= numCourts && !placed; c++) {
+        const ck = `${d}-${c}`;
+        const o = (courtNextOrder[ck] || 0) + 1;
+        const dok = `${d}-${o}`;
+        const occupied = dayOrderPlayers[dok] || new Set();
+
+        const p1ok = !p1 || !occupied.has(p1);
+        const p2ok = !p2 || !occupied.has(p2);
+        if (p1ok && p2ok) {
+          courtNextOrder[ck] = o;
+          if (!dayOrderPlayers[dok]) dayOrderPlayers[dok] = new Set();
+          if (p1) dayOrderPlayers[dok].add(p1);
+          if (p2) dayOrderPlayers[dok].add(p2);
+          assignments.push({ matchId: match.id, dayNumber: d, courtNumber: c, matchOrder: o });
+          placed = true;
+        }
+      }
+    }
+  }
+
+  if (assignments.length > 0) {
+    await Promise.all(assignments.map(({ matchId, dayNumber, courtNumber, matchOrder }) =>
+      supabase
+        .from('event_matches')
+        .update({ day_number: dayNumber, court_number: courtNumber, match_order: matchOrder })
+        .eq('id', matchId)
+    ));
+  }
+
+  return assignments.length;
 }
 
 // ---------------------------------------------------------------------------

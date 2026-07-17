@@ -318,7 +318,12 @@ export default function TournamentDetailPage() {
           </div>
         ) : (
           <div className="t-events-list">
-            <div className="t-section-title">Events ({events.length})</div>
+            <div className="t-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Events ({events.length})</span>
+              <Link to={`/tournaments/${weekId}/oop`} className="oop-link-btn">
+                Order of Play →
+              </Link>
+            </div>
             {events.map(ev => (
               <EventCard
                 key={ev.id}

@@ -978,3 +978,71 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-bracket-label  { width: 236px; flex-shrink: 0; margin-right: 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); text-align: center; }
 .t-bracket-label:last-child { margin-right: 0; }
 .t-bracket-grid   { position: relative; }
+
+/* ================================================
+   PHASE 7 — Order of Play page
+   ================================================ */
+
+/* Link in TournamentDetailPage events header */
+.oop-link-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); text-decoration: none; padding: 4px 10px; border: 1px solid rgba(198,226,61,0.3); border-radius: 4px; }
+.oop-link-btn:hover { background: rgba(198,226,61,0.08); }
+
+/* Courts control in header */
+.oop-courts-control { display: flex; align-items: center; gap: 6px; }
+.oop-courts-control label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
+.oop-courts-input { width: 48px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 5px 8px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.oop-courts-input:focus { outline: none; border-color: var(--accent); }
+
+/* ---- Schedule / filter view ---- */
+.oop-schedule-wrap { padding: 0; }
+.oop-filter-bar { display: flex; gap: 6px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.oop-filter-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text3); border-radius: 3px; padding: 4px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; }
+.oop-filter-btn:hover { background: var(--bg3); color: var(--text); }
+.oop-filter-btn.active { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
+.oop-filter-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; color: var(--text4); }
+
+.oop-table-wrap { overflow-x: auto; }
+.oop-table { width: 100%; border-collapse: collapse; }
+.oop-table th { padding: 8px 12px; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.oop-th-num { width: 54px; text-align: center; }
+.oop-th-status { width: 100px; }
+
+.oop-row td { padding: 8px 12px; border-bottom: 1px solid rgba(44,76,104,0.4); vertical-align: middle; font-size: 0.83rem; }
+.oop-row:hover td { background: rgba(255,255,255,0.02); }
+.oop-row-conflict td { background: rgba(245,166,35,0.05) !important; }
+.oop-row-done { opacity: 0.6; }
+.oop-td-event { min-width: 155px; }
+.oop-row-event { font-weight: 600; color: var(--text); }
+.oop-row-round { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 2px; }
+.oop-td-players { min-width: 200px; }
+.oop-p1, .oop-p2 { color: var(--text); }
+.oop-vsep { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); margin: 0 6px; }
+.oop-conflict-inline { color: #f5a623; margin-left: 4px; }
+.oop-td-num { width: 54px; text-align: center; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.oop-td-status { white-space: nowrap; }
+.oop-saving { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-left: 4px; }
+.oop-num-input { width: 42px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 3px 6px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.oop-num-input:focus { outline: none; border-color: var(--accent); }
+
+/* ---- Board view ---- */
+.oop-board-wrap { padding: 16px; }
+.oop-day-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.oop-day-tab { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 6px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; cursor: pointer; transition: background 0.12s, color 0.12s; }
+.oop-day-tab:hover { background: var(--bg3); color: var(--text); }
+.oop-day-tab.active { background: var(--accent); color: var(--bg); font-weight: 700; border-color: var(--accent); }
+.oop-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
+.oop-court-col { flex-shrink: 0; width: 220px; }
+.oop-court-header { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.oop-court-slot { display: flex; gap: 6px; margin-bottom: 8px; align-items: flex-start; }
+.oop-slot-num { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); width: 18px; flex-shrink: 0; padding-top: 8px; text-align: right; }
+
+/* Board match card */
+.oop-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; flex: 1; }
+.oop-card-conflict { border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.04); }
+.oop-card-done { opacity: 0.55; }
+.oop-card-event { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); margin-bottom: 5px; }
+.oop-card-players { display: flex; flex-direction: column; gap: 2px; }
+.oop-player { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+.oop-player-won { color: var(--win-text); }
+.oop-vs { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); }
+.oop-conflict-badge { margin-top: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: #f5a623; }

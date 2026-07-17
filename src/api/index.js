@@ -67,6 +67,11 @@ export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : asy
 export const getQualifyingWinners = hasSupabaseConfig ? supabaseApi.getQualifyingWinners : async () => null;
 export const promoteQualifiers    = hasSupabaseConfig ? supabaseApi.promoteQualifiers    : async () => [];
 
+// Order of Play — Phase 7
+export const getWeekMatches      = hasSupabaseConfig ? supabaseApi.getWeekMatches      : async () => [];
+export const updateMatchSchedule = hasSupabaseConfig ? supabaseApi.updateMatchSchedule : async () => {};
+export const autoScheduleWeek    = hasSupabaseConfig ? supabaseApi.autoScheduleWeek    : async () => 0;
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;
