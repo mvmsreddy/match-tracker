@@ -24,6 +24,15 @@ export const saveMatch = impl.saveMatch;
 export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
 
+// Profile module — Supabase only
+export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async () => null;
+export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async () => {};
+export const searchPlayers = hasSupabaseConfig ? supabaseApi.searchPlayers : async () => [];
+export const sendCoachRequest = hasSupabaseConfig ? supabaseApi.sendCoachRequest : async () => {};
+export const getCoachLinks = hasSupabaseConfig ? supabaseApi.getCoachLinks : async () => [];
+export const respondToCoachRequest = hasSupabaseConfig ? supabaseApi.respondToCoachRequest : async () => {};
+export const deleteCoachLink = hasSupabaseConfig ? supabaseApi.deleteCoachLink : async () => {};
+
 // Tournament module — Supabase only (no mock fallback needed)
 export const listTournaments = hasSupabaseConfig ? supabaseApi.listTournaments : async () => [];
 export const getTournament = hasSupabaseConfig ? supabaseApi.getTournament : async () => null;

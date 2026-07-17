@@ -658,3 +658,75 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-bulk-textarea { width: 100%; min-height: 220px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; resize: vertical; line-height: 1.6; }
 .t-bulk-textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .t-parse-errors { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 4px; padding: 8px 12px; margin-top: 8px; line-height: 1.7; }
+
+/* ================================================
+   PHASE 1 — ROLES, PROFILES, COACH-PLAYER
+   ================================================ */
+
+/* ---------- Role picker (signup) ---------- */
+.role-picker { display: flex; gap: 8px; margin-top: 4px; }
+.role-card { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 8px; cursor: pointer; transition: border-color 0.15s; }
+.role-card:hover { border-color: var(--accent); }
+.role-card.selected { border-color: var(--accent); background: rgba(198,226,61,0.08); }
+.role-card-label { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text); }
+.role-card.selected .role-card-label { color: var(--accent); }
+.role-card-desc { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: var(--text4); text-align: center; line-height: 1.4; }
+
+/* ---------- Role badges ---------- */
+.role-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 20px; font-weight: 700; }
+.role-badge-player    { background: rgba(106,175,90,0.15);  color: var(--win-text);    border: 1px solid var(--win); }
+.role-badge-coach     { background: rgba(184,146,42,0.15);  color: var(--forced-text); border: 1px solid var(--forced); }
+.role-badge-organizer { background: rgba(198,226,61,0.12);  color: var(--accent);      border: 1px solid var(--accent); }
+
+/* Smaller inline badge used in drawer */
+.drawer-role-badge { display: inline-block; margin-bottom: 10px; }
+
+/* ---------- Dashboard role banners ---------- */
+.db-role-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 16px 4px; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border); }
+.db-role-banner-player    { border-color: var(--win);    background: rgba(106,175,90,0.06); }
+.db-role-banner-coach     { border-color: var(--forced); background: rgba(184,146,42,0.06); }
+.db-role-banner-organizer { border-color: var(--accent); background: rgba(198,226,61,0.05); }
+.db-role-banner-text { flex: 1; min-width: 0; }
+.db-role-banner-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 3px; }
+.db-role-banner-sub { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--text2); }
+.db-verified-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: 1px 6px; margin-left: 8px; }
+.db-pending-alert { color: var(--opp); font-weight: 600; }
+.db-role-cta { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); text-decoration: none; white-space: nowrap; border: 1px solid var(--accent); border-radius: 4px; padding: 5px 10px; }
+.db-role-cta:hover { background: rgba(198,226,61,0.1); }
+.db-role-cta-alert { color: var(--opp); border-color: var(--opp); }
+.db-role-cta-alert:hover { background: rgba(227,123,107,0.1); }
+.db-organizer-actions { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- Profile page ---------- */
+.profile-form { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+.profile-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.profile-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 2px; }
+.profile-role-row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.profile-role-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+.profile-role-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(198,226,61,0.08); }
+.profile-bio { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: 'Inter'; font-size: 0.85rem; resize: vertical; }
+.profile-bio:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.profile-verified-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 4px 10px; display: inline-block; }
+.profile-actions { display: flex; align-items: center; gap: 14px; padding: 0 0 24px; }
+
+/* ---------- Coach / Players page ---------- */
+.cp-search-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
+.cp-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
+.cp-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 8px; }
+.cp-search-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.cp-search-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 4px; font-family: 'Inter'; font-size: 0.85rem; }
+.cp-search-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cp-results { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.cp-result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.cp-result-info { flex: 1; min-width: 0; }
+.cp-result-name { font-weight: 600; font-size: 0.88rem; }
+.cp-result-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 3px; }
+.cp-no-results { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text4); padding: 8px 0; }
+.cp-link-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.cp-link-pending { border-color: var(--forced); background: rgba(184,146,42,0.04); }
+.cp-link-info { flex: 1; min-width: 0; }
+.cp-link-name { font-weight: 600; font-size: 0.88rem; }
+.cp-link-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 3px; }
+.cp-link-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.cp-link-status-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
+.cp-link-status-tag.pending { color: var(--forced-text); }

@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [role, setRole] = useState('player');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function LoginPage() {
     setEmail('');
     setPassword('');
     setConfirm('');
+    setRole('player');
   }
 
   async function handleSubmit(e) {
@@ -39,7 +41,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'signup') {
-        await signup(email, password, name);
+        await signup(email, password, name, role);
       } else {
         await login(email, password);
       }
@@ -122,14 +124,36 @@ export default function LoginPage() {
           {error && <div className="login-error">{error}</div>}
 
           {mode === 'signup' && (
-            <div className="login-field">
-              <label htmlFor="name">Full Name</label>
-              <input
-                id="name" type="text" autoComplete="name" value={name}
-                onChange={(e) => setName(e.target.value)} required
-                placeholder="Your name"
-              />
-            </div>
+            <>
+              <div className="login-field">
+                <label htmlFor="name">Full Name</label>
+                <input
+                  id="name" type="text" autoComplete="name" value={name}
+                  onChange={(e) => setName(e.target.value)} required
+                  placeholder="Your name"
+                />
+              </div>
+              <div className="login-field">
+                <label>I am a</label>
+                <div className="role-picker">
+                  {[
+                    { id: 'player',    label: 'Player',     desc: 'I compete in tournaments' },
+                    { id: 'coach',     label: 'Coach',      desc: 'I train players' },
+                    { id: 'organizer', label: 'Organizer',  desc: 'I host tournaments' },
+                  ].map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className={'role-card' + (role === r.id ? ' selected' : '')}
+                      onClick={() => setRole(r.id)}
+                    >
+                      <span className="role-card-label">{r.label}</span>
+                      <span className="role-card-desc">{r.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           <div className="login-field">

@@ -18,11 +18,11 @@ function publicUser(supabaseUser) {
   };
 }
 
-export async function signup(email, password, name) {
+export async function signup(email, password, name, role = 'player') {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: { data: { name, role } },
   });
   if (error) throw new Error(error.message);
   if (!data.user) throw new Error('Signup failed — please try again');
@@ -382,6 +382,134 @@ export async function updateMatchScore(matchId, { score, winnerEntryId, status, 
     .single();
   if (error) throw new Error(error.message);
   return rowToTournamentMatch(data);
+}
+
+// ---------------------------------------------------------------------------
+// User Profiles
+// ---------------------------------------------------------------------------
+
+function rowToProfile(row) {
+  return {
+    id: row.id,
+    role: row.role || 'player',
+    displayName: row.display_name,
+    aitaReg: row.aita_reg,
+    stateAbbr: row.state_abbr,
+    dateOfBirth: row.date_of_birth,
+    ranking: row.ranking,
+    clubName: row.club_name,
+    bio: row.bio,
+    isVerified: row.is_verified || false,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getProfile(userId) {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null; // row not found — new user
+    throw new Error(error.message);
+  }
+  return rowToProfile(data);
+}
+
+export async function upsertProfile(userId, profile) {
+  const row = {
+    id: userId,
+    role: profile.role,
+    display_name: profile.displayName || null,
+    aita_reg: profile.aitaReg || null,
+    state_abbr: profile.stateAbbr || null,
+    date_of_birth: profile.dateOfBirth || null,
+    ranking: profile.ranking ? Number(profile.ranking) : null,
+    club_name: profile.clubName || null,
+    bio: profile.bio || null,
+  };
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .upsert(row, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToProfile(data);
+}
+
+export async function searchPlayers(query) {
+  // Search by display_name or aita_reg — returns players only
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, aita_reg, state_abbr, ranking, club_name')
+    .eq('role', 'player')
+    .or(`display_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
+    .limit(10);
+  if (error) throw new Error(error.message);
+  return data.map(rowToProfile);
+}
+
+// ---------------------------------------------------------------------------
+// Coach ↔ Player Links
+// ---------------------------------------------------------------------------
+
+function rowToLink(row) {
+  return {
+    id: row.id,
+    coachId: row.coach_id,
+    playerId: row.player_id,
+    status: row.status,
+    createdAt: row.created_at,
+    // joined profile data
+    coach: row.coach ? rowToProfile(row.coach) : null,
+    player: row.player ? rowToProfile(row.player) : null,
+  };
+}
+
+export async function sendCoachRequest(coachId, playerId) {
+  const { data, error } = await supabase
+    .from('coach_player_links')
+    .insert({ coach_id: coachId, player_id: playerId, status: 'pending' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLink(data);
+}
+
+export async function getCoachLinks(userId) {
+  // Returns all links where user is either coach or player, with the other party's profile
+  const { data, error } = await supabase
+    .from('coach_player_links')
+    .select(`
+      id, coach_id, player_id, status, created_at,
+      coach:user_profiles!coach_player_links_coach_id_fkey(id, display_name, aita_reg, state_abbr, ranking, club_name, role),
+      player:user_profiles!coach_player_links_player_id_fkey(id, display_name, aita_reg, state_abbr, ranking, club_name, role)
+    `)
+    .or(`coach_id.eq.${userId},player_id.eq.${userId}`)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToLink);
+}
+
+export async function respondToCoachRequest(linkId, status) {
+  const { data, error } = await supabase
+    .from('coach_player_links')
+    .update({ status })
+    .eq('id', linkId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLink(data);
+}
+
+export async function deleteCoachLink(linkId) {
+  const { error } = await supabase
+    .from('coach_player_links')
+    .delete()
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 export async function advanceWinner(tournamentId, drawType, currentRound, currentSlot, winnerEntryId) {
