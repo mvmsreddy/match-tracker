@@ -1,7 +1,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 
-.root { min-height: 100vh; background: #14293D; color: #F3F1E6; font-family: 'Inter', sans-serif; padding-bottom: 50px; }
+.root { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #14293D; color: #F3F1E6; font-family: 'Inter', sans-serif; }
 .wrap { max-width: 680px; margin: 0 auto; padding: 0 16px; }
 .header { padding: 20px 16px 14px; border-bottom: 2px solid #1E3A52; }
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -15,7 +15,7 @@ body { margin: 0; }
 .field select { width: 100%; background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; padding: 7px 8px; border-radius: 2px; font-family: 'Inter'; font-size: 0.82rem; }
 .field select:focus { outline: 2px solid #C6E23D; outline-offset: 1px; }
 
-.scorebar { padding: 12px 16px; border-bottom: 2px solid #1E3A52; position: sticky; top: 0; z-index: 100; background: #14293D; box-shadow: 0 3px 12px rgba(0,0,0,0.45); }
+.scorebar { flex-shrink: 0; padding: 12px 16px; border-bottom: 2px solid #1E3A52; z-index: 100; background: #14293D; box-shadow: 0 3px 12px rgba(0,0,0,0.45); }
 .score-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: 'JetBrains Mono', monospace; }
 .score-names { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; }
 .score-names .self-name { color: #C6E23D; font-weight: 600; }
@@ -25,15 +25,21 @@ body { margin: 0; }
 .score-current { font-size: 2rem; font-weight: 700; color: #F3F1E6; line-height: 1; }
 .server-tag { font-size: 0.62rem; color: #6E8598; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
 
-.wizard { padding: 14px 16px; }
-.wizard-title { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA0B5; margin-bottom: 8px; }
+.wizard { display: flex; flex-direction: column; height: 100%; padding: 8px 16px 6px; }
+.wizard-title { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA0B5; margin-bottom: 8px; flex-shrink: 0; }
 
-/* Step card — highlights the current active step */
-.wizard-step-card { background: #182E42; border: 1px solid #2A4560; border-left: 3px solid #C6E23D; border-radius: 5px; padding: 16px 14px; margin-bottom: 12px; }
-.wizard-step-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #C6E23D; margin-bottom: 12px; }
+/* Step card — highlights the current active step, grows to fill wizard */
+.wizard-step-card { flex: 1; display: flex; flex-direction: column; min-height: 0; background: #182E42; border: 1px solid #2A4560; border-left: 3px solid #C6E23D; border-radius: 5px; padding: 14px 14px 12px; margin-bottom: 8px; }
+.wizard-step-label { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #C6E23D; margin-bottom: 10px; }
 
 /* Breadcrumb showing completed choices */
-.wizard-breadcrumb { font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: #7FA0B5; padding: 6px 0 10px; margin-bottom: 6px; border-bottom: 1px solid #1E3A52; line-height: 1.5; word-break: break-word; }
+.wizard-breadcrumb { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: #7FA0B5; padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid #1E3A52; line-height: 1.5; word-break: break-word; }
+
+/* wizard-grow: applied to the main content element inside each step to make it expand */
+.wizard-grow { flex: 1; min-height: 0; }
+.ball-in-play-grid.wizard-grow { align-items: stretch; }
+.chip-row.wizard-grow { flex-wrap: nowrap; align-items: stretch; flex: 1; min-height: 0; }
+.chip-row.wizard-grow .chip { flex: 1 1 0; min-height: 60px; font-size: 1rem; }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
 .chip { background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; padding: 10px 14px; border-radius: 20px; font-family: 'Inter'; font-size: 0.8rem; cursor: pointer; user-select: none; }
@@ -75,7 +81,9 @@ body { margin: 0; }
 
 /* Ball in play: two player columns */
 .ball-in-play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.player-col { display: flex; flex-direction: column; gap: 8px; }
+.player-col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+/* Chips inside player columns grow to fill available height */
+.player-col .chip-lg { flex: 1; min-height: 52px; max-height: 160px; }
 .player-col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 8px; border-bottom: 1px solid #2C4C68; margin-bottom: 2px; }
 .player-col-name.self-name { color: #C6E23D; }
 .player-col-name.opp-name { color: #E37B6B; }
@@ -103,7 +111,7 @@ body { margin: 0; }
 
 .toggle-inline { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #9FB0BE; }
 .toggle-inline .chip { padding: 7px 14px; font-size: 0.74rem; }
-.undo-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.undo-bar { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
 .undo-btn { background: none; border: 1px solid #2C4C68; color: #9FB0BE; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; padding: 8px 14px; border-radius: 3px; cursor: pointer; }
 .undo-btn:hover:not(:disabled) { border-color: #C6E23D; color: #C6E23D; }
 .undo-btn:disabled { opacity: 0.3; }
@@ -240,11 +248,11 @@ body { margin: 0; }
 /* ================================================
    TAB BAR
    ================================================ */
-.tab-bar { display: flex; border-bottom: 2px solid #1E3A52; max-width: 680px; margin: 0 auto; padding: 0 16px; gap: 0; }
+.tab-bar { flex-shrink: 0; display: flex; border-bottom: 2px solid #1E3A52; max-width: 680px; margin: 0 auto; width: 100%; padding: 0 16px; gap: 0; }
 .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #7FA0B5; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 20px; cursor: pointer; touch-action: manipulation; transition: color 0.15s, border-color 0.15s; }
 .tab-btn:hover { color: #F3F1E6; }
 .tab-btn.active { color: #C6E23D; border-bottom-color: #C6E23D; font-weight: 600; }
-.tab-content { /* no extra styles needed — child components handle padding */ }
+.tab-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; }
 
 @media (max-width: 520px) {
   .tab-bar { padding: 0 4px; }

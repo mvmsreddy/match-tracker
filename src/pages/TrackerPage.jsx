@@ -54,7 +54,7 @@ export default function TrackerPage() {
           onClick={() => setActiveTab('track')}
           disabled={!t.matchStarted}
         >
-          ● Track
+          ● Live Track
         </button>
         <button
           className={'tab-btn' + (activeTab === 'stats' ? ' active' : '')}

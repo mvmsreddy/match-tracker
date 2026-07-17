@@ -166,7 +166,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {activeStep === 'serviceScreen' && (
           <>
             <div className="wizard-step-label">{serveLabel}</div>
-            <div className="ball-in-play-grid">
+            <div className="ball-in-play-grid wizard-grow">
               {/* Left column: always self */}
               <div className="player-col">
                 <div className={colClass('self')}>{playerName('self')}</div>
@@ -237,7 +237,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                 <div className={colClass('opp')}>{playerName('opp')}</div>
               </div>
             </div>
-            <div className="chip-row chip-grid-rally">
+            <div className="chip-row chip-grid-rally wizard-grow">
               {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <div
                   key={n}
@@ -255,7 +255,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {activeStep === 'ballInPlay' && (
           <>
             <div className="wizard-step-label">Ball in Play</div>
-            <div className="ball-in-play-grid">
+            <div className="ball-in-play-grid wizard-grow">
               {(['self', 'opp']).map((who) => (
                 <div key={who} className="player-col">
                   <div className={colClass(who)}>
@@ -281,7 +281,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           return (
             <>
               <div className="wizard-step-label">Select Wing</div>
-              <div className="ball-in-play-grid">
+              <div className="ball-in-play-grid wizard-grow">
                 <div className="player-col">
                   <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && (
@@ -310,7 +310,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           return (
             <>
               <div className="wizard-step-label">{pending.shotWing} — Select Shot</div>
-              <div className="ball-in-play-grid">
+              <div className="ball-in-play-grid wizard-grow">
                 <div className="player-col">
                   <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && SHOT_TYPES.map((type) => (
