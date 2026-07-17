@@ -112,6 +112,7 @@ export function useMatchTracker() {
   }, []);
 
   const setSessionType = useCallback((type) => {
+    setGameTransition(null);
     setState((prev) => {
       if (prev.sessionType === type) return prev;
       return { ...prev, sessionType: type, points: [], serverChoice: 'self', serverExplicitlyChosen: false, matchStartTime: null, matchEndTime: null };
@@ -214,6 +215,7 @@ export function useMatchTracker() {
 
   const resetMatch = useCallback(() => {
     if (user) { sessionClearedRef.current = true; clearSession(user.id); }
+    setGameTransition(null);
     setState((prev) => ({
       ...initialState(),
       header: prev.header,

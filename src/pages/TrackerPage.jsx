@@ -105,6 +105,17 @@ export default function TrackerPage() {
               onUndo={() => { t.undoLast(); }}
               canUndo={t.points.length > 0}
             />
+          ) : t.engine.matchOver ? (
+            <MatchOverBlock
+              sessionType={t.sessionType}
+              selfName={t.header.selfName || 'You'}
+              oppName={t.header.oppName || 'Opponent'}
+              winner={t.engine.matchWinner}
+              onUndo={t.undoLast}
+              canUndo={t.points.length > 0}
+              onGoStats={() => setActiveTab('stats')}
+              onGoClose={() => setActiveTab('close')}
+            />
           ) : (
             <>
               {!t.serverExplicitlyChosen && (
@@ -362,6 +373,30 @@ function SetupForm({ t, onStart }) {
         {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
       </button>
       {!canStart && <p className="setup-hint">Enter your name to continue</p>}
+    </div>
+  );
+}
+
+// ── Static block shown when match/session is over and wizard must be frozen ──
+function MatchOverBlock({ sessionType, selfName, oppName, winner, onUndo, canUndo, onGoStats, onGoClose }) {
+  const isPractice = sessionType === 'practice';
+  const winnerName = winner === 'self' ? selfName : oppName;
+  return (
+    <div className="match-over-block">
+      <div className="match-over-block-title">
+        {isPractice ? 'Session complete' : 'Match complete'}
+      </div>
+      <div className="match-over-block-winner">
+        <span className={winner === 'self' ? 'self-name' : 'opp-name'}>{winnerName}</span>
+        {isPractice ? ' wins the session' : ' wins'}
+      </div>
+      <div className="match-over-block-actions">
+        <button className="action-btn" onClick={onGoStats}>View Stats</button>
+        {!isPractice && <button className="action-btn" onClick={onGoClose}>Close Match</button>}
+      </div>
+      <button className="undo-btn" style={{ marginTop: 8 }} disabled={!canUndo} onClick={onUndo}>
+        ↩ Undo last point
+      </button>
     </div>
   );
 }
