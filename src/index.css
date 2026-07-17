@@ -68,6 +68,35 @@ body { margin: 0; }
 /* 7-column grid for rally length */
 .chip-grid-rally .chip { flex: 1 1 0; min-width: 44px; }
 
+/* Service screen grid: Ace full-width, then pairs */
+.chip-grid-service { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-grid-service .chip { flex: 1 1 calc(50% - 4px); min-width: 0; }
+.chip-grid-service .chip-full { flex: 1 1 100%; }
+
+/* Ball in play: two player columns */
+.ball-in-play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.player-col { display: flex; flex-direction: column; gap: 8px; }
+.player-col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 8px; border-bottom: 1px solid #2C4C68; margin-bottom: 2px; }
+.player-col-name.self-name { color: #C6E23D; }
+.player-col-name.opp-name { color: #E37B6B; }
+
+/* Forced error chip — neutral amber */
+.chip.chip-forced { border-color: #B8922A; color: #D4A843; }
+.chip.chip-forced:hover { background: #251E0E; border-color: #D4A843; }
+
+/* Let chip — subtle secondary style (rare action) */
+.chip.chip-let { border-color: #2C4C68; color: #6E8598; font-size: 0.76rem; }
+.chip.chip-let:hover { border-color: #7FA0B5; color: #9FB0BE; }
+
+/* Rally counter footer */
+.rally-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2C4C68; }
+.rally-footer-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6E8598; }
+.rally-counter { display: flex; align-items: center; gap: 8px; }
+.rally-count { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: #F3F1E6; min-width: 28px; text-align: center; }
+.rally-btn { background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; width: 32px; height: 32px; border-radius: 4px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.rally-btn:hover:not(:disabled) { border-color: #C6E23D; color: #C6E23D; }
+.rally-btn:disabled { opacity: 0.3; cursor: default; }
+
 /* Server toggle */
 .server-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
 .server-chip { flex: 1; text-align: center; min-height: 46px; border-radius: 6px; font-size: 0.87rem; }

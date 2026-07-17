@@ -113,7 +113,7 @@ export function computeErrorLocations(points, player) {
 }
 
 export function computeRallyBreakdown(points, server) {
-  const bucketIdx = (r) => (r >= 7 ? 6 : (r - 1));
+  const bucketIdx = (r) => (r <= 0 ? 0 : r >= 7 ? 6 : r - 1);
   const serverEnded = { green: new Array(7).fill(0), red: new Array(7).fill(0) };
   const receiverEnded = { green: new Array(7).fill(0), red: new Array(7).fill(0) };
   points.filter((pt) => pt.server === server && pt.reason !== 'DoubleFault').forEach((pt) => {

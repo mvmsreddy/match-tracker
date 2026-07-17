@@ -1,31 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
-import { LOCATIONS } from '../lib/constants';
-import {
-  freshPending, buildPointEntry, strokeOptionsFor, outcomeReason, OUTCOME_OPTIONS,
-} from '../lib/wizardLogic';
+import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 
-const RALLY_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
+const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
-function outcomeChipClass(value) {
-  return ['self-winner', 'self-forced', 'opp-unforced'].includes(value) ? 'self-pt' : 'opp-pt';
-}
+// Steps that need the rally footer counter
+const RALLY_FOOTER_STEPS = new Set(['ballInPlay', 'shotWing', 'shotType', 'otherSubType']);
 
-/** Combines shot type + side into a single tap. Serve stays standalone. */
-function buildStrokeOptions(strokeOpts) {
-  const result = [];
-  for (const type of strokeOpts) {
-    if (type === 'Serve') {
-      result.push({ label: 'Serve', shotType: 'Serve', side: null, stroke: 'Serve', fullWidth: true });
-    } else {
-      const short = type === 'Passing Shot' ? 'Pass' : type === 'Dropshot' ? 'Drop' : type;
-      result.push({ label: short + ' FH', shotType: type, side: 'Forehand', stroke: type + ' Forehand', fullWidth: false });
-      result.push({ label: short + ' BH', shotType: type, side: 'Backhand', stroke: type + ' Backhand', fullWidth: false });
-    }
+function getActiveStep(pending) {
+  if (!pending.serviceChoice) return 'serviceScreen';
+  if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
+  if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
+  const needsShot = pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn';
+  if (needsShot && !pending.stroke) {
+    if (!pending.shotWing) return 'shotWing';
+    if (pending.shotWing === 'Other') return 'otherSubType';
+    return 'shotType';
   }
-  return result;
+  return null;
 }
 
-export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, canUndo }) {
+function shotLabel(type) {
+  if (type === 'Passing Shot') return 'Pass';
+  if (type === 'Dropshot') return 'Drop';
+  return type;
+}
+
+export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, canUndo, selfName, oppName }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
@@ -34,32 +35,7 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     setPending((p) => (p.server === nextServer ? p : freshPending(nextServer)));
   }, [nextServer]);
 
-  // Derive active step first so we can use it in the scroll effect
-  const { opts: strokeOpts, endedBy } = pending.outcome
-    ? strokeOptionsFor(pending.outcome, pending.server)
-    : { opts: [], endedBy: null };
-  const isReceiverShot = pending.outcome ? endedBy !== pending.server : false;
-  const reason = pending.outcome ? outcomeReason(pending.outcome) : null;
-  const showReturnToggle = !!(pending.stroke && isReceiverShot && pending.stroke !== 'Serve');
-
-  let activeStep;
-  if (!pending.firstServeChoice) {
-    activeStep = 'firstServe';
-  } else if (pending.firstServeChoice === 'fault' && !pending.firstFaultLocation) {
-    activeStep = 'firstFaultLoc';
-  } else if (pending.firstServeChoice === 'fault' && !pending.secondServeChoice) {
-    activeStep = 'secondServe';
-  } else if (pending.secondServeChoice === 'DF') {
-    activeStep = 'dfLoc';
-  } else if (!pending.outcome) {
-    activeStep = 'outcome';
-  } else if (!pending.stroke) {
-    activeStep = 'stroke';
-  } else if ((reason === 'ForcedError' || reason === 'UnforcedError') && !pending.location) {
-    activeStep = 'location';
-  } else {
-    activeStep = 'rally';
-  }
+  const activeStep = getActiveStep(pending);
 
   useEffect(() => {
     if (activeStep !== prevActiveStep.current) {
@@ -76,95 +52,114 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     setPending(freshPending(server));
   }
 
-  function chooseFirstServe(choice) {
-    if (choice === 'in') {
-      setPending((p) => ({ ...freshPending(p.server), firstServeChoice: 'in', serveResult: '1st' }));
-    } else {
-      setPending((p) => ({ ...freshPending(p.server), firstServeChoice: 'fault' }));
-    }
-  }
-
-  function chooseFirstFaultLocation(loc) {
-    setPending((p) => ({ ...p, firstFaultLocation: loc }));
-  }
-
-  function chooseSecondServe(choice) {
-    if (choice === 'DF') {
-      setPending((p) => ({
-        ...freshPending(p.server),
-        firstServeChoice: p.firstServeChoice, firstFaultLocation: p.firstFaultLocation,
-        secondServeChoice: 'DF', serveResult: 'DF',
-      }));
-    } else {
-      setPending((p) => ({
-        ...freshPending(p.server),
-        firstServeChoice: p.firstServeChoice, firstFaultLocation: p.firstFaultLocation,
-        secondServeChoice: '2nd', serveResult: '2nd',
-      }));
-    }
-  }
-
-  function chooseDfLocation(loc) {
-    const entry = buildPointEntry({ ...pending, dfLocation: loc });
+  function commitAndReset(extra) {
+    const entry = buildPointEntry({ ...pending, ...extra });
     onCommit(entry);
     setPending(freshPending(pending.server));
   }
 
-  function chooseOutcome(outcome) {
-    setPending((p) => ({ ...p, outcome, shotType: null, side: null, stroke: null, isReturn: false, location: null, rally: null }));
+  // ── Service screen ───────────────────────────────────────────────────────
+
+  function handleAce() {
+    commitAndReset({ serviceChoice: 'ace' });
   }
 
-  function chooseStroke(shotType, side) {
-    const stroke = side ? shotType + ' ' + side : shotType;
-    setPending((p) => ({ ...p, shotType, side, stroke }));
+  function handleFault() {
+    if (pending.serveAttempt === '1st') {
+      setPending((p) => ({ ...freshPending(p.server), serveAttempt: '2nd' }));
+    } else {
+      commitAndReset({ serviceChoice: 'doubleFault' });
+    }
   }
 
-  function toggleReturn() {
-    setPending((p) => ({ ...p, isReturn: !p.isReturn }));
+  // Let: repeats the same serve attempt — no DB write, no state change
+  function handleLet() {
+    setPending((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt }));
   }
 
-  function chooseLocation(loc) {
-    setPending((p) => ({ ...p, location: loc }));
+  function handleReturnWinner() {
+    setPending((p) => ({ ...p, serviceChoice: 'returnWinner' }));
   }
 
-  function chooseRally(n) {
-    const entry = buildPointEntry({ ...pending, rally: n });
-    onCommit(entry);
-    setPending(freshPending(pending.server));
+  function handleReturnError() {
+    setPending((p) => ({ ...p, serviceChoice: 'returnError' }));
   }
 
-  // Build breadcrumb summary of completed choices
-  const summaryParts = [];
-  if (pending.firstServeChoice === 'in') {
-    summaryParts.push('1st in');
-  } else if (pending.firstServeChoice === 'fault') {
-    summaryParts.push('1st fault' + (pending.firstFaultLocation ? ' · ' + pending.firstFaultLocation : ''));
-    if (pending.secondServeChoice === '2nd') summaryParts.push('2nd in');
-    else if (pending.secondServeChoice === 'DF') summaryParts.push('Double Fault');
+  function handleBallIn() {
+    setPending((p) => ({ ...p, serviceChoice: 'ballIn' }));
   }
-  if (pending.outcome) {
-    const lbl = OUTCOME_OPTIONS.find((o) => o.value === pending.outcome)?.label;
-    if (lbl) summaryParts.push(lbl);
+
+  // ── Return error type ────────────────────────────────────────────────────
+
+  function handleReturnErrorReason(reason) {
+    commitAndReset({ returnErrorReason: reason });
   }
-  if (pending.stroke) summaryParts.push(pending.stroke);
-  if (pending.location) summaryParts.push(pending.location);
 
-  const strokeOptions = strokeOpts.length ? buildStrokeOptions(strokeOpts) : [];
+  // ── Ball in play ─────────────────────────────────────────────────────────
 
-  const stepLabels = {
-    firstServe: 'First serve',
-    firstFaultLoc: '1st serve — where?',
-    secondServe: 'Second serve',
-    dfLoc: '2nd serve — where?',
-    outcome: 'What happened?',
-    stroke: 'Shot type',
-    location: 'Error location',
-    rally: 'Rally length (shots)',
-  };
+  function handleBallInOutcome(who, reason) {
+    setPending((p) => ({ ...p, ballInWho: who, ballInReason: reason }));
+  }
+
+  // ── Shot wing ────────────────────────────────────────────────────────────
+
+  function handleShotWing(wing) {
+    setPending((p) => ({ ...p, shotWing: wing }));
+  }
+
+  // ── Shot type ────────────────────────────────────────────────────────────
+
+  function handleShotType(type) {
+    const stroke = type + ' ' + pending.shotWing;
+    if (pending.serviceChoice === 'returnWinner') {
+      commitAndReset({ shotType: type, stroke });
+    } else {
+      setPending((p) => ({ ...p, shotType: type, stroke }));
+    }
+  }
+
+  // ── Other sub-type (infraction / non-stroke) ─────────────────────────────
+
+  function handleOtherSubType(subType) {
+    if (pending.serviceChoice === 'returnWinner') {
+      commitAndReset({ shotType: subType, stroke: subType });
+    } else {
+      commitAndReset({ shotType: subType, stroke: subType });
+    }
+  }
+
+  // ── Rally counter (footer) ───────────────────────────────────────────────
+
+  function decrementRally() {
+    setPending((p) => ({ ...p, rallyCount: Math.max(2, p.rallyCount - 1) }));
+  }
+
+  function incrementRally() {
+    setPending((p) => ({ ...p, rallyCount: Math.min(7, p.rallyCount + 1) }));
+  }
+
+  // ── Display helpers ──────────────────────────────────────────────────────
+
+  const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
+  const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
+
+  const breadcrumbs = [];
+  if (pending.serveAttempt === '2nd' && !pending.serviceChoice) breadcrumbs.push('Fault → 2nd Serve');
+  if (pending.serviceChoice === 'ballIn') {
+    breadcrumbs.push('Ball In');
+    if (pending.ballInReason) breadcrumbs.push(playerName(pending.ballInWho) + ': ' + pending.ballInReason);
+  } else if (pending.serviceChoice === 'returnWinner') {
+    breadcrumbs.push('Return Winner');
+  } else if (pending.serviceChoice === 'returnError') {
+    breadcrumbs.push('Return Error');
+  }
+  if (pending.shotWing && pending.shotWing !== 'Other') breadcrumbs.push(pending.shotWing);
+
+  const showRallyFooter = RALLY_FOOTER_STEPS.has(activeStep);
 
   return (
     <div className="wizard">
-      {/* Server toggle — always visible at top */}
+      {/* Server toggle */}
       <div className="server-toggle">
         <div className={'chip server-chip' + (pending.server === 'self' ? ' selected' : '')} onClick={() => chooseServer('self')}>
           Self serving
@@ -174,112 +169,131 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
         </div>
       </div>
 
-      {/* Breadcrumb — shows what's been logged so far */}
-      {summaryParts.length > 0 && (
-        <div className="wizard-breadcrumb">
-          {summaryParts.join(' → ')}
-        </div>
+      {/* Breadcrumb */}
+      {breadcrumbs.length > 0 && (
+        <div className="wizard-breadcrumb">{breadcrumbs.join(' → ')}</div>
       )}
 
-      {/* Active step card — only the current step */}
+      {/* Active step card */}
       <div className="wizard-step-card" ref={stepCardRef}>
-        <div className="wizard-step-label">{stepLabels[activeStep]}</div>
 
-        {activeStep === 'firstServe' && (
-          <div className="chip-row">
-            <div className="chip chip-lg chip-action" onClick={() => chooseFirstServe('in')}>1st in ✓</div>
-            <div className="chip chip-lg warn" onClick={() => chooseFirstServe('fault')}>Fault</div>
-          </div>
-        )}
-
-        {activeStep === 'firstFaultLoc' && (
-          <div className="chip-row">
-            {LOCATIONS.map((loc) => (
-              <div key={loc} className="chip chip-lg" onClick={() => chooseFirstFaultLocation(loc)}>{loc}</div>
-            ))}
-          </div>
-        )}
-
-        {activeStep === 'secondServe' && (
-          <div className="chip-row">
-            <div className="chip chip-lg chip-action" onClick={() => chooseSecondServe('2nd')}>2nd in ✓</div>
-            <div className="chip chip-lg warn" onClick={() => chooseSecondServe('DF')}>Double Fault</div>
-          </div>
-        )}
-
-        {activeStep === 'dfLoc' && (
-          <div className="chip-row">
-            {LOCATIONS.map((loc) => (
-              <div key={loc} className="chip chip-lg" onClick={() => chooseDfLocation(loc)}>{loc}</div>
-            ))}
-          </div>
-        )}
-
-        {activeStep === 'outcome' && (
-          <div className="chip-row chip-grid-2">
-            {OUTCOME_OPTIONS.map((o) => (
-              <div
-                key={o.value}
-                className={'chip chip-lg ' + outcomeChipClass(o.value)}
-                onClick={() => chooseOutcome(o.value)}
-              >
-                {o.label}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeStep === 'stroke' && (
-          <div className="chip-row chip-grid-2">
-            {strokeOptions.map((s, i) => (
-              <div
-                key={i}
-                className={'chip chip-lg' + (s.fullWidth ? ' chip-full' : '')}
-                onClick={() => chooseStroke(s.shotType, s.side)}
-              >
-                {s.label}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeStep === 'location' && (
+        {activeStep === 'serviceScreen' && (
           <>
-            {showReturnToggle && (
-              <div className="toggle-inline" style={{ marginBottom: 12 }}>
-                <span>Return of serve?</span>
-                <div className={'chip' + (pending.isReturn ? ' selected' : '')} onClick={toggleReturn}>
-                  {pending.isReturn ? 'Yes ✓' : 'No'}
-                </div>
+            <div className="wizard-step-label">{serveLabel}</div>
+            <div className="chip-row chip-grid-service">
+              <div className="chip chip-lg chip-action chip-full" onClick={handleAce}>
+                Ace
               </div>
-            )}
+              <div className="chip chip-lg warn" onClick={handleFault}>
+                {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
+              </div>
+              <div className="chip chip-lg" onClick={handleBallIn}>
+                Ball In
+              </div>
+              <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>
+                Return Winner
+              </div>
+              <div className="chip chip-lg warn" onClick={handleReturnError}>
+                Return Error
+              </div>
+            </div>
+            <div className="chip-row" style={{ marginTop: 8 }}>
+              <div className="chip chip-lg chip-let chip-full" onClick={handleLet}>
+                Let — Replay {pending.serveAttempt} Serve
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeStep === 'returnErrorType' && (
+          <>
+            <div className="wizard-step-label">Return Error — Forced or Unforced?</div>
             <div className="chip-row">
-              {LOCATIONS.map((loc) => (
-                <div key={loc} className="chip chip-lg" onClick={() => chooseLocation(loc)}>{loc}</div>
+              <div className="chip chip-lg chip-full" onClick={() => handleReturnErrorReason('ForcedError')}>
+                Forced Error
+              </div>
+              <div className="chip chip-lg warn chip-full" onClick={() => handleReturnErrorReason('UnforcedError')}>
+                Unforced Error
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeStep === 'ballInPlay' && (
+          <>
+            <div className="wizard-step-label">Ball in Play</div>
+            <div className="ball-in-play-grid">
+              {(['self', 'opp']).map((who) => (
+                <div key={who} className="player-col">
+                  <div className={'player-col-name ' + (who === 'self' ? 'self-name' : 'opp-name')}>
+                    {playerName(who)}
+                  </div>
+                  <div className="chip chip-lg self-pt" onClick={() => handleBallInOutcome(who, 'Winner')}>
+                    Winner
+                  </div>
+                  <div className="chip chip-lg chip-forced" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
+                    Forced Error
+                  </div>
+                  <div className="chip chip-lg warn" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
+                    Unforced Error
+                  </div>
+                </div>
               ))}
             </div>
           </>
         )}
 
-        {activeStep === 'rally' && (
+        {activeStep === 'shotWing' && (
           <>
-            {showReturnToggle && (
-              <div className="toggle-inline" style={{ marginBottom: 12 }}>
-                <span>Return of serve?</span>
-                <div className={'chip' + (pending.isReturn ? ' selected' : '')} onClick={toggleReturn}>
-                  {pending.isReturn ? 'Yes ✓' : 'No'}
-                </div>
-              </div>
-            )}
-            <div className="chip-row chip-grid-rally">
-              {RALLY_OPTIONS.map((n) => (
-                <div key={n} className="chip chip-lg" onClick={() => chooseRally(n)}>
-                  {n === 7 ? '7+' : n}
+            <div className="wizard-step-label">Select Wing</div>
+            <div className="chip-row">
+              <div className="chip chip-lg" onClick={() => handleShotWing('Forehand')}>Forehand</div>
+              <div className="chip chip-lg" onClick={() => handleShotWing('Backhand')}>Backhand</div>
+            </div>
+            <div className="chip-row" style={{ marginTop: 8 }}>
+              <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Other')}>Other / Infraction</div>
+            </div>
+          </>
+        )}
+
+        {activeStep === 'shotType' && (
+          <>
+            <div className="wizard-step-label">Shot Type · {pending.shotWing}</div>
+            <div className="chip-row chip-grid-2">
+              {SHOT_TYPES.map((type) => (
+                <div key={type} className="chip chip-lg" onClick={() => handleShotType(type)}>
+                  {shotLabel(type)}
                 </div>
               ))}
             </div>
           </>
         )}
+
+        {activeStep === 'otherSubType' && (
+          <>
+            <div className="wizard-step-label">Infraction Type</div>
+            <div className="chip-row chip-grid-2">
+              {OTHER_SUB_TYPES.map((sub) => (
+                <div key={sub} className="chip chip-lg" onClick={() => handleOtherSubType(sub)}>
+                  {sub}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Rally counter footer — shown during all Ball In steps */}
+        {showRallyFooter && (
+          <div className="rally-footer">
+            <span className="rally-footer-label">Rally</span>
+            <div className="rally-counter">
+              <button className="rally-btn" onClick={decrementRally} disabled={pending.rallyCount <= 2}>−</button>
+              <span className="rally-count">{pending.rallyCount >= 7 ? '7+' : pending.rallyCount}</span>
+              <button className="rally-btn" onClick={incrementRally} disabled={pending.rallyCount >= 7}>+</button>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <div className="undo-bar">

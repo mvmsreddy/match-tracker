@@ -55,6 +55,7 @@ export default function TrackerPage() {
           <Wizard
             nextServer={t.nextServer} onServerChange={t.setServerChoice}
             onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+            selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
           />
           <div className="wrap"><div className="status-msg">{t.status}</div></div>
           <ActionButtons
