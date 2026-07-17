@@ -5,7 +5,7 @@ import {
 function fmtRatio(r) { return r === Infinity ? '\u221e' : r.toFixed(2); }
 function fmtPct(p) { return p.toFixed(1) + '%'; }
 
-export default function StatsPanel({ points, header, sessionType, analytics }) {
+export default function StatsPanel({ points, header, sessionType, analytics, section }) {
   const selfName = header.selfName || 'Self';
   const oppName = header.oppName || 'Opponent';
   const isMatch = sessionType !== 'practice';
@@ -19,21 +19,8 @@ export default function StatsPanel({ points, header, sessionType, analytics }) {
   const rs = computeReturnStats(points, 'self');
   const ro = computeReturnStats(points, 'opp');
 
-  return (
-    <>
-      <div className="panel">
-        <h2 className="panel-title">Match Totals</h2>
-        <table className="stat-table">
-          <tbody>
-            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
-            <tr><td>Winners/Forced Errors</td><td className="self-col">{totals.self.wfe}</td><td className="opp-col">{totals.opp.wfe}</td></tr>
-            <tr><td>Unforced Errors</td><td className="self-col">{totals.self.ue}</td><td className="opp-col">{totals.opp.ue}</td></tr>
-            <tr><td>Ratio</td><td className="self-col">{fmtRatio(totals.self.ratio)}</td><td className="opp-col">{fmtRatio(totals.opp.ratio)}</td></tr>
-            <tr><td>Points Won</td><td className="self-col">{totals.self.pointCount}</td><td className="opp-col">{totals.opp.pointCount}</td></tr>
-          </tbody>
-        </table>
-      </div>
-
+  if (section === 'shots') {
+    return (
       <div className="panel">
         <h2 className="panel-title">Shot Stats &middot; Self</h2>
         <div className="bar-chart">
@@ -49,6 +36,23 @@ export default function StatsPanel({ points, header, sessionType, analytics }) {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="panel">
+        <h2 className="panel-title">Match Totals</h2>
+        <table className="stat-table">
+          <tbody>
+            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
+            <tr><td>Winners/Forced Errors</td><td className="self-col">{totals.self.wfe}</td><td className="opp-col">{totals.opp.wfe}</td></tr>
+            <tr><td>Unforced Errors</td><td className="self-col">{totals.self.ue}</td><td className="opp-col">{totals.opp.ue}</td></tr>
+            <tr><td>Ratio</td><td className="self-col">{fmtRatio(totals.self.ratio)}</td><td className="opp-col">{fmtRatio(totals.opp.ratio)}</td></tr>
+            <tr><td>Points Won</td><td className="self-col">{totals.self.pointCount}</td><td className="opp-col">{totals.opp.pointCount}</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div className="panel">

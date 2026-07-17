@@ -128,16 +128,6 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     }
   }
 
-  // ── Rally counter (footer) ───────────────────────────────────────────────
-
-  function decrementRally() {
-    setPending((p) => ({ ...p, rallyCount: Math.max(2, p.rallyCount - 1) }));
-  }
-
-  function incrementRally() {
-    setPending((p) => ({ ...p, rallyCount: Math.min(7, p.rallyCount + 1) }));
-  }
-
   // ── Display helpers ──────────────────────────────────────────────────────
 
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
@@ -286,10 +276,17 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
         {showRallyFooter && (
           <div className="rally-footer">
             <span className="rally-footer-label">Rally</span>
-            <div className="rally-counter">
-              <button className="rally-btn" onClick={decrementRally} disabled={pending.rallyCount <= 2}>−</button>
-              <span className="rally-count">{pending.rallyCount >= 7 ? '7+' : pending.rallyCount}</span>
-              <button className="rally-btn" onClick={incrementRally} disabled={pending.rallyCount >= 7}>+</button>
+            <div className="chip-row chip-grid-rally" style={{ margin: 0, flex: 1 }}>
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <div
+                  key={n}
+                  className={'chip' + (pending.rallyCount === n ? ' selected' : '')}
+                  style={{ textAlign: 'center', padding: '6px 4px', fontSize: '0.82rem' }}
+                  onClick={() => setPending((p) => ({ ...p, rallyCount: n }))}
+                >
+                  {n === 7 ? '7+' : n}
+                </div>
+              ))}
             </div>
           </div>
         )}

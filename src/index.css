@@ -89,13 +89,8 @@ body { margin: 0; }
 .chip.chip-let:hover { border-color: #7FA0B5; color: #9FB0BE; }
 
 /* Rally counter footer */
-.rally-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2C4C68; }
-.rally-footer-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6E8598; }
-.rally-counter { display: flex; align-items: center; gap: 8px; }
-.rally-count { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: #F3F1E6; min-width: 28px; text-align: center; }
-.rally-btn { background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; width: 32px; height: 32px; border-radius: 4px; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
-.rally-btn:hover:not(:disabled) { border-color: #C6E23D; color: #C6E23D; }
-.rally-btn:disabled { opacity: 0.3; cursor: default; }
+.rally-footer { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2C4C68; }
+.rally-footer-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: #6E8598; white-space: nowrap; }
 
 /* Server toggle */
 .server-toggle { display: flex; gap: 8px; margin-bottom: 12px; }

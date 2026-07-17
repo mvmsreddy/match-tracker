@@ -178,7 +178,7 @@ export function useMatchTracker() {
   }, []);
 
   const markSaved = useCallback(() => {
-    setState((prev) => ({ ...prev, matchSaved: true }));
+    setState((prev) => ({ ...prev, matchSaved: true, matchEndTime: prev.matchEndTime || Date.now() }));
   }, []);
 
   const startMatch = useCallback(() => {
@@ -193,9 +193,8 @@ export function useMatchTracker() {
   }, []);
 
   const resetMatch = useCallback(() => {
-    setState((prev) => ({ ...prev, points: [], serverChoice: 'self', matchStartTime: null, matchEndTime: null, matchSaved: false, matchStarted: false }));
+    setState(initialState());
     if (user) clearSession(user.id);
-    showStatus('Match reset');
   }, [user]);
 
   const formatLabel = state.formatPreset === 'custom'

@@ -19,7 +19,7 @@ export default function TrackerPage() {
 
   // ── Setup phase ──────────────────────────────────────────────────────────
   if (!t.matchStarted) {
-    return <SetupView t={t} />;
+    return <SetupView t={t} onStart={() => { t.startMatch(); setActiveTab('track'); }} />;
   }
 
   // ── Tracking phase ────────────────────────────────────────────────────────
@@ -47,7 +47,17 @@ export default function TrackerPage() {
         >
           Stats
         </button>
+        <button
+          className={'tab-btn' + (activeTab === 'close' ? ' active' : '')}
+          onClick={() => setActiveTab('close')}
+          style={{ color: activeTab === 'close' ? '#C6E23D' : '#E37B6B', borderBottomColor: activeTab === 'close' ? '#C6E23D' : 'transparent' }}
+        >
+          Close Match
+        </button>
       </div>
+
+      {/* Global status message */}
+      <div className="wrap" style={{ marginTop: 4 }}><div className="status-msg">{t.status}</div></div>
 
       {/* Track tab */}
       {activeTab === 'track' && (
@@ -56,15 +66,6 @@ export default function TrackerPage() {
             nextServer={t.nextServer} onServerChange={t.setServerChoice}
             onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
             selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-          />
-          <div className="wrap"><div className="status-msg">{t.status}</div></div>
-          <ActionButtons
-            header={t.header} updateHeader={t.updateHeader}
-            sessionType={t.sessionType} formatPreset={t.formatPreset} formatLabel={t.formatLabel}
-            pointTarget={t.pointTarget} points={t.points} engine={t.engine} analytics={t.analytics}
-            matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
-            showStatus={t.showStatus} resetMatch={t.resetMatch}
-            matchSaved={t.matchSaved} markSaved={t.markSaved}
           />
         </div>
       )}
@@ -79,8 +80,27 @@ export default function TrackerPage() {
           />
           <StatsPanel
             points={t.points} header={t.header} sessionType={t.sessionType} analytics={t.analytics}
+            section="main"
           />
           <PointLog points={t.points} header={t.header} />
+          <StatsPanel
+            points={t.points} header={t.header} sessionType={t.sessionType} analytics={t.analytics}
+            section="shots"
+          />
+        </div>
+      )}
+
+      {/* Close Match tab */}
+      {activeTab === 'close' && (
+        <div className="tab-content">
+          <ActionButtons
+            header={t.header} updateHeader={t.updateHeader}
+            sessionType={t.sessionType} formatPreset={t.formatPreset} formatLabel={t.formatLabel}
+            pointTarget={t.pointTarget} points={t.points} engine={t.engine} analytics={t.analytics}
+            matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
+            showStatus={t.showStatus} resetMatch={t.resetMatch}
+            matchSaved={t.matchSaved} markSaved={t.markSaved}
+          />
         </div>
       )}
     </div>
@@ -88,7 +108,7 @@ export default function TrackerPage() {
 }
 
 // ── Setup view ────────────────────────────────────────────────────────────────
-function SetupView({ t }) {
+function SetupView({ t, onStart }) {
   const selfName = t.header.selfName || '';
   const canStart = selfName.trim().length > 0;
 
@@ -225,7 +245,7 @@ function SetupView({ t }) {
         <button
           className="setup-start-btn"
           disabled={!canStart}
-          onClick={t.startMatch}
+          onClick={onStart}
         >
           {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
         </button>
