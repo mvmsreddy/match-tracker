@@ -730,3 +730,25 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .cp-link-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .cp-link-status-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
 .cp-link-status-tag.pending { color: var(--forced-text); }
+
+/* ================================================
+   ROLE SETUP OVERLAY (Google OAuth first login)
+   ================================================ */
+.role-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.role-overlay-card { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.role-overlay-logo { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem; color: var(--accent); margin-bottom: 24px; }
+.role-overlay-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.6rem; margin: 0 0 8px; text-align: center; }
+.role-overlay-sub { font-family: 'Inter', sans-serif; font-size: 0.88rem; color: var(--text3); text-align: center; margin: 0 0 28px; max-width: 420px; line-height: 1.6; }
+.role-overlay-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
+@media (min-width: 560px) { .role-overlay-grid { flex-direction: row; } }
+.role-overlay-card-btn { flex: 1; display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--bg2); border: 2px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.15s; }
+.role-overlay-card-btn:hover { border-color: var(--text3); }
+.role-overlay-card-btn.selected { border-color: var(--accent); background: rgba(198,226,61,0.06); }
+.role-overlay-card-label { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
+.role-overlay-card-btn.selected .role-overlay-card-label { color: var(--accent); }
+.role-overlay-card-desc { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--text2); line-height: 1.5; }
+.role-overlay-card-detail { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 4px; letter-spacing: 0.03em; }
+.role-overlay-confirm { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.role-overlay-confirm:hover:not(:disabled) { opacity: 0.9; }
+.role-overlay-confirm:disabled { opacity: 0.4; cursor: default; }
+.role-overlay-note { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 12px; text-align: center; }

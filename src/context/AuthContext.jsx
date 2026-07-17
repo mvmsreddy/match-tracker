@@ -13,6 +13,7 @@ async function loadFullUser(authUser) {
       ...authUser,
       // profile fields (fall back to auth metadata if profile not created yet)
       role: profile?.role || authUser.role || 'player',
+      roleConfirmed: profile?.roleConfirmed || false,
       displayName: profile?.displayName || authUser.name,
       aitaReg: profile?.aitaReg || null,
       stateAbbr: profile?.stateAbbr || null,

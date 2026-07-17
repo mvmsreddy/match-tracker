@@ -392,6 +392,7 @@ function rowToProfile(row) {
   return {
     id: row.id,
     role: row.role || 'player',
+    roleConfirmed: row.role_confirmed || false,
     displayName: row.display_name,
     aitaReg: row.aita_reg,
     stateAbbr: row.state_abbr,
@@ -421,6 +422,7 @@ export async function upsertProfile(userId, profile) {
   const row = {
     id: userId,
     role: profile.role,
+    role_confirmed: true,          // always true when saved explicitly by the user
     display_name: profile.displayName || null,
     aita_reg: profile.aitaReg || null,
     state_abbr: profile.stateAbbr || null,
