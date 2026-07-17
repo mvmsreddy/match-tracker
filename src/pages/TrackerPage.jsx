@@ -95,6 +95,12 @@ export default function TrackerPage() {
       {/* ── Track tab ── */}
       {activeTab === 'track' && t.matchStarted && (
         <div className="tab-content">
+          <LiveTrackBar
+            selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+            nextServer={t.nextServer} setServerChoice={t.setServerChoice}
+            hasPoints={t.points.length > 0}
+            onDelete={t.resetMatch}
+          />
           <Wizard
             nextServer={t.nextServer}
             onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
@@ -288,19 +294,6 @@ function SetupForm({ t, onStart }) {
         </div>
       </div>
 
-      {/* First server */}
-      <div className="setup-section">
-        <div className="setup-section-label">Who Serves First?</div>
-        <div className="server-toggle" style={{ marginBottom: 0 }}>
-          <div className={'chip server-chip' + (t.nextServer === 'self' ? ' selected' : '')} onClick={() => t.setServerChoice('self')}>
-            {t.header.selfName || 'You'}
-          </div>
-          <div className={'chip server-chip' + (t.nextServer === 'opp' ? ' selected' : '')} onClick={() => t.setServerChoice('opp')}>
-            {t.header.oppName || 'Opponent'}
-          </div>
-        </div>
-      </div>
-
       {/* Session type */}
       <div className="setup-section">
         <div className="setup-section-label">Session Type</div>
@@ -349,6 +342,50 @@ function SetupForm({ t, onStart }) {
         {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
       </button>
       {!canStart && <p className="setup-hint">Enter your name to continue</p>}
+    </div>
+  );
+}
+
+// ── Live Track top bar: server picker + delete ────────────────────────────────
+function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, hasPoints, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  function handleDelete() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    onDelete();
+  }
+
+  return (
+    <div className="live-track-bar">
+      {/* Who serves first — only editable before any point is logged */}
+      <div className="live-track-server">
+        <span className="live-track-label">Serves first</span>
+        <div className="server-toggle" style={{ marginBottom: 0, flex: 1 }}>
+          <div
+            className={'chip server-chip' + (nextServer === 'self' ? ' selected' : '') + (hasPoints ? ' disabled-chip' : '')}
+            onClick={() => !hasPoints && setServerChoice('self')}
+          >
+            {selfName}
+          </div>
+          <div
+            className={'chip server-chip' + (nextServer === 'opp' ? ' selected' : '') + (hasPoints ? ' disabled-chip' : '')}
+            onClick={() => !hasPoints && setServerChoice('opp')}
+          >
+            {oppName}
+          </div>
+        </div>
+      </div>
+
+      {/* Delete match */}
+      {confirmDelete ? (
+        <div className="live-track-confirm">
+          <span className="live-track-confirm-label">Delete this match?</span>
+          <button className="action-btn danger confirming" onClick={handleDelete}>Yes, Delete</button>
+          <button className="action-btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
+        </div>
+      ) : (
+        <button className="live-track-delete-btn" onClick={handleDelete}>✕ Delete Match</button>
+      )}
     </div>
   );
 }
