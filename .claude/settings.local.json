@@ -3,7 +3,8 @@
     "allow": [
       "Bash(xargs ls:*)",
       "Bash(npx vite:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep -oE '#[0-9A-Fa-f]{3,6}' c:/tennis-tracker-react/tennis-tracker-react/src/index.css)"
     ]
   }
 }

@@ -98,14 +98,19 @@ export default function TrackerPage() {
           <LiveTrackBar
             selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
             nextServer={t.nextServer} setServerChoice={t.setServerChoice}
+            serverExplicitlyChosen={t.serverExplicitlyChosen}
             hasPoints={t.points.length > 0}
             onDelete={t.resetMatch}
           />
-          <Wizard
-            nextServer={t.nextServer}
-            onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
-            selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-          />
+          {t.serverExplicitlyChosen ? (
+            <Wizard
+              nextServer={t.nextServer}
+              onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+              selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+            />
+          ) : (
+            <div className="server-required-msg">Select who serves first above to begin tracking</div>
+          )}
         </div>
       )}
 
@@ -347,7 +352,7 @@ function SetupForm({ t, onStart }) {
 }
 
 // ── Live Track top bar: server picker + delete ────────────────────────────────
-function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, hasPoints, onDelete }) {
+function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverExplicitlyChosen, hasPoints, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   function handleDelete() {
@@ -358,8 +363,8 @@ function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, hasPoint
   return (
     <div className="live-track-bar">
       {/* Who serves first — only editable before any point is logged */}
-      <div className="live-track-server">
-        <span className="live-track-label">Serves first</span>
+      <div className={'live-track-server' + (!serverExplicitlyChosen ? ' live-track-server-required' : '')}>
+        <span className={'live-track-label' + (!serverExplicitlyChosen ? ' live-track-label-required' : '')}>Serves first</span>
         <div className="server-toggle" style={{ marginBottom: 0, flex: 1 }}>
           <div
             className={'chip server-chip' + (nextServer === 'self' ? ' selected' : '') + (hasPoints ? ' disabled-chip' : '')}

@@ -26,6 +26,7 @@ function initialState() {
     pointTarget: 10,
     points: [],
     serverChoice: 'self',
+    serverExplicitlyChosen: false,
     matchStartTime: null,
     matchEndTime: null,
     matchSaved: false,
@@ -106,13 +107,13 @@ export function useMatchTracker() {
   }, []);
 
   const setServerChoice = useCallback((server) => {
-    setState((prev) => ({ ...prev, serverChoice: server }));
+    setState((prev) => ({ ...prev, serverChoice: server, serverExplicitlyChosen: true }));
   }, []);
 
   const setSessionType = useCallback((type) => {
     setState((prev) => {
       if (prev.sessionType === type) return prev;
-      return { ...prev, sessionType: type, points: [], serverChoice: 'self', matchStartTime: null, matchEndTime: null };
+      return { ...prev, sessionType: type, points: [], serverChoice: 'self', serverExplicitlyChosen: false, matchStartTime: null, matchEndTime: null };
     });
     showStatus(type === 'practice' ? 'Switched to Practice mode — session reset' : 'Switched to Match mode — session reset');
   }, []);
@@ -219,7 +220,7 @@ export function useMatchTracker() {
     points: state.points,
     matchStarted: state.matchStarted, startMatch,
     commitPoint, undoLast, resetMatch,
-    nextServer, setServerChoice,
+    nextServer, setServerChoice, serverExplicitlyChosen: state.serverExplicitlyChosen,
     engine, analytics,
     matchStartTime: state.matchStartTime, matchDurationMs,
     matchSaved: state.matchSaved, markSaved,
