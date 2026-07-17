@@ -193,7 +193,13 @@ export function useMatchTracker() {
   }, []);
 
   const resetMatch = useCallback(() => {
-    setState(initialState());
+    setState((prev) => ({
+      ...initialState(),
+      header: prev.header,
+      sessionType: prev.sessionType,
+      formatPreset: prev.formatPreset,
+      pointTarget: prev.pointTarget,
+    }));
     if (user) clearSession(user.id);
   }, [user]);
 
