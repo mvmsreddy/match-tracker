@@ -565,6 +565,43 @@ export async function getPlayerWeekParticipation(weekId, aitaReg, excludeEventId
 }
 
 // ---------------------------------------------------------------------------
+// Phase 11 — Player & Coach Dashboards
+// ---------------------------------------------------------------------------
+
+// Cross-event lookup: every draw_entries row (any tournament week) where this
+// player appears as the entrant or as a doubles partner, for a list of AITA
+// reg numbers (1 for a player's own dashboard, N for a coach's linked roster).
+// Same two-query-then-merge shape as getPlayerWeekParticipation above, just
+// without the single-week scope, and enriched with the parent event + week.
+export async function getDrawEntriesForPlayers(aitaRegs) {
+  const regs = [...new Set((aitaRegs || []).filter(Boolean))];
+  if (regs.length === 0) return [];
+
+  const sel = '*, event:events(*, tournament_week:tournament_weeks(*))';
+  const [{ data: asPlayer, error: e1 }, { data: asPartner, error: e2 }] = await Promise.all([
+    supabase.from('draw_entries').select(sel).in('aita_reg', regs),
+    supabase.from('draw_entries').select(sel).in('partner_aita_reg', regs),
+  ]);
+  if (e1) throw new Error(e1.message);
+  if (e2) throw new Error(e2.message);
+
+  const seen = new Set();
+  const rows = [];
+  for (const row of [...(asPlayer || []), ...(asPartner || [])]) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    rows.push(row);
+  }
+
+  return rows.map(row => ({
+    ...rowToEntry(row),
+    event: row.event
+      ? { ...rowToEvent(row.event), week: row.event.tournament_week ? rowToWeek(row.event.tournament_week) : null }
+      : null,
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Event Matches
 // ---------------------------------------------------------------------------
 

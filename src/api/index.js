@@ -76,6 +76,9 @@ export const getQualifyingLosers    = hasSupabaseConfig ? supabaseApi.getQualify
 export const randomizeLuckyLosers   = hasSupabaseConfig ? supabaseApi.randomizeLuckyLosers   : async () => [];
 export const getLuckyLosers         = hasSupabaseConfig ? supabaseApi.getLuckyLosers         : async () => [];
 
+// Phase 11 — Player & Coach Dashboards
+export const getDrawEntriesForPlayers = hasSupabaseConfig ? supabaseApi.getDrawEntriesForPlayers : async () => [];
+
 // Order of Play — Phase 7
 export const getWeekMatches      = hasSupabaseConfig ? supabaseApi.getWeekMatches      : async () => [];
 export const updateMatchSchedule = hasSupabaseConfig ? supabaseApi.updateMatchSchedule : async () => {};
