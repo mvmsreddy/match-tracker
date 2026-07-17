@@ -8,6 +8,7 @@ import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ActionButtons from '../components/ActionButtons';
 import MomentumGraph from '../components/MomentumGraph';
+import { computeStats, computeServeStats } from '../lib/analytics';
 
 const SURFACES = [
   'Acrylic (Hard-Court)', 'Artificial Clay', 'Artificial Grass',
@@ -95,23 +96,36 @@ export default function TrackerPage() {
       {/* ── Track tab ── */}
       {activeTab === 'track' && t.matchStarted && (
         <div className="tab-content">
-          {!t.serverExplicitlyChosen && (
-            <LiveTrackBar
-              selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-              nextServer={t.nextServer} setServerChoice={t.setServerChoice}
-              serverExplicitlyChosen={t.serverExplicitlyChosen}
-              hasPoints={t.points.length > 0}
-            />
-          )}
-          {t.serverExplicitlyChosen ? (
-            <Wizard
-              nextServer={t.nextServer}
-              onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
-              selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-              onDelete={t.resetMatch}
+          {t.gameTransition ? (
+            <GameTransitionCard
+              transition={t.gameTransition}
+              selfName={t.header.selfName || 'You'}
+              oppName={t.header.oppName || 'Opponent'}
+              onContinue={t.clearTransition}
+              onUndo={() => { t.undoLast(); }}
+              canUndo={t.points.length > 0}
             />
           ) : (
-            <div className="server-required-msg">Select who serves first above to begin tracking</div>
+            <>
+              {!t.serverExplicitlyChosen && (
+                <LiveTrackBar
+                  selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                  nextServer={t.nextServer} setServerChoice={t.setServerChoice}
+                  serverExplicitlyChosen={t.serverExplicitlyChosen}
+                  hasPoints={t.points.length > 0}
+                />
+              )}
+              {t.serverExplicitlyChosen ? (
+                <Wizard
+                  nextServer={t.nextServer}
+                  onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                  selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                  onDelete={t.resetMatch}
+                />
+              ) : (
+                <div className="server-required-msg">Select who serves first above to begin tracking</div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -348,6 +362,96 @@ function SetupForm({ t, onStart }) {
         {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
       </button>
       {!canStart && <p className="setup-hint">Enter your name to continue</p>}
+    </div>
+  );
+}
+
+// ── Game / Set / Match transition card with per-game stats ───────────────────
+function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo, canUndo }) {
+  const { type, winner, gamePoints, sets, setGames, nextServer } = transition;
+  const winnerName = winner === 'self' ? selfName : oppName;
+
+  const stats = computeStats(gamePoints);
+  const ss = computeServeStats(gamePoints, 'self');
+  const so = computeServeStats(gamePoints, 'opp');
+
+  let headline, subline, btnLabel;
+  if (type === 'match') {
+    headline = `${winnerName} wins the match!`;
+    subline = sets.map((s) =>
+      s.isMatchTiebreak ? `[${s.tb.self}–${s.tb.opp}]` : `${s.self}–${s.opp}`
+    ).join('  ');
+    btnLabel = 'Continue';
+  } else if (type === 'set') {
+    const last = sets[sets.length - 1];
+    const selfSets = sets.filter((s) => s.self > s.opp).length;
+    const oppSets = sets.filter((s) => s.opp > s.self).length;
+    headline = `Set ${sets.length} to ${winnerName}`;
+    subline = `${last.self}–${last.opp}  ·  Sets: ${selfSets}–${oppSets}`;
+    btnLabel = 'Next Set →';
+  } else {
+    headline = `Game to ${winnerName}`;
+    subline = `${selfName} ${setGames.self}–${setGames.opp} ${oppName}`;
+    btnLabel = 'Next Game →';
+  }
+
+  const hasServeData = ss.totalServicePts > 0 || so.totalServicePts > 0;
+
+  return (
+    <div className="transition-card">
+      <div className="transition-header">
+        <div className={`transition-headline ${winner === 'self' ? 'self-name' : 'opp-name'}`}>
+          {headline}
+        </div>
+        <div className="transition-subline">{subline}</div>
+        {type !== 'match' && nextServer && (
+          <div className="transition-next-server">
+            Serves next:&nbsp;
+            <span className={nextServer === 'self' ? 'self-name' : 'opp-name'}>
+              {nextServer === 'self' ? selfName : oppName}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="transition-stats">
+        <div className="transition-stats-title">This Game</div>
+        <table className="stat-table">
+          <tbody>
+            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
+            <tr><td>Points Won</td><td className="self-col">{stats.self.pointCount}</td><td className="opp-col">{stats.opp.pointCount}</td></tr>
+            <tr><td>Winners / FE</td><td className="self-col">{stats.self.wfe}</td><td className="opp-col">{stats.opp.wfe}</td></tr>
+            <tr><td>Unforced Errors</td><td className="self-col">{stats.self.ue}</td><td className="opp-col">{stats.opp.ue}</td></tr>
+            {hasServeData && (
+              <>
+                <tr><td>1st Serve %</td>
+                  <td className="self-col">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</td>
+                  <td className="opp-col">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</td>
+                </tr>
+                <tr><td>Won on 1st</td>
+                  <td className="self-col">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</td>
+                  <td className="opp-col">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</td>
+                </tr>
+                <tr><td>Won on 2nd</td>
+                  <td className="self-col">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</td>
+                  <td className="opp-col">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</td>
+                </tr>
+                {(ss.aces > 0 || so.aces > 0 || ss.dfs > 0 || so.dfs > 0) && (
+                  <tr><td>Aces / DFs</td>
+                    <td className="self-col">{ss.aces} / {ss.dfs}</td>
+                    <td className="opp-col">{so.aces} / {so.dfs}</td>
+                  </tr>
+                )}
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="transition-actions">
+        <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo</button>
+        <button className="transition-continue-btn" onClick={onContinue}>{btnLabel}</button>
+      </div>
     </div>
   );
 }

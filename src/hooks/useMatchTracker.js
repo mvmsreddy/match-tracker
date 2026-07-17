@@ -38,6 +38,7 @@ export function useMatchTracker() {
   const { user } = useAuth();
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState('');
+  const [gameTransition, setGameTransition] = useState(null);
   const statusTimer = useRef(null);
   const restoredRef = useRef(false);
   const sessionClearedRef = useRef(false);
@@ -138,20 +139,33 @@ export function useMatchTracker() {
    */
   const commitPoint = useCallback((pointData) => {
     setState((prev) => {
-      const priorEngine = computeEngineState(prev.points, {
-        sessionType: prev.sessionType, formatPreset: prev.formatPreset, pointTarget: prev.pointTarget,
-      }, prev.serverChoice);
+      const cfgOpts = { sessionType: prev.sessionType, formatPreset: prev.formatPreset, pointTarget: prev.pointTarget };
+      const priorEngine = computeEngineState(prev.points, cfgOpts, prev.serverChoice);
       const entry = {
         ...pointData,
         set: priorEngine.sets.length + 1,
         game: priorEngine.setGames.self + priorEngine.setGames.opp + 1,
       };
       const newPoints = [...prev.points, entry];
-      const newEngine = computeEngineState(newPoints, {
-        sessionType: prev.sessionType, formatPreset: prev.formatPreset, pointTarget: prev.pointTarget,
-      }, prev.serverChoice);
-      // Attach the human-readable "score after this point" (exactly what the engine returned for it)
+      const newEngine = computeEngineState(newPoints, cfgOpts, prev.serverChoice);
       entry.scoreAfter = newEngine.lastScoreAfter;
+
+      // Detect game / set / match transition
+      const gamePoints = newPoints.filter((p) => p.set === entry.set && p.game === entry.game);
+      if (prev.sessionType !== 'practice') {
+        if (newEngine.matchOver && !priorEngine.matchOver) {
+          setGameTransition({ type: 'match', winner: entry.pointWinner, gamePoints, sets: newEngine.sets, nextServer: newEngine.currentServer });
+        } else if (newEngine.sets.length > priorEngine.sets.length) {
+          setGameTransition({ type: 'set', winner: entry.pointWinner, gamePoints, sets: newEngine.sets, nextServer: newEngine.currentServer });
+        } else {
+          const prevGames = priorEngine.setGames.self + priorEngine.setGames.opp;
+          const newGames = newEngine.setGames.self + newEngine.setGames.opp;
+          if (newGames > prevGames) {
+            setGameTransition({ type: 'game', winner: entry.pointWinner, gamePoints, setGames: { ...newEngine.setGames }, nextServer: newEngine.currentServer });
+          }
+        }
+      }
+
       const matchStartTime = prev.matchStartTime || Date.now();
       const matchEndTime = newEngine.matchOver ? (prev.matchEndTime || Date.now()) : null;
       return {
@@ -165,6 +179,7 @@ export function useMatchTracker() {
   }, []);
 
   const undoLast = useCallback(() => {
+    setGameTransition(null);
     setState((prev) => {
       if (prev.points.length === 0) return prev;
       const newPoints = prev.points.slice(0, -1);
@@ -179,6 +194,8 @@ export function useMatchTracker() {
       };
     });
   }, []);
+
+  const clearTransition = useCallback(() => setGameTransition(null), []);
 
   const markSaved = useCallback(() => {
     setState((prev) => ({ ...prev, matchSaved: true, matchEndTime: prev.matchEndTime || Date.now() }));
@@ -226,5 +243,6 @@ export function useMatchTracker() {
     matchSaved: state.matchSaved, markSaved,
     status, showStatus,
     FORMAT_PRESETS,
+    gameTransition, clearTransition,
   };
 }

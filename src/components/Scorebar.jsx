@@ -86,6 +86,17 @@ export default function Scorebar({ header, sessionType, formatPreset, pointTarge
         </div>
       </div>
 
+      {(engine.inTiebreak || engine.matchTiebreakActive) && !engine.matchOver && (
+        <div className="tb-info-bar">
+          <span className="tb-court-badge">
+            {engine.tiebreakCourtSide === 'deuce' ? 'Deuce Court' : 'Ad Court'}
+          </span>
+          {engine.changeEnds && (
+            <span className="tb-change-ends">↔ Change Ends</span>
+          )}
+        </div>
+      )}
+
       {engine.matchOver && (
         <div className="match-over-banner">
           {(engine.matchWinner === 'self' ? selfName : oppName)}{' '}
