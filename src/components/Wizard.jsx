@@ -111,11 +111,7 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
 
   function handleShotType(type) {
     const stroke = type + ' ' + pending.shotWing;
-    if (pending.serviceChoice === 'returnWinner') {
-      commitAndReset({ shotType: type, stroke });
-    } else {
-      setPending((p) => ({ ...p, shotType: type, stroke }));
-    }
+    commitAndReset({ shotType: type, stroke });
   }
 
   // ── Other sub-type (infraction / non-stroke) ─────────────────────────────
