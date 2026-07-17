@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import { applySeeding, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -504,48 +505,123 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
 }
 
 // ---------------------------------------------------------------------------
-// EntryRow
+// EntryRow  (players list view)
 // ---------------------------------------------------------------------------
-function EntryRow({ entry, isDoubles, isOwner, onEdit, onDelete }) {
+function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete }) {
+  const isBye = entry.isBye;
   return (
-    <tr className="t-entry-row">
+    <tr
+      className={
+        't-entry-row' +
+        (isBye ? ' t-entry-bye' : '') +
+        (selected ? ' t-entry-selected' : '') +
+        (swapMode && !isBye ? ' t-entry-swappable' : '')
+      }
+      onClick={swapMode && !isBye ? () => onSelect(entry) : undefined}
+    >
       <td className="t-entry-pos">{entry.position}</td>
       <td className="t-entry-seed">
         {entry.seed ? <span className="t-seed-badge">[{entry.seed}]</span> : <span className="t-entry-dash">—</span>}
       </td>
       <td className="t-entry-name">
-        <div className="t-entry-name-main">
-          {entry.familyName}
-          {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
-        </div>
-        {isDoubles && entry.partnerFamilyName && (
-          <div className="t-entry-partner">
-            + {entry.partnerFamilyName}
-            {entry.partnerFirstName ? `, ${entry.partnerFirstName}` : ''}
-            {entry.partnerAitaReg ? <span className="t-entry-partner-aita"> {entry.partnerAitaReg}</span> : null}
-          </div>
-        )}
-        {entry.isAlternate && (
-          <span className="t-alt-badge">
-            ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}
-          </span>
+        {isBye ? (
+          <span className="t-bye-label">BYE</span>
+        ) : (
+          <>
+            <div className="t-entry-name-main">
+              {entry.familyName}
+              {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+            </div>
+            {isDoubles && entry.partnerFamilyName && (
+              <div className="t-entry-partner">
+                + {entry.partnerFamilyName}
+                {entry.partnerFirstName ? `, ${entry.partnerFirstName}` : ''}
+              </div>
+            )}
+            {entry.isAlternate && (
+              <span className="t-alt-badge">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
+            )}
+          </>
         )}
       </td>
       <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
       <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
       <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
       <td className="t-entry-sc">
-        {entry.statusCode
-          ? <span className="t-sc-badge">{entry.statusCode}</span>
-          : <span className="t-entry-dash">—</span>}
+        {entry.statusCode ? <span className="t-sc-badge">{entry.statusCode}</span> : <span className="t-entry-dash">—</span>}
       </td>
-      {isOwner && (
+      {isOwner && !swapMode && (
         <td className="t-entry-actions">
-          <button className="t-icon-btn" onClick={() => onEdit(entry)} title="Edit">✎</button>
+          {!isBye && <button className="t-icon-btn" onClick={() => onEdit(entry)} title="Edit">✎</button>}
           <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
         </td>
       )}
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DrawLinePlayer  (one player line inside a draw-sheet match box)
+// ---------------------------------------------------------------------------
+function DrawLinePlayer({ entry, pos, selected, swapMode, onClick }) {
+  const isBye   = !entry || entry.isBye;
+  const isEmpty = !entry;
+  return (
+    <div
+      className={
+        't-ds-player' +
+        (isBye   ? ' t-ds-bye'      : '') +
+        (isEmpty  ? ' t-ds-empty'    : '') +
+        (selected ? ' t-ds-selected' : '') +
+        (swapMode && !isBye && !isEmpty ? ' t-ds-swappable' : '')
+      }
+      onClick={swapMode && !isBye && !isEmpty ? onClick : undefined}
+    >
+      <span className="t-ds-pos">{pos}</span>
+      {entry?.seed && <span className="t-ds-seed">[{entry.seed}]</span>}
+      <span className="t-ds-name">
+        {isEmpty  ? <span className="t-entry-dash">—</span>  :
+         isBye    ? 'BYE'                                      :
+         `${entry.familyName}${entry.firstName ? ', ' + entry.firstName : ''}`}
+      </span>
+      {!isBye && !isEmpty && entry.playerState && (
+        <span className="t-ds-state">{entry.playerState}</span>
+      )}
+      {!isBye && !isEmpty && entry.statusCode && (
+        <span className="t-sc-badge" style={{ marginLeft: 6 }}>{entry.statusCode}</span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DrawSheet  (R1 pairings bracket view)
+// ---------------------------------------------------------------------------
+function DrawSheet({ entries, drawSize, isOwner, swapMode, selectedEntry, onSelectEntry }) {
+  const matches = buildR1Matches(entries, drawSize);
+  return (
+    <div className="t-draw-sheet">
+      {matches.map(m => (
+        <div key={m.slot} className="t-ds-match">
+          <div className="t-ds-slot-num">{m.slot}</div>
+          <div className="t-ds-lines">
+            <DrawLinePlayer
+              entry={m.entry1} pos={m.pos1}
+              selected={swapMode && selectedEntry?.position === m.pos1}
+              swapMode={swapMode}
+              onClick={() => onSelectEntry(m.entry1)}
+            />
+            <div className="t-ds-divider" />
+            <DrawLinePlayer
+              entry={m.entry2} pos={m.pos2}
+              selected={swapMode && selectedEntry?.position === m.pos2}
+              swapMode={swapMode}
+              onClick={() => onSelectEntry(m.entry2)}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -556,43 +632,53 @@ export default function EventDetailPage() {
   const { id: weekId, eventId } = useParams();
   const { user } = useAuth();
 
-  const [week, setWeek] = useState(null);
-  const [event, setEvent] = useState(null);
+  const [week,    setWeek]    = useState(null);
+  const [event,   setEvent]   = useState(null);
   const [entries, setEntries] = useState([]);
   const [drawType, setDrawType] = useState('main');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState('');
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [showBulk, setShowBulk] = useState(false);
+  // View / interaction state
+  const [viewMode,       setViewMode]       = useState('list');   // 'list' | 'drawsheet'
+  const [swapMode,       setSwapMode]       = useState(false);
+  const [selectedEntry,  setSelectedEntry]  = useState(null);
+  const [showAdd,        setShowAdd]        = useState(false);
+  const [editingEntry,   setEditingEntry]   = useState(null);
+  const [showBulk,       setShowBulk]       = useState(false);
+  const [seeding,        setSeeding]        = useState(false);
+  const [fillingByes,    setFillingByes]    = useState(false);
 
   // Load week + event once
   useEffect(() => {
     let cancelled = false;
     Promise.all([api.getTournamentWeek(weekId), api.getEvent(eventId)])
-      .then(([w, ev]) => {
-        if (!cancelled) { setWeek(w); setEvent(ev); setLoading(false); }
-      })
+      .then(([w, ev]) => { if (!cancelled) { setWeek(w); setEvent(ev); setLoading(false); } })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load event'); setLoading(false); } });
     return () => { cancelled = true; };
   }, [weekId, eventId]);
 
-  // Load entries whenever drawType changes
+  // Reload entries on drawType switch
   useEffect(() => {
     if (!event) return;
     let cancelled = false;
     api.getDrawEntries(eventId, drawType)
       .then(data => { if (!cancelled) setEntries(data); })
-      .catch(e => { if (!cancelled) setError(e.message); });
+      .catch(e  => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
 
-  const isOwner = !!(week && user && week.createdBy === user.id);
-  const maxPos = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
+  const isOwner     = !!(week && user && week.createdBy === user.id);
+  const maxPos      = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
+  const numSeeds    = event?.numSeeds || 4;
   const sortedEntries = [...entries].sort((a, b) => a.position - b.position);
-  const fillPct = maxPos > 0 ? Math.min(Math.round(entries.length / maxPos * 100), 100) : 0;
+  const playerCount = entries.filter(e => !e.isBye).length;
+  const byeCount    = entries.filter(e => e.isBye).length;
+  const fillPct     = maxPos > 0 ? Math.min(Math.round(entries.length / maxPos * 100), 100) : 0;
+  const hasSeededPlayers = entries.some(e => e.seed && !e.isBye);
+  const hasGaps     = entries.length < maxPos;
 
+  // ---- CRUD ----------------------------------------------------------------
   async function handleSaveEntry(entryId, formData) {
     if (entryId) {
       const updated = await api.updateDrawEntry(entryId, formData);
@@ -604,13 +690,11 @@ export default function EventDetailPage() {
   }
 
   async function handleDeleteEntry(entryId) {
-    if (!window.confirm('Remove this player from the draw?')) return;
+    if (!window.confirm('Remove this entry from the draw?')) return;
     try {
       await api.deleteDrawEntry(entryId);
       setEntries(prev => prev.filter(e => e.id !== entryId));
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
 
   async function handleBulkImport(newEntries) {
@@ -618,21 +702,87 @@ export default function EventDetailPage() {
     setEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
   }
 
-  if (loading) {
-    return (
-      <div className="root"><TopNav />
-        <div className="page-scroll"><div className="history-empty">Loading…</div></div>
-      </div>
-    );
+  // ---- AUTO-SEED -----------------------------------------------------------
+  async function handleAutoSeed() {
+    if (!window.confirm(
+      'Auto-Seed will rearrange ALL player positions to match ITF seeding rules. Continue?'
+    )) return;
+    setSeeding(true);
+    setError('');
+    try {
+      const reseeded = applySeeding(entries, maxPos, numSeeds);
+      const saved    = await api.saveDrawEntries(eventId, drawType, reseeded);
+      setEntries(saved);
+    } catch (err) { setError(err.message); }
+    finally { setSeeding(false); }
   }
 
-  if (error && !event) {
-    return (
-      <div className="root"><TopNav />
-        <div className="page-scroll"><div className="history-empty">{error}</div></div>
-      </div>
-    );
+  // ---- FILL BYEs -----------------------------------------------------------
+  async function handleFillByes() {
+    setFillingByes(true);
+    setError('');
+    try {
+      const playerEntries = entries.filter(e => !e.isBye);
+      const byes = buildByeEntries(maxPos, playerEntries);
+      const created = await api.bulkAddDrawEntries(eventId, drawType, byes);
+      setEntries(prev => [...prev.filter(e => !e.isBye), ...created]
+        .sort((a, b) => a.position - b.position));
+    } catch (err) { setError(err.message); }
+    finally { setFillingByes(false); }
   }
+
+  // ---- CLEAR BYEs ----------------------------------------------------------
+  async function handleClearByes() {
+    const byeIds = entries.filter(e => e.isBye).map(e => e.id);
+    if (!byeIds.length) return;
+    try {
+      await Promise.all(byeIds.map(id => api.deleteDrawEntry(id)));
+      setEntries(prev => prev.filter(e => !e.isBye));
+    } catch (err) { setError(err.message); }
+  }
+
+  // ---- SWAP ----------------------------------------------------------------
+  function handleSelectForSwap(entry) {
+    if (!selectedEntry) {
+      setSelectedEntry(entry);
+      return;
+    }
+    if (selectedEntry.id === entry.id) {
+      setSelectedEntry(null);
+      return;
+    }
+    // Perform swap
+    const newEntries = swapPositions(entries, selectedEntry.position, entry.position);
+    setSelectedEntry(null);
+
+    // Persist both
+    const a = newEntries.find(e => e.id === selectedEntry.id);
+    const b = newEntries.find(e => e.id === entry.id);
+    Promise.all([
+      api.updateDrawEntry(a.id, { ...a }),
+      api.updateDrawEntry(b.id, { ...b }),
+    ])
+      .then(() => setEntries(newEntries))
+      .catch(err => setError(err.message));
+  }
+
+  function toggleSwapMode() {
+    setSwapMode(prev => !prev);
+    setSelectedEntry(null);
+  }
+
+  // ---- RENDER --------------------------------------------------------------
+  if (loading) return (
+    <div className="root"><TopNav />
+      <div className="page-scroll"><div className="history-empty">Loading…</div></div>
+    </div>
+  );
+
+  if (error && !event) return (
+    <div className="root"><TopNav />
+      <div className="page-scroll"><div className="history-empty">{error}</div></div>
+    </div>
+  );
 
   return (
     <div className="root">
@@ -652,46 +802,84 @@ export default function EventDetailPage() {
             <h1 className="title">{event?.category}</h1>
             <div className="subtitle">{event?.ageGroup} · {week?.name}</div>
           </div>
-          {isOwner && (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button
-                className="action-btn primary"
-                onClick={() => { setEditingEntry(null); setShowAdd(true); }}
-              >
-                + Add Player
-              </button>
-              <button className="action-btn" onClick={() => setShowBulk(true)}>
-                Bulk Import
-              </button>
-            </div>
-          )}
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            {isOwner && (
+              <>
+                <button className="action-btn primary"
+                  onClick={() => { setEditingEntry(null); setShowAdd(true); }}>
+                  + Add Player
+                </button>
+                <button className="action-btn" onClick={() => setShowBulk(true)}>
+                  Bulk Import
+                </button>
+                {hasSeededPlayers && (
+                  <button className="action-btn t-engine-btn"
+                    onClick={handleAutoSeed} disabled={seeding}>
+                    {seeding ? 'Seeding…' : '⚡ Auto-Seed'}
+                  </button>
+                )}
+                {hasGaps && !byeCount && (
+                  <button className="action-btn t-engine-btn"
+                    onClick={handleFillByes} disabled={fillingByes}>
+                    {fillingByes ? 'Filling…' : '+ Fill BYEs'}
+                  </button>
+                )}
+                {byeCount > 0 && (
+                  <button className="action-btn t-engine-btn" onClick={handleClearByes}>
+                    Clear BYEs
+                  </button>
+                )}
+                {entries.length > 0 && (
+                  <button
+                    className={'action-btn t-swap-btn' + (swapMode ? ' active' : '')}
+                    onClick={toggleSwapMode}
+                  >
+                    {swapMode ? (selectedEntry ? `Swap: ${selectedEntry.familyName}…` : 'Click to swap') : '⇅ Swap'}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Draw type tabs (only if event has qualifying) */}
+      {/* Draw-type tabs */}
       {event?.hasQualifying && (
         <div className="t-draw-tabs">
-          <button
-            className={'t-draw-tab' + (drawType === 'main' ? ' active' : '')}
-            onClick={() => setDrawType('main')}
-          >
+          <button className={'t-draw-tab' + (drawType === 'main' ? ' active' : '')}
+            onClick={() => { setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
             Main Draw ({event.drawSize})
           </button>
-          <button
-            className={'t-draw-tab' + (drawType === 'qualifying' ? ' active' : '')}
-            onClick={() => setDrawType('qualifying')}
-          >
+          <button className={'t-draw-tab' + (drawType === 'qualifying' ? ' active' : '')}
+            onClick={() => { setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); }}>
             Qualifying ({event.qualifyingSize || '—'})
           </button>
         </div>
       )}
 
-      {/* Progress */}
-      <div className="t-entry-progress">
+      {/* View toggle + stats */}
+      {entries.length > 0 && (
+        <div className="t-view-bar">
+          <div className="t-view-stats">
+            <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
+            {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
+            <span className="t-stat-gap"> · {maxPos - entries.length} slot{maxPos - entries.length !== 1 ? 's' : ''} open</span>
+          </div>
+          <div className="t-view-toggle">
+            <button className={'t-vtab' + (viewMode === 'list' ? ' active' : '')}
+              onClick={() => setViewMode('list')}>List</button>
+            <button className={'t-vtab' + (viewMode === 'drawsheet' ? ' active' : '')}
+              onClick={() => setViewMode('drawsheet')}>Draw Sheet</button>
+          </div>
+        </div>
+      )}
+
+      {/* Progress bar */}
+      <div className="t-entry-progress" style={{ paddingTop: entries.length > 0 ? 4 : 12 }}>
         <div className="t-entry-progress-label">
-          <span>
-            <strong>{entries.length}</strong> / {maxPos} players entered
-          </span>
+          <span><strong>{entries.length}</strong> / {maxPos} positions filled</span>
           <span className="t-entry-progress-pct">{fillPct}%</span>
         </div>
         <div className="t-progress-track">
@@ -699,16 +887,31 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      {error && <div className="history-empty" style={{ padding: '8px 16px', color: 'var(--red)' }}>{error}</div>}
+      {error && <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>{error}</div>}
+      {swapMode && (
+        <div className="t-swap-hint">
+          {selectedEntry
+            ? `Click another player to swap with ${selectedEntry.familyName}.`
+            : 'Click any player to select, then click another to swap positions.'}
+          <button className="t-swap-cancel" onClick={toggleSwapMode}>Cancel</button>
+        </div>
+      )}
 
-      {/* Entry table */}
+      {/* Content */}
       <div className="page-scroll">
-        {sortedEntries.length === 0 ? (
+        {entries.length === 0 ? (
           <div className="history-empty">
-            {isOwner
-              ? 'No players entered yet. Use + Add Player or Bulk Import.'
-              : 'No players have been entered yet.'}
+            {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
           </div>
+        ) : viewMode === 'drawsheet' ? (
+          <DrawSheet
+            entries={sortedEntries}
+            drawSize={maxPos}
+            isOwner={isOwner}
+            swapMode={swapMode}
+            selectedEntry={selectedEntry}
+            onSelectEntry={handleSelectForSwap}
+          />
         ) : (
           <div className="t-entry-table-wrap">
             <table className="t-entry-table">
@@ -721,7 +924,7 @@ export default function EventDetailPage() {
                   <th className="t-th-state">State</th>
                   <th className="t-th-rank">Rank</th>
                   <th className="t-th-sc">SC</th>
-                  {isOwner && <th className="t-th-actions"></th>}
+                  {isOwner && !swapMode && <th className="t-th-actions"></th>}
                 </tr>
               </thead>
               <tbody>
@@ -731,6 +934,9 @@ export default function EventDetailPage() {
                     entry={entry}
                     isDoubles={event?.isDoubles}
                     isOwner={isOwner}
+                    swapMode={swapMode}
+                    selected={swapMode && selectedEntry?.id === entry.id}
+                    onSelect={handleSelectForSwap}
                     onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
                     onDelete={handleDeleteEntry}
                   />
@@ -744,20 +950,15 @@ export default function EventDetailPage() {
       {/* Modals */}
       {showAdd && (
         <AddEntryModal
-          event={event}
-          week={week}
-          drawType={drawType}
-          editingEntry={editingEntry}
-          existingEntries={entries}
+          event={event} week={week} drawType={drawType}
+          editingEntry={editingEntry} existingEntries={entries}
           onSave={handleSaveEntry}
           onClose={() => { setShowAdd(false); setEditingEntry(null); }}
         />
       )}
       {showBulk && (
         <BulkImportModal
-          event={event}
-          drawType={drawType}
-          existingEntries={entries}
+          event={event} drawType={drawType} existingEntries={entries}
           onImport={handleBulkImport}
           onClose={() => setShowBulk(false)}
         />
