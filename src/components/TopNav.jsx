@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { downloadAppGuide } from '../lib/appGuidePdf';
 
 export default function TopNav() {
   const { user, logout } = useAuth();
@@ -13,6 +14,9 @@ export default function TopNav() {
         <NavLink to="/history" className={({ isActive }) => (isActive ? 'active' : '')}>Match History</NavLink>
         <NavLink to="/compare" className={({ isActive }) => (isActive ? 'active' : '')}>Compare</NavLink>
       </div>
+      <button className="guide-btn" title="Download App Guide PDF" onClick={downloadAppGuide}>
+        Guide ↓
+      </button>
       <div className="theme-picker">
         {THEMES.map(t => (
           <button

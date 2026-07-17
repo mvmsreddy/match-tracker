@@ -262,6 +262,8 @@ body { margin: 0; }
 .top-nav-links a.active, .top-nav-links a:hover { color: var(--accent); }
 .user-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text2); display: flex; align-items: center; gap: 10px; }
 .logout-link { color: var(--opp); cursor: pointer; text-decoration: underline; }
+.guide-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+.guide-btn:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ================================================
    SETUP PAGE
