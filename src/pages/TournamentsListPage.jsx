@@ -4,22 +4,25 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
 
-const CATEGORIES = [
-  'Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles',
-  'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles',
-];
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
+const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
 
 const EMPTY_FORM = {
-  name: '', subtitle: '', category: 'Girls Singles', grade: '',
+  name: '', subtitle: '', tournamentCode: '',
   location: '', city: '', stateAbbr: '', surface: 'Hard',
-  startDate: '', endDate: '', referee: '', tournamentCode: '',
-  drawTypes: ['qualifying', 'main'],
+  startDate: '', endDate: '', referee: '',
+  numCourts: 2, dayStartTime: '09:00',
 };
+
+function formatDateRange(start, end) {
+  if (!start && !end) return '';
+  if (!end) return start;
+  return `${start} – ${end}`;
+}
 
 export default function TournamentsListPage() {
   const { user } = useAuth();
-  const [tournaments, setTournaments] = useState(null);
+  const [weeks, setWeeks] = useState(null);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -28,43 +31,28 @@ export default function TournamentsListPage() {
 
   useEffect(() => {
     let cancelled = false;
-    api.listTournaments()
-      .then(list => { if (!cancelled) setTournaments(list); })
+    api.listTournamentWeeks()
+      .then(list => { if (!cancelled) setWeeks(list); })
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournaments'); });
     return () => { cancelled = true; };
   }, []);
 
-  function handleFormChange(field, value) {
+  function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
-  }
-
-  function toggleDrawType(type) {
-    setForm(prev => {
-      const has = prev.drawTypes.includes(type);
-      return {
-        ...prev,
-        drawTypes: has
-          ? prev.drawTypes.filter(t => t !== type)
-          : [...prev.drawTypes, type],
-      };
-    });
   }
 
   async function handleCreate(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.category) {
-      setSaveError('Name and category are required.');
-      return;
-    }
-    if (form.drawTypes.length === 0) {
-      setSaveError('Select at least one draw type.');
-      return;
-    }
+    if (!form.name.trim()) { setSaveError('Tournament name is required.'); return; }
     setSaving(true);
     setSaveError('');
     try {
-      const created = await api.createTournament(user.id, form);
-      setTournaments(prev => [created, ...(prev || [])]);
+      const created = await api.createTournamentWeek(user.id, {
+        ...form,
+        numCourts: Number(form.numCourts) || 1,
+        dayStartTime: form.dayStartTime + ':00',
+      });
+      setWeeks(prev => [{ ...created, eventCount: 0 }, ...(prev || [])]);
       setShowCreate(false);
       setForm(EMPTY_FORM);
     } catch (err) {
@@ -75,20 +63,16 @@ export default function TournamentsListPage() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this tournament and all its draw data? This cannot be undone.')) return;
+    if (!window.confirm('Delete this tournament week and ALL events, draws, and matches inside it? This cannot be undone.')) return;
     try {
-      await api.deleteTournament(user.id, id);
-      setTournaments(prev => prev.filter(t => t.id !== id));
+      await api.deleteTournamentWeek(user.id, id);
+      setWeeks(prev => prev.filter(w => w.id !== id));
     } catch (err) {
       setError(err.message);
     }
   }
 
-  function formatDateRange(start, end) {
-    if (!start && !end) return '';
-    if (!end) return start;
-    return `${start} – ${end}`;
-  }
+  const isOrganizer = user?.role === 'organizer';
 
   return (
     <div className="root">
@@ -100,18 +84,20 @@ export default function TournamentsListPage() {
             <h1 className="title">Tournaments</h1>
             <div className="subtitle">LIVE EVENTS &amp; DRAW TRACKER</div>
           </div>
-          <button className="action-btn primary" onClick={() => { setShowCreate(true); setSaveError(''); }}>
-            + Host Event
-          </button>
+          {isOrganizer && (
+            <button className="action-btn primary" onClick={() => { setShowCreate(true); setSaveError(''); }}>
+              + New Tournament Week
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Create Tournament Modal */}
+      {/* Create Week Modal */}
       {showCreate && (
         <div className="t-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="t-modal" onClick={e => e.stopPropagation()}>
             <div className="t-modal-header">
-              <span className="t-modal-title">New Tournament</span>
+              <span className="t-modal-title">New Tournament Week</span>
               <button className="drawer-close" onClick={() => setShowCreate(false)}>✕</button>
             </div>
             <form onSubmit={handleCreate} className="t-create-form">
@@ -120,33 +106,34 @@ export default function TournamentsListPage() {
                   <label>Tournament Name *</label>
                   <input
                     value={form.name}
-                    onChange={e => handleFormChange('name', e.target.value)}
+                    onChange={e => set('name', e.target.value)}
                     placeholder="e.g. SMTA AITA Circuit"
+                    autoFocus
                   />
                 </div>
                 <div className="field">
                   <label>Subtitle / Series</label>
                   <input
                     value={form.subtitle}
-                    onChange={e => handleFormChange('subtitle', e.target.value)}
+                    onChange={e => set('subtitle', e.target.value)}
                     placeholder="e.g. AITA Circuit"
                   />
                 </div>
               </div>
               <div className="t-form-row">
                 <div className="field">
-                  <label>Category *</label>
-                  <select value={form.category} onChange={e => handleFormChange('category', e.target.value)}>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <label>Tournament Code</label>
+                  <input
+                    value={form.tournamentCode}
+                    onChange={e => set('tournamentCode', e.target.value)}
+                    placeholder="e.g. HYD-2026-07"
+                  />
                 </div>
                 <div className="field">
-                  <label>Grade</label>
-                  <input
-                    value={form.grade}
-                    onChange={e => handleFormChange('grade', e.target.value)}
-                    placeholder="e.g. National Serie"
-                  />
+                  <label>Surface</label>
+                  <select value={form.surface} onChange={e => set('surface', e.target.value)}>
+                    {SURFACES.map(s => <option key={s}>{s}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="t-form-row">
@@ -154,78 +141,62 @@ export default function TournamentsListPage() {
                   <label>City</label>
                   <input
                     value={form.city}
-                    onChange={e => handleFormChange('city', e.target.value)}
+                    onChange={e => set('city', e.target.value)}
                     placeholder="e.g. Hyderabad"
                   />
                 </div>
                 <div className="field">
                   <label>State</label>
-                  <input
-                    value={form.stateAbbr}
-                    onChange={e => handleFormChange('stateAbbr', e.target.value)}
-                    placeholder="e.g. TS"
-                    maxLength={4}
-                  />
-                </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Venue / Location</label>
-                  <input
-                    value={form.location}
-                    onChange={e => handleFormChange('location', e.target.value)}
-                    placeholder="Club / facility name"
-                  />
-                </div>
-                <div className="field">
-                  <label>Surface</label>
-                  <select value={form.surface} onChange={e => handleFormChange('surface', e.target.value)}>
-                    {SURFACES.map(s => <option key={s}>{s}</option>)}
+                  <select value={form.stateAbbr} onChange={e => set('stateAbbr', e.target.value)}>
+                    <option value="">— State —</option>
+                    {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div className="t-form-row">
                 <div className="field">
-                  <label>Start Date</label>
-                  <input type="date" value={form.startDate} onChange={e => handleFormChange('startDate', e.target.value)} />
+                  <label>Venue / Facility</label>
+                  <input
+                    value={form.location}
+                    onChange={e => set('location', e.target.value)}
+                    placeholder="Club / sports complex"
+                  />
                 </div>
-                <div className="field">
-                  <label>End Date</label>
-                  <input type="date" value={form.endDate} onChange={e => handleFormChange('endDate', e.target.value)} />
-                </div>
-              </div>
-              <div className="t-form-row">
                 <div className="field">
                   <label>Referee</label>
                   <input
                     value={form.referee}
-                    onChange={e => handleFormChange('referee', e.target.value)}
+                    onChange={e => set('referee', e.target.value)}
                     placeholder="Referee name"
                   />
                 </div>
+              </div>
+              <div className="t-form-row">
                 <div className="field">
-                  <label>Tournament Code</label>
-                  <input
-                    value={form.tournamentCode}
-                    onChange={e => handleFormChange('tournamentCode', e.target.value)}
-                    placeholder="e.g. HYD-2026-07"
-                  />
+                  <label>Start Date</label>
+                  <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>End Date</label>
+                  <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} />
                 </div>
               </div>
-
-              <div className="field" style={{ marginTop: 4 }}>
-                <label>Draw Types</label>
-                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  {['qualifying', 'main'].map(type => (
-                    <label key={type} className="t-checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={form.drawTypes.includes(type)}
-                        onChange={() => toggleDrawType(type)}
-                      />
-                      {type.charAt(0).toUpperCase() + type.slice(1)} Draw
-                    </label>
-                  ))}
+              <div className="t-form-row">
+                <div className="field">
+                  <label>Number of Courts</label>
+                  <input
+                    type="number" min="1" max="20"
+                    value={form.numCourts}
+                    onChange={e => set('numCourts', e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Day Start Time</label>
+                  <input
+                    type="time"
+                    value={form.dayStartTime}
+                    onChange={e => set('dayStartTime', e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -233,7 +204,7 @@ export default function TournamentsListPage() {
 
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                 <button type="submit" className="action-btn primary" disabled={saving}>
-                  {saving ? 'Creating…' : 'Create Tournament'}
+                  {saving ? 'Creating…' : 'Create Tournament Week'}
                 </button>
                 <button type="button" className="action-btn" onClick={() => setShowCreate(false)}>
                   Cancel
@@ -248,48 +219,48 @@ export default function TournamentsListPage() {
       <div className="page-scroll">
         {error && <div className="history-empty">{error}</div>}
 
-        {tournaments === null && !error && (
+        {weeks === null && !error && (
           <div className="history-empty">Loading tournaments…</div>
         )}
 
-        {tournaments && tournaments.length === 0 && (
+        {weeks && weeks.length === 0 && (
           <div className="history-empty">
-            No tournaments yet. Click <strong>+ Host Event</strong> to create the first one.
+            {isOrganizer
+              ? 'No tournament weeks yet. Click + New Tournament Week to create one.'
+              : 'No tournaments are currently scheduled.'}
           </div>
         )}
 
-        {tournaments && tournaments.length > 0 && (
+        {weeks && weeks.length > 0 && (
           <div className="t-list">
-            {tournaments.map(t => (
-              <div key={t.id} className="t-card">
-                <Link to={`/tournaments/${t.id}`} className="t-card-main">
-                  <div className="t-card-name">{t.name}</div>
-                  {t.subtitle && <div className="t-card-sub">{t.subtitle}</div>}
+            {weeks.map(w => (
+              <div key={w.id} className="t-card">
+                <Link to={`/tournaments/${w.id}`} className="t-card-main">
+                  <div className="t-card-name">{w.name}</div>
+                  {w.subtitle && <div className="t-card-sub">{w.subtitle}</div>}
                   <div className="t-card-meta">
-                    <span className="t-badge">{t.category}</span>
-                    {t.grade && <span className="t-badge t-badge-grade">{t.grade}</span>}
-                    {t.surface && <span className="t-badge">{t.surface}</span>}
+                    {w.surface && <span className="t-badge">{w.surface}</span>}
+                    {w.tournamentCode && <span className="t-badge t-badge-code">{w.tournamentCode}</span>}
+                    <span className="t-badge t-badge-events">
+                      {w.eventCount !== undefined ? `${w.eventCount} event${w.eventCount !== 1 ? 's' : ''}` : ''}
+                    </span>
                   </div>
                   <div className="t-card-location">
-                    {[t.city, t.stateAbbr].filter(Boolean).join(', ')}
-                    {t.location && ` · ${t.location}`}
+                    {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
+                    {w.location && ` · ${w.location}`}
                   </div>
-                  {(t.startDate || t.endDate) && (
-                    <div className="t-card-dates">{formatDateRange(t.startDate, t.endDate)}</div>
+                  {(w.startDate || w.endDate) && (
+                    <div className="t-card-dates">{formatDateRange(w.startDate, w.endDate)}</div>
                   )}
-                  <div className="t-card-draws">
-                    {t.drawTypes.map(d => (
-                      <span key={d} className="t-draw-chip">
-                        {d.charAt(0).toUpperCase() + d.slice(1)}
-                      </span>
-                    ))}
-                  </div>
+                  {w.numCourts && (
+                    <div className="t-card-courts">{w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
+                  )}
                 </Link>
-                {t.createdBy === user.id && (
+                {w.createdBy === user?.id && (
                   <button
                     className="t-delete-btn"
-                    onClick={() => handleDelete(t.id)}
-                    title="Delete tournament"
+                    onClick={() => handleDelete(w.id)}
+                    title="Delete tournament week"
                   >
                     ✕
                   </button>

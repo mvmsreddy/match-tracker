@@ -156,18 +156,17 @@ export async function deleteMatch(userId, matchId) {
 }
 
 // ---------------------------------------------------------------------------
-// Tournaments
+// Tournament Weeks
 // ---------------------------------------------------------------------------
 
-function rowToTournament(row) {
+function rowToWeek(row) {
   return {
     id: row.id,
     createdBy: row.created_by,
     createdAt: row.created_at,
     name: row.name,
     subtitle: row.subtitle,
-    category: row.category,
-    grade: row.grade,
+    tournamentCode: row.tournament_code,
     location: row.location,
     city: row.city,
     stateAbbr: row.state_abbr,
@@ -175,116 +174,271 @@ function rowToTournament(row) {
     startDate: row.start_date,
     endDate: row.end_date,
     referee: row.referee,
-    tournamentCode: row.tournament_code,
-    drawTypes: row.draw_types || ['qualifying', 'main'],
+    numCourts: row.num_courts,
+    courtNames: row.court_names || ['Court 1'],
+    dayStartTime: row.day_start_time,
+    matchDurationMins: row.match_duration_mins,
+    restMinsBetween: row.rest_mins_between,
+    maxSinglesPerPlayer: row.max_singles_per_player,
+    maxDoublesPerPlayer: row.max_doubles_per_player,
+    playingUpAllowed: row.playing_up_allowed,
+    playingDownAllowed: row.playing_down_allowed,
+    // joined events count if present
+    eventCount: row.events ? row.events.length : undefined,
   };
 }
 
-export async function listTournaments() {
+export async function listTournamentWeeks() {
   const { data, error } = await supabase
-    .from('tournaments')
-    .select('*')
+    .from('tournament_weeks')
+    .select('*, events(id)')
     .order('start_date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(rowToTournament);
+  return data.map(rowToWeek);
 }
 
-export async function getTournament(id) {
+export async function getTournamentWeek(id) {
   const { data, error } = await supabase
-    .from('tournaments')
-    .select('*')
+    .from('tournament_weeks')
+    .select('*, events(*)')
     .eq('id', id)
     .single();
-  if (error) throw new Error('Tournament not found');
-  return rowToTournament(data);
+  if (error) throw new Error('Tournament week not found');
+  return {
+    ...rowToWeek(data),
+    events: (data.events || []).map(rowToEvent),
+  };
 }
 
-export async function createTournament(userId, tournament) {
+export async function createTournamentWeek(userId, week) {
+  const courtNames = week.courtNames && week.courtNames.length > 0
+    ? week.courtNames
+    : Array.from({ length: week.numCourts || 1 }, (_, i) => `Court ${i + 1}`);
+
   const row = {
     created_by: userId,
-    name: tournament.name,
-    subtitle: tournament.subtitle || null,
-    category: tournament.category,
-    grade: tournament.grade || null,
-    location: tournament.location || null,
-    city: tournament.city || null,
-    state_abbr: tournament.stateAbbr || null,
-    surface: tournament.surface || null,
-    start_date: tournament.startDate || null,
-    end_date: tournament.endDate || null,
-    referee: tournament.referee || null,
-    tournament_code: tournament.tournamentCode || null,
-    draw_types: tournament.drawTypes || ['qualifying', 'main'],
+    name: week.name,
+    subtitle: week.subtitle || null,
+    tournament_code: week.tournamentCode || null,
+    location: week.location || null,
+    city: week.city || null,
+    state_abbr: week.stateAbbr || null,
+    surface: week.surface || null,
+    start_date: week.startDate || null,
+    end_date: week.endDate || null,
+    referee: week.referee || null,
+    num_courts: week.numCourts || 1,
+    court_names: courtNames,
+    day_start_time: week.dayStartTime || '09:00:00',
+    match_duration_mins: week.matchDurationMins || 90,
+    rest_mins_between: week.restMinsBetween || 30,
+    max_singles_per_player: week.maxSinglesPerPlayer || 2,
+    max_doubles_per_player: week.maxDoublesPerPlayer || 1,
+    playing_up_allowed: week.playingUpAllowed !== undefined ? week.playingUpAllowed : true,
+    playing_down_allowed: week.playingDownAllowed !== undefined ? week.playingDownAllowed : false,
   };
-  const { data, error } = await supabase.from('tournaments').insert(row).select().single();
+  const { data, error } = await supabase.from('tournament_weeks').insert(row).select().single();
   if (error) throw new Error(error.message);
-  return rowToTournament(data);
+  return rowToWeek(data);
 }
 
-export async function deleteTournament(userId, id) {
+export async function updateTournamentWeek(weekId, week) {
+  const updates = {};
+  if (week.name !== undefined) updates.name = week.name;
+  if (week.subtitle !== undefined) updates.subtitle = week.subtitle;
+  if (week.tournamentCode !== undefined) updates.tournament_code = week.tournamentCode;
+  if (week.location !== undefined) updates.location = week.location;
+  if (week.city !== undefined) updates.city = week.city;
+  if (week.stateAbbr !== undefined) updates.state_abbr = week.stateAbbr;
+  if (week.surface !== undefined) updates.surface = week.surface;
+  if (week.startDate !== undefined) updates.start_date = week.startDate;
+  if (week.endDate !== undefined) updates.end_date = week.endDate;
+  if (week.referee !== undefined) updates.referee = week.referee;
+  if (week.numCourts !== undefined) updates.num_courts = week.numCourts;
+  if (week.courtNames !== undefined) updates.court_names = week.courtNames;
+  if (week.dayStartTime !== undefined) updates.day_start_time = week.dayStartTime;
+
+  const { data, error } = await supabase
+    .from('tournament_weeks')
+    .update(updates)
+    .eq('id', weekId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToWeek(data);
+}
+
+export async function deleteTournamentWeek(userId, weekId) {
   const { error } = await supabase
-    .from('tournaments')
+    .from('tournament_weeks')
     .delete()
-    .eq('id', id)
+    .eq('id', weekId)
     .eq('created_by', userId);
   if (error) throw new Error(error.message);
   return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
-// Draw Entries
+// Events (per category/age-group within a tournament week)
+// ---------------------------------------------------------------------------
+
+function rowToEvent(row) {
+  return {
+    id: row.id,
+    tournamentWeekId: row.tournament_week_id,
+    createdAt: row.created_at,
+    category: row.category,
+    ageGroup: row.age_group,
+    isDoubles: row.is_doubles,
+    drawSize: row.draw_size,
+    numSeeds: row.num_seeds,
+    hasQualifying: row.has_qualifying,
+    qualifyingSize: row.qualifying_size,
+    qualifyingSpots: row.qualifying_spots,
+    status: row.status,
+  };
+}
+
+export async function listEvents(weekId) {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('tournament_week_id', weekId)
+    .order('category', { ascending: true })
+    .order('age_group', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.map(rowToEvent);
+}
+
+export async function getEvent(eventId) {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+  if (error) throw new Error('Event not found');
+  return rowToEvent(data);
+}
+
+export async function createEvent(weekId, event) {
+  const row = {
+    tournament_week_id: weekId,
+    category: event.category,
+    age_group: event.ageGroup,
+    is_doubles: event.isDoubles || false,
+    draw_size: event.drawSize || 32,
+    num_seeds: event.numSeeds || 4,
+    has_qualifying: event.hasQualifying || false,
+    qualifying_size: event.qualifyingSize || null,
+    qualifying_spots: event.qualifyingSpots || null,
+    status: 'setup',
+  };
+  const { data, error } = await supabase.from('events').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEvent(data);
+}
+
+export async function updateEvent(eventId, updates) {
+  const row = {};
+  if (updates.drawSize !== undefined) row.draw_size = updates.drawSize;
+  if (updates.numSeeds !== undefined) row.num_seeds = updates.numSeeds;
+  if (updates.hasQualifying !== undefined) row.has_qualifying = updates.hasQualifying;
+  if (updates.qualifyingSize !== undefined) row.qualifying_size = updates.qualifyingSize;
+  if (updates.qualifyingSpots !== undefined) row.qualifying_spots = updates.qualifyingSpots;
+  if (updates.status !== undefined) row.status = updates.status;
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(row)
+    .eq('id', eventId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToEvent(data);
+}
+
+export async function deleteEvent(eventId) {
+  const { error } = await supabase.from('events').delete().eq('id', eventId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Draw Entries (per event)
 // ---------------------------------------------------------------------------
 
 function rowToEntry(row) {
   return {
     id: row.id,
-    tournamentId: row.tournament_id,
+    eventId: row.event_id,
     drawType: row.draw_type,
     position: row.position,
-    aitaReg: row.aita_reg,
-    statusCode: row.status_code,
-    rank: row.rank,
     seed: row.seed,
+    isBye: row.is_bye,
+    qualifierSlot: row.qualifier_slot,
+    // Player 1 / singles player
+    playerId: row.player_id,
     familyName: row.family_name,
     firstName: row.first_name,
+    aitaReg: row.aita_reg,
     playerState: row.player_state,
+    ranking: row.ranking,
+    dateOfBirth: row.date_of_birth,
+    statusCode: row.status_code,
+    // Partner (doubles)
+    partnerId: row.partner_id,
+    partnerFamilyName: row.partner_family_name,
+    partnerFirstName: row.partner_first_name,
+    partnerAitaReg: row.partner_aita_reg,
+    partnerState: row.partner_state,
+    partnerRanking: row.partner_ranking,
+    // Alternate
     isAlternate: row.is_alternate,
     replacingName: row.replacing_name,
   };
 }
 
-export async function getDrawEntries(tournamentId, drawType) {
+export async function getDrawEntries(eventId, drawType) {
   const { data, error } = await supabase
     .from('draw_entries')
     .select('*')
-    .eq('tournament_id', tournamentId)
+    .eq('event_id', eventId)
     .eq('draw_type', drawType)
     .order('position', { ascending: true });
   if (error) throw new Error(error.message);
   return data.map(rowToEntry);
 }
 
-export async function saveDrawEntries(tournamentId, drawType, entries) {
-  // Delete existing entries for this draw type, then re-insert
+export async function saveDrawEntries(eventId, drawType, entries) {
   await supabase
     .from('draw_entries')
     .delete()
-    .eq('tournament_id', tournamentId)
+    .eq('event_id', eventId)
     .eq('draw_type', drawType);
 
   if (entries.length === 0) return [];
 
   const rows = entries.map(e => ({
-    tournament_id: tournamentId,
+    event_id: eventId,
     draw_type: drawType,
     position: e.position,
-    aita_reg: e.aitaReg || null,
-    status_code: e.statusCode || null,
-    rank: e.rank ? Number(e.rank) : null,
     seed: e.seed ? Number(e.seed) : null,
+    is_bye: e.isBye || false,
+    qualifier_slot: e.qualifierSlot || null,
+    player_id: e.playerId || null,
     family_name: e.familyName,
     first_name: e.firstName || null,
+    aita_reg: e.aitaReg || null,
     player_state: e.playerState || null,
+    ranking: e.ranking ? Number(e.ranking) : null,
+    date_of_birth: e.dateOfBirth || null,
+    status_code: e.statusCode || null,
+    partner_id: e.partnerId || null,
+    partner_family_name: e.partnerFamilyName || null,
+    partner_first_name: e.partnerFirstName || null,
+    partner_aita_reg: e.partnerAitaReg || null,
+    partner_state: e.partnerState || null,
+    partner_ranking: e.partnerRanking ? Number(e.partnerRanking) : null,
     is_alternate: e.isAlternate || false,
     replacing_name: e.replacingName || null,
   }));
@@ -295,53 +449,53 @@ export async function saveDrawEntries(tournamentId, drawType, entries) {
 }
 
 // ---------------------------------------------------------------------------
-// Tournament Matches
+// Event Matches
 // ---------------------------------------------------------------------------
 
-function rowToTournamentMatch(row) {
+function rowToEventMatch(row) {
   return {
     id: row.id,
-    tournamentId: row.tournament_id,
+    eventId: row.event_id,
     drawType: row.draw_type,
     round: row.round,
     matchSlot: row.match_slot,
     entry1Id: row.entry1_id,
     entry2Id: row.entry2_id,
-    score: row.score,
     winnerEntryId: row.winner_entry_id,
+    score: row.score,
+    outcomeType: row.outcome_type,
     umpire: row.umpire,
     status: row.status,
+    dayNumber: row.day_number,
   };
 }
 
-export async function getTournamentMatches(tournamentId, drawType) {
+export async function getEventMatches(eventId, drawType) {
   const { data, error } = await supabase
-    .from('tournament_matches')
+    .from('event_matches')
     .select('*')
-    .eq('tournament_id', tournamentId)
+    .eq('event_id', eventId)
     .eq('draw_type', drawType)
     .order('round', { ascending: true })
     .order('match_slot', { ascending: true });
   if (error) throw new Error(error.message);
-  return data.map(rowToTournamentMatch);
+  return data.map(rowToEventMatch);
 }
 
-export async function initializeMatches(tournamentId, drawType, entries) {
-  // Delete existing matches first
+export async function initializeEventMatches(eventId, drawType, entries) {
   await supabase
-    .from('tournament_matches')
+    .from('event_matches')
     .delete()
-    .eq('tournament_id', tournamentId)
+    .eq('event_id', eventId)
     .eq('draw_type', drawType);
 
   const drawSize = entries.length;
   const totalRounds = Math.ceil(Math.log2(drawSize));
   const allMatches = [];
 
-  // Round 1: pair up entries by position (1v2, 3v4, …)
   for (let i = 0; i < entries.length; i += 2) {
     allMatches.push({
-      tournament_id: tournamentId,
+      event_id: eventId,
       draw_type: drawType,
       round: 1,
       match_slot: Math.floor(i / 2) + 1,
@@ -351,12 +505,11 @@ export async function initializeMatches(tournamentId, drawType, entries) {
     });
   }
 
-  // Future rounds: empty slots
   for (let round = 2; round <= totalRounds; round++) {
     const matchCount = drawSize / Math.pow(2, round);
     for (let slot = 1; slot <= matchCount; slot++) {
       allMatches.push({
-        tournament_id: tournamentId,
+        event_id: eventId,
         draw_type: drawType,
         round,
         match_slot: slot,
@@ -365,23 +518,20 @@ export async function initializeMatches(tournamentId, drawType, entries) {
     }
   }
 
-  const { data, error } = await supabase
-    .from('tournament_matches')
-    .insert(allMatches)
-    .select();
+  const { data, error } = await supabase.from('event_matches').insert(allMatches).select();
   if (error) throw new Error(error.message);
-  return data.map(rowToTournamentMatch);
+  return data.map(rowToEventMatch);
 }
 
-export async function updateMatchScore(matchId, { score, winnerEntryId, status, umpire }) {
+export async function updateMatchScore(matchId, { score, winnerEntryId, outcomeType, status, umpire }) {
   const { data, error } = await supabase
-    .from('tournament_matches')
-    .update({ score, winner_entry_id: winnerEntryId, status, umpire })
+    .from('event_matches')
+    .update({ score, winner_entry_id: winnerEntryId, outcome_type: outcomeType, status, umpire })
     .eq('id', matchId)
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return rowToTournamentMatch(data);
+  return rowToEventMatch(data);
 }
 
 // ---------------------------------------------------------------------------
@@ -514,16 +664,16 @@ export async function deleteCoachLink(linkId) {
   return { ok: true };
 }
 
-export async function advanceWinner(tournamentId, drawType, currentRound, currentSlot, winnerEntryId) {
+export async function advanceWinner(eventId, drawType, currentRound, currentSlot, winnerEntryId) {
   const nextRound = currentRound + 1;
   const nextSlot = Math.ceil(currentSlot / 2);
   const isOddSlot = currentSlot % 2 !== 0;
   const updateField = isOddSlot ? 'entry1_id' : 'entry2_id';
 
   const { error } = await supabase
-    .from('tournament_matches')
+    .from('event_matches')
     .update({ [updateField]: winnerEntryId })
-    .eq('tournament_id', tournamentId)
+    .eq('event_id', eventId)
     .eq('draw_type', drawType)
     .eq('round', nextRound)
     .eq('match_slot', nextSlot);

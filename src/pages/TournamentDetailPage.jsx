@@ -1,370 +1,176 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Constants
 // ---------------------------------------------------------------------------
 
-function totalRounds(entryCount) {
-  return Math.ceil(Math.log2(entryCount));
-}
+const CATEGORIES = [
+  'Boys Singles', 'Girls Singles',
+  'Boys Doubles', 'Girls Doubles', 'Mixed Doubles',
+  'Men Singles', 'Women Singles',
+  'Men Doubles', 'Women Doubles',
+];
 
-function roundLabel(round, total) {
-  const fromEnd = total - round;
-  if (fromEnd === 0) return 'Final';
-  if (fromEnd === 1) return 'Semi-Finals';
-  if (fromEnd === 2) return 'Quarter-Finals';
-  return `Round ${round}`;
-}
+const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 
-function entryDisplayName(entry) {
-  if (!entry) return 'BYE';
-  const seed = entry.seed ? `[${entry.seed}] ` : '';
-  return `${seed}${entry.familyName}${entry.firstName ? ' ' + entry.firstName : ''}`;
-}
+const DRAW_SIZES = [4, 8, 16, 32, 64, 128];
 
-function entryShortState(entry) {
-  return entry?.playerState || '';
-}
+const SEED_OPTIONS = [2, 4, 8, 16];
 
-// Parse CSV-like bulk draw entry text
-// Expected format per line: position, aitaReg, statusCode, rank, seed, familyName, firstName, playerState
-// Blank fields are allowed; only position and familyName are required.
-function parseBulkEntries(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const entries = [];
-  const errors = [];
-  lines.forEach((line, i) => {
-    const parts = line.split(',').map(p => p.trim());
-    const position = parseInt(parts[0], 10);
-    const familyName = parts[5] || '';
-    if (isNaN(position) || !familyName) {
-      errors.push(`Line ${i + 1}: position and family name are required.`);
-      return;
-    }
-    entries.push({
-      position,
-      aitaReg: parts[1] || '',
-      statusCode: parts[2] || '',
-      rank: parts[3] ? parseInt(parts[3], 10) : null,
-      seed: parts[4] ? parseInt(parts[4], 10) : null,
-      familyName,
-      firstName: parts[6] || '',
-      playerState: parts[7] || '',
-      isAlternate: false,
-    });
-  });
-  return { entries, errors };
-}
+const EMPTY_EVENT_FORM = {
+  category: 'Girls Singles',
+  ageGroup: 'U14',
+  drawSize: 32,
+  numSeeds: 4,
+  hasQualifying: false,
+  qualifyingSize: 32,
+  qualifyingSpots: 4,
+};
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Status badge
 // ---------------------------------------------------------------------------
 
-function DrawSheet({ entries }) {
-  if (entries.length === 0) return null;
+function StatusBadge({ status }) {
+  const labels = {
+    setup: 'Setup',
+    draw_ready: 'Draw Ready',
+    in_progress: 'In Progress',
+    complete: 'Complete',
+  };
   return (
-    <div className="t-draw-sheet-wrap">
-      <table className="t-draw-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>AITA Reg</th>
-            <th>St.</th>
-            <th>Rank</th>
-            <th>Seed</th>
-            <th>Family Name</th>
-            <th>First Name</th>
-            <th>State</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((e, idx) => {
-            const isMatchTop = idx % 2 === 0;
-            return (
-              <tr
-                key={e.id}
-                className={`t-draw-row${e.seed ? ' t-draw-seeded' : ''}${!isMatchTop ? ' t-draw-match-bottom' : ''}`}
-              >
-                <td className="t-draw-pos">{e.position}</td>
-                <td className="t-draw-reg">{e.aitaReg || ''}</td>
-                <td className="t-draw-st">{e.statusCode || ''}</td>
-                <td className="t-draw-rank">{e.rank || ''}</td>
-                <td className="t-draw-seed">{e.seed ? e.seed : ''}</td>
-                <td className={`t-draw-fname${e.seed ? ' t-draw-seeded-name' : ''}`}>{e.familyName}</td>
-                <td className="t-draw-gname">{e.firstName || ''}</td>
-                <td className="t-draw-state">{e.playerState || ''}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <span className={`t-status-badge t-status-${status}`}>
+      {labels[status] || status}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// EventCard
+// ---------------------------------------------------------------------------
+
+function EventCard({ event, weekId, isOwner, onDelete }) {
+  return (
+    <div className="t-event-card">
+      <Link to={`/tournaments/${weekId}/events/${event.id}`} className="t-event-card-main">
+        <div className="t-event-card-name">
+          {event.category}
+          <span className="t-event-age">{event.ageGroup}</span>
+        </div>
+        <div className="t-event-card-meta">
+          <StatusBadge status={event.status} />
+          <span className="t-badge">Draw {event.drawSize}</span>
+          <span className="t-badge">{event.numSeeds} seeds</span>
+          {event.hasQualifying && (
+            <span className="t-badge t-badge-qual">Qualifying {event.qualifyingSize}</span>
+          )}
+        </div>
+      </Link>
+      {isOwner && (
+        <button className="t-delete-btn" onClick={() => onDelete(event.id)} title="Delete event">
+          ✕
+        </button>
+      )}
     </div>
   );
 }
 
-function MatchCard({ match, entry1, entry2, isAdmin, onSaveScore }) {
-  const [editing, setEditing] = useState(false);
-  const [score, setScore] = useState(match.score || '');
-  const [winnerId, setWinnerId] = useState(match.winnerEntryId || '');
-  const [umpire, setUmpire] = useState(match.umpire || '');
-  const [saving, setSaving] = useState(false);
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
-  async function handleSave() {
-    if (!winnerId) return;
+export default function TournamentDetailPage() {
+  const { id: weekId } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [week, setWeek] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [error, setError] = useState('');
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [form, setForm] = useState(EMPTY_EVENT_FORM);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Load week + events
+  useEffect(() => {
+    let cancelled = false;
+    api.getTournamentWeek(weekId)
+      .then(data => {
+        if (!cancelled) {
+          setWeek(data);
+          setEvents(data.events || []);
+        }
+      })
+      .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournament'); });
+    return () => { cancelled = true; };
+  }, [weekId]);
+
+  function set(field, value) {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  async function handleAddEvent(e) {
+    e.preventDefault();
     setSaving(true);
+    setSaveError('');
     try {
-      await onSaveScore(match, { score, winnerEntryId: winnerId, umpire, status: 'complete' });
-      setEditing(false);
+      const isDoubles = form.category.includes('Doubles');
+      const created = await api.createEvent(weekId, { ...form, isDoubles });
+      setEvents(prev => [...prev, created]);
+      setShowAddEvent(false);
+      setForm(EMPTY_EVENT_FORM);
+    } catch (err) {
+      setSaveError(err.message || 'Failed to add event');
     } finally {
       setSaving(false);
     }
   }
 
-  const winner = match.winnerEntryId
-    ? (entry1?.id === match.winnerEntryId ? entry1 : entry2)
-    : null;
-
-  return (
-    <div className={`t-match-card${match.status === 'complete' ? ' t-match-complete' : ''}`}>
-      <div className="t-match-players">
-        <div className={`t-match-player${winner?.id === entry1?.id ? ' t-match-winner' : ''}`}>
-          <span className="t-match-seed">{entry1?.seed ? `[${entry1.seed}]` : ''}</span>
-          <span className="t-match-name">{entry1 ? `${entry1.familyName}${entry1.firstName ? ' ' + entry1.firstName : ''}` : 'TBD'}</span>
-          <span className="t-match-state">{entryShortState(entry1)}</span>
-          {winner?.id === entry1?.id && <span className="t-match-winner-dot" title="Winner">●</span>}
-        </div>
-
-        <div className="t-match-vs">
-          {match.score
-            ? <span className="t-match-score">{match.score}</span>
-            : <span className="t-match-vs-text">vs</span>
-          }
-        </div>
-
-        <div className={`t-match-player${winner?.id === entry2?.id ? ' t-match-winner' : ''}`}>
-          <span className="t-match-seed">{entry2?.seed ? `[${entry2.seed}]` : ''}</span>
-          <span className="t-match-name">{entry2 ? `${entry2.familyName}${entry2.firstName ? ' ' + entry2.firstName : ''}` : 'TBD'}</span>
-          <span className="t-match-state">{entryShortState(entry2)}</span>
-          {winner?.id === entry2?.id && <span className="t-match-winner-dot" title="Winner">●</span>}
-        </div>
-      </div>
-
-      {match.umpire && !editing && (
-        <div className="t-match-umpire">Umpire: {match.umpire}</div>
-      )}
-
-      {isAdmin && !editing && (
-        <button className="t-score-edit-btn" onClick={() => setEditing(true)}>
-          {match.score ? 'Edit Score' : 'Enter Score'}
-        </button>
-      )}
-
-      {editing && (
-        <div className="t-score-form">
-          <div className="field">
-            <label>Score</label>
-            <input
-              value={score}
-              onChange={e => setScore(e.target.value)}
-              placeholder="e.g. 6-3, 6-4"
-            />
-          </div>
-          <div className="field">
-            <label>Winner</label>
-            <select value={winnerId} onChange={e => setWinnerId(e.target.value)}>
-              <option value="">Select winner…</option>
-              {entry1 && <option value={entry1.id}>{entryDisplayName(entry1)}</option>}
-              {entry2 && <option value={entry2.id}>{entryDisplayName(entry2)}</option>}
-            </select>
-          </div>
-          <div className="field">
-            <label>Umpire</label>
-            <input
-              value={umpire}
-              onChange={e => setUmpire(e.target.value)}
-              placeholder="Umpire name (optional)"
-            />
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button className="action-btn primary" disabled={!winnerId || saving} onClick={handleSave}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button className="action-btn" onClick={() => setEditing(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BracketView({ entries, matches, isAdmin, onSaveScore }) {
-  if (entries.length === 0) return (
-    <div className="history-empty">No draw entries yet. Upload the draw to see the bracket.</div>
-  );
-
-  const entryMap = Object.fromEntries(entries.map(e => [e.id, e]));
-  const numRounds = totalRounds(entries.length);
-  const rounds = Array.from({ length: numRounds }, (_, i) => i + 1);
-
-  return (
-    <div>
-      {rounds.map(round => {
-        const roundMatches = matches.filter(m => m.round === round);
-        return (
-          <div key={round} className="t-bracket-round">
-            <div className="t-round-label">{roundLabel(round, numRounds)}</div>
-            <div className="t-match-list">
-              {roundMatches.length === 0 && (
-                <div className="t-no-matches">Matches will appear after the draw is initialized.</div>
-              )}
-              {roundMatches.map(m => (
-                <MatchCard
-                  key={m.id}
-                  match={m}
-                  entry1={entryMap[m.entry1Id]}
-                  entry2={entryMap[m.entry2Id]}
-                  isAdmin={isAdmin}
-                  onSaveScore={onSaveScore}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Page
-// ---------------------------------------------------------------------------
-
-export default function TournamentDetailPage() {
-  const { id } = useParams();
-  const { user } = useAuth();
-
-  const [tournament, setTournament] = useState(null);
-  const [error, setError] = useState('');
-  const [activeDrawType, setActiveDrawType] = useState(null);
-  const [activeTab, setActiveTab] = useState('bracket'); // 'draw' | 'bracket'
-  const [entries, setEntries] = useState([]);
-  const [matches, setMatches] = useState([]);
-  const [loadingDraw, setLoadingDraw] = useState(false);
-
-  // Draw entry upload state
-  const [showUpload, setShowUpload] = useState(false);
-  const [bulkText, setBulkText] = useState('');
-  const [parseErrors, setParseErrors] = useState([]);
-  const [uploadSaving, setUploadSaving] = useState(false);
-  const [uploadError, setUploadError] = useState('');
-
-  // Load tournament
-  useEffect(() => {
-    let cancelled = false;
-    api.getTournament(id)
-      .then(t => {
-        if (!cancelled) {
-          setTournament(t);
-          setActiveDrawType(t.drawTypes[0] || 'qualifying');
-        }
-      })
-      .catch(e => { if (!cancelled) setError(e.message || 'Tournament not found'); });
-    return () => { cancelled = true; };
-  }, [id]);
-
-  // Load draw entries + matches whenever draw type changes
-  useEffect(() => {
-    if (!tournament || !activeDrawType) return;
-    let cancelled = false;
-    setLoadingDraw(true);
-    Promise.all([
-      api.getDrawEntries(id, activeDrawType),
-      api.getTournamentMatches(id, activeDrawType),
-    ])
-      .then(([ents, mats]) => {
-        if (!cancelled) {
-          setEntries(ents);
-          setMatches(mats);
-        }
-      })
-      .catch(e => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoadingDraw(false); });
-    return () => { cancelled = true; };
-  }, [id, tournament, activeDrawType]);
-
-  const isOwner = tournament && user.id === tournament.createdBy;
-
-  // Save score + advance winner to next round
-  const handleSaveScore = useCallback(async (match, { score, winnerEntryId, umpire, status }) => {
-    const updated = await api.updateMatchScore(match.id, { score, winnerEntryId, umpire, status });
-    setMatches(prev => prev.map(m => (m.id === updated.id ? updated : m)));
-
-    // Advance winner to next round slot if there is one
-    const numRounds = totalRounds(entries.length);
-    if (match.round < numRounds) {
-      await api.advanceWinner(id, match.drawType, match.round, match.matchSlot, winnerEntryId);
-      // Refresh matches to show winner in next round
-      const fresh = await api.getTournamentMatches(id, match.drawType);
-      setMatches(fresh);
-    }
-  }, [id, entries.length]);
-
-  // Parse bulk entries as user types
-  function handleBulkChange(text) {
-    setBulkText(text);
-    if (!text.trim()) {
-      setParseErrors([]);
-      return;
-    }
-    const { errors } = parseBulkEntries(text);
-    setParseErrors(errors);
-  }
-
-  async function handleUploadDraw() {
-    const { entries: parsed, errors } = parseBulkEntries(bulkText);
-    if (errors.length > 0) {
-      setUploadError('Fix errors before saving.');
-      return;
-    }
-    if (parsed.length === 0) {
-      setUploadError('No entries found. Check your format.');
-      return;
-    }
-    setUploadSaving(true);
-    setUploadError('');
+  async function handleDeleteEvent(eventId) {
+    if (!window.confirm('Delete this event and all its draw entries and match data?')) return;
     try {
-      const saved = await api.saveDrawEntries(id, activeDrawType, parsed);
-      setEntries(saved);
-      const mats = await api.initializeMatches(id, activeDrawType, saved);
-      setMatches(mats);
-      setShowUpload(false);
-      setBulkText('');
-      setParseErrors([]);
+      await api.deleteEvent(eventId);
+      setEvents(prev => prev.filter(ev => ev.id !== eventId));
     } catch (err) {
-      setUploadError(err.message || 'Failed to save draw');
-    } finally {
-      setUploadSaving(false);
+      setError(err.message);
     }
   }
+
+  async function handleDeleteWeek() {
+    if (!window.confirm('Delete this entire tournament week? ALL events, draws, and matches will be permanently removed.')) return;
+    try {
+      await api.deleteTournamentWeek(user.id, weekId);
+      navigate('/tournaments');
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const isOwner = week && user && week.createdBy === user.id;
 
   if (error) {
     return (
       <div className="root">
         <TopNav />
-        <div className="history-empty">{error} <Link to="/tournaments">← Back to tournaments</Link></div>
+        <div className="page-scroll">
+          <div className="history-empty">{error}</div>
+        </div>
       </div>
     );
   }
 
-  if (!tournament) {
+  if (!week) {
     return (
       <div className="root">
         <TopNav />
-        <div className="history-empty">Loading tournament…</div>
+        <div className="page-scroll">
+          <div className="history-empty">Loading…</div>
+        </div>
       </div>
     );
   }
@@ -373,135 +179,156 @@ export default function TournamentDetailPage() {
     <div className="root">
       <TopNav />
 
-      {/* Header */}
       <div className="header">
-        <Link to="/tournaments" className="t-back-link">← Tournaments</Link>
-        <div className="title-row" style={{ marginTop: 6 }}>
+        <div className="title-row">
           <div>
-            <h1 className="title">{tournament.name}</h1>
-            <div className="subtitle">
-              {tournament.category}
-              {tournament.grade ? ` · ${tournament.grade}` : ''}
-              {tournament.city ? ` · ${tournament.city}` : ''}
-              {tournament.stateAbbr ? `, ${tournament.stateAbbr}` : ''}
+            <div className="t-breadcrumb">
+              <Link to="/tournaments">Tournaments</Link>
+              <span> / </span>
+              <span>{week.name}</span>
             </div>
+            <h1 className="title">{week.name}</h1>
+            {week.subtitle && <div className="subtitle">{week.subtitle.toUpperCase()}</div>}
           </div>
-        </div>
-        <div className="t-header-meta">
-          {tournament.surface && <span className="t-badge">{tournament.surface}</span>}
-          {tournament.startDate && (
-            <span className="t-badge t-badge-grade">
-              {tournament.startDate}{tournament.endDate ? ` – ${tournament.endDate}` : ''}
-            </span>
-          )}
-          {tournament.referee && (
-            <span className="t-header-referee">Referee: {tournament.referee}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Draw Type Tabs */}
-      {tournament.drawTypes.length > 1 && (
-        <div className="t-draw-tabs">
-          {tournament.drawTypes.map(dt => (
-            <button
-              key={dt}
-              className={`t-draw-tab${activeDrawType === dt ? ' active' : ''}`}
-              onClick={() => setActiveDrawType(dt)}
-            >
-              {dt.charAt(0).toUpperCase() + dt.slice(1)} Draw
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* View Tabs */}
-      <div className="t-view-tabs">
-        <button
-          className={`t-view-tab${activeTab === 'draw' ? ' active' : ''}`}
-          onClick={() => setActiveTab('draw')}
-        >
-          Draw Sheet
-        </button>
-        <button
-          className={`t-view-tab${activeTab === 'bracket' ? ' active' : ''}`}
-          onClick={() => setActiveTab('bracket')}
-        >
-          Bracket &amp; Scores
-        </button>
-        {isOwner && (
-          <button
-            className="action-btn t-upload-btn"
-            onClick={() => { setShowUpload(true); setUploadError(''); }}
-          >
-            Upload Draw
-          </button>
-        )}
-      </div>
-
-      {/* Upload Draw Modal */}
-      {showUpload && (
-        <div className="t-modal-overlay" onClick={() => setShowUpload(false)}>
-          <div className="t-modal t-modal-wide" onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">
-                Upload {activeDrawType.charAt(0).toUpperCase() + activeDrawType.slice(1)} Draw
-              </span>
-              <button className="drawer-close" onClick={() => setShowUpload(false)}>✕</button>
-            </div>
-            <p className="hint" style={{ marginTop: 0 }}>
-              Paste one player per line in this format:<br />
-              <code>position, aitaReg, statusCode, rank, seed, familyName, firstName, playerState</code><br />
-              Example: <code>1, 442320, WC, 17, 1, BHOSALE, Trisha, MH</code><br />
-              Leave blank fields as empty: <code>2, 447418, , , , JK, Kala, TS</code>
-            </p>
-            <textarea
-              className="t-bulk-textarea"
-              rows={14}
-              value={bulkText}
-              onChange={e => handleBulkChange(e.target.value)}
-              placeholder={`1, 442320, WC, 17, 1, BHOSALE, Trisha, MH\n2, 447418, , , , JK, Kala, TS\n3, 443899, , , , KARNAM, Kashika, TS\n4, 447068, , , , KRISHNAMOHAN, Vidhula Reddy, TS`}
-            />
-            {parseErrors.length > 0 && (
-              <div className="t-parse-errors">
-                {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
-              </div>
-            )}
-            {uploadError && <div className="login-error">{uploadError}</div>}
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          {isOwner && (
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 className="action-btn primary"
-                disabled={uploadSaving || parseErrors.length > 0 || !bulkText.trim()}
-                onClick={handleUploadDraw}
+                onClick={() => { setShowAddEvent(true); setSaveError(''); }}
               >
-                {uploadSaving ? 'Saving…' : 'Save Draw & Initialize Matches'}
+                + Add Event
               </button>
-              <button className="action-btn" onClick={() => setShowUpload(false)}>Cancel</button>
+              <button className="action-btn t-danger-btn" onClick={handleDeleteWeek}>
+                Delete Week
+              </button>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Week Info Bar */}
+      <div className="t-week-info-bar">
+        {week.surface && <span className="t-badge">{week.surface}</span>}
+        {week.tournamentCode && <span className="t-badge t-badge-code">{week.tournamentCode}</span>}
+        {(week.city || week.stateAbbr) && (
+          <span className="t-info-item">
+            {[week.city, week.stateAbbr].filter(Boolean).join(', ')}
+          </span>
+        )}
+        {week.location && <span className="t-info-item">{week.location}</span>}
+        {(week.startDate || week.endDate) && (
+          <span className="t-info-item">
+            {week.startDate}{week.endDate && week.endDate !== week.startDate ? ` – ${week.endDate}` : ''}
+          </span>
+        )}
+        {week.numCourts && (
+          <span className="t-info-item">{week.numCourts} court{week.numCourts !== 1 ? 's' : ''}</span>
+        )}
+        {week.referee && <span className="t-info-item">Referee: {week.referee}</span>}
+      </div>
+
+      {/* Add Event Modal */}
+      {showAddEvent && (
+        <div className="t-modal-overlay" onClick={() => setShowAddEvent(false)}>
+          <div className="t-modal" onClick={e => e.stopPropagation()}>
+            <div className="t-modal-header">
+              <span className="t-modal-title">Add Event</span>
+              <button className="drawer-close" onClick={() => setShowAddEvent(false)}>✕</button>
+            </div>
+            <form onSubmit={handleAddEvent} className="t-create-form">
+              <div className="t-form-row">
+                <div className="field">
+                  <label>Category *</label>
+                  <select value={form.category} onChange={e => set('category', e.target.value)}>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Age Group *</label>
+                  <select value={form.ageGroup} onChange={e => set('ageGroup', e.target.value)}>
+                    {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="t-form-row">
+                <div className="field">
+                  <label>Main Draw Size</label>
+                  <select value={form.drawSize} onChange={e => set('drawSize', Number(e.target.value))}>
+                    {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Number of Seeds</label>
+                  <select value={form.numSeeds} onChange={e => set('numSeeds', Number(e.target.value))}>
+                    {SEED_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label className="t-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={form.hasQualifying}
+                    onChange={e => set('hasQualifying', e.target.checked)}
+                  />
+                  Has Qualifying Draw
+                </label>
+              </div>
+              {form.hasQualifying && (
+                <div className="t-form-row">
+                  <div className="field">
+                    <label>Qualifying Draw Size</label>
+                    <select value={form.qualifyingSize} onChange={e => set('qualifyingSize', Number(e.target.value))}>
+                      {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Qualifying Spots (to main draw)</label>
+                    <input
+                      type="number" min="1" max="16"
+                      value={form.qualifyingSpots}
+                      onChange={e => set('qualifyingSpots', Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button type="submit" className="action-btn primary" disabled={saving}>
+                  {saving ? 'Adding…' : 'Add Event'}
+                </button>
+                <button type="button" className="action-btn" onClick={() => setShowAddEvent(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Events list */}
       <div className="page-scroll">
-        {loadingDraw && <div className="history-empty">Loading draw…</div>}
-
-        {!loadingDraw && activeTab === 'draw' && (
-          entries.length === 0
-            ? <div className="history-empty">
-                No entries for the {activeDrawType} draw yet.
-                {isOwner && ' Click "Upload Draw" to enter players.'}
-              </div>
-            : <DrawSheet entries={entries} />
-        )}
-
-        {!loadingDraw && activeTab === 'bracket' && (
-          <BracketView
-            entries={entries}
-            matches={matches}
-            isAdmin={isOwner}
-            onSaveScore={handleSaveScore}
-          />
+        {events.length === 0 ? (
+          <div className="history-empty">
+            {isOwner
+              ? 'No events yet. Click + Add Event to add the first category.'
+              : 'No events have been added to this tournament week yet.'}
+          </div>
+        ) : (
+          <div className="t-events-list">
+            <div className="t-section-title">Events ({events.length})</div>
+            {events.map(ev => (
+              <EventCard
+                key={ev.id}
+                event={ev}
+                weekId={weekId}
+                isOwner={isOwner}
+                onDelete={handleDeleteEvent}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

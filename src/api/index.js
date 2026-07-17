@@ -34,14 +34,29 @@ export const respondToCoachRequest = hasSupabaseConfig ? supabaseApi.respondToCo
 export const deleteCoachLink = hasSupabaseConfig ? supabaseApi.deleteCoachLink : async () => {};
 
 // Tournament module — Supabase only (no mock fallback needed)
-export const listTournaments = hasSupabaseConfig ? supabaseApi.listTournaments : async () => [];
-export const getTournament = hasSupabaseConfig ? supabaseApi.getTournament : async () => null;
-export const createTournament = hasSupabaseConfig ? supabaseApi.createTournament : async () => { throw new Error('Requires Supabase'); };
-export const deleteTournament = hasSupabaseConfig ? supabaseApi.deleteTournament : async () => {};
+const noSupabase = () => { throw new Error('Requires Supabase'); };
+
+// Tournament Weeks
+export const listTournamentWeeks = hasSupabaseConfig ? supabaseApi.listTournamentWeeks : async () => [];
+export const getTournamentWeek = hasSupabaseConfig ? supabaseApi.getTournamentWeek : async () => null;
+export const createTournamentWeek = hasSupabaseConfig ? supabaseApi.createTournamentWeek : noSupabase;
+export const updateTournamentWeek = hasSupabaseConfig ? supabaseApi.updateTournamentWeek : noSupabase;
+export const deleteTournamentWeek = hasSupabaseConfig ? supabaseApi.deleteTournamentWeek : async () => {};
+
+// Events
+export const listEvents = hasSupabaseConfig ? supabaseApi.listEvents : async () => [];
+export const getEvent = hasSupabaseConfig ? supabaseApi.getEvent : async () => null;
+export const createEvent = hasSupabaseConfig ? supabaseApi.createEvent : noSupabase;
+export const updateEvent = hasSupabaseConfig ? supabaseApi.updateEvent : noSupabase;
+export const deleteEvent = hasSupabaseConfig ? supabaseApi.deleteEvent : async () => {};
+
+// Draw Entries
 export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : async () => [];
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];
-export const getTournamentMatches = hasSupabaseConfig ? supabaseApi.getTournamentMatches : async () => [];
-export const initializeMatches = hasSupabaseConfig ? supabaseApi.initializeMatches : async () => [];
+
+// Event Matches
+export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : async () => [];
+export const initializeEventMatches = hasSupabaseConfig ? supabaseApi.initializeEventMatches : async () => [];
 export const updateMatchScore = hasSupabaseConfig ? supabaseApi.updateMatchScore : async () => {};
 export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : async () => {};
 

@@ -12,6 +12,7 @@ import TournamentsListPage from './pages/TournamentsListPage';
 import TournamentDetailPage from './pages/TournamentDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import CoachPlayersPage from './pages/CoachPlayersPage';
+import EventDetailPage from './pages/EventDetailPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/compare" element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
             <Route path="/tournaments" element={<ProtectedRoute><TournamentsListPage /></ProtectedRoute>} />
             <Route path="/tournaments/:id" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
+            <Route path="/tournaments/:id/events/:eventId" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/my-players" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
             <Route path="/my-coaches" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
