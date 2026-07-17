@@ -796,3 +796,91 @@ export async function advanceWinner(eventId, drawType, currentRound, currentSlot
   if (error) throw new Error(error.message);
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// Phase 6 — Qualifying → Main draw promotion
+// ---------------------------------------------------------------------------
+
+// Returns the winner entries from the qualifying deciding round (sorted by
+// match slot). Returns null if not all deciding-round matches are complete.
+export async function getQualifyingWinners(eventId) {
+  const { data: evRow, error: evErr } = await supabase
+    .from('events')
+    .select('qualifying_size, qualifying_spots')
+    .eq('id', eventId)
+    .single();
+  if (evErr) throw new Error(evErr.message);
+
+  const { qualifying_size: qSize, qualifying_spots: qSpots } = evRow;
+  if (!qSize || !qSpots) throw new Error('Event has no qualifying configuration.');
+
+  const decidingRound = Math.round(Math.log2(qSize / qSpots));
+
+  const { data: roundMatches, error: mErr } = await supabase
+    .from('event_matches')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('draw_type', 'qualifying')
+    .eq('round', decidingRound)
+    .order('match_slot', { ascending: true });
+  if (mErr) throw new Error(mErr.message);
+
+  if (!roundMatches || roundMatches.length < qSpots) return null;
+  if (roundMatches.some(m => m.status !== 'complete' || !m.winner_entry_id)) return null;
+
+  const winnerIds = roundMatches.map(m => m.winner_entry_id);
+  const { data: entryRows, error: eErr } = await supabase
+    .from('draw_entries')
+    .select('*')
+    .in('id', winnerIds);
+  if (eErr) throw new Error(eErr.message);
+
+  const entryMap = new Map(entryRows.map(e => [e.id, e]));
+  return roundMatches
+    .map(m => entryMap.get(m.winner_entry_id))
+    .filter(Boolean)
+    .map(rowToEntry);
+}
+
+// Overwrites the Q placeholder entries in the main draw with qualifier player
+// data. Qualifiers (in slot order) are matched to main draw entries that have
+// status_code = 'Q', sorted ascending by position.
+export async function promoteQualifiers(eventId, qualifierEntries) {
+  const { data: qSlots, error: qErr } = await supabase
+    .from('draw_entries')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('draw_type', 'main')
+    .eq('status_code', 'Q')
+    .eq('is_bye', false)
+    .order('position', { ascending: true });
+  if (qErr) throw new Error(qErr.message);
+  if (!qSlots || qSlots.length === 0) {
+    throw new Error('No Q placeholder entries found in main draw. Add entries with status "Q" first.');
+  }
+
+  const results = await Promise.all(
+    qualifierEntries.slice(0, qSlots.length).map((qualifier, idx) =>
+      supabase
+        .from('draw_entries')
+        .update({
+          family_name: qualifier.familyName,
+          first_name: qualifier.firstName,
+          aita_reg: qualifier.aitaReg,
+          player_state: qualifier.playerState,
+          ranking: qualifier.ranking,
+          date_of_birth: qualifier.dateOfBirth,
+          status_code: 'Q',
+          is_bye: false,
+          seed: null,
+        })
+        .eq('id', qSlots[idx].id)
+        .select()
+        .single()
+    )
+  );
+
+  const failed = results.find(r => r.error);
+  if (failed) throw new Error(failed.error.message);
+  return results.map(r => rowToEntry(r.data));
+}

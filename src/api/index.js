@@ -64,6 +64,8 @@ export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches :
 export const initializeEventMatches = hasSupabaseConfig ? supabaseApi.initializeEventMatches : async () => [];
 export const updateMatchScore = hasSupabaseConfig ? supabaseApi.updateMatchScore : async () => {};
 export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : async () => {};
+export const getQualifyingWinners = hasSupabaseConfig ? supabaseApi.getQualifyingWinners : async () => null;
+export const promoteQualifiers    = hasSupabaseConfig ? supabaseApi.promoteQualifiers    : async () => [];
 
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;

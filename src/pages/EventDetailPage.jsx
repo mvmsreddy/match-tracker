@@ -944,6 +944,16 @@ export default function EventDetailPage() {
   const maxPos      = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
   const numSeeds    = event?.numSeeds || 4;
   const totalRounds = maxPos > 0 ? Math.ceil(Math.log2(maxPos)) : 0;
+
+  // Phase 6 — qualifying completion check
+  const qualDecidingRound = (event?.qualifyingSize && event?.qualifyingSpots)
+    ? Math.round(Math.log2(event.qualifyingSize / event.qualifyingSpots))
+    : 0;
+  const qualDecidingMatches = matches.filter(m => m.round === qualDecidingRound);
+  const qualComplete = drawType === 'qualifying'
+    && qualDecidingRound > 0
+    && qualDecidingMatches.length === event?.qualifyingSpots
+    && qualDecidingMatches.every(m => m.status === 'complete');
   const sortedEntries = [...entries].sort((a, b) => a.position - b.position);
   const playerCount = entries.filter(e => !e.isBye).length;
   const byeCount    = entries.filter(e => e.isBye).length;
@@ -1081,6 +1091,28 @@ export default function EventDetailPage() {
     setScoringMatch(null);
   }
 
+  // ---- PROMOTE QUALIFIERS (Phase 6) ----------------------------------------
+  async function handlePromoteQualifiers() {
+    if (!window.confirm(
+      `Promote ${event.qualifyingSpots} qualifier(s) to the main draw?\n` +
+      'This will overwrite Q placeholder entries in the main draw.'
+    )) return;
+    setError('');
+    try {
+      const winners = await api.getQualifyingWinners(eventId);
+      if (!winners) { setError('Not all qualifying matches are complete.'); return; }
+      await api.promoteQualifiers(eventId, winners);
+      // Switch to main draw tab
+      setDrawType('main');
+      setMatches([]);
+      setViewMode('list');
+      setSwapMode(false);
+      setSelectedEntry(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   // ---- SWAP ----------------------------------------------------------------
   function handleSelectForSwap(entry) {
     if (!selectedEntry) {
@@ -1189,6 +1221,12 @@ export default function EventDetailPage() {
                 disabled={generating}
               >
                 {generating ? 'Generating…' : matches.length > 0 ? '↺ Regenerate Bracket' : '▶ Generate Bracket'}
+              </button>
+            )}
+            {/* Promote Qualifiers — visible when qualifying draw is fully decided */}
+            {isOwner && qualComplete && (
+              <button className="action-btn t-promote-btn" onClick={handlePromoteQualifiers}>
+                ✓ Promote Qualifiers → Main
               </button>
             )}
           </div>
