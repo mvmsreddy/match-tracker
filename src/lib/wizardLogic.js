@@ -12,6 +12,7 @@ export function freshPending(server) {
     shotType: null,             // 'Ground' | 'Volley' | etc. | infraction sub-type
     stroke: null,               // combined: 'Ground Forehand', 'Net Touch', etc.
     rallyCount: null,           // null = not yet selected; must be chosen before ballInPlay
+    infraction: null,           // null = not yet answered; 'none' = skipped; string = infraction type
   };
 }
 
@@ -97,5 +98,6 @@ export function buildPointEntry(pending) {
     rally: pending.rallyCount ?? 2,
     pointWinner,
     firstFaultLocation: null,
+    infraction: (pending.infraction && pending.infraction !== 'none') ? pending.infraction : null,
   };
 }

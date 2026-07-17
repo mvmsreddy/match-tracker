@@ -5,7 +5,7 @@ const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot',
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
 // Steps that show rally count footer for adjustment
-const RALLY_FOOTER_STEPS = new Set(['shotWing', 'shotType', 'otherSubType']);
+const RALLY_FOOTER_STEPS = new Set(['shotWing', 'shotType']);
 
 function getActiveStep(pending) {
   if (!pending.serviceChoice) return 'serviceScreen';
@@ -15,9 +15,10 @@ function getActiveStep(pending) {
   const needsShot = pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn';
   if (needsShot && !pending.stroke) {
     if (!pending.shotWing) return 'shotWing';
-    if (pending.shotWing === 'Other') return 'otherSubType';
     return 'shotType';
   }
+  // Optional infraction step — only for ballIn, only if not yet answered
+  if (pending.serviceChoice === 'ballIn' && pending.stroke && pending.infraction === null) return 'infractionSelect';
   return null;
 }
 
@@ -115,20 +116,11 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     commitAndReset({ shotType: type, stroke });
   }
 
-  // ── Other sub-type (infraction / non-stroke) ─────────────────────────────
-
-  function handleOtherSubType(subType) {
-    if (pending.serviceChoice === 'returnWinner') {
-      commitAndReset({ shotType: subType, stroke: subType });
-    } else {
-      commitAndReset({ shotType: subType, stroke: subType });
-    }
-  }
-
   // ── Display helpers ──────────────────────────────────────────────────────
 
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
   const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
+  const receiver = pending.server === 'self' ? 'opp' : 'self';
 
   const breadcrumbs = [];
   if (pending.serveAttempt === '2nd' && !pending.serviceChoice) breadcrumbs.push('Fault → 2nd Serve');
@@ -149,10 +141,10 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
       {/* Server toggle */}
       <div className="server-toggle">
         <div className={'chip server-chip' + (pending.server === 'self' ? ' selected' : '')} onClick={() => chooseServer('self')}>
-          Self serving
+          {selfName || 'You'} serving
         </div>
         <div className={'chip server-chip' + (pending.server === 'opp' ? ' selected' : '')} onClick={() => chooseServer('opp')}>
-          Opp serving
+          {oppName || 'Opponent'} serving
         </div>
       </div>
 
@@ -167,21 +159,25 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
         {activeStep === 'serviceScreen' && (
           <>
             <div className="wizard-step-label">{serveLabel}</div>
-            <div className="chip-row chip-grid-service">
-              <div className="chip chip-lg chip-action chip-full" onClick={handleAce}>
-                Ace
+            <div className="ball-in-play-grid">
+              {/* Server column */}
+              <div className="player-col">
+                <div className={'player-col-name ' + (pending.server === 'self' ? 'self-name' : 'opp-name')}>
+                  {playerName(pending.server)}
+                </div>
+                <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
+                <div className="chip chip-lg warn" onClick={handleFault}>
+                  {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
+                </div>
+                <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
               </div>
-              <div className="chip chip-lg warn" onClick={handleFault}>
-                {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
-              </div>
-              <div className="chip chip-lg" onClick={handleBallIn}>
-                Ball In
-              </div>
-              <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>
-                Return Winner
-              </div>
-              <div className="chip chip-lg warn" onClick={handleReturnError}>
-                Return Error
+              {/* Receiver column */}
+              <div className="player-col">
+                <div className={'player-col-name ' + (receiver === 'self' ? 'self-name' : 'opp-name')}>
+                  {playerName(receiver)}
+                </div>
+                <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
+                <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
               </div>
             </div>
             <div className="chip-row" style={{ marginTop: 8 }}>
@@ -194,9 +190,9 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
 
         {activeStep === 'returnErrorType' && (
           <>
-            <div className="wizard-step-label">Return Error — Forced or Unforced?</div>
+            <div className="wizard-step-label">{playerName(receiver)} — Return Error</div>
             <div className="chip-row">
-              <div className="chip chip-lg chip-full" onClick={() => handleReturnErrorReason('ForcedError')}>
+              <div className="chip chip-lg chip-forced chip-full" onClick={() => handleReturnErrorReason('ForcedError')}>
                 Forced Error
               </div>
               <div className="chip chip-lg warn chip-full" onClick={() => handleReturnErrorReason('UnforcedError')}>
@@ -250,42 +246,43 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
 
         {activeStep === 'shotWing' && (
           <>
-            <div className="wizard-step-label">Select Wing</div>
+            <div className="wizard-step-label">
+              {playerName(pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver))} — Select Wing
+            </div>
             <div className="chip-row">
               <div className="chip chip-lg" onClick={() => handleShotWing('Forehand')}>Forehand</div>
               <div className="chip chip-lg" onClick={() => handleShotWing('Backhand')}>Backhand</div>
-            </div>
-            <div className="chip-row" style={{ marginTop: 8 }}>
-              <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Other')}>Other / Infraction</div>
             </div>
           </>
         )}
 
         {activeStep === 'shotType' && (
           <>
-            <div className="wizard-step-label">Shot Type · {pending.shotWing}</div>
+            <div className="wizard-step-label">
+              {playerName(pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver))} — {pending.shotWing}
+            </div>
             <div className="chip-row chip-grid-2">
               {SHOT_TYPES.map((type) => (
                 <div key={type} className="chip chip-lg" onClick={() => handleShotType(type)}>
                   {shotLabel(type)}
                 </div>
               ))}
-              <div className="chip chip-lg chip-full" onClick={() => setPending((p) => ({ ...p, shotWing: 'Other' }))}>
-                Other / Infraction
-              </div>
             </div>
           </>
         )}
 
-        {activeStep === 'otherSubType' && (
+        {activeStep === 'infractionSelect' && (
           <>
-            <div className="wizard-step-label">Infraction Type</div>
+            <div className="wizard-step-label">Infraction? (Optional)</div>
             <div className="chip-row chip-grid-2">
               {OTHER_SUB_TYPES.map((sub) => (
-                <div key={sub} className="chip chip-lg" onClick={() => handleOtherSubType(sub)}>
+                <div key={sub} className="chip chip-lg" onClick={() => commitAndReset({ infraction: sub })}>
                   {sub}
                 </div>
               ))}
+              <div className="chip chip-lg chip-full chip-let" onClick={() => commitAndReset({ infraction: 'none' })}>
+                Skip — No Infraction
+              </div>
             </div>
           </>
         )}
