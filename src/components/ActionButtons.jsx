@@ -122,13 +122,19 @@ export default function ActionButtons({
       </div>
 
       <div className="action-bar">
-        <button
-          className="action-btn primary"
-          disabled={saving || matchSaved || points.length === 0}
-          onClick={handleCompleteAndSave}
-        >
-          {saving ? 'Saving...' : matchSaved ? 'Match Saved' : 'Complete & Save Match'}
-        </button>
+        {matchSaved ? (
+          <button className="action-btn primary" style={{ flex: '1 1 100%' }} onClick={resetMatch}>
+            ▶ Start New Match
+          </button>
+        ) : (
+          <button
+            className="action-btn primary"
+            disabled={saving || points.length === 0}
+            onClick={handleCompleteAndSave}
+          >
+            {saving ? 'Saving...' : 'Complete & Save Match'}
+          </button>
+        )}
         <button
           className="action-btn"
           disabled={generating || points.length === 0}
@@ -138,9 +144,11 @@ export default function ActionButtons({
           {generating ? 'Generating...' : 'Generate PDF'}
         </button>
         <button className="action-btn" onClick={handleCopySummary}>Copy summary</button>
-        <button className={'action-btn danger' + (confirmingReset ? ' confirming' : '')} onClick={handleResetClick}>
-          {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
-        </button>
+        {!matchSaved && (
+          <button className={'action-btn danger' + (confirmingReset ? ' confirming' : '')} onClick={handleResetClick}>
+            {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
+          </button>
+        )}
       </div>
     </>
   );

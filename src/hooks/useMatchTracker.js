@@ -39,6 +39,7 @@ export function useMatchTracker() {
   const [status, setStatus] = useState('');
   const statusTimer = useRef(null);
   const restoredRef = useRef(false);
+  const sessionClearedRef = useRef(false);
   const [clockTick, setClockTick] = useState(0);
 
   // ---- Load saved session on mount (per logged-in user) ----
@@ -56,6 +57,7 @@ export function useMatchTracker() {
   // ---- Autosave ----
   useEffect(() => {
     if (!user) return;
+    if (sessionClearedRef.current) { sessionClearedRef.current = false; return; }
     const t = setTimeout(() => saveSession(user.id, state), 150);
     return () => clearTimeout(t);
   }, [user, state]);
@@ -193,6 +195,7 @@ export function useMatchTracker() {
   }, []);
 
   const resetMatch = useCallback(() => {
+    if (user) { sessionClearedRef.current = true; clearSession(user.id); }
     setState((prev) => ({
       ...initialState(),
       header: prev.header,
@@ -200,7 +203,6 @@ export function useMatchTracker() {
       formatPreset: prev.formatPreset,
       pointTarget: prev.pointTarget,
     }));
-    if (user) clearSession(user.id);
   }, [user]);
 
   const formatLabel = state.formatPreset === 'custom'
