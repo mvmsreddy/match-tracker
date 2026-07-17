@@ -4,12 +4,13 @@ import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
-// Steps that need the rally footer counter
-const RALLY_FOOTER_STEPS = new Set(['ballInPlay', 'shotWing', 'shotType', 'otherSubType']);
+// Steps that show rally count footer for adjustment
+const RALLY_FOOTER_STEPS = new Set(['shotWing', 'shotType', 'otherSubType']);
 
 function getActiveStep(pending) {
   if (!pending.serviceChoice) return 'serviceScreen';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
+  if (pending.serviceChoice === 'ballIn' && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
   const needsShot = pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn';
   if (needsShot && !pending.stroke) {
@@ -205,6 +206,24 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
           </>
         )}
 
+        {activeStep === 'rallySelect' && (
+          <>
+            <div className="wizard-step-label">Rally Length</div>
+            <div className="chip-row chip-grid-rally">
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <div
+                  key={n}
+                  className="chip chip-lg"
+                  style={{ textAlign: 'center' }}
+                  onClick={() => setPending((p) => ({ ...p, rallyCount: n }))}
+                >
+                  {n === 7 ? '7+' : n}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {activeStep === 'ballInPlay' && (
           <>
             <div className="wizard-step-label">Ball in Play</div>
@@ -251,6 +270,9 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
                   {shotLabel(type)}
                 </div>
               ))}
+              <div className="chip chip-lg chip-full" onClick={() => setPending((p) => ({ ...p, shotWing: 'Other' }))}>
+                Other / Infraction
+              </div>
             </div>
           </>
         )}
@@ -268,7 +290,7 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
           </>
         )}
 
-        {/* Rally counter footer — shown during all Ball In steps */}
+        {/* Rally counter footer — adjust rally count during wing/shot steps */}
         {showRallyFooter && (
           <div className="rally-footer">
             <span className="rally-footer-label">Rally</span>

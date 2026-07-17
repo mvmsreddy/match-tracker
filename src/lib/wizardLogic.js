@@ -11,7 +11,7 @@ export function freshPending(server) {
     shotWing: null,             // 'Forehand' | 'Backhand' | 'Other'
     shotType: null,             // 'Ground' | 'Volley' | etc. | infraction sub-type
     stroke: null,               // combined: 'Ground Forehand', 'Net Touch', etc.
-    rallyCount: 2,              // default rally count for Ball In plays (footer counter)
+    rallyCount: null,           // null = not yet selected; must be chosen before ballInPlay
   };
 }
 
@@ -94,7 +94,7 @@ export function buildPointEntry(pending) {
     stroke: pending.stroke,
     isReturn: false,
     location: null,
-    rally: pending.rallyCount,
+    rally: pending.rallyCount ?? 2,
     pointWinner,
     firstFaultLocation: null,
   };
