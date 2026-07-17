@@ -173,24 +173,41 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           <>
             <div className="wizard-step-label">{serveLabel}</div>
             <div className="ball-in-play-grid">
-              {/* Server column */}
+              {/* Left column: always self */}
               <div className="player-col">
-                <div className={'player-col-name ' + (pending.server === 'self' ? 'self-name' : 'opp-name')}>
-                  {playerName(pending.server)}
-                </div>
-                <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
-                <div className="chip chip-lg warn" onClick={handleFault}>
-                  {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
-                </div>
-                <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
+                <div className="player-col-name self-name">{playerName('self')}</div>
+                {pending.server === 'self' ? (
+                  <>
+                    <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
+                    <div className="chip chip-lg warn" onClick={handleFault}>
+                      {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
+                    </div>
+                    <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
+                    <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
+                  </>
+                )}
               </div>
-              {/* Receiver column */}
+              {/* Right column: always opp */}
               <div className="player-col">
-                <div className={'player-col-name ' + (receiver === 'self' ? 'self-name' : 'opp-name')}>
-                  {playerName(receiver)}
-                </div>
-                <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
-                <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
+                <div className="player-col-name opp-name">{playerName('opp')}</div>
+                {pending.server === 'opp' ? (
+                  <>
+                    <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
+                    <div className="chip chip-lg warn" onClick={handleFault}>
+                      {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
+                    </div>
+                    <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
+                    <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
+                  </>
+                )}
               </div>
             </div>
             <div className="chip-row" style={{ marginTop: 8 }}>
@@ -257,32 +274,61 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           </>
         )}
 
-        {activeStep === 'shotWing' && (
-          <>
-            <div className="wizard-step-label">
-              {playerName(pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver))} — Select Wing
-            </div>
-            <div className="chip-row">
-              <div className="chip chip-lg" onClick={() => handleShotWing('Forehand')}>Forehand</div>
-              <div className="chip chip-lg" onClick={() => handleShotWing('Backhand')}>Backhand</div>
-            </div>
-          </>
-        )}
-
-        {activeStep === 'shotType' && (
-          <>
-            <div className="wizard-step-label">
-              {playerName(pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver))} — {pending.shotWing}
-            </div>
-            <div className="chip-row chip-grid-2">
-              {SHOT_TYPES.map((type) => (
-                <div key={type} className="chip chip-lg" onClick={() => handleShotType(type)}>
-                  {shotLabel(type)}
+        {activeStep === 'shotWing' && (() => {
+          const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
+          return (
+            <>
+              <div className="wizard-step-label">Select Wing</div>
+              <div className="ball-in-play-grid">
+                <div className="player-col">
+                  <div className="player-col-name self-name">{playerName('self')}</div>
+                  {hitter === 'self' && (
+                    <>
+                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
+                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Backhand')}>Backhand</div>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+                <div className="player-col">
+                  <div className="player-col-name opp-name">{playerName('opp')}</div>
+                  {hitter === 'opp' && (
+                    <>
+                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
+                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Backhand')}>Backhand</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })()}
+
+        {activeStep === 'shotType' && (() => {
+          const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
+          return (
+            <>
+              <div className="wizard-step-label">{pending.shotWing} — Select Shot</div>
+              <div className="ball-in-play-grid">
+                <div className="player-col">
+                  <div className="player-col-name self-name">{playerName('self')}</div>
+                  {hitter === 'self' && SHOT_TYPES.map((type) => (
+                    <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
+                      {shotLabel(type)}
+                    </div>
+                  ))}
+                </div>
+                <div className="player-col">
+                  <div className="player-col-name opp-name">{playerName('opp')}</div>
+                  {hitter === 'opp' && SHOT_TYPES.map((type) => (
+                    <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
+                      {shotLabel(type)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {activeStep === 'infractionSelect' && (
           <>
