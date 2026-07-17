@@ -448,6 +448,121 @@ export async function saveDrawEntries(eventId, drawType, entries) {
   return data.map(rowToEntry);
 }
 
+export async function addDrawEntry(eventId, drawType, entry) {
+  const row = {
+    event_id: eventId,
+    draw_type: drawType,
+    position: Number(entry.position),
+    seed: entry.seed ? Number(entry.seed) : null,
+    is_bye: entry.isBye || false,
+    qualifier_slot: entry.qualifierSlot || null,
+    player_id: entry.playerId || null,
+    family_name: entry.familyName,
+    first_name: entry.firstName || null,
+    aita_reg: entry.aitaReg || null,
+    player_state: entry.playerState || null,
+    ranking: entry.ranking ? Number(entry.ranking) : null,
+    date_of_birth: entry.dateOfBirth || null,
+    status_code: entry.statusCode || null,
+    partner_id: entry.partnerId || null,
+    partner_family_name: entry.partnerFamilyName || null,
+    partner_first_name: entry.partnerFirstName || null,
+    partner_aita_reg: entry.partnerAitaReg || null,
+    partner_state: entry.partnerState || null,
+    partner_ranking: entry.partnerRanking ? Number(entry.partnerRanking) : null,
+    is_alternate: entry.isAlternate || false,
+    replacing_name: entry.replacingName || null,
+  };
+  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+export async function updateDrawEntry(entryId, updates) {
+  const row = {
+    position: Number(updates.position),
+    seed: updates.seed ? Number(updates.seed) : null,
+    status_code: updates.statusCode || null,
+    family_name: updates.familyName,
+    first_name: updates.firstName || null,
+    aita_reg: updates.aitaReg || null,
+    player_state: updates.playerState || null,
+    ranking: updates.ranking ? Number(updates.ranking) : null,
+    date_of_birth: updates.dateOfBirth || null,
+    player_id: updates.playerId || null,
+    partner_family_name: updates.partnerFamilyName || null,
+    partner_first_name: updates.partnerFirstName || null,
+    partner_aita_reg: updates.partnerAitaReg || null,
+    partner_state: updates.partnerState || null,
+    partner_ranking: updates.partnerRanking ? Number(updates.partnerRanking) : null,
+    is_alternate: updates.isAlternate || false,
+    replacing_name: updates.replacingName || null,
+  };
+  const { data, error } = await supabase
+    .from('draw_entries').update(row).eq('id', entryId).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+export async function deleteDrawEntry(entryId) {
+  const { error } = await supabase.from('draw_entries').delete().eq('id', entryId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+export async function bulkAddDrawEntries(eventId, drawType, entries) {
+  if (entries.length === 0) return [];
+  const rows = entries.map(e => ({
+    event_id: eventId,
+    draw_type: drawType,
+    position: Number(e.position),
+    seed: e.seed ? Number(e.seed) : null,
+    is_bye: false,
+    family_name: e.familyName,
+    first_name: e.firstName || null,
+    aita_reg: e.aitaReg || null,
+    player_state: e.playerState || null,
+    ranking: e.ranking ? Number(e.ranking) : null,
+    status_code: e.statusCode || null,
+    is_alternate: false,
+  }));
+  const { data, error } = await supabase.from('draw_entries').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return data.map(rowToEntry);
+}
+
+// Get all draw positions a player holds in a week (for participation limit checks)
+// Returns array of { eventId, category, ageGroup, isDoubles }
+export async function getPlayerWeekParticipation(weekId, aitaReg, excludeEventId) {
+  if (!aitaReg) return [];
+  // Step 1: get all other events in this week
+  const { data: weekEvents, error: evErr } = await supabase
+    .from('events')
+    .select('id, is_doubles, category, age_group')
+    .eq('tournament_week_id', weekId)
+    .neq('id', excludeEventId);
+  if (evErr) throw new Error(evErr.message);
+  if (!weekEvents || weekEvents.length === 0) return [];
+
+  const eventIds = weekEvents.map(e => e.id);
+
+  // Step 2: find entries for this player (as player or partner) in those events
+  const [{ data: asPlayer }, { data: asPartner }] = await Promise.all([
+    supabase.from('draw_entries').select('id, event_id').in('event_id', eventIds).eq('aita_reg', aitaReg),
+    supabase.from('draw_entries').select('id, event_id').in('event_id', eventIds).eq('partner_aita_reg', aitaReg),
+  ]);
+
+  const seen = new Set();
+  const result = [];
+  for (const row of [...(asPlayer || []), ...(asPartner || [])]) {
+    if (seen.has(row.event_id)) continue;
+    seen.add(row.event_id);
+    const ev = weekEvents.find(e => e.id === row.event_id);
+    if (ev) result.push({ eventId: ev.id, category: ev.category, ageGroup: ev.age_group, isDoubles: ev.is_doubles });
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Event Matches
 // ---------------------------------------------------------------------------

@@ -53,6 +53,11 @@ export const deleteEvent = hasSupabaseConfig ? supabaseApi.deleteEvent : async (
 // Draw Entries
 export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : async () => [];
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];
+export const addDrawEntry = hasSupabaseConfig ? supabaseApi.addDrawEntry : noSupabase;
+export const updateDrawEntry = hasSupabaseConfig ? supabaseApi.updateDrawEntry : noSupabase;
+export const deleteDrawEntry = hasSupabaseConfig ? supabaseApi.deleteDrawEntry : async () => {};
+export const bulkAddDrawEntries = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntries : async () => [];
+export const getPlayerWeekParticipation = hasSupabaseConfig ? supabaseApi.getPlayerWeekParticipation : async () => [];
 
 // Event Matches
 export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : async () => [];
