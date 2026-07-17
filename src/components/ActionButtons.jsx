@@ -8,7 +8,7 @@ import { formatDuration } from '../lib/storage';
 export default function ActionButtons({
   header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget,
   points, engine, analytics, matchStartTime, matchDurationMs, showStatus,
-  resetMatch, matchSaved, markSaved,
+  resetMatch,
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -45,8 +45,8 @@ export default function ActionButtons({
         points,
         sets: engine.sets,
       });
-      markSaved();
-      showStatus('Match saved to history — you can now generate the PDF');
+      showStatus('Match saved to history');
+      resetMatch();
     } catch (err) {
       showStatus('Could not save match: ' + err.message, 4000);
     } finally {
@@ -122,19 +122,13 @@ export default function ActionButtons({
       </div>
 
       <div className="action-bar">
-        {matchSaved ? (
-          <button className="action-btn primary" style={{ flex: '1 1 100%' }} onClick={resetMatch}>
-            ▶ Start New Match
-          </button>
-        ) : (
-          <button
-            className="action-btn primary"
-            disabled={saving || points.length === 0}
-            onClick={handleCompleteAndSave}
-          >
-            {saving ? 'Saving...' : 'Complete & Save Match'}
-          </button>
-        )}
+        <button
+          className="action-btn primary"
+          disabled={saving || points.length === 0}
+          onClick={handleCompleteAndSave}
+        >
+          {saving ? 'Saving...' : 'Complete & Save Match'}
+        </button>
         <button
           className="action-btn"
           disabled={generating || points.length === 0}
@@ -144,11 +138,9 @@ export default function ActionButtons({
           {generating ? 'Generating...' : 'Generate PDF'}
         </button>
         <button className="action-btn" onClick={handleCopySummary}>Copy summary</button>
-        {!matchSaved && (
-          <button className={'action-btn danger' + (confirmingReset ? ' confirming' : '')} onClick={handleResetClick}>
-            {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
-          </button>
-        )}
+        <button className={'action-btn danger' + (confirmingReset ? ' confirming' : '')} onClick={handleResetClick}>
+          {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
+        </button>
       </div>
     </>
   );

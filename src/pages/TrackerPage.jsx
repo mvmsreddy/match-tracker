@@ -143,7 +143,6 @@ export default function TrackerPage() {
             pointTarget={t.pointTarget} points={t.points} engine={t.engine} analytics={t.analytics}
             matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
             showStatus={t.showStatus} resetMatch={t.resetMatch}
-            matchSaved={t.matchSaved} markSaved={t.markSaved}
           />
         </div>
       )}
