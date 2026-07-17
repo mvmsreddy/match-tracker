@@ -242,9 +242,10 @@ body { margin: 0; }
 .tab-content { /* no extra styles needed — child components handle padding */ }
 
 @media (max-width: 520px) {
-  .tab-bar { padding: 0 12px; }
-  .tab-btn { padding: 11px 16px; font-size: 0.68rem; }
+  .tab-bar { padding: 0 4px; }
+  .tab-btn { padding: 11px 10px; font-size: 0.63rem; letter-spacing: 0.03em; }
 }
+.tab-btn:disabled { opacity: 0.35; cursor: default; }
 
 /* ================================================
    MOMENTUM GRAPH
