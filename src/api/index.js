@@ -24,6 +24,18 @@ export const saveMatch = impl.saveMatch;
 export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
 
+// Tournament module — Supabase only (no mock fallback needed)
+export const listTournaments = hasSupabaseConfig ? supabaseApi.listTournaments : async () => [];
+export const getTournament = hasSupabaseConfig ? supabaseApi.getTournament : async () => null;
+export const createTournament = hasSupabaseConfig ? supabaseApi.createTournament : async () => { throw new Error('Requires Supabase'); };
+export const deleteTournament = hasSupabaseConfig ? supabaseApi.deleteTournament : async () => {};
+export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : async () => [];
+export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];
+export const getTournamentMatches = hasSupabaseConfig ? supabaseApi.getTournamentMatches : async () => [];
+export const initializeMatches = hasSupabaseConfig ? supabaseApi.initializeMatches : async () => [];
+export const updateMatchScore = hasSupabaseConfig ? supabaseApi.updateMatchScore : async () => {};
+export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : async () => {};
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;

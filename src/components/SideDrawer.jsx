@@ -29,6 +29,9 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
           <NavLink to="/compare" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
             Compare
           </NavLink>
+          <NavLink to="/tournaments" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
+            Tournaments
+          </NavLink>
         </nav>
 
         <div className="drawer-divider" />
