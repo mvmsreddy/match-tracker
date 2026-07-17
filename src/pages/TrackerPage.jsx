@@ -95,18 +95,20 @@ export default function TrackerPage() {
       {/* ── Track tab ── */}
       {activeTab === 'track' && t.matchStarted && (
         <div className="tab-content">
-          <LiveTrackBar
-            selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-            nextServer={t.nextServer} setServerChoice={t.setServerChoice}
-            serverExplicitlyChosen={t.serverExplicitlyChosen}
-            hasPoints={t.points.length > 0}
-            onDelete={t.resetMatch}
-          />
+          {!t.serverExplicitlyChosen && (
+            <LiveTrackBar
+              selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+              nextServer={t.nextServer} setServerChoice={t.setServerChoice}
+              serverExplicitlyChosen={t.serverExplicitlyChosen}
+              hasPoints={t.points.length > 0}
+            />
+          )}
           {t.serverExplicitlyChosen ? (
             <Wizard
               nextServer={t.nextServer}
               onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
               selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+              onDelete={t.resetMatch}
             />
           ) : (
             <div className="server-required-msg">Select who serves first above to begin tracking</div>
@@ -351,17 +353,9 @@ function SetupForm({ t, onStart }) {
 }
 
 // ── Live Track top bar: server picker + delete ────────────────────────────────
-function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverExplicitlyChosen, hasPoints, onDelete }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  function handleDelete() {
-    if (!confirmDelete) { setConfirmDelete(true); return; }
-    onDelete();
-  }
-
+function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverExplicitlyChosen, hasPoints }) {
   return (
     <div className="live-track-bar">
-      {/* Who serves first — only editable before any point is logged */}
       <div className={'live-track-server' + (!serverExplicitlyChosen ? ' live-track-server-required' : '')}>
         <span className={'live-track-label' + (!serverExplicitlyChosen ? ' live-track-label-required' : '')}>Serves first</span>
         <div className="server-toggle" style={{ marginBottom: 0, flex: 1 }}>
@@ -379,17 +373,6 @@ function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverEx
           </div>
         </div>
       </div>
-
-      {/* Delete match */}
-      {confirmDelete ? (
-        <div className="live-track-confirm">
-          <span className="live-track-confirm-label">Delete this match?</span>
-          <button className="action-btn danger confirming" onClick={handleDelete}>Yes, Delete</button>
-          <button className="action-btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
-        </div>
-      ) : (
-        <button className="live-track-delete-btn" onClick={handleDelete}>✕ Delete Match</button>
-      )}
     </div>
   );
 }

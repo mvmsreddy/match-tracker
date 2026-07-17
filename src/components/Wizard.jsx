@@ -27,8 +27,9 @@ function shotLabel(type) {
   return type;
 }
 
-export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName }) {
+export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onDelete }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
 
@@ -353,6 +354,14 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
       <div className="undo-bar">
         <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</button>
+        {confirmDelete ? (
+          <>
+            <button className="action-btn danger confirming" onClick={onDelete}>Yes, Delete</button>
+            <button className="undo-btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          </>
+        ) : (
+          <button className="delete-match-btn" onClick={() => setConfirmDelete(true)}>✕ Delete</button>
+        )}
       </div>
     </div>
   );
