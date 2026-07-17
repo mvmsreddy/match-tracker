@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
 import { applySeeding, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
+import { generateDrawSheetPDF } from '../utils/drawPdf';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1227,6 +1228,20 @@ export default function EventDetailPage() {
             {isOwner && qualComplete && (
               <button className="action-btn t-promote-btn" onClick={handlePromoteQualifiers}>
                 ✓ Promote Qualifiers → Main
+              </button>
+            )}
+            {/* PDF draw sheet — always available when entries exist */}
+            {entries.length > 0 && (
+              <button
+                className="action-btn t-pdf-btn"
+                onClick={() => generateDrawSheetPDF({
+                  event: { ...event, drawType },
+                  week,
+                  entries: sortedEntries,
+                  matches,
+                })}
+              >
+                ⬇ PDF
               </button>
             )}
           </div>

@@ -934,6 +934,10 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-promote-btn { background: rgba(106,175,90,0.1); border: 1px solid rgba(106,175,90,0.4); color: var(--win-text); font-weight: 700; letter-spacing: 0.03em; }
 .t-promote-btn:hover { background: rgba(106,175,90,0.18); }
 
+/* PDF download button */
+.t-pdf-btn { background: rgba(159,176,190,0.08); border: 1px solid rgba(159,176,190,0.3); color: var(--text3); }
+.t-pdf-btn:hover { background: rgba(159,176,190,0.14); color: var(--text); }
+
 /* ---- Score Modal ---- */
 .t-score-matchup { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
 .t-score-player  { flex: 1; text-align: center; font-weight: 700; font-size: 0.88rem; color: var(--text); line-height: 1.25; }
