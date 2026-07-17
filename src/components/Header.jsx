@@ -12,6 +12,7 @@ export default function Header({
   formatPreset, setFormatPreset, formatCustom, setFormatCustom,
   pointTarget, setPointTarget, showStatus,
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [customTargetVisible, setCustomTargetVisible] = useState(!['10', '15', '21'].includes(String(pointTarget)));
 
@@ -47,7 +48,20 @@ export default function Header({
     <div className="header">
       <div className="title-row">
         <h1 className="title">Match Tracker Pro</h1>
+        <button className="header-toggle-btn" onClick={() => setCollapsed((c) => !c)}>
+          {collapsed ? '▼ Setup' : '▲ Hide'}
+        </button>
       </div>
+
+      {collapsed ? (
+        <div className="header-collapsed-info">
+          <span>{header.selfName || 'Self'}</span> vs <span>{header.oppName || 'Opponent'}</span>
+          {header.tournament ? <> &middot; {header.tournament}</> : null}
+          {header.surface ? <> &middot; {header.surface}</> : null}
+          {' '}&middot; {sessionType === 'practice' ? 'Practice' : 'Match'}
+        </div>
+      ) : (
+      <>
       <div className="subtitle">POINT-BY-POINT LOGGING &middot; LIVE SCORING &middot; FULL PDF REPORT</div>
 
       <div className="info-grid">
@@ -139,6 +153,8 @@ export default function Header({
       )}
 
       <ScoringHint sessionType={sessionType} pointTarget={pointTarget} formatPreset={formatPreset} />
+      </>
+      )}
     </div>
   );
 }

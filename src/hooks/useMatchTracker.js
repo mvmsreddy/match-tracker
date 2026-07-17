@@ -29,6 +29,7 @@ function initialState() {
     matchStartTime: null,
     matchEndTime: null,
     matchSaved: false,
+    matchStarted: false,
   };
 }
 
@@ -180,8 +181,19 @@ export function useMatchTracker() {
     setState((prev) => ({ ...prev, matchSaved: true }));
   }, []);
 
+  const startMatch = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      matchStarted: true,
+      header: {
+        ...prev.header,
+        date: prev.header.date || new Date().toISOString().slice(0, 10),
+      },
+    }));
+  }, []);
+
   const resetMatch = useCallback(() => {
-    setState((prev) => ({ ...prev, points: [], serverChoice: 'self', matchStartTime: null, matchEndTime: null, matchSaved: false }));
+    setState((prev) => ({ ...prev, points: [], serverChoice: 'self', matchStartTime: null, matchEndTime: null, matchSaved: false, matchStarted: false }));
     if (user) clearSession(user.id);
     showStatus('Match reset');
   }, [user]);
@@ -198,6 +210,7 @@ export function useMatchTracker() {
     formatLabel,
     pointTarget: state.pointTarget, setPointTarget,
     points: state.points,
+    matchStarted: state.matchStarted, startMatch,
     commitPoint, undoLast, resetMatch,
     nextServer, setServerChoice,
     engine, analytics,

@@ -15,32 +15,69 @@ body { margin: 0; }
 .field select { width: 100%; background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; padding: 7px 8px; border-radius: 2px; font-family: 'Inter'; font-size: 0.82rem; }
 .field select:focus { outline: 2px solid #C6E23D; outline-offset: 1px; }
 
-.scorebar { padding: 14px 16px; border-bottom: 1px solid #1E3A52; }
+.scorebar { padding: 12px 16px; border-bottom: 2px solid #1E3A52; position: sticky; top: 0; z-index: 100; background: #14293D; box-shadow: 0 3px 12px rgba(0,0,0,0.45); }
 .score-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: 'JetBrains Mono', monospace; }
-.score-names { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; }
-.score-names .self-name { color: #C6E23D; }
-.score-names .opp-name { color: #E37B6B; }
+.score-names { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; }
+.score-names .self-name { color: #C6E23D; font-weight: 600; }
+.score-names .opp-name { color: #E37B6B; font-weight: 600; }
 .score-sets { display: flex; gap: 6px; align-items: center; }
 .set-chip { background: #1E3A52; border: 1px solid #2C4C68; border-radius: 3px; padding: 3px 7px; font-size: 0.68rem; text-align: center; min-width: 34px; }
-.score-current { font-size: 1.5rem; font-weight: 600; color: #F3F1E6; }
-.server-tag { font-size: 0.62rem; color: #6E8598; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.score-current { font-size: 2rem; font-weight: 700; color: #F3F1E6; line-height: 1; }
+.server-tag { font-size: 0.62rem; color: #6E8598; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
 
 .wizard { padding: 14px 16px; }
 .wizard-title { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA0B5; margin-bottom: 8px; }
-.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.chip { background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; padding: 10px 14px; border-radius: 20px; font-family: 'Inter'; font-size: 0.8rem; cursor: pointer; }
+
+/* Step card — highlights the current active step */
+.wizard-step-card { background: #182E42; border: 1px solid #2A4560; border-left: 3px solid #C6E23D; border-radius: 5px; padding: 16px 14px; margin-bottom: 12px; }
+.wizard-step-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #C6E23D; margin-bottom: 12px; }
+
+/* Breadcrumb showing completed choices */
+.wizard-breadcrumb { font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: #7FA0B5; padding: 6px 0 10px; margin-bottom: 6px; border-bottom: 1px solid #1E3A52; line-height: 1.5; word-break: break-word; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.chip { background: #1E3A52; border: 1px solid #2C4C68; color: #F3F1E6; padding: 10px 14px; border-radius: 20px; font-family: 'Inter'; font-size: 0.8rem; cursor: pointer; user-select: none; }
 .chip:hover { border-color: #C6E23D; }
 .chip.selected { background: #C6E23D; color: #14293D; border-color: #C6E23D; font-weight: 600; }
 .chip.wide { width: 100%; text-align: center; }
 .chip.warn { border-color: #E1484B; color: #E1484B; }
-.server-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
-.server-toggle .chip { flex: 1; text-align: center; }
-.toggle-inline { display: flex; align-items: center; gap: 8px; margin: 6px 0 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #9FB0BE; }
-.toggle-inline .chip { padding: 6px 12px; font-size: 0.72rem; }
-.undo-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-.undo-btn { background: none; border: 1px solid #2C4C68; color: #F3F1E6; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; padding: 7px 12px; border-radius: 2px; cursor: pointer; }
-.undo-btn:hover:not(:disabled) { border-color: #C6E23D; }
-.undo-btn:disabled { opacity: 0.35; }
+.chip.warn:hover { background: #2A1820; }
+.chip.warn.selected { background: #E1484B; color: #F3F1E6; }
+
+/* Larger chips for primary tracking actions */
+.chip-lg { padding: 14px 16px; font-size: 0.87rem; min-height: 50px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; }
+
+/* "I won" outcomes — green */
+.chip.self-pt { border-color: #6AAF5A; color: #9DD98E; }
+.chip.self-pt:hover { background: #1A3520; border-color: #8CC87B; }
+.chip.self-pt.selected { background: #6AAF5A; color: #14293D; border-color: #6AAF5A; }
+
+/* "They won" outcomes — red/orange */
+.chip.opp-pt { border-color: #C95A4A; color: #E37B6B; }
+.chip.opp-pt:hover { background: #2A1A18; border-color: #D96B5C; }
+.chip.opp-pt.selected { background: #C95A4A; color: #F3F1E6; border-color: #C95A4A; }
+
+/* "1st in" / "2nd in" action chips — lime accent */
+.chip.chip-action { border-color: #C6E23D; color: #C6E23D; }
+.chip.chip-action:hover { background: #1E2E1A; }
+
+/* 2-column grid for outcomes and stroke selection */
+.chip-grid-2 .chip { flex: 1 1 calc(50% - 4px); min-width: 0; }
+.chip-grid-2 .chip-full { flex: 1 1 100%; }
+
+/* 7-column grid for rally length */
+.chip-grid-rally .chip { flex: 1 1 0; min-width: 44px; }
+
+/* Server toggle */
+.server-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+.server-chip { flex: 1; text-align: center; min-height: 46px; border-radius: 6px; font-size: 0.87rem; }
+
+.toggle-inline { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #9FB0BE; }
+.toggle-inline .chip { padding: 7px 14px; font-size: 0.74rem; }
+.undo-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.undo-btn { background: none; border: 1px solid #2C4C68; color: #9FB0BE; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; padding: 8px 14px; border-radius: 3px; cursor: pointer; }
+.undo-btn:hover:not(:disabled) { border-color: #C6E23D; color: #C6E23D; }
+.undo-btn:disabled { opacity: 0.3; }
 
 .panel { max-width: 680px; margin: 16px auto; background: #1E3A52; border: 1px solid #2C4C68; border-radius: 4px; padding: 16px; }
 .panel-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: #9FB0BE; margin: 0 0 10px; }
@@ -106,6 +143,12 @@ body { margin: 0; }
 .login-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #4A6478; }
 .login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: #2C4C68; }
 
+/* ---------- Collapsible header ---------- */
+.header-toggle-btn { background: none; border: 1px solid #2C4C68; color: #7FA0B5; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 5px 10px; border-radius: 2px; cursor: pointer; white-space: nowrap; }
+.header-toggle-btn:hover { border-color: #C6E23D; color: #C6E23D; }
+.header-collapsed-info { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #8FA4B5; margin-top: 6px; line-height: 1.6; }
+.header-collapsed-info span { color: #C6E23D; }
+
 /* ---------- Match history page ---------- */
 .history-list { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
 .history-card { background: #1E3A52; border: 1px solid #2C4C68; border-radius: 4px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -120,3 +163,201 @@ body { margin: 0; }
 .top-nav-links a.active, .top-nav-links a:hover { color: #C6E23D; }
 .user-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #9FB0BE; display: flex; align-items: center; gap: 10px; }
 .logout-link { color: #E37B6B; cursor: pointer; text-decoration: underline; }
+
+/* ================================================
+   SETUP PAGE
+   ================================================ */
+.setup-screen { min-height: 100vh; background: #14293D; color: #F3F1E6; font-family: 'Inter', sans-serif; padding: 0 0 60px; }
+.setup-card { max-width: 560px; margin: 0 auto; padding: 24px 20px; }
+.setup-header { text-align: center; margin-bottom: 28px; }
+.setup-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 1.8rem; margin: 0 0 6px; color: #F3F1E6; }
+.setup-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #7FA0B5; letter-spacing: 0.05em; margin: 0; }
+.setup-section { background: #1E3A52; border: 1px solid #2C4C68; border-radius: 6px; padding: 16px; margin-bottom: 14px; }
+.setup-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #C6E23D; margin-bottom: 12px; }
+.setup-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .setup-grid-2 { grid-template-columns: 1fr; } }
+.setup-start-btn { width: 100%; background: #C6E23D; color: #14293D; border: none; padding: 16px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; margin-top: 8px; touch-action: manipulation; }
+.setup-start-btn:hover { opacity: 0.9; }
+.setup-start-btn:disabled { opacity: 0.4; cursor: default; }
+.setup-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #6E8598; text-align: center; margin: 8px 0 0; }
+
+/* ================================================
+   ATP SCOREBOARD
+   ================================================ */
+.atp-board { display: flex; align-items: stretch; gap: 0; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; }
+.atp-players { flex: 1; min-width: 0; }
+.atp-row { display: flex; align-items: center; gap: 0; }
+.atp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.88rem; font-weight: 600; padding-right: 8px; position: relative; }
+.atp-name.self-name { color: #C6E23D; }
+.atp-name.opp-name { color: #E37B6B; }
+.atp-ball { display: inline-block; width: 7px; height: 7px; background: #C6E23D; border-radius: 50%; margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+.atp-set { width: 28px; text-align: center; flex-shrink: 0; font-size: 0.82rem; color: #9FB0BE; padding: 2px 0; }
+.atp-set-live { width: 32px; background: #1E3A52; border: 1px solid #2C4C68; border-radius: 3px; color: #F3F1E6; font-weight: 600; }
+.atp-score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid #2C4C68; padding-left: 14px; margin-left: 10px; flex-shrink: 0; min-width: 72px; }
+.atp-game-score { font-size: 1.6rem; font-weight: 700; color: #F3F1E6; line-height: 1; white-space: nowrap; }
+.atp-time { font-size: 0.6rem; color: #6E8598; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+@media (max-width: 520px) {
+  .atp-board { padding: 8px 12px; }
+  .atp-name { font-size: 0.82rem; }
+  .atp-game-score { font-size: 1.35rem; }
+  .atp-score-block { min-width: 60px; padding-left: 10px; }
+}
+@media (max-width: 360px) {
+  .atp-game-score { font-size: 1.1rem; }
+  .atp-name { font-size: 0.76rem; }
+}
+
+/* ================================================
+   TAB BAR
+   ================================================ */
+.tab-bar { display: flex; border-bottom: 2px solid #1E3A52; max-width: 680px; margin: 0 auto; padding: 0 16px; gap: 0; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #7FA0B5; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 20px; cursor: pointer; touch-action: manipulation; transition: color 0.15s, border-color 0.15s; }
+.tab-btn:hover { color: #F3F1E6; }
+.tab-btn.active { color: #C6E23D; border-bottom-color: #C6E23D; font-weight: 600; }
+.tab-content { /* no extra styles needed — child components handle padding */ }
+
+@media (max-width: 520px) {
+  .tab-bar { padding: 0 12px; }
+  .tab-btn { padding: 11px 16px; font-size: 0.68rem; }
+}
+
+/* ================================================
+   MOMENTUM GRAPH
+   ================================================ */
+.momentum-graph { margin: 10px 0 4px; }
+.momentum-svg { display: block; width: 100%; height: 90px; }
+.momentum-empty { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #4A6478; text-align: center; padding: 24px 0; }
+.momentum-streak { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; margin-bottom: 8px; flex-wrap: wrap; }
+.momentum-footer { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; margin-top: 6px; }
+.momentum-label { color: #4A6478; }
+
+/* ================================================
+   MOBILE RESPONSIVE
+   ================================================ */
+
+/* Prevent blue flash on tap (Android/iOS) */
+body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+
+/* Faster taps on all interactive elements (removes 300ms delay) */
+.chip, button, a, .logout-link, .login-demo-row {
+  touch-action: manipulation;
+}
+
+/* Serving dot — shown next to the current server's name */
+.serve-dot { font-size: 0.6em; vertical-align: middle; color: #C6E23D; }
+
+/* score-right: the right section of the scorebar */
+.score-right { text-align: right; flex-shrink: 0; }
+
+/* Prevent page from overflowing horizontally */
+.root { overflow-x: hidden; }
+
+/* ── Small phones (≤ 520px) ── */
+@media (max-width: 520px) {
+  /* TopNav: hide the user's display name to save space */
+  .top-nav { padding: 10px 12px 0; }
+  .top-nav-links { font-size: 0.64rem; gap: 10px; }
+  .user-chip > span:first-child { display: none; }
+
+  /* Header: tighter padding, hide decorative subtitle */
+  .header { padding: 12px 12px 10px; }
+  .title { font-size: 1.1rem; }
+  .subtitle { display: none; }
+  .info-grid { gap: 7px; margin-top: 10px; }
+
+  /* Prevent iOS input zoom (triggers when font-size < 16px) */
+  .field input,
+  .field select,
+  .login-field input,
+  .notes textarea { font-size: 16px; }
+
+  /* Scorebar: names + game score in top row, set history below */
+  .scorebar { padding: 9px 12px; }
+  .score-row { flex-wrap: wrap; row-gap: 6px; align-items: flex-start; }
+  .score-names { flex: 1 1 auto; min-width: 0; font-size: 0.84rem; }
+  .score-right { flex: 0 0 auto; }
+  .score-sets {
+    order: 3;
+    flex: 0 0 100%;
+    justify-content: flex-start;
+    padding-top: 6px;
+    border-top: 1px solid #1E3A52;
+  }
+  .score-current { font-size: 1.7rem; }
+  .server-tag { font-size: 0.6rem; }
+  .match-over-banner { margin: 8px 12px 0; font-size: 0.88rem; padding: 8px; }
+
+  /* Wizard: tighter side padding */
+  .wizard { padding: 10px 12px; }
+  .wizard-step-card { padding: 14px 12px; }
+  .wizard-breadcrumb { font-size: 0.63rem; }
+  .chip-lg { min-height: 52px; font-size: 0.88rem; padding: 13px 12px; }
+  .server-chip { min-height: 50px; font-size: 0.88rem; }
+  .undo-btn { padding: 10px 14px; font-size: 0.68rem; }
+
+  /* Rally chips: 4 across on first row, 3 on second — prevents 7-wide overflow */
+  .chip-grid-rally {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .chip-grid-rally .chip { flex: unset; min-width: unset; }
+
+  /* Action bar: stack buttons full-width for easy one-thumb tapping */
+  .action-bar { flex-direction: column; padding: 0 12px; gap: 8px; }
+  .action-btn {
+    width: 100%;
+    text-align: center;
+    padding: 14px 15px;
+    font-size: 0.72rem;
+    min-height: 50px;
+  }
+
+  /* Panels: match the page horizontal padding */
+  .panel { margin: 10px 12px; padding: 14px 12px; }
+  .panel-title { font-size: 0.78rem; }
+  .stat-table { font-size: 0.7rem; }
+  .stat-table th, .stat-table td { padding: 6px 3px; }
+
+  /* Point log */
+  .log-scroll { max-height: 200px; }
+  .log-table { font-size: 0.62rem; }
+  .log-table td, .log-table th { padding: 5px 3px; }
+
+  /* History page */
+  .history-list { padding: 0 12px; }
+  .history-card { padding: 12px; flex-wrap: wrap; }
+  .history-card-title { font-size: 0.84rem; }
+  .history-card-sub { font-size: 0.6rem; }
+  .history-card-score { font-size: 0.78rem; }
+
+  /* Notes textarea */
+  .notes textarea { min-height: 70px; }
+
+  /* Safe area padding for devices with home indicators (iPhone X+) */
+  .root { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── Very small phones (≤ 360px) ── */
+@media (max-width: 360px) {
+  .title { font-size: 0.95rem; }
+  .top-nav-links { font-size: 0.6rem; gap: 8px; }
+  .chip-lg { font-size: 0.82rem; min-height: 48px; padding: 11px 10px; }
+  .server-chip { min-height: 46px; font-size: 0.82rem; }
+  .chip-grid-2 .chip { font-size: 0.78rem; }
+  .score-current { font-size: 1.5rem; }
+  .score-names { font-size: 0.78rem; }
+  .stat-table { font-size: 0.64rem; }
+  .action-btn { font-size: 0.68rem; padding: 13px 12px; }
+  .wizard-breadcrumb { font-size: 0.6rem; }
+}
+
+/* ── Tablets and larger (≥ 640px) ── */
+@media (min-width: 640px) {
+  /* Constrain wizard and scorebar to same max-width as other panels */
+  .wizard { max-width: 680px; margin: 0 auto; }
+  .scorebar > * { max-width: 680px; margin-left: auto; margin-right: auto; }
+  .header { max-width: 680px; margin: 0 auto; }
+  .wizard-step-card { border-radius: 6px; }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LOCATIONS } from '../lib/constants';
 import {
   freshPending, buildPointEntry, strokeOptionsFor, outcomeReason, OUTCOME_OPTIONS,
@@ -6,13 +6,70 @@ import {
 
 const RALLY_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 
+function outcomeChipClass(value) {
+  return ['self-winner', 'self-forced', 'opp-unforced'].includes(value) ? 'self-pt' : 'opp-pt';
+}
+
+/** Combines shot type + side into a single tap. Serve stays standalone. */
+function buildStrokeOptions(strokeOpts) {
+  const result = [];
+  for (const type of strokeOpts) {
+    if (type === 'Serve') {
+      result.push({ label: 'Serve', shotType: 'Serve', side: null, stroke: 'Serve', fullWidth: true });
+    } else {
+      const short = type === 'Passing Shot' ? 'Pass' : type === 'Dropshot' ? 'Drop' : type;
+      result.push({ label: short + ' FH', shotType: type, side: 'Forehand', stroke: type + ' Forehand', fullWidth: false });
+      result.push({ label: short + ' BH', shotType: type, side: 'Backhand', stroke: type + ' Backhand', fullWidth: false });
+    }
+  }
+  return result;
+}
+
 export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, canUndo }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
+  const stepCardRef = useRef(null);
+  const prevActiveStep = useRef(null);
 
-  // Keep the wizard's server in sync with the engine's suggestion (e.g. after undo)
   useEffect(() => {
     setPending((p) => (p.server === nextServer ? p : freshPending(nextServer)));
   }, [nextServer]);
+
+  // Derive active step first so we can use it in the scroll effect
+  const { opts: strokeOpts, endedBy } = pending.outcome
+    ? strokeOptionsFor(pending.outcome, pending.server)
+    : { opts: [], endedBy: null };
+  const isReceiverShot = pending.outcome ? endedBy !== pending.server : false;
+  const reason = pending.outcome ? outcomeReason(pending.outcome) : null;
+  const showReturnToggle = !!(pending.stroke && isReceiverShot && pending.stroke !== 'Serve');
+
+  let activeStep;
+  if (!pending.firstServeChoice) {
+    activeStep = 'firstServe';
+  } else if (pending.firstServeChoice === 'fault' && !pending.firstFaultLocation) {
+    activeStep = 'firstFaultLoc';
+  } else if (pending.firstServeChoice === 'fault' && !pending.secondServeChoice) {
+    activeStep = 'secondServe';
+  } else if (pending.secondServeChoice === 'DF') {
+    activeStep = 'dfLoc';
+  } else if (!pending.outcome) {
+    activeStep = 'outcome';
+  } else if (!pending.stroke) {
+    activeStep = 'stroke';
+  } else if ((reason === 'ForcedError' || reason === 'UnforcedError') && !pending.location) {
+    activeStep = 'location';
+  } else {
+    activeStep = 'rally';
+  }
+
+  useEffect(() => {
+    if (activeStep !== prevActiveStep.current) {
+      prevActiveStep.current = activeStep;
+      const timer = setTimeout(() => {
+        stepCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [activeStep]);
 
   function chooseServer(server) {
     onServerChange(server);
@@ -21,9 +78,9 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
 
   function chooseFirstServe(choice) {
     if (choice === 'in') {
-      setPending((p) => ({ ...p, firstServeChoice: 'in', serveResult: '1st', firstFaultLocation: null }));
+      setPending((p) => ({ ...freshPending(p.server), firstServeChoice: 'in', serveResult: '1st' }));
     } else {
-      setPending((p) => ({ ...p, firstServeChoice: 'fault', outcome: null, stroke: null, shotType: null, side: null, location: null, rally: null }));
+      setPending((p) => ({ ...freshPending(p.server), firstServeChoice: 'fault' }));
     }
   }
 
@@ -33,9 +90,17 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
 
   function chooseSecondServe(choice) {
     if (choice === 'DF') {
-      setPending((p) => ({ ...p, secondServeChoice: 'DF', serveResult: 'DF' }));
+      setPending((p) => ({
+        ...freshPending(p.server),
+        firstServeChoice: p.firstServeChoice, firstFaultLocation: p.firstFaultLocation,
+        secondServeChoice: 'DF', serveResult: 'DF',
+      }));
     } else {
-      setPending((p) => ({ ...p, secondServeChoice: '2nd', serveResult: '2nd' }));
+      setPending((p) => ({
+        ...freshPending(p.server),
+        firstServeChoice: p.firstServeChoice, firstFaultLocation: p.firstFaultLocation,
+        secondServeChoice: '2nd', serveResult: '2nd',
+      }));
     }
   }
 
@@ -49,16 +114,9 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     setPending((p) => ({ ...p, outcome, shotType: null, side: null, stroke: null, isReturn: false, location: null, rally: null }));
   }
 
-  function chooseShotType(shotType) {
-    if (shotType === 'Serve') {
-      setPending((p) => ({ ...p, shotType, side: null, stroke: 'Serve', isReturn: false }));
-    } else {
-      setPending((p) => ({ ...p, shotType, side: null, stroke: null }));
-    }
-  }
-
-  function chooseSide(side) {
-    setPending((p) => ({ ...p, side, stroke: p.shotType + ' ' + side }));
+  function chooseStroke(shotType, side) {
+    const stroke = side ? shotType + ' ' + side : shotType;
+    setPending((p) => ({ ...p, shotType, side, stroke }));
   }
 
   function toggleReturn() {
@@ -75,128 +133,157 @@ export default function Wizard({ nextServer, onServerChange, onCommit, onUndo, c
     setPending(freshPending(pending.server));
   }
 
-  const { opts: strokeOpts, endedBy } = pending.outcome ? strokeOptionsFor(pending.outcome, pending.server) : { opts: [], endedBy: null };
-  const isReceiverShot = pending.outcome ? endedBy !== pending.server : false;
-  const reason = pending.outcome ? outcomeReason(pending.outcome) : null;
+  // Build breadcrumb summary of completed choices
+  const summaryParts = [];
+  if (pending.firstServeChoice === 'in') {
+    summaryParts.push('1st in');
+  } else if (pending.firstServeChoice === 'fault') {
+    summaryParts.push('1st fault' + (pending.firstFaultLocation ? ' · ' + pending.firstFaultLocation : ''));
+    if (pending.secondServeChoice === '2nd') summaryParts.push('2nd in');
+    else if (pending.secondServeChoice === 'DF') summaryParts.push('Double Fault');
+  }
+  if (pending.outcome) {
+    const lbl = OUTCOME_OPTIONS.find((o) => o.value === pending.outcome)?.label;
+    if (lbl) summaryParts.push(lbl);
+  }
+  if (pending.stroke) summaryParts.push(pending.stroke);
+  if (pending.location) summaryParts.push(pending.location);
 
-  const showFirstFaultLocation = pending.firstServeChoice === 'fault' && !pending.firstFaultLocation;
-  const showSecondServe = pending.firstServeChoice === 'fault' && !!pending.firstFaultLocation;
-  const showDfLocation = pending.secondServeChoice === 'DF';
-  const showOutcome = pending.serveResult === '1st' || pending.serveResult === '2nd';
-  const showStroke = showOutcome && !!pending.outcome;
-  const showSideRow = showStroke && pending.shotType && pending.shotType !== 'Serve';
-  const showReturnToggle = showStroke && pending.stroke && isReceiverShot && pending.stroke !== 'Serve';
-  const showLocation = showStroke && !!pending.stroke && (reason === 'ForcedError' || reason === 'UnforcedError');
-  const showRally = showStroke && !!pending.stroke && (reason === 'Winner' || !!pending.location);
+  const strokeOptions = strokeOpts.length ? buildStrokeOptions(strokeOpts) : [];
+
+  const stepLabels = {
+    firstServe: 'First serve',
+    firstFaultLoc: '1st serve — where?',
+    secondServe: 'Second serve',
+    dfLoc: '2nd serve — where?',
+    outcome: 'What happened?',
+    stroke: 'Shot type',
+    location: 'Error location',
+    rally: 'Rally length (shots)',
+  };
 
   return (
     <div className="wizard">
+      {/* Server toggle — always visible at top */}
       <div className="server-toggle">
-        <div className={'chip' + (pending.server === 'self' ? ' selected' : '')} onClick={() => chooseServer('self')}>Self serving</div>
-        <div className={'chip' + (pending.server === 'opp' ? ' selected' : '')} onClick={() => chooseServer('opp')}>Opponent serving</div>
-      </div>
-
-      <div>
-        <div className="wizard-title">Step 1 &middot; First serve</div>
-        <div className="chip-row">
-          <div className={'chip' + (pending.firstServeChoice === 'in' ? ' selected' : '')} onClick={() => chooseFirstServe('in')}>1st serve in</div>
-          <div className={'chip warn' + (pending.firstServeChoice === 'fault' ? ' selected' : '')} onClick={() => chooseFirstServe('fault')}>1st serve fault</div>
+        <div className={'chip server-chip' + (pending.server === 'self' ? ' selected' : '')} onClick={() => chooseServer('self')}>
+          Self serving
+        </div>
+        <div className={'chip server-chip' + (pending.server === 'opp' ? ' selected' : '')} onClick={() => chooseServer('opp')}>
+          Opp serving
         </div>
       </div>
 
-      {showFirstFaultLocation && (
-        <div>
-          <div className="wizard-title">Where did the 1st serve miss?</div>
+      {/* Breadcrumb — shows what's been logged so far */}
+      {summaryParts.length > 0 && (
+        <div className="wizard-breadcrumb">
+          {summaryParts.join(' → ')}
+        </div>
+      )}
+
+      {/* Active step card — only the current step */}
+      <div className="wizard-step-card" ref={stepCardRef}>
+        <div className="wizard-step-label">{stepLabels[activeStep]}</div>
+
+        {activeStep === 'firstServe' && (
+          <div className="chip-row">
+            <div className="chip chip-lg chip-action" onClick={() => chooseFirstServe('in')}>1st in ✓</div>
+            <div className="chip chip-lg warn" onClick={() => chooseFirstServe('fault')}>Fault</div>
+          </div>
+        )}
+
+        {activeStep === 'firstFaultLoc' && (
           <div className="chip-row">
             {LOCATIONS.map((loc) => (
-              <div key={loc} className="chip" onClick={() => chooseFirstFaultLocation(loc)}>{loc}</div>
+              <div key={loc} className="chip chip-lg" onClick={() => chooseFirstFaultLocation(loc)}>{loc}</div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {showSecondServe && (
-        <div>
-          <div className="wizard-title">Second serve</div>
+        {activeStep === 'secondServe' && (
           <div className="chip-row">
-            <div className={'chip' + (pending.secondServeChoice === '2nd' ? ' selected' : '')} onClick={() => chooseSecondServe('2nd')}>2nd serve in</div>
-            <div className={'chip warn' + (pending.secondServeChoice === 'DF' ? ' selected' : '')} onClick={() => chooseSecondServe('DF')}>Double fault</div>
+            <div className="chip chip-lg chip-action" onClick={() => chooseSecondServe('2nd')}>2nd in ✓</div>
+            <div className="chip chip-lg warn" onClick={() => chooseSecondServe('DF')}>Double Fault</div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showDfLocation && (
-        <div>
-          <div className="wizard-title">Where did the 2nd serve miss?</div>
+        {activeStep === 'dfLoc' && (
           <div className="chip-row">
             {LOCATIONS.map((loc) => (
-              <div key={loc} className="chip" onClick={() => chooseDfLocation(loc)}>{loc}</div>
+              <div key={loc} className="chip chip-lg" onClick={() => chooseDfLocation(loc)}>{loc}</div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {showOutcome && (
-        <div>
-          <div className="wizard-title">Step 2 &middot; What happened</div>
-          <div className="chip-row">
+        {activeStep === 'outcome' && (
+          <div className="chip-row chip-grid-2">
             {OUTCOME_OPTIONS.map((o) => (
-              <div key={o.value} className={'chip wide' + (pending.outcome === o.value ? ' selected' : '')} onClick={() => chooseOutcome(o.value)}>{o.label}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {showStroke && (
-        <div>
-          <div className="wizard-title">Step 3 &middot; Shot type</div>
-          <div className="chip-row">
-            {strokeOpts.map((s) => (
-              <div key={s} className={'chip' + (pending.shotType === s ? ' selected' : '')} onClick={() => chooseShotType(s)}>{s}</div>
-            ))}
-          </div>
-          {showSideRow && (
-            <div style={{ marginTop: 10 }}>
-              <div className="chip-row">
-                {['Forehand', 'Backhand'].map((side) => (
-                  <div key={side} className={'chip' + (pending.side === side ? ' selected' : '')} onClick={() => chooseSide(side)}>{side}</div>
-                ))}
+              <div
+                key={o.value}
+                className={'chip chip-lg ' + outcomeChipClass(o.value)}
+                onClick={() => chooseOutcome(o.value)}
+              >
+                {o.label}
               </div>
-            </div>
-          )}
-          {showReturnToggle && (
-            <div className="toggle-inline">
-              <span>Was this the return of serve?</span>
-              <div className={'chip' + (pending.isReturn ? ' selected' : '')} onClick={toggleReturn}>Yes, return shot</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {showLocation && (
-        <div>
-          <div className="wizard-title">Step 4 &middot; Error location</div>
-          <div className="chip-row">
-            {LOCATIONS.map((loc) => (
-              <div key={loc} className={'chip' + (pending.location === loc ? ' selected' : '')} onClick={() => chooseLocation(loc)}>{loc}</div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {showRally && (
-        <div>
-          <div className="wizard-title">Step 5 &middot; Rally length (shots)</div>
-          <div className="chip-row">
-            {RALLY_OPTIONS.map((n) => (
-              <div key={n} className="chip" onClick={() => chooseRally(n)}>{n === 7 ? '7+' : n}</div>
+        {activeStep === 'stroke' && (
+          <div className="chip-row chip-grid-2">
+            {strokeOptions.map((s, i) => (
+              <div
+                key={i}
+                className={'chip chip-lg' + (s.fullWidth ? ' chip-full' : '')}
+                onClick={() => chooseStroke(s.shotType, s.side)}
+              >
+                {s.label}
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {activeStep === 'location' && (
+          <>
+            {showReturnToggle && (
+              <div className="toggle-inline" style={{ marginBottom: 12 }}>
+                <span>Return of serve?</span>
+                <div className={'chip' + (pending.isReturn ? ' selected' : '')} onClick={toggleReturn}>
+                  {pending.isReturn ? 'Yes ✓' : 'No'}
+                </div>
+              </div>
+            )}
+            <div className="chip-row">
+              {LOCATIONS.map((loc) => (
+                <div key={loc} className="chip chip-lg" onClick={() => chooseLocation(loc)}>{loc}</div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {activeStep === 'rally' && (
+          <>
+            {showReturnToggle && (
+              <div className="toggle-inline" style={{ marginBottom: 12 }}>
+                <span>Return of serve?</span>
+                <div className={'chip' + (pending.isReturn ? ' selected' : '')} onClick={toggleReturn}>
+                  {pending.isReturn ? 'Yes ✓' : 'No'}
+                </div>
+              </div>
+            )}
+            <div className="chip-row chip-grid-rally">
+              {RALLY_OPTIONS.map((n) => (
+                <div key={n} className="chip chip-lg" onClick={() => chooseRally(n)}>
+                  {n === 7 ? '7+' : n}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
       <div className="undo-bar">
-        <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>&#8634; Undo last point</button>
+        <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</button>
       </div>
     </div>
   );
