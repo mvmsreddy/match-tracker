@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import { generateOOPPdf } from '../utils/oopPdf';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -396,6 +397,15 @@ export default function OrderOfPlayPage() {
                 {scheduling ? 'Scheduling…' : '⚡ Auto-Schedule'}
               </button>
             </div>
+          )}
+          {/* OOP PDF — always visible when matches exist */}
+          {matches.length > 0 && (
+            <button
+              className="action-btn t-pdf-btn"
+              onClick={() => generateOOPPdf({ week, matches })}
+            >
+              ⬇ OOP PDF
+            </button>
           )}
         </div>
       </div>
