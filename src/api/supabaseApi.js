@@ -588,6 +588,44 @@ export async function deleteDrawEntry(entryId) {
   return { ok: true };
 }
 
+// Move an entry to a different draw group (e.g. main → alternates, qualifying → withdrawal).
+// Calculates the next available position in the target group, then updates draw_type/position/flags in-place.
+// Uses UPDATE rather than delete+insert to preserve the entry id and any linked match history.
+export async function moveEntryToGroup(entryId, targetGroup, eventId) {
+  // targetGroup: 'main' | 'qualifying' | 'alternates' | 'withdrawal'
+  const isAlternate  = targetGroup === 'alternates';
+  const isWithdrawal = targetGroup === 'withdrawal';
+  const drawType     = isWithdrawal ? 'withdrawal' : isAlternate ? 'main' : targetGroup;
+
+  // Find the next available position in the target group
+  const { data: existing } = await supabase
+    .from('draw_entries')
+    .select('position, draw_type, is_alternate')
+    .eq('event_id', eventId)
+    .eq('draw_type', drawType)
+    .eq('is_alternate', isAlternate)
+    .order('position', { ascending: false })
+    .limit(1);
+
+  let nextPos = 1;
+  if (existing && existing.length > 0) nextPos = existing[0].position + 1;
+
+  const updates = {
+    draw_type:      drawType,
+    position:       nextPos,
+    is_alternate:   isAlternate,
+    is_withdrawn:   isWithdrawal,
+    entry_status:   isWithdrawal ? 'withdrawn' : 'placed',
+    withdrawal_type: isWithdrawal ? 'W' : null,
+    withdrawal_date: isWithdrawal ? new Date().toISOString().slice(0, 10) : null,
+  };
+
+  const { data, error } = await supabase
+    .from('draw_entries').update(updates).eq('id', entryId).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
 export async function bulkAddDrawEntries(eventId, drawType, entries) {
   if (entries.length === 0) return [];
   const { data: { user } } = await supabase.auth.getUser();
@@ -1546,13 +1584,17 @@ export async function processWalkoverIfNeeded(eventId, drawType, withdrawnEntryI
 // Nulls scheduling fields on this entry's not-yet-complete matches so stale
 // Order-of-Play slots don't keep showing a withdrawn/replaced player.
 // Organizer re-runs Auto-Schedule afterward.
+// Gracefully skips if the scheduling columns haven't been migrated yet.
 export async function clearScheduleForEntry(entryId) {
   const { error } = await supabase
     .from('event_matches')
     .update({ day_number: null, court_number: null, match_order: null })
     .neq('status', 'complete')
     .or(`entry1_id.eq.${entryId},entry2_id.eq.${entryId}`);
-  if (error) throw new Error(error.message);
+  // Ignore "column not found" errors — scheduling columns may not be migrated yet
+  if (error && !error.message.includes('court_number') && !error.message.includes('day_number') && !error.message.includes('match_order')) {
+    throw new Error(error.message);
+  }
   return { ok: true };
 }
 

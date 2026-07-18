@@ -75,6 +75,25 @@ export function applySeeding(entries, drawSize, numSeeds) {
     if (a.ranking && b.ranking) return a.ranking - b.ranking;
     return a.ranking ? -1 : b.ranking ? 1 : 0;
   });
+  return _placeInDraw(seeded, unseeded, drawSize, numSeeds);
+}
+
+// ---------------------------------------------------------------------------
+// randomizeDraw(entries, drawSize, numSeeds)
+//
+// Same as applySeeding but unseeded players are placed in RANDOM order rather
+// than sorted by ranking — this is the proper AITA random draw procedure.
+// Seeded players still land on their ITF draw positions.
+// BYEs are dropped — call fillByes afterwards to repopulate gaps.
+// ---------------------------------------------------------------------------
+export function randomizeDraw(entries, drawSize, numSeeds) {
+  const seeded   = entries.filter(e => e.seed && !e.isBye).sort((a, b) => a.seed - b.seed);
+  const unseeded = shuffle(entries.filter(e => !e.seed && !e.isBye)); // random order
+  return _placeInDraw(seeded, unseeded, drawSize, numSeeds);
+}
+
+// Internal helper used by both applySeeding and randomizeDraw
+function _placeInDraw(seeded, unseeded, drawSize, numSeeds) {
 
   const seedPositions = getSeededPositions(drawSize, numSeeds);
   const result        = new Map(); // position → entry

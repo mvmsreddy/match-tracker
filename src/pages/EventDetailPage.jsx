@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
-import { applySeeding, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
+import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
 import { checkAgeEligibility } from '../utils/eligibility';
 
@@ -1048,7 +1048,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
 // ---------------------------------------------------------------------------
 // EntryRow  (players list view)
 // ---------------------------------------------------------------------------
-function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw }) {
+function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, currentGroup }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
@@ -1100,6 +1100,21 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
           {!isBye && !isWithdrawn && (
             <button className="t-icon-btn t-icon-btn-wd" onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
           )}
+          {!isBye && onMove && (
+            <select
+              className="t-move-select"
+              value=""
+              title="Move to group"
+              onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
+              style={{ fontSize: 11, padding: '2px 2px', background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#aaa)', border: '1px solid var(--border,#333)', borderRadius: 3, cursor: 'pointer' }}
+            >
+              <option value="">Move→</option>
+              {currentGroup !== 'main'       && <option value="main">Main Draw</option>}
+              {currentGroup !== 'qualifying' && <option value="qualifying">Qualifying</option>}
+              {currentGroup !== 'alternates' && <option value="alternates">Alternates</option>}
+              {currentGroup !== 'withdrawal' && <option value="withdrawal">Withdrawal</option>}
+            </select>
+          )}
           <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
         </td>
       )}
@@ -1110,7 +1125,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
 // ---------------------------------------------------------------------------
 // AlternateRow  (alternates list — positions beyond the draw size)
 // ---------------------------------------------------------------------------
-function AlternateRow({ entry, maxPos, isOwner, onDelete }) {
+function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove }) {
   return (
     <tr className="t-entry-row">
       <td className="t-entry-pos">#{entry.position - maxPos}</td>
@@ -1125,6 +1140,20 @@ function AlternateRow({ entry, maxPos, isOwner, onDelete }) {
       <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
       {isOwner && (
         <td className="t-entry-actions">
+          {onMove && (
+            <select
+              className="t-move-select"
+              value=""
+              title="Move to group"
+              onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
+              style={{ fontSize: 11, padding: '2px 2px', background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#aaa)', border: '1px solid var(--border,#333)', borderRadius: 3, cursor: 'pointer' }}
+            >
+              <option value="">Move→</option>
+              <option value="main">Main Draw</option>
+              <option value="qualifying">Qualifying</option>
+              <option value="withdrawal">Withdrawal</option>
+            </select>
+          )}
           <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
         </td>
       )}
@@ -1774,6 +1803,27 @@ export default function EventDetailPage() {
     try {
       await api.deleteDrawEntry(entryId);
       setEntries(prev => prev.filter(e => e.id !== entryId));
+      setWithdrawnEntries(prev => prev.filter(e => e.id !== entryId));
+    } catch (err) { setError(err.message); }
+  }
+
+  async function handleMoveEntry(entryId, targetGroup) {
+    try {
+      const moved = await api.moveEntryToGroup(entryId, targetGroup, eventId);
+      // Remove from all local state lists, then add to the right one
+      setEntries(prev => prev.filter(e => e.id !== entryId));
+      setWithdrawnEntries(prev => prev.filter(e => e.id !== entryId));
+      if (targetGroup === 'withdrawal') {
+        setWithdrawnEntries(prev => [...prev, moved].sort((a, b) => a.position - b.position));
+      } else {
+        // main / qualifying / alternates — reload both main + qual entries since
+        // the moved entry may have changed draw_type
+        const [mainData, qualData] = await Promise.all([
+          api.getDrawEntries(eventId, 'main'),
+          api.getDrawEntries(eventId, 'qualifying'),
+        ]);
+        setEntries(drawType === 'qualifying' ? qualData : mainData);
+      }
     } catch (err) { setError(err.message); }
   }
 
@@ -1834,11 +1884,35 @@ export default function EventDetailPage() {
     } catch (err) { setError(err.message); }
   }
 
-  // ---- GENERATE BRACKET ---------------------------------------------------
+  // ---- RANDOM DRAW (shuffle positions, keep seeds in ITF slots) ------------
+  async function handleRandomizeDraw() {
+    if (!window.confirm(
+      'Randomize draw? Players will be shuffled into random positions.\n' +
+      'Seeds will be placed in their correct ITF positions.\n' +
+      'You can swap players manually afterwards, then click "Publish Draw".'
+    )) return;
+    setSeeding(true);
+    setError('');
+    try {
+      // Randomize main entries (exclude BYEs — they'll be re-filled after)
+      const playerEntries = mainEntries.filter(e => !e.isBye);
+      const randomized = randomizeDraw(playerEntries, maxPos, numSeeds);
+      // Remove existing BYEs then re-fill
+      const byeIds = entries.filter(e => e.isBye).map(e => e.id);
+      if (byeIds.length) await Promise.all(byeIds.map(id => api.deleteDrawEntry(id)));
+      const saved = await api.saveDrawEntries(eventId, drawType, [...randomized, ...alternateEntries]);
+      setEntries(saved);
+      setViewMode('drawsheet'); // show draw sheet so organiser can review
+    } catch (err) { setError(err.message); }
+    finally { setSeeding(false); }
+  }
+
+  // ---- GENERATE BRACKET / PUBLISH DRAW ------------------------------------
   async function handleGenerateBracket() {
-    const msg = matches.length > 0
+    const isPublished = event?.status !== 'setup';
+    const msg = isPublished
       ? 'Regenerate bracket? All existing match results will be lost.'
-      : 'Generate bracket from the current draw positions?';
+      : 'Publish draw? This will lock player positions and make the draw visible to all players. Continue?';
     if (!window.confirm(msg)) return;
     setGenerating(true);
     setError('');
@@ -2098,14 +2172,29 @@ export default function EventDetailPage() {
                 )}
               </>
             )}
-            {/* Generate / Re-generate Bracket */}
+            {/* Randomize Draw — organiser only, before publishing */}
+            {isOwner && drawFull && event?.status === 'setup' && (
+              <button
+                className="action-btn"
+                style={{ background: '#1a4b8a', color: '#fff' }}
+                onClick={handleRandomizeDraw}
+                disabled={seeding}
+              >
+                {seeding ? 'Shuffling…' : '🎲 Randomize Draw'}
+              </button>
+            )}
+            {/* Publish Draw / Re-generate Bracket */}
             {isOwner && drawFull && (
               <button
                 className="action-btn t-gen-btn"
                 onClick={handleGenerateBracket}
                 disabled={generating}
               >
-                {generating ? 'Generating…' : matches.length > 0 ? '↺ Regenerate Bracket' : '▶ Generate Bracket'}
+                {generating
+                  ? 'Publishing…'
+                  : event?.status !== 'setup'
+                    ? '↺ Regenerate Bracket'
+                    : '▶ Publish Draw'}
               </button>
             )}
             {/* Promote Qualifiers — visible when qualifying draw is fully decided */}
@@ -2193,8 +2282,8 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      {/* View toggle + stats — only for draw tabs */}
-      {(activeTab === 'main' || activeTab === 'qualifying') && (
+      {/* View toggle + stats — only for draw tabs; hidden from players before draw is published */}
+      {(activeTab === 'main' || activeTab === 'qualifying') && (isOwner || event?.status !== 'setup') && (
       <div className="t-view-bar">
         <div className="t-view-stats">
           <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
@@ -2221,8 +2310,8 @@ export default function EventDetailPage() {
       </div>
       )}
 
-      {/* Progress bar — only for draw tabs */}
-      {(activeTab === 'main' || activeTab === 'qualifying') && viewMode !== 'bracket' && (
+      {/* Progress bar — only for draw tabs; organiser only before publish */}
+      {(activeTab === 'main' || activeTab === 'qualifying') && (isOwner || event?.status !== 'setup') && viewMode !== 'bracket' && (
         <div className="t-entry-progress">
           <div className="t-entry-progress-label">
             <span><strong>{mainEntries.length}</strong> / {maxPos} positions filled</span>
@@ -2272,7 +2361,7 @@ export default function EventDetailPage() {
                 </thead>
                 <tbody>
                   {alternateEntries.map(entry => (
-                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} />
+                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} />
                   ))}
                 </tbody>
               </table>
@@ -2323,7 +2412,17 @@ export default function EventDetailPage() {
         </div>
       ) : (
       <div className="page-scroll">
-        {mainEntries.length === 0 ? (
+        {/* Players cannot see draw until organiser publishes it */}
+        {!isOwner && event?.status === 'setup' && mainEntries.length > 0 ? (
+          <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.2rem', marginBottom: 10 }}>📋</div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 6 }}>Draw Not Yet Announced</div>
+            <div style={{ color: 'var(--text3,#777)', fontSize: 13 }}>
+              The organiser will publish the draw soon. Check back later.
+            </div>
+          </div>
+
+        ) : mainEntries.length === 0 ? (
           <div className="history-empty">
             {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
           </div>
@@ -2381,6 +2480,8 @@ export default function EventDetailPage() {
                       onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
                       onDelete={handleDeleteEntry}
                       onWithdraw={e => setWithdrawingEntry(e)}
+                      onMove={isOwner ? handleMoveEntry : undefined}
+                      currentGroup={activeTab}
                     />
                   ))}
                 </tbody>
@@ -2418,6 +2519,7 @@ export default function EventDetailPage() {
                             maxPos={maxPos}
                             isOwner={isOwner}
                             onDelete={handleDeleteEntry}
+                            onMove={isOwner ? handleMoveEntry : undefined}
                           />
                         ))}
                       </tbody>
