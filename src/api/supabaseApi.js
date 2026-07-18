@@ -1439,6 +1439,24 @@ export async function setEntryWithdrawn(entryId, isWithdrawn) {
   return rowToEntry(data);
 }
 
+// Batch-withdraw multiple entries (Phase 14 — sets withdrawal_type + withdrawal_date + entry_status)
+export async function bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate) {
+  if (!entryIds.length) return [];
+  const today = withdrawalDate || new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({
+      is_withdrawn: true,
+      entry_status: 'withdrawn',
+      withdrawal_type: withdrawalType || 'W',
+      withdrawal_date: today,
+    })
+    .in('id', entryIds)
+    .select();
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToEntry);
+}
+
 // Overwrites targetEntryId's player fields with sourceEntry's (an alternate or
 // a lucky loser), marks it as an alternate slot with a "replaces X" label, and
 // consumes the source (deletes the alternate row, or marks the lucky_losers

@@ -85,125 +85,348 @@ function parseBulk(text, existingPositions, maxPos) {
 }
 
 // ---------------------------------------------------------------------------
-// BulkImportModal
+// BulkImportModal  — 4 tabs: Main Draw | Qualifying | Alternates | Withdrawal
 // ---------------------------------------------------------------------------
-function BulkImportModal({ event, drawType, existingEntries, onImport, onClose }) {
-  const maxPos = drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32);
-  const realEntries = existingEntries.filter(e => e.position <= maxPos);
-  const existingPositions = new Set(realEntries.map(e => e.position));
-  const remaining = maxPos - realEntries.length;
+const BULK_TABS = [
+  { key: 'main',       label: 'Main Draw' },
+  { key: 'qualifying', label: 'Qualifying' },
+  { key: 'alternates', label: 'Alternates' },
+  { key: 'withdrawal', label: 'Withdrawal' },
+];
 
+const WD_TYPES = [
+  { value: 'W',  label: 'W — On-time withdrawal' },
+  { value: 'LW', label: 'LW — Late withdrawal' },
+  { value: 'NS', label: 'NS — No show' },
+];
+
+// Shared paste-and-preview panel used by Main Draw, Qualifying, Alternates tabs
+function ImportPane({ maxPos, startPos, existingPositions, isAlternate, onImport, saving, onClose }) {
+  const remaining = isAlternate ? 999 : maxPos - (existingPositions.size);
   const [text, setText] = useState('');
   const [preview, setPreview] = useState(null);
   const [parseErrors, setParseErrors] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
   function handlePreview() {
-    const { entries, errors } = parseBulk(text, existingPositions, maxPos);
-    setPreview(entries);
+    // For alternates, override starting auto-position to startPos
+    const fakeExisting = isAlternate
+      ? new Set([...Array(startPos - 1)].map((_, i) => i + 1)) // pretend 1..startPos-1 are taken
+      : existingPositions;
+    const { entries, errors } = parseBulk(text, fakeExisting, isAlternate ? 9999 : maxPos);
+    const finalEntries = entries.map(e => ({ ...e, isAlternate: isAlternate || false }));
+    setPreview(finalEntries);
     setParseErrors(errors);
     setSaveError('');
   }
 
   async function handleImport() {
     if (!preview || preview.length === 0) return;
-    setSaving(true);
-    setSaveError('');
     try {
       await onImport(preview);
       onClose();
     } catch (err) {
       setSaveError(err.message || 'Import failed');
+    }
+  }
+
+  const placeholder = isAlternate
+    ? '# Alternates — positions auto-start after the draw size\n# Format: FamilyName, FirstName, AitaReg, State, Ranking\nKumari, Divya, 452301, RJ, 220\nPandey, Shreya, 448876, UP, 245'
+    : '# Paste AITA acceptance list — with or without leading position number\n# FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode\nBhosale, Priya, 442320, TS, 45, 1,\nSharma, Ananya, 438901, MH, 78, 2,\nReddy, Kavya, 451234, AP, 112,,\n# With explicit position:\n# 40, Mehta, Riya, 449012, GJ, 156,,Q';
+
+  return (
+    <>
+      <div className="t-bulk-help">
+        <strong>Two formats:</strong>{' '}
+        <code>FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> (auto-position)
+        {' '}or{' '}
+        <code>Pos, FamilyName, ...</code> (explicit position).
+        Tab-separated (Excel/Sheets) also works.
+        {!isAlternate && <>{' '}<strong>{remaining > 0 ? remaining : 0}</strong> slot{remaining !== 1 ? 's' : ''} available.</>}
+      </div>
+
+      {!preview && (
+        <>
+          <textarea
+            className="t-bulk-textarea"
+            rows={11}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+          />
+          {parseErrors.length > 0 && (
+            <div className="login-error" style={{ marginTop: 8 }}>
+              {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+        </>
+      )}
+
+      {preview && (
+        <div className="t-bulk-preview">
+          <div className="t-section-label">{preview.length} player{preview.length !== 1 ? 's' : ''} to import{isAlternate ? ' as Alternates' : ''}</div>
+          <div className="t-entry-table-wrap">
+            <table className="t-entry-table">
+              <thead>
+                <tr><th>Pos</th><th>Seed</th><th>Name</th><th>AITA Reg</th><th>State</th><th>Rank</th><th>SC</th></tr>
+              </thead>
+              <tbody>
+                {preview.map((e, i) => (
+                  <tr key={i}>
+                    <td>{isAlternate ? `Alt ${e.position - (startPos - 1)}` : e.position}</td>
+                    <td>{e.seed || '—'}</td>
+                    <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
+                    <td>{e.aitaReg || '—'}</td>
+                    <td>{e.playerState || '—'}</td>
+                    <td>{e.ranking || '—'}</td>
+                    <td>{e.statusCode ? <span className="t-sc-badge">{e.statusCode}</span> : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        {!preview && (
+          <button className="action-btn primary" onClick={handlePreview} disabled={!text.trim()}>Preview</button>
+        )}
+        {preview && (
+          <>
+            <button className="action-btn primary" disabled={saving || preview.length === 0} onClick={handleImport}>
+              {saving ? 'Importing…' : `Import ${preview.length} Player${preview.length !== 1 ? 's' : ''}`}
+            </button>
+            <button className="action-btn" onClick={() => { setPreview(null); setSaveError(''); }}>Back</button>
+          </>
+        )}
+        <button className="action-btn" onClick={onClose}>Cancel</button>
+      </div>
+    </>
+  );
+}
+
+// Withdrawal tab — shows existing entries as a checklist
+function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
+  const [allEntries, setAllEntries]     = useState(null);
+  const [loadError, setLoadError]       = useState('');
+  const [selected, setSelected]         = useState(new Set());
+  const [wdType, setWdType]             = useState('W');
+  const [wdDate, setWdDate]             = useState(new Date().toISOString().slice(0, 10));
+  const [saveError, setSaveError]       = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      api.getDrawEntries(eventId, 'main'),
+      api.getDrawEntries(eventId, 'qualifying'),
+    ]).then(([main, qual]) => {
+      if (!cancelled) {
+        const active = [...main, ...qual].filter(e => !e.isWithdrawn && !e.isBye);
+        setAllEntries(active);
+      }
+    }).catch(e => { if (!cancelled) setLoadError(e.message); });
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  function toggleEntry(id) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (!allEntries) return;
+    if (selected.size === allEntries.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(allEntries.map(e => e.id)));
+    }
+  }
+
+  async function handleApply() {
+    if (selected.size === 0) return;
+    setSaveError('');
+    try {
+      await onWithdraw([...selected], wdType, wdDate);
+      onClose();
+    } catch (err) {
+      setSaveError(err.message || 'Failed to apply withdrawals');
+    }
+  }
+
+  if (loadError) return <div className="login-error" style={{ marginTop: 8 }}>{loadError}</div>;
+  if (!allEntries) return <div className="history-empty">Loading entries…</div>;
+  if (allEntries.length === 0) return <div className="history-empty">No active entries to withdraw.</div>;
+
+  const mainEntries = allEntries.filter(e => e.drawType === 'main' && !e.isAlternate);
+  const qualEntries = allEntries.filter(e => e.drawType === 'qualifying' && !e.isAlternate);
+  const altEntries  = allEntries.filter(e => e.isAlternate);
+
+  const renderGroup = (label, group) => group.length === 0 ? null : (
+    <>
+      <div className="t-section-label" style={{ margin: '10px 0 4px' }}>{label}</div>
+      {group.map(e => (
+        <label key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: '1px solid var(--border,#2a2a2a)', cursor: 'pointer', fontSize: 13 }}>
+          <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleEntry(e.id)} style={{ width: 15, height: 15, flexShrink: 0 }} />
+          <span style={{ minWidth: 32, color: 'var(--text3,#777)', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>
+            {e.isAlternate ? `A${e.position - (e.drawType === 'main' ? (allEntries.find(x => x.drawType === 'main' && !x.isAlternate) ? 0 : 0) : 0)}` : `#${e.position}`}
+          </span>
+          {e.seed && <span className="t-sc-badge">[{e.seed}]</span>}
+          <span style={{ flex: 1 }}>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</span>
+          <span style={{ color: 'var(--text3,#777)', fontSize: 11 }}>{e.aitaReg || ''}</span>
+          <span style={{ color: 'var(--text3,#777)', fontSize: 11 }}>{e.playerState || ''}</span>
+          {e.statusCode && <span className="t-sc-badge">{e.statusCode}</span>}
+        </label>
+      ))}
+    </>
+  );
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox"
+            checked={selected.size === allEntries.length && allEntries.length > 0}
+            onChange={toggleAll}
+          />
+          Select all ({allEntries.length})
+        </label>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <select value={wdType} onChange={e => setWdType(e.target.value)} style={{ fontSize: 13 }}>
+            {WD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+          <input type="date" value={wdDate} onChange={e => setWdDate(e.target.value)} style={{ fontSize: 13 }} />
+        </div>
+      </div>
+
+      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--border,#2a2a2a)', borderRadius: 6, padding: '0 10px' }}>
+        {renderGroup('Main Draw', mainEntries)}
+        {renderGroup('Qualifying', qualEntries)}
+        {renderGroup('Alternates', altEntries)}
+      </div>
+
+      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
+        <button
+          className="action-btn primary"
+          style={{ background: selected.size > 0 ? '#7c3a00' : undefined, color: selected.size > 0 ? '#ffd9b0' : undefined }}
+          disabled={saving || selected.size === 0}
+          onClick={handleApply}
+        >
+          {saving ? 'Applying…' : `Apply Withdrawal to ${selected.size} Player${selected.size !== 1 ? 's' : ''}`}
+        </button>
+        <button className="action-btn" onClick={onClose}>Cancel</button>
+      </div>
+    </>
+  );
+}
+
+function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdraw, onClose }) {
+  // Default to the current page draw type tab; 'main' if neither
+  const initTab = event.hasQualifying && drawType === 'qualifying' ? 'qualifying' : 'main';
+  const [activeTab, setActiveTab] = useState(initTab);
+  const [saving, setSaving] = useState(false);
+
+  // Per-tab derived values
+  const mainMax  = event.drawSize || 32;
+  const qualMax  = event.qualifyingSize || 32;
+  const altStart = mainMax + 1; // alternates live after the main draw
+
+  const mainExisting = new Set(
+    existingEntries.filter(e => e.drawType === 'main' && !e.isAlternate && e.position <= mainMax).map(e => e.position)
+  );
+  const qualExisting = new Set(
+    existingEntries.filter(e => e.drawType === 'qualifying' && !e.isAlternate && e.position <= qualMax).map(e => e.position)
+  );
+
+  async function handleImport(entries) {
+    setSaving(true);
+    try {
+      if (activeTab === 'main')       await onImport(entries, 'main',       { isAlternate: false });
+      if (activeTab === 'qualifying') await onImport(entries, 'qualifying', { isAlternate: false });
+      if (activeTab === 'alternates') await onImport(entries, 'main',       { isAlternate: true });
     } finally {
       setSaving(false);
     }
   }
 
+  async function handleWithdraw(ids, type, date) {
+    setSaving(true);
+    try { await onWithdraw(ids, type, date); }
+    finally { setSaving(false); }
+  }
+
+  const tabs = BULK_TABS.filter(t => t.key !== 'qualifying' || event.hasQualifying);
+
   return (
     <div className="t-modal-overlay" onClick={onClose}>
       <div className="t-modal t-modal-lg" onClick={e => e.stopPropagation()}>
         <div className="t-modal-header">
-          <span className="t-modal-title">Bulk Import Players</span>
+          <span className="t-modal-title">Bulk Import / Withdrawal</span>
           <button className="drawer-close" onClick={onClose}>✕</button>
         </div>
 
-        <div className="t-bulk-help">
-          <strong>Two formats supported — paste directly from AITA acceptance list:</strong><br />
-          <code>FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> — positions auto-assigned in order<br />
-          <code>Pos, FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> — use explicit draw position<br />
-          Tab-separated (copy from Excel/Sheets) also works. Lines starting with <code>#</code> are comments.
-          {' '}<strong>{remaining}</strong> slot{remaining !== 1 ? 's' : ''} available.
-        </div>
-
-        {!preview && (
-          <>
-            <textarea
-              className="t-bulk-textarea"
-              rows={12}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              placeholder={'# Paste AITA acceptance list — with or without leading position number\n# Format: FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode\nBhosale, Priya, 442320, TS, 45, 1,\nSharma, Ananya, 438901, MH, 78, 2,\nReddy, Kavya, 451234, AP, 112,,\n\n# Or with explicit positions (e.g. position 40 onward are qualifiers):\n# 40, Mehta, Riya, 449012, GJ, 156,,Q\n# 41, Verma, Tanvi, 455678, UP, 189,,Q'}
-              autoFocus
-            />
-            {parseErrors.length > 0 && (
-              <div className="login-error" style={{ marginTop: 8 }}>
-                {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
-              </div>
-            )}
-          </>
-        )}
-
-        {preview && (
-          <div className="t-bulk-preview">
-            <div className="t-section-label">{preview.length} player{preview.length !== 1 ? 's' : ''} to import</div>
-            <div className="t-entry-table-wrap">
-              <table className="t-entry-table">
-                <thead>
-                  <tr><th>Pos</th><th>Seed</th><th>Name</th><th>AITA Reg</th><th>State</th><th>Rank</th><th>SC</th></tr>
-                </thead>
-                <tbody>
-                  {preview.map((e, i) => (
-                    <tr key={i}>
-                      <td>{e.position}</td>
-                      <td>{e.seed || '—'}</td>
-                      <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
-                      <td>{e.aitaReg || '—'}</td>
-                      <td>{e.playerState || '—'}</td>
-                      <td>{e.ranking || '—'}</td>
-                      <td>{e.statusCode ? <span className="t-sc-badge">{e.statusCode}</span> : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          {!preview && (
-            <button className="action-btn primary" onClick={handlePreview} disabled={!text.trim()}>
-              Preview
+        {/* Tab bar */}
+        <div className="t-view-toggle" style={{ marginBottom: 14 }}>
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              className={'t-vtab' + (activeTab === t.key ? ' active' : '')}
+              onClick={() => setActiveTab(t.key)}
+            >
+              {t.label}
             </button>
-          )}
-          {preview && (
-            <>
-              <button
-                className="action-btn primary"
-                disabled={saving || preview.length === 0}
-                onClick={handleImport}
-              >
-                {saving ? 'Importing…' : `Import ${preview.length} Player${preview.length !== 1 ? 's' : ''}`}
-              </button>
-              <button className="action-btn" onClick={() => { setPreview(null); setSaveError(''); }}>
-                Back
-              </button>
-            </>
-          )}
-          <button className="action-btn" onClick={onClose}>Cancel</button>
+          ))}
         </div>
+
+        {activeTab === 'main' && (
+          <ImportPane
+            maxPos={mainMax}
+            startPos={1}
+            existingPositions={mainExisting}
+            isAlternate={false}
+            onImport={handleImport}
+            saving={saving}
+            onClose={onClose}
+          />
+        )}
+        {activeTab === 'qualifying' && event.hasQualifying && (
+          <ImportPane
+            maxPos={qualMax}
+            startPos={1}
+            existingPositions={qualExisting}
+            isAlternate={false}
+            onImport={handleImport}
+            saving={saving}
+            onClose={onClose}
+          />
+        )}
+        {activeTab === 'alternates' && (
+          <ImportPane
+            maxPos={9999}
+            startPos={altStart}
+            existingPositions={new Set([...Array(altStart - 1)].map((_, i) => i + 1))}
+            isAlternate={true}
+            onImport={handleImport}
+            saving={saving}
+            onClose={onClose}
+          />
+        )}
+        {activeTab === 'withdrawal' && (
+          <WithdrawalPane
+            eventId={event.id}
+            onWithdraw={handleWithdraw}
+            saving={saving}
+            onClose={onClose}
+          />
+        )}
       </div>
     </div>
   );
@@ -1304,9 +1527,16 @@ export default function EventDetailPage() {
     } catch (err) { setError(err.message); }
   }
 
-  async function handleBulkImport(newEntries) {
-    const created = await api.bulkAddDrawEntries(eventId, drawType, newEntries);
+  async function handleBulkImport(importedEntries, importDrawType, options = {}) {
+    const dt = importDrawType || drawType;
+    const mapped = importedEntries.map(e => ({ ...e, isAlternate: options.isAlternate || false }));
+    const created = await api.bulkAddDrawEntries(eventId, dt, mapped);
     setEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
+  }
+
+  async function handleBulkWithdraw(entryIds, withdrawalType, withdrawalDate) {
+    const updated = await api.bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate);
+    setEntries(prev => prev.map(e => updated.find(u => u.id === e.id) || e));
   }
 
   // ---- AUTO-SEED -----------------------------------------------------------
@@ -1882,6 +2112,7 @@ export default function EventDetailPage() {
         <BulkImportModal
           event={event} drawType={drawType} existingEntries={entries}
           onImport={handleBulkImport}
+          onWithdraw={handleBulkWithdraw}
           onClose={() => setShowBulk(false)}
         />
       )}

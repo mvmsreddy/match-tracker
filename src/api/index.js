@@ -69,6 +69,7 @@ export const promoteQualifiers    = hasSupabaseConfig ? supabaseApi.promoteQuali
 
 // Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
 export const setEntryWithdrawn      = hasSupabaseConfig ? supabaseApi.setEntryWithdrawn      : noSupabase;
+export const bulkSetWithdrawn       = hasSupabaseConfig ? supabaseApi.bulkSetWithdrawn       : noSupabase;
 export const callInReplacement      = hasSupabaseConfig ? supabaseApi.callInReplacement      : noSupabase;
 export const processWalkoverIfNeeded = hasSupabaseConfig ? supabaseApi.processWalkoverIfNeeded : async () => null;
 export const clearScheduleForEntry  = hasSupabaseConfig ? supabaseApi.clearScheduleForEntry  : async () => ({ ok: true });
