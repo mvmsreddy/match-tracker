@@ -247,17 +247,21 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
   }, [searchQuery]);
 
   function fillFromPlayer(player) {
-    const parts = (player.displayName || '').trim().split(' ');
-    const familyName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-    const firstName = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    // player may come from user_profiles (has displayName) or aita_players (has familyName/firstName directly)
+    const familyName = player.familyName
+      || (() => { const p = (player.displayName || '').trim().split(' '); return p.length > 1 ? p[p.length - 1] : p[0]; })();
+    const firstName = player.firstName !== undefined
+      ? (player.firstName || '')
+      : (() => { const p = (player.displayName || '').trim().split(' '); return p.length > 1 ? p.slice(0, -1).join(' ') : ''; })();
     setForm(prev => ({
       ...prev,
-      playerId: player.id,
+      playerId: player.id || null,
       familyName,
       firstName,
       aitaReg: player.aitaReg || '',
       playerState: player.stateAbbr || '',
       ranking: player.ranking || '',
+      dateOfBirth: player.dateOfBirth || prev.dateOfBirth,
     }));
     setSearchQuery('');
     setSearchResults([]);
@@ -382,16 +386,19 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
             {searching && <div className="t-search-hint">Searching…</div>}
             {searchResults.length > 0 && (
               <div className="t-search-results">
-                {searchResults.map(p => (
+                {searchResults.map((p, i) => (
                   <button
-                    key={p.id}
+                    key={p.id || p.aitaReg || i}
                     type="button"
                     className="t-search-result-item"
                     onClick={() => fillFromPlayer(p)}
                   >
-                    <span className="t-sr-name">{p.displayName}</span>
+                    <span className="t-sr-name">
+                      {p.familyName ? `${p.familyName}${p.firstName ? ', ' + p.firstName : ''}` : p.displayName}
+                      {p._source === 'aita' && <span className="t-sr-aita-badge">AITA</span>}
+                    </span>
                     <span className="t-sr-meta">
-                      {[p.aitaReg, p.stateAbbr, p.ranking && `Rank ${p.ranking}`].filter(Boolean).join(' · ')}
+                      {[p.aitaReg, p.stateAbbr || p.state, p.ranking && `Rank ${p.ranking}`, p.ageGroup].filter(Boolean).join(' · ')}
                     </span>
                   </button>
                 ))}

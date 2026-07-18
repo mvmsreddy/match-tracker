@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import { parseFactsheetPdf } from '../utils/parseFactsheet';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
@@ -40,6 +41,10 @@ export default function TournamentsListPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [parsedFromPdf, setParsedFromPdf] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const pdfInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,11 +72,40 @@ export default function TournamentsListPage() {
       setWeeks(prev => [{ ...created, eventCount: 0 }, ...(prev || [])]);
       setShowCreate(false);
       setForm(EMPTY_FORM);
+      setParsedFromPdf(false);
     } catch (err) {
       setSaveError(err.message || 'Failed to create tournament');
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handlePdfUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setParsing(true);
+    setParseError('');
+    try {
+      const parsed = await parseFactsheetPdf(file);
+      setForm(prev => ({ ...prev, ...parsed }));
+      setParsedFromPdf(true);
+      setShowMore(true); // expand details so user can review everything
+      setShowCreate(true);
+    } catch (err) {
+      setParseError('Could not read PDF: ' + (err.message || 'unknown error'));
+    } finally {
+      setParsing(false);
+      e.target.value = ''; // reset so same file can be re-uploaded
+    }
+  }
+
+  function openCreateManual() {
+    setForm(EMPTY_FORM);
+    setParsedFromPdf(false);
+    setParseError('');
+    setSaveError('');
+    setShowMore(false);
+    setShowCreate(true);
   }
 
   async function handleDelete(id) {
@@ -97,21 +131,60 @@ export default function TournamentsListPage() {
             <div className="subtitle">LIVE EVENTS &amp; DRAW TRACKER</div>
           </div>
           {isOrganizer && (
-            <button className="action-btn primary" onClick={() => { setShowCreate(true); setSaveError(''); }}>
-              + New Tournament Week
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                className="action-btn primary"
+                onClick={() => { pdfInputRef.current?.click(); setParseError(''); }}
+                disabled={parsing}
+                title="Upload AITA Factsheet PDF to auto-fill the form"
+              >
+                {parsing ? 'Reading PDF…' : '⬆ Upload Factsheet PDF'}
+              </button>
+              <button className="action-btn" onClick={openCreateManual}>
+                + Create Manually
+              </button>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                style={{ display: 'none' }}
+                onChange={handlePdfUpload}
+              />
+            </div>
+          )}
+          {parseError && (
+            <div className="login-error" style={{ marginTop: 6, fontSize: 13 }}>{parseError}</div>
           )}
         </div>
       </div>
 
       {/* Create Week Modal */}
       {showCreate && (
-        <div className="t-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="t-modal-overlay" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>
           <div className="t-modal" onClick={e => e.stopPropagation()}>
             <div className="t-modal-header">
-              <span className="t-modal-title">New Tournament Week</span>
-              <button className="drawer-close" onClick={() => setShowCreate(false)}>✕</button>
+              <span className="t-modal-title">
+                {parsedFromPdf ? 'Review Tournament Details' : 'New Tournament Week'}
+              </span>
+              <button className="drawer-close" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>✕</button>
             </div>
+
+            {parsedFromPdf && (
+              <div style={{
+                background: 'var(--accent, #1a6b3a)', color: '#fff',
+                borderRadius: 6, padding: '8px 12px', margin: '0 0 12px',
+                fontSize: 13, display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span>✓ Auto-filled from Factsheet PDF — review and edit before submitting</span>
+                <button
+                  type="button"
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}
+                  onClick={() => setParsedFromPdf(false)}
+                  title="Dismiss"
+                >✕</button>
+              </div>
+            )}
+
             <form onSubmit={handleCreate} className="t-create-form">
               <div className="t-form-row">
                 <div className="field">
@@ -355,7 +428,7 @@ export default function TournamentsListPage() {
                 <button type="submit" className="action-btn primary" disabled={saving}>
                   {saving ? 'Creating…' : 'Create Tournament Week'}
                 </button>
-                <button type="button" className="action-btn" onClick={() => setShowCreate(false)}>
+                <button type="button" className="action-btn" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>
                   Cancel
                 </button>
               </div>

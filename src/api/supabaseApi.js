@@ -806,15 +806,56 @@ export async function upsertProfile(userId, profile) {
 }
 
 export async function searchPlayers(query) {
-  // Search by display_name or aita_reg — returns players only
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('id, display_name, aita_reg, state_abbr, ranking, club_name')
-    .eq('role', 'player')
-    .or(`display_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
-    .limit(10);
-  if (error) throw new Error(error.message);
-  return data.map(rowToProfile);
+  // Search registered platform users first, then AITA rankings directory.
+  // Results are merged and de-duped by aita_reg (platform user wins on match).
+  const [usersRes, aitaRes] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('id, display_name, aita_reg, state_abbr, ranking, club_name')
+      .eq('role', 'player')
+      .or(`display_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
+      .limit(10),
+    supabase
+      .from('aita_players')
+      .select('aita_reg, family_name, first_name, dob, state, ranking_pts, ranking_rank, age_group, gender')
+      .or(`family_name.ilike.%${query}%,first_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
+      .order('ranking_rank', { ascending: true })
+      .limit(15),
+  ]);
+
+  if (usersRes.error) throw new Error(usersRes.error.message);
+  const platformUsers = (usersRes.data || []).map(rowToProfile);
+
+  // Build AITA results, skip any aita_reg already covered by a platform user
+  const coveredRegs = new Set(platformUsers.map(u => u.aitaReg).filter(Boolean));
+  const aitaPlayers = (aitaRes.data || [])
+    .filter(r => !coveredRegs.has(r.aita_reg))
+    // One result per aita_reg (may appear in multiple age-group lists — take lowest rank)
+    .reduce((acc, r) => {
+      const existing = acc.find(x => x.aita_reg === r.aita_reg);
+      if (!existing || r.ranking_rank < existing.ranking_rank) {
+        const filtered = acc.filter(x => x.aita_reg !== r.aita_reg);
+        filtered.push(r);
+        return filtered;
+      }
+      return acc;
+    }, [])
+    .map(r => ({
+      id: null,
+      aitaReg: r.aita_reg,
+      displayName: [r.first_name, r.family_name].filter(Boolean).join(' '),
+      familyName: r.family_name,
+      firstName: r.first_name || '',
+      stateAbbr: r.state,
+      ranking: r.ranking_rank,
+      rankingPts: r.ranking_pts,
+      dateOfBirth: r.dob,
+      ageGroup: r.age_group,
+      gender: r.gender,
+      _source: 'aita',
+    }));
+
+  return [...platformUsers, ...aitaPlayers].slice(0, 15);
 }
 
 // ---------------------------------------------------------------------------

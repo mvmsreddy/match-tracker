@@ -875,8 +875,9 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-search-result-item { display: flex; flex-direction: column; gap: 2px; width: 100%; background: var(--bg2); border: none; border-bottom: 1px solid var(--border); padding: 8px 12px; cursor: pointer; text-align: left; transition: background 0.12s; }
 .t-search-result-item:last-child { border-bottom: none; }
 .t-search-result-item:hover { background: var(--bg3, rgba(255,255,255,0.04)); }
-.t-sr-name { font-weight: 600; font-size: 0.85rem; color: var(--text); }
+.t-sr-name { font-weight: 600; font-size: 0.85rem; color: var(--text); display: flex; align-items: center; gap: 6px; }
 .t-sr-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); }
+.t-sr-aita-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.06em; color: #7ab4ff; background: rgba(120,180,255,0.1); border: 1px solid rgba(120,180,255,0.25); border-radius: 3px; padding: 1px 4px; }
 
 /* Section label inside modals */
 .t-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 14px 0 8px; }
