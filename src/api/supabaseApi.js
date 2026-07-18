@@ -590,6 +590,7 @@ export async function deleteDrawEntry(entryId) {
 
 export async function bulkAddDrawEntries(eventId, drawType, entries) {
   if (entries.length === 0) return [];
+  const { data: { user } } = await supabase.auth.getUser();
   const rows = entries.map(e => ({
     event_id: eventId,
     draw_type: drawType,
@@ -603,6 +604,10 @@ export async function bulkAddDrawEntries(eventId, drawType, entries) {
     ranking: e.ranking ? Number(e.ranking) : null,
     status_code: e.statusCode || null,
     is_alternate: false,
+    // Phase 14 — mark as organiser-entered
+    entry_source: 'organiser',
+    entry_status: 'placed',
+    entered_by: user?.id || null,
   }));
   const { data, error } = await supabase.from('draw_entries').insert(rows).select();
   if (error) throw new Error(error.message);

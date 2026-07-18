@@ -32,28 +32,54 @@ function nextAlternateSlot(entries, maxPos) {
   return p;
 }
 
+// Parse AITA acceptance list text.
+// Supports two formats per line:
+//   A) With explicit position:  Pos, FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode
+//   B) Auto-position (in order): FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode
+// Format A is auto-detected when the first column is a number.
+// Lines starting with # are treated as comments and skipped.
+// Blank lines and tab-separated data (copied from spreadsheets) are also handled.
 function parseBulk(text, existingPositions, maxPos) {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
   const entries = [];
   const errors = [];
-  let pos = 1;
-  while (existingPositions.has(pos) && pos <= maxPos) pos++;
+  let autoPos = 1;
+  while (existingPositions.has(autoPos) && autoPos <= maxPos) autoPos++;
 
   lines.forEach((line, idx) => {
-    const p = line.split(',').map(x => x.trim());
-    if (!p[0]) { errors.push(`Line ${idx + 1}: family name is required`); return; }
+    // Support both comma-separated and tab-separated (copy-paste from Excel/Sheets)
+    const sep = line.includes('\t') ? '\t' : ',';
+    const p = line.split(sep).map(x => x.trim());
+
+    // Auto-detect format A: first token is a pure number (draw position)
+    const firstNum = Number(p[0]);
+    let pos, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode;
+
+    if (p[0] !== '' && !isNaN(firstNum) && String(firstNum) === p[0]) {
+      // Format A — explicit position
+      pos = firstNum;
+      [, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode] = p;
+    } else {
+      // Format B — auto-position
+      pos = autoPos;
+      [familyName, firstName, aitaReg, playerState, ranking, seed, statusCode] = p;
+      autoPos++;
+      while (existingPositions.has(autoPos) && autoPos <= maxPos) autoPos++;
+    }
+
+    familyName = (familyName || '').trim();
+    if (!familyName) { errors.push(`Line ${idx + 1}: family name is required`); return; }
+
     entries.push({
       position: pos,
-      familyName: p[0],
-      firstName: p[1] || '',
-      aitaReg: p[2] || '',
-      playerState: p[3] || '',
-      ranking: p[4] ? Number(p[4]) : null,
-      seed: p[5] ? Number(p[5]) : null,
-      statusCode: p[6] || '',
+      familyName,
+      firstName: (firstName || '').trim(),
+      aitaReg: (aitaReg || '').trim(),
+      playerState: (playerState || '').trim(),
+      ranking: ranking ? Number(ranking) : null,
+      seed: seed ? Number(seed) : null,
+      statusCode: (statusCode || '').trim(),
     });
-    pos++;
-    while (existingPositions.has(pos) && pos <= maxPos) pos++;
   });
   return { entries, errors };
 }
@@ -103,19 +129,21 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onClose }
         </div>
 
         <div className="t-bulk-help">
-          Format per line: <code>FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code>
-          <br />
-          Lines starting with <code>#</code> are skipped. {remaining} slot{remaining !== 1 ? 's' : ''} available in this draw.
+          <strong>Two formats supported — paste directly from AITA acceptance list:</strong><br />
+          <code>FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> — positions auto-assigned in order<br />
+          <code>Pos, FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> — use explicit draw position<br />
+          Tab-separated (copy from Excel/Sheets) also works. Lines starting with <code>#</code> are comments.
+          {' '}<strong>{remaining}</strong> slot{remaining !== 1 ? 's' : ''} available.
         </div>
 
         {!preview && (
           <>
             <textarea
               className="t-bulk-textarea"
-              rows={10}
+              rows={12}
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder={'# Example:\nBhosale, Priya, AITA12345, TS, 45, 1,\nSharma, Ananya, AITA67890, MH, 78, 2,\nReddy, Kavya, , AP, 112, ,'}
+              placeholder={'# Paste AITA acceptance list — with or without leading position number\n# Format: FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode\nBhosale, Priya, 442320, TS, 45, 1,\nSharma, Ananya, 438901, MH, 78, 2,\nReddy, Kavya, 451234, AP, 112,,\n\n# Or with explicit positions (e.g. position 40 onward are qualifiers):\n# 40, Mehta, Riya, 449012, GJ, 156,,Q\n# 41, Verma, Tanvi, 455678, UP, 189,,Q'}
               autoFocus
             />
             {parseErrors.length > 0 && (
@@ -132,7 +160,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onClose }
             <div className="t-entry-table-wrap">
               <table className="t-entry-table">
                 <thead>
-                  <tr><th>Pos</th><th>Seed</th><th>Name</th><th>AITA Reg</th><th>State</th><th>Rank</th></tr>
+                  <tr><th>Pos</th><th>Seed</th><th>Name</th><th>AITA Reg</th><th>State</th><th>Rank</th><th>SC</th></tr>
                 </thead>
                 <tbody>
                   {preview.map((e, i) => (
@@ -143,6 +171,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onClose }
                       <td>{e.aitaReg || '—'}</td>
                       <td>{e.playerState || '—'}</td>
                       <td>{e.ranking || '—'}</td>
+                      <td>{e.statusCode ? <span className="t-sc-badge">{e.statusCode}</span> : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
