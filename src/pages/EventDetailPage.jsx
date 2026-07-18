@@ -1889,18 +1889,20 @@ export default function EventDetailPage() {
     if (!window.confirm(
       'Randomize draw? Players will be shuffled into random positions.\n' +
       'Seeds will be placed in their correct ITF positions.\n' +
+      'BYEs will be auto-filled for any empty slots.\n' +
       'You can swap players manually afterwards, then click "Publish Draw".'
     )) return;
     setSeeding(true);
     setError('');
     try {
-      // Randomize main entries (exclude BYEs — they'll be re-filled after)
+      // Randomize only real players (drop existing BYEs first)
       const playerEntries = mainEntries.filter(e => !e.isBye);
-      const randomized = randomizeDraw(playerEntries, maxPos, numSeeds);
-      // Remove existing BYEs then re-fill
-      const byeIds = entries.filter(e => e.isBye).map(e => e.id);
-      if (byeIds.length) await Promise.all(byeIds.map(id => api.deleteDrawEntry(id)));
-      const saved = await api.saveDrawEntries(eventId, drawType, [...randomized, ...alternateEntries]);
+      const randomized    = randomizeDraw(playerEntries, maxPos, numSeeds);
+      // Auto-fill BYEs for any empty slots
+      const byeEntries    = buildByeEntries(maxPos, randomized);
+      const allEntries    = [...randomized, ...byeEntries];
+      // Persist — removes old BYEs + saves randomized order in one call
+      const saved = await api.saveDrawEntries(eventId, drawType, [...allEntries, ...alternateEntries]);
       setEntries(saved);
       setViewMode('drawsheet'); // show draw sheet so organiser can review
     } catch (err) { setError(err.message); }
@@ -1912,12 +1914,23 @@ export default function EventDetailPage() {
     const isPublished = event?.status !== 'setup';
     const msg = isPublished
       ? 'Regenerate bracket? All existing match results will be lost.'
-      : 'Publish draw? This will lock player positions and make the draw visible to all players. Continue?';
+      : 'Publish draw? BYEs will be auto-filled for empty slots, positions will be locked and the draw will be visible to all players. Continue?';
     if (!window.confirm(msg)) return;
     setGenerating(true);
     setError('');
     try {
-      const sorted = [...entries].sort((a, b) => a.position - b.position);
+      // Auto-fill BYEs before generating bracket if slots are missing
+      let allEntries = entries;
+      const playerEntriesForBye = mainEntries.filter(e => !e.isBye);
+      const existingByes = mainEntries.filter(e => e.isBye);
+      if (playerEntriesForBye.length < maxPos && existingByes.length === 0) {
+        const byes = buildByeEntries(maxPos, playerEntriesForBye);
+        const created = await api.bulkAddDrawEntries(eventId, drawType, byes);
+        allEntries = [...entries, ...created];
+        setEntries(allEntries.sort((a, b) => a.position - b.position));
+      }
+
+      const sorted = [...allEntries].filter(e => e.position <= maxPos).sort((a, b) => a.position - b.position);
       const initialized = await api.initializeEventMatches(eventId, drawType, sorted);
 
       // Auto-advance BYE matches (R1 only)
@@ -2173,7 +2186,7 @@ export default function EventDetailPage() {
               </>
             )}
             {/* Randomize Draw — organiser only, before publishing */}
-            {isOwner && drawFull && event?.status === 'setup' && (
+            {isOwner && playerCount > 0 && event?.status === 'setup' && (
               <button
                 className="action-btn"
                 style={{ background: '#1a4b8a', color: '#fff' }}
@@ -2184,7 +2197,7 @@ export default function EventDetailPage() {
               </button>
             )}
             {/* Publish Draw / Re-generate Bracket */}
-            {isOwner && drawFull && (
+            {isOwner && playerCount > 0 && (
               <button
                 className="action-btn t-gen-btn"
                 onClick={handleGenerateBracket}
