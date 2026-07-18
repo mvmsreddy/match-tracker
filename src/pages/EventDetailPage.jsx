@@ -456,7 +456,7 @@ function FullListPane({ event, onImport, saving, onClose }) {
         <strong>StatusCode</strong> column:{' '}
         <code>MAIN DRAW</code>, <code>QUALIFYING DRAW</code>, <code>ALTERNATES</code>, <code>WITHDRAWAL LIST</code>.
         {' '}Comma or tab-separated. Header row and <em>State ↔ AitaReg</em> column order are auto-detected.
-        {' '}Withdrawal list rows are previewed but <em>not</em> imported.
+        All four sections are imported — withdrawal list entries appear in the <strong>Withdrawal</strong> tab.
       </div>
 
       {!preview && (
@@ -483,9 +483,24 @@ function FullListPane({ event, onImport, saving, onClose }) {
           <SectionTable label="Qualifying" arr={preview.qualifying} />
           <SectionTable label="Alternates" arr={preview.alternates} />
           {preview.withdrawal.length > 0 && (
-            <div className="t-section-label" style={{ color: 'var(--text3,#777)', marginBottom: 6 }}>
-              Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}{' '}
-              <em>(not imported)</em>
+            <div style={{ marginBottom: 12 }}>
+              <div className="t-section-label">Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}</div>
+              <div className="t-entry-table-wrap">
+                <table className="t-entry-table">
+                  <thead><tr><th>#</th><th>Name</th><th>State</th><th>AITA Reg</th><th>Rank</th></tr></thead>
+                  <tbody>
+                    {preview.withdrawal.map((e, i) => (
+                      <tr key={i}>
+                        <td>{i + 1}</td>
+                        <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
+                        <td>{e.playerState || '—'}</td>
+                        <td>{e.aitaReg || '—'}</td>
+                        <td>{e.ranking || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -563,7 +578,11 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
         }));
         await onImport(alts, 'main', { isAlternate: true });
       }
-      // Withdrawal list rows: preview only, not imported
+      if (sections.withdrawal.length > 0) {
+        // Re-sequence from 1 so positions are compact and don't conflict with other draw types
+        const wdEntries = sections.withdrawal.map((e, i) => ({ ...e, position: i + 1 }));
+        await onImport(wdEntries, 'withdrawal', {});
+      }
     } finally {
       setSaving(false);
     }
@@ -1652,9 +1671,10 @@ export default function EventDetailPage() {
   const [fillingByes,    setFillingByes]    = useState(false);
 
   // Phase 10 — withdrawals, alternates, lucky losers
-  const [withdrawingEntry, setWithdrawingEntry] = useState(null);
-  const [luckyLosers,      setLuckyLosers]      = useState([]);
-  const [drawingLL,        setDrawingLL]        = useState(false);
+  const [withdrawingEntry,  setWithdrawingEntry]  = useState(null);
+  const [luckyLosers,       setLuckyLosers]       = useState([]);
+  const [drawingLL,         setDrawingLL]         = useState(false);
+  const [withdrawnEntries,  setWithdrawnEntries]  = useState([]); // draw_type='withdrawal'
 
   // Load week + event once
   useEffect(() => {
@@ -1689,6 +1709,16 @@ export default function EventDetailPage() {
       .catch(e => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
+
+  // Load withdrawal-list entries (draw_type='withdrawal') independently of drawType
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    api.getDrawEntries(eventId, 'withdrawal')
+      .then(data => { if (!cancelled) setWithdrawnEntries(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [eventId, event]);
 
   // Load the lucky-loser pool whenever this event has qualifying — kept
   // independent of drawType/activeTab so the Withdraw modal can always see it.
@@ -1751,7 +1781,11 @@ export default function EventDetailPage() {
     const dt = importDrawType || drawType;
     const mapped = importedEntries.map(e => ({ ...e, isAlternate: options.isAlternate || false }));
     const created = await api.bulkAddDrawEntries(eventId, dt, mapped);
-    setEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
+    if (dt === 'withdrawal') {
+      setWithdrawnEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
+    } else {
+      setEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
+    }
   }
 
   async function handleBulkWithdraw(entryIds, withdrawalType, withdrawalDate) {
@@ -2131,26 +2165,36 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      {/* Draw-type tabs */}
-      {event?.hasQualifying && (
-        <div className="t-draw-tabs">
-          <button className={'t-draw-tab' + (activeTab === 'main' ? ' active' : '')}
-            onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
-            Main Draw ({event.drawSize})
-          </button>
+      {/* Draw-type tabs — always visible */}
+      <div className="t-draw-tabs">
+        <button className={'t-draw-tab' + (activeTab === 'main' ? ' active' : '')}
+          onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
+          Main Draw ({event?.drawSize ?? '?'})
+        </button>
+        {event?.hasQualifying && (
           <button className={'t-draw-tab' + (activeTab === 'qualifying' ? ' active' : '')}
             onClick={() => { setActiveTab('qualifying'); setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Qualifying ({event.qualifyingSize || '—'})
           </button>
+        )}
+        <button className={'t-draw-tab' + (activeTab === 'alternates' ? ' active' : '')}
+          onClick={() => { setActiveTab('alternates'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
+          Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
+        </button>
+        <button className={'t-draw-tab' + (activeTab === 'withdrawal' ? ' active' : '')}
+          onClick={() => { setActiveTab('withdrawal'); setSwapMode(false); setSelectedEntry(null); }}>
+          Withdrawal{withdrawnEntries.length > 0 ? ` (${withdrawnEntries.length})` : ''}
+        </button>
+        {event?.hasQualifying && (
           <button className={'t-draw-tab' + (activeTab === 'lucky_losers' ? ' active' : '')}
             onClick={() => { setActiveTab('lucky_losers'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
             Lucky Losers
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* View toggle + stats */}
-      {activeTab !== 'lucky_losers' && (
+      {/* View toggle + stats — only for draw tabs */}
+      {(activeTab === 'main' || activeTab === 'qualifying') && (
       <div className="t-view-bar">
         <div className="t-view-stats">
           <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
@@ -2177,8 +2221,8 @@ export default function EventDetailPage() {
       </div>
       )}
 
-      {/* Progress bar (hidden in bracket view) */}
-      {activeTab !== 'lucky_losers' && viewMode !== 'bracket' && (
+      {/* Progress bar — only for draw tabs */}
+      {(activeTab === 'main' || activeTab === 'qualifying') && viewMode !== 'bracket' && (
         <div className="t-entry-progress">
           <div className="t-entry-progress-label">
             <span><strong>{mainEntries.length}</strong> / {maxPos} positions filled</span>
@@ -2191,7 +2235,7 @@ export default function EventDetailPage() {
       )}
 
       {error && <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>{error}</div>}
-      {activeTab !== 'lucky_losers' && swapMode && (
+      {(activeTab === 'main' || activeTab === 'qualifying') && swapMode && (
         <div className="t-swap-hint">
           {selectedEntry ? `Click another player to swap with ${selectedEntry.familyName}.`
             : 'Click any player to select, then click another to swap positions.'}
@@ -2209,6 +2253,74 @@ export default function EventDetailPage() {
           onRandomDraw={handleRandomDrawLuckyLosers}
           onCallIn={handleCallInLuckyLoserFromTab}
         />
+      ) : activeTab === 'alternates' ? (
+        <div className="page-scroll">
+          {alternateEntries.length === 0 ? (
+            <div className="history-empty">No alternates yet. Use + Add Player (alternate) or import via Bulk Import → Alternates tab.</div>
+          ) : (
+            <div className="t-entry-table-wrap">
+              <table className="t-entry-table">
+                <thead>
+                  <tr>
+                    <th className="t-th-pos">#</th>
+                    <th>Player</th>
+                    <th className="t-th-aita">AITA Reg</th>
+                    <th className="t-th-state">State</th>
+                    <th className="t-th-rank">Rank</th>
+                    {isOwner && <th className="t-th-actions"></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {alternateEntries.map(entry => (
+                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'withdrawal' ? (
+        <div className="page-scroll">
+          {withdrawnEntries.length === 0 ? (
+            <div className="history-empty">No withdrawal list entries. Use Bulk Import → Full List to import the full acceptance list including withdrawals.</div>
+          ) : (
+            <div className="t-entry-table-wrap">
+              <table className="t-entry-table">
+                <thead>
+                  <tr>
+                    <th className="t-th-pos">#</th>
+                    <th>Player</th>
+                    <th className="t-th-aita">AITA Reg</th>
+                    <th className="t-th-state">State</th>
+                    <th className="t-th-rank">Rank</th>
+                    <th className="t-th-sc">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {withdrawnEntries.map((entry, i) => (
+                    <tr key={entry.id} className="t-entry-row t-entry-withdrawn">
+                      <td className="t-entry-pos">{i + 1}</td>
+                      <td className="t-entry-name">
+                        <div className="t-entry-name-main">
+                          {entry.familyName}
+                          {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+                        </div>
+                      </td>
+                      <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
+                      <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
+                      <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
+                      <td className="t-entry-sc">
+                        <span className="t-sc-badge" style={{ background: '#7c3a00', color: '#ffd9b0' }}>
+                          {entry.withdrawalType || 'W'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       ) : (
       <div className="page-scroll">
         {mainEntries.length === 0 ? (

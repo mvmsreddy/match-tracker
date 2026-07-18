@@ -591,6 +591,7 @@ export async function deleteDrawEntry(entryId) {
 export async function bulkAddDrawEntries(eventId, drawType, entries) {
   if (entries.length === 0) return [];
   const { data: { user } } = await supabase.auth.getUser();
+  const isWd = drawType === 'withdrawal';
   const rows = entries.map(e => ({
     event_id: eventId,
     draw_type: drawType,
@@ -603,10 +604,14 @@ export async function bulkAddDrawEntries(eventId, drawType, entries) {
     player_state: e.playerState || null,
     ranking: e.ranking ? Number(e.ranking) : null,
     status_code: e.statusCode || null,
-    is_alternate: false,
+    is_alternate: e.isAlternate || false,
     // Phase 14 — mark as organiser-entered
     entry_source: 'organiser',
-    entry_status: 'placed',
+    // draw_type='withdrawal' means they withdrew before the draw was made
+    entry_status: isWd ? 'withdrawn' : 'placed',
+    is_withdrawn: isWd ? true : false,
+    withdrawal_type: isWd ? (e.withdrawalType || 'W') : null,
+    withdrawal_date: isWd ? new Date().toISOString().slice(0, 10) : null,
     entered_by: user?.id || null,
   }));
   const { data, error } = await supabase.from('draw_entries').insert(rows).select();
