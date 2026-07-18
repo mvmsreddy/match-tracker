@@ -183,6 +183,26 @@ function rowToWeek(row) {
     maxDoublesPerPlayer: row.max_doubles_per_player,
     playingUpAllowed: row.playing_up_allowed,
     playingDownAllowed: row.playing_down_allowed,
+    // Phase 12 — fact sheet fields
+    grade: row.grade,
+    entryDeadline: row.entry_deadline,
+    withdrawalDeadline: row.withdrawal_deadline,
+    qualifyingStartDate: row.qualifying_start_date,
+    qualifyingEndDate: row.qualifying_end_date,
+    directorName: row.director_name,
+    directorPhone: row.director_phone,
+    directorEmail: row.director_email,
+    refereePhone: row.referee_phone,
+    refereeEmail: row.referee_email,
+    venueAddress: row.venue_address,
+    venuePincode: row.venue_pincode,
+    venuePhone: row.venue_phone,
+    ballBrand: row.ball_brand,
+    hasFloodlights: row.has_floodlights,
+    entryFeeSingles: row.entry_fee_singles,
+    entryFeeDoubles: row.entry_fee_doubles,
+    dailyAllowance: row.daily_allowance,
+    signinInstructions: row.signin_instructions,
     // joined events count if present
     eventCount: row.events ? row.events.length : undefined,
   };
@@ -236,6 +256,26 @@ export async function createTournamentWeek(userId, week) {
     max_doubles_per_player: week.maxDoublesPerPlayer || 1,
     playing_up_allowed: week.playingUpAllowed !== undefined ? week.playingUpAllowed : true,
     playing_down_allowed: week.playingDownAllowed !== undefined ? week.playingDownAllowed : false,
+    // Phase 12 — fact sheet fields (all optional)
+    grade: week.grade || null,
+    entry_deadline: week.entryDeadline || null,
+    withdrawal_deadline: week.withdrawalDeadline || null,
+    qualifying_start_date: week.qualifyingStartDate || null,
+    qualifying_end_date: week.qualifyingEndDate || null,
+    director_name: week.directorName || null,
+    director_phone: week.directorPhone || null,
+    director_email: week.directorEmail || null,
+    referee_phone: week.refereePhone || null,
+    referee_email: week.refereeEmail || null,
+    venue_address: week.venueAddress || null,
+    venue_pincode: week.venuePincode || null,
+    venue_phone: week.venuePhone || null,
+    ball_brand: week.ballBrand || null,
+    has_floodlights: week.hasFloodlights !== undefined ? week.hasFloodlights : null,
+    entry_fee_singles: week.entryFeeSingles ? Number(week.entryFeeSingles) : null,
+    entry_fee_doubles: week.entryFeeDoubles ? Number(week.entryFeeDoubles) : null,
+    daily_allowance: week.dailyAllowance ? Number(week.dailyAllowance) : null,
+    signin_instructions: week.signinInstructions || null,
   };
   const { data, error } = await supabase.from('tournament_weeks').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -257,6 +297,26 @@ export async function updateTournamentWeek(weekId, week) {
   if (week.numCourts !== undefined) updates.num_courts = week.numCourts;
   if (week.courtNames !== undefined) updates.court_names = week.courtNames;
   if (week.dayStartTime !== undefined) updates.day_start_time = week.dayStartTime;
+  // Phase 12 — fact sheet fields
+  if (week.grade !== undefined) updates.grade = week.grade;
+  if (week.entryDeadline !== undefined) updates.entry_deadline = week.entryDeadline;
+  if (week.withdrawalDeadline !== undefined) updates.withdrawal_deadline = week.withdrawalDeadline;
+  if (week.qualifyingStartDate !== undefined) updates.qualifying_start_date = week.qualifyingStartDate;
+  if (week.qualifyingEndDate !== undefined) updates.qualifying_end_date = week.qualifyingEndDate;
+  if (week.directorName !== undefined) updates.director_name = week.directorName;
+  if (week.directorPhone !== undefined) updates.director_phone = week.directorPhone;
+  if (week.directorEmail !== undefined) updates.director_email = week.directorEmail;
+  if (week.refereePhone !== undefined) updates.referee_phone = week.refereePhone;
+  if (week.refereeEmail !== undefined) updates.referee_email = week.refereeEmail;
+  if (week.venueAddress !== undefined) updates.venue_address = week.venueAddress;
+  if (week.venuePincode !== undefined) updates.venue_pincode = week.venuePincode;
+  if (week.venuePhone !== undefined) updates.venue_phone = week.venuePhone;
+  if (week.ballBrand !== undefined) updates.ball_brand = week.ballBrand;
+  if (week.hasFloodlights !== undefined) updates.has_floodlights = week.hasFloodlights;
+  if (week.entryFeeSingles !== undefined) updates.entry_fee_singles = week.entryFeeSingles ? Number(week.entryFeeSingles) : null;
+  if (week.entryFeeDoubles !== undefined) updates.entry_fee_doubles = week.entryFeeDoubles ? Number(week.entryFeeDoubles) : null;
+  if (week.dailyAllowance !== undefined) updates.daily_allowance = week.dailyAllowance ? Number(week.dailyAllowance) : null;
+  if (week.signinInstructions !== undefined) updates.signin_instructions = week.signinInstructions;
 
   const { data, error } = await supabase
     .from('tournament_weeks')

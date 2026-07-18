@@ -5,6 +5,7 @@ import * as api from '../api';
 import TopNav from '../components/TopNav';
 import { applySeeding, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
+import { checkAgeEligibility } from '../utils/eligibility';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -306,6 +307,16 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
           return;
         }
       } catch { /* non-blocking */ }
+    }
+
+    // Age eligibility check (§4.2) — blocked only when playing down with flag off
+    if (form.dateOfBirth && event.ageGroup && week) {
+      const year = new Date(week.startDate || new Date()).getFullYear();
+      const ageCheck = checkAgeEligibility(
+        form.dateOfBirth, event.ageGroup, year,
+        week.playingUpAllowed, week.playingDownAllowed,
+      );
+      if (!ageCheck.allowed) { setError(ageCheck.reason); return; }
     }
 
     setSaving(true);

@@ -209,6 +209,7 @@ export default function TournamentDetailPage() {
       {/* Week Info Bar */}
       <div className="t-week-info-bar">
         {week.surface && <span className="t-badge">{week.surface}</span>}
+        {week.grade && <span className="t-badge t-badge-grade">{week.grade}</span>}
         {week.tournamentCode && <span className="t-badge t-badge-code">{week.tournamentCode}</span>}
         {(week.city || week.stateAbbr) && (
           <span className="t-info-item">
@@ -226,6 +227,66 @@ export default function TournamentDetailPage() {
         )}
         {week.referee && <span className="t-info-item">Referee: {week.referee}</span>}
       </div>
+
+      {/* Extended details panel — Phase 12 factsheet fields */}
+      {(week.directorName || week.entryDeadline || week.qualifyingStartDate ||
+        week.venueAddress || week.entryFeeSingles || week.signinInstructions) && (
+        <div className="t-factsheet-panel">
+          {(week.entryDeadline || week.withdrawalDeadline) && (
+            <div className="t-fs-row">
+              {week.entryDeadline && <span className="t-fs-item"><b>Entry deadline:</b> {week.entryDeadline}</span>}
+              {week.withdrawalDeadline && <span className="t-fs-item"><b>Withdrawal deadline:</b> {week.withdrawalDeadline}</span>}
+            </div>
+          )}
+          {(week.qualifyingStartDate || week.qualifyingEndDate) && (
+            <div className="t-fs-row">
+              <span className="t-fs-item">
+                <b>Qualifying dates:</b> {week.qualifyingStartDate}
+                {week.qualifyingEndDate && week.qualifyingEndDate !== week.qualifyingStartDate ? ` – ${week.qualifyingEndDate}` : ''}
+              </span>
+            </div>
+          )}
+          {(week.directorName || week.directorPhone || week.directorEmail) && (
+            <div className="t-fs-row">
+              <span className="t-fs-item">
+                <b>Director:</b> {[week.directorName, week.directorPhone, week.directorEmail].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          )}
+          {(week.refereePhone || week.refereeEmail) && (
+            <div className="t-fs-row">
+              <span className="t-fs-item">
+                <b>Referee contact:</b> {[week.refereePhone, week.refereeEmail].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          )}
+          {(week.venueAddress || week.venuePincode || week.venuePhone) && (
+            <div className="t-fs-row">
+              <span className="t-fs-item">
+                <b>Venue:</b> {[week.venueAddress, week.venuePincode, week.venuePhone].filter(Boolean).join(', ')}
+              </span>
+            </div>
+          )}
+          {(week.ballBrand || week.hasFloodlights) && (
+            <div className="t-fs-row">
+              {week.ballBrand && <span className="t-fs-item"><b>Balls:</b> {week.ballBrand}</span>}
+              {week.hasFloodlights && <span className="t-fs-item">Floodlights available</span>}
+            </div>
+          )}
+          {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance) && (
+            <div className="t-fs-row">
+              {week.entryFeeSingles && <span className="t-fs-item"><b>Singles entry:</b> ₹{week.entryFeeSingles}</span>}
+              {week.entryFeeDoubles && <span className="t-fs-item"><b>Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
+              {week.dailyAllowance && <span className="t-fs-item"><b>Daily allowance:</b> ₹{week.dailyAllowance}</span>}
+            </div>
+          )}
+          {week.signinInstructions && (
+            <div className="t-fs-row">
+              <span className="t-fs-item"><b>Sign-in:</b> {week.signinInstructions}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Event Modal */}
       {showAddEvent && (

@@ -6,12 +6,23 @@ import TopNav from '../components/TopNav';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
+const GRADES = ['National Series', 'State', 'ITF Grade 1', 'ITF Grade 2', 'ITF Grade 3', 'ITF Grade 4', 'ITF Grade 5', 'Satellite'];
 
 const EMPTY_FORM = {
   name: '', subtitle: '', tournamentCode: '',
   location: '', city: '', stateAbbr: '', surface: 'Hard',
   startDate: '', endDate: '', referee: '',
   numCourts: 2, dayStartTime: '09:00',
+  // Phase 12 — optional factsheet fields
+  grade: '',
+  entryDeadline: '', withdrawalDeadline: '',
+  qualifyingStartDate: '', qualifyingEndDate: '',
+  directorName: '', directorPhone: '', directorEmail: '',
+  refereePhone: '', refereeEmail: '',
+  venueAddress: '', venuePincode: '', venuePhone: '',
+  ballBrand: '', hasFloodlights: false,
+  entryFeeSingles: '', entryFeeDoubles: '', dailyAllowance: '',
+  signinInstructions: '',
 };
 
 function formatDateRange(start, end) {
@@ -25,6 +36,7 @@ export default function TournamentsListPage() {
   const [weeks, setWeeks] = useState(null);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -199,6 +211,143 @@ export default function TournamentsListPage() {
                   />
                 </div>
               </div>
+
+              {/* ── More Details (optional / Phase 12) ───────────────────── */}
+              <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+                <button
+                  type="button"
+                  className="action-btn"
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                  onClick={() => setShowMore(v => !v)}
+                >
+                  {showMore ? '▲ Hide Details' : '▼ More Details (optional)'}
+                </button>
+              </div>
+
+              {showMore && (
+                <>
+                  {/* Classification */}
+                  <div className="t-form-row" style={{ marginTop: 10 }}>
+                    <div className="field">
+                      <label>Grade / Series</label>
+                      <select value={form.grade} onChange={e => set('grade', e.target.value)}>
+                        <option value="">— select —</option>
+                        {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Deadlines */}
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Entry Deadline</label>
+                      <input type="date" value={form.entryDeadline} onChange={e => set('entryDeadline', e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label>Withdrawal Deadline</label>
+                      <input type="date" value={form.withdrawalDeadline} onChange={e => set('withdrawalDeadline', e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Qualifying dates */}
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Qualifying Start Date</label>
+                      <input type="date" value={form.qualifyingStartDate} onChange={e => set('qualifyingStartDate', e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label>Qualifying End Date</label>
+                      <input type="date" value={form.qualifyingEndDate} onChange={e => set('qualifyingEndDate', e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Officials */}
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Tournament Director</label>
+                      <input value={form.directorName} onChange={e => set('directorName', e.target.value)} placeholder="Director name" />
+                    </div>
+                    <div className="field">
+                      <label>Director Phone</label>
+                      <input value={form.directorPhone} onChange={e => set('directorPhone', e.target.value)} placeholder="+91 …" />
+                    </div>
+                  </div>
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Director Email</label>
+                      <input type="email" value={form.directorEmail} onChange={e => set('directorEmail', e.target.value)} placeholder="director@example.com" />
+                    </div>
+                    <div className="field">
+                      <label>Referee Phone</label>
+                      <input value={form.refereePhone} onChange={e => set('refereePhone', e.target.value)} placeholder="+91 …" />
+                    </div>
+                  </div>
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Referee Email</label>
+                      <input type="email" value={form.refereeEmail} onChange={e => set('refereeEmail', e.target.value)} placeholder="referee@example.com" />
+                    </div>
+                  </div>
+
+                  {/* Venue */}
+                  <div className="field">
+                    <label>Venue Address</label>
+                    <input value={form.venueAddress} onChange={e => set('venueAddress', e.target.value)} placeholder="Street / landmark" />
+                  </div>
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Pincode</label>
+                      <input value={form.venuePincode} onChange={e => set('venuePincode', e.target.value)} placeholder="500001" />
+                    </div>
+                    <div className="field">
+                      <label>Venue Phone</label>
+                      <input value={form.venuePhone} onChange={e => set('venuePhone', e.target.value)} placeholder="+91 …" />
+                    </div>
+                  </div>
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Ball Brand</label>
+                      <input value={form.ballBrand} onChange={e => set('ballBrand', e.target.value)} placeholder="e.g. Wilson US Open" />
+                    </div>
+                    <div className="field" style={{ justifyContent: 'flex-end', paddingTop: 20 }}>
+                      <label className="t-checkbox-label">
+                        <input type="checkbox" checked={form.hasFloodlights} onChange={e => set('hasFloodlights', e.target.checked)} />
+                        Floodlights available
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Fees */}
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Entry Fee – Singles (₹)</label>
+                      <input type="number" min="0" value={form.entryFeeSingles} onChange={e => set('entryFeeSingles', e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="field">
+                      <label>Entry Fee – Doubles (₹)</label>
+                      <input type="number" min="0" value={form.entryFeeDoubles} onChange={e => set('entryFeeDoubles', e.target.value)} placeholder="0" />
+                    </div>
+                  </div>
+                  <div className="t-form-row">
+                    <div className="field">
+                      <label>Daily Allowance (₹)</label>
+                      <input type="number" min="0" value={form.dailyAllowance} onChange={e => set('dailyAllowance', e.target.value)} placeholder="0" />
+                    </div>
+                  </div>
+
+                  {/* Sign-in instructions */}
+                  <div className="field">
+                    <label>Sign-in Instructions</label>
+                    <textarea
+                      rows={3}
+                      className="t-bulk-textarea"
+                      value={form.signinInstructions}
+                      onChange={e => set('signinInstructions', e.target.value)}
+                      placeholder="e.g. Qualifying sign-in: Fri 18 Jul, 12–2pm at venue reception"
+                    />
+                  </div>
+                </>
+              )}
 
               {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
 

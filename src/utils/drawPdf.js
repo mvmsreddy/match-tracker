@@ -105,10 +105,13 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, drawTop - 2, pageW - margin, drawTop - 2);
 
-  // Draw size info (top-left)
+  // Draw size info (top-left) + Grade (top-right)
   doc.setFontSize(6);
   doc.setTextColor(120, 120, 120);
   doc.text(`Draw of ${drawSize}`, margin, drawTop - 3.5);
+  if (week.grade) {
+    doc.text(week.grade, pageW - margin, drawTop - 3.5, { align: 'right' });
+  }
   doc.setTextColor(0, 0, 0);
 
   // ---- ROUND LABELS ----------------------------------------------------------

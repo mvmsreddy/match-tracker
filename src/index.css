@@ -804,6 +804,13 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-badge-code { background: rgba(255,255,255,0.05); color: var(--text3); }
 .t-badge-events { background: rgba(198,226,61,0.08); color: var(--accent); }
 .t-badge-qual { background: rgba(255,200,0,0.08); color: #f5c842; }
+.t-badge-grade { background: rgba(120,180,255,0.1); color: #7ab4ff; }
+
+/* ---- Phase 12 — Factsheet details panel ---- */
+.t-factsheet-panel { margin: 8px 16px 0; padding: 10px 12px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; gap: 5px; }
+.t-fs-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.t-fs-item { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
+.t-fs-item b { color: var(--text2); font-weight: 600; }
 
 /* Week card extras */
 .t-card-courts { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 3px; }

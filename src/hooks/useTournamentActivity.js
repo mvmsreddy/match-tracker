@@ -89,7 +89,10 @@ export function useTournamentActivity(aitaRegs) {
         const results = [];
         for (const m of allMine) {
           if (m.status === 'complete') results.push(m);
-          if (m.dayNumber != null && isToday(addDays(m.week.startDate, m.dayNumber - 1))) {
+          const anchor = (m.drawType === 'qualifying' && m.week.qualifyingStartDate)
+            ? m.week.qualifyingStartDate
+            : m.week.startDate;
+          if (m.dayNumber != null && isToday(addDays(anchor, m.dayNumber - 1))) {
             today.push(m);
           }
         }
