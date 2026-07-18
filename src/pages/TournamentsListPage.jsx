@@ -7,7 +7,34 @@ import { parseFactsheetPdf } from '../utils/parseFactsheet';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
-const GRADES = ['National Series', 'State', 'ITF Grade 1', 'ITF Grade 2', 'ITF Grade 3', 'ITF Grade 4', 'ITF Grade 5', 'Satellite'];
+const GRADES = ['National Series', 'Super Series', 'Championship Series (7-Day)', 'Championship Series (3-Day)', 'Talent Series', 'Nationals', 'State', 'ITF Grade 1', 'ITF Grade 2', 'ITF Grade 3', 'ITF Grade 4', 'ITF Grade 5', 'Satellite'];
+const CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles'];
+const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
+const DRAW_SIZES = [4, 8, 16, 32, 48, 64, 128];
+
+// AITA draw defaults by grade + category
+function getDrawDefaults(grade, category) {
+  const isDoubles = /double/i.test(category);
+  const isGirls = /girl|women/i.test(category);
+  const g = (grade || '').toLowerCase();
+  if (isDoubles) return { drawSize: 16, numSeeds: 8, hasQualifying: false, qualifyingSize: 32, qualifyingSpots: 0 };
+  let drawSize, qualSize, hasQual;
+  if (g.includes('national series')) {
+    drawSize = isGirls ? 48 : 64; qualSize = isGirls ? 32 : 48; hasQual = true;
+  } else if (g.includes('super series')) {
+    drawSize = 32; qualSize = isGirls ? 32 : 48; hasQual = true;
+  } else if (g.includes('nationals')) {
+    drawSize = isGirls ? 48 : 64; qualSize = isGirls ? 48 : 64; hasQual = true;
+  } else if (g.includes('championship') && g.includes('3')) {
+    drawSize = 48; qualSize = 32; hasQual = false;
+  } else if (g.includes('championship') || g.includes('talent') || g.includes('state')) {
+    drawSize = 32; qualSize = 32; hasQual = true;
+  } else {
+    drawSize = 32; qualSize = 32; hasQual = false;
+  }
+  const numSeeds = drawSize > 32 ? 16 : 8;
+  return { drawSize, numSeeds, hasQualifying: hasQual, qualifyingSize: qualSize, qualifyingSpots: hasQual ? 8 : 0 };
+}
 
 const EMPTY_FORM = {
   name: '', subtitle: '', tournamentCode: '',
@@ -45,6 +72,9 @@ export default function TournamentsListPage() {
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState('');
   const pdfInputRef = useRef(null);
+  // Step 2: event rows
+  const [step, setStep] = useState(1);
+  const [eventRows, setEventRows] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,9 +88,26 @@ export default function TournamentsListPage() {
     setForm(prev => ({ ...prev, [field]: value }));
   }
 
-  async function handleCreate(e) {
+  function closeModal() {
+    setShowCreate(false);
+    setParsedFromPdf(false);
+    setStep(1);
+    setEventRows([]);
+    setSaveError('');
+    setForm(EMPTY_FORM);
+  }
+
+  // Step 1 → 2: validate name, advance
+  function handleStep1(e) {
     e.preventDefault();
     if (!form.name.trim()) { setSaveError('Tournament name is required.'); return; }
+    setSaveError('');
+    setStep(2);
+  }
+
+  // Step 2: create tournament week + all event rows
+  async function handleSubmitAll() {
+    if (saving) return;
     setSaving(true);
     setSaveError('');
     try {
@@ -69,15 +116,40 @@ export default function TournamentsListPage() {
         numCourts: Number(form.numCourts) || 1,
         dayStartTime: form.dayStartTime + ':00',
       });
-      setWeeks(prev => [{ ...created, eventCount: 0 }, ...(prev || [])]);
-      setShowCreate(false);
-      setForm(EMPTY_FORM);
-      setParsedFromPdf(false);
+      const validRows = eventRows.filter(r => r.category && r.ageGroup);
+      for (const ev of validRows) {
+        await api.createEvent(created.id, ev);
+      }
+      setWeeks(prev => [{ ...created, eventCount: validRows.length }, ...(prev || [])]);
+      closeModal();
     } catch (err) {
       setSaveError(err.message || 'Failed to create tournament');
     } finally {
       setSaving(false);
     }
+  }
+
+  function addEventRow() {
+    const defaults = getDrawDefaults(form.grade, 'Boys Singles');
+    setEventRows(prev => [...prev, { category: 'Boys Singles', ageGroup: 'U14', ...defaults }]);
+  }
+
+  function removeEventRow(idx) {
+    setEventRows(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  function updateEventRow(idx, field, value) {
+    setEventRows(prev => prev.map((row, i) => {
+      if (i !== idx) return row;
+      const updated = { ...row, [field]: value };
+      if (field === 'category') {
+        return { ...updated, ...getDrawDefaults(form.grade, value) };
+      }
+      if (field === 'drawSize') {
+        updated.numSeeds = Number(value) > 32 ? 16 : 8;
+      }
+      return updated;
+    }));
   }
 
   async function handlePdfUpload(e) {
@@ -90,6 +162,8 @@ export default function TournamentsListPage() {
       setForm(prev => ({ ...prev, ...parsed }));
       setParsedFromPdf(true);
       setShowMore(true); // expand details so user can review everything
+      setStep(1);
+      setEventRows([]);
       setShowCreate(true);
     } catch (err) {
       setParseError('Could not read PDF: ' + (err.message || 'unknown error'));
@@ -105,6 +179,8 @@ export default function TournamentsListPage() {
     setParseError('');
     setSaveError('');
     setShowMore(false);
+    setStep(1);
+    setEventRows([]);
     setShowCreate(true);
   }
 
@@ -119,6 +195,10 @@ export default function TournamentsListPage() {
   }
 
   const isOrganizer = user?.role === 'organizer';
+  const isPlayer = user?.role === 'player';
+  const missingPlayerFields = isPlayer
+    ? [!user?.aitaReg && 'AITA Reg', !user?.dateOfBirth && 'Date of Birth', !user?.stateAbbr && 'State'].filter(Boolean)
+    : [];
 
   return (
     <div className="root">
@@ -160,16 +240,28 @@ export default function TournamentsListPage() {
 
       {/* Create Week Modal */}
       {showCreate && (
-        <div className="t-modal-overlay" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>
+        <div className="t-modal-overlay" onClick={closeModal}>
           <div className="t-modal" onClick={e => e.stopPropagation()}>
             <div className="t-modal-header">
               <span className="t-modal-title">
-                {parsedFromPdf ? 'Review Tournament Details' : 'New Tournament Week'}
+                {step === 2 ? `Add Events — ${form.name}` : parsedFromPdf ? 'Review Tournament Details' : 'New Tournament Week'}
               </span>
-              <button className="drawer-close" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>✕</button>
+              <button className="drawer-close" onClick={closeModal}>✕</button>
             </div>
+            {step === 1 && (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <span style={{ background: 'var(--accent,#1a6b3a)', color: '#fff', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>1 · Tournament Details</span>
+                <span style={{ background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#888)', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>2 · Add Events</span>
+              </div>
+            )}
+            {step === 2 && (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <span style={{ background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#888)', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>1 · Tournament Details</span>
+                <span style={{ background: 'var(--accent,#1a6b3a)', color: '#fff', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>2 · Add Events</span>
+              </div>
+            )}
 
-            {parsedFromPdf && (
+            {parsedFromPdf && step === 1 && (
               <div style={{
                 background: 'var(--accent, #1a6b3a)', color: '#fff',
                 borderRadius: 6, padding: '8px 12px', margin: '0 0 12px',
@@ -185,7 +277,7 @@ export default function TournamentsListPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreate} className="t-create-form">
+            {step === 1 && <form onSubmit={handleStep1} className="t-create-form">
               <div className="t-form-row">
                 <div className="field">
                   <label>Tournament Name *</label>
@@ -425,20 +517,121 @@ export default function TournamentsListPage() {
               {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
 
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button type="submit" className="action-btn primary" disabled={saving}>
-                  {saving ? 'Creating…' : 'Create Tournament Week'}
+                <button type="submit" className="action-btn primary">
+                  Next: Add Events →
                 </button>
-                <button type="button" className="action-btn" onClick={() => { setShowCreate(false); setParsedFromPdf(false); }}>
+                <button type="button" className="action-btn" onClick={closeModal}>
                   Cancel
                 </button>
               </div>
-            </form>
+            </form>}
+
+            {/* Step 2: Add Events */}
+            {step === 2 && (
+              <div className="t-events-step">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text2,#888)' }}>
+                    {form.grade && <strong>{form.grade}</strong>} · Draw sizes auto-filled from AITA rules
+                  </span>
+                  <button type="button" className="action-btn" onClick={addEventRow}>+ Add Event</button>
+                </div>
+
+                {eventRows.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text2,#888)', fontSize: 14 }}>
+                    No events yet — click "+ Add Event" to add events, or skip to create the tournament without events.
+                  </div>
+                )}
+
+                {eventRows.length > 0 && (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border,#333)' }}>
+                          <th style={{ textAlign: 'left', padding: '4px 6px' }}>Category</th>
+                          <th style={{ textAlign: 'left', padding: '4px 6px' }}>Age</th>
+                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Draw</th>
+                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Seeds</th>
+                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Qual?</th>
+                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Qual Size</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventRows.map((row, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--border,#222)' }}>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select value={row.category} onChange={e => updateEventRow(idx, 'category', e.target.value)} style={{ fontSize: 13 }}>
+                                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select value={row.ageGroup} onChange={e => updateEventRow(idx, 'ageGroup', e.target.value)} style={{ fontSize: 13 }}>
+                                {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                              <select value={row.drawSize} onChange={e => updateEventRow(idx, 'drawSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
+                                {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                              <select value={row.numSeeds} onChange={e => updateEventRow(idx, 'numSeeds', Number(e.target.value))} style={{ fontSize: 13, width: 55 }}>
+                                {[2,4,8,16,32].map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                              <input type="checkbox" checked={!!row.hasQualifying} onChange={e => updateEventRow(idx, 'hasQualifying', e.target.checked)} />
+                            </td>
+                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                              {row.hasQualifying ? (
+                                <select value={row.qualifyingSize} onChange={e => updateEventRow(idx, 'qualifyingSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
+                                  {[16,32,48,64].map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              ) : '—'}
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <button type="button" onClick={() => removeEventRow(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2,#888)', fontSize: 16 }} title="Remove">✕</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                  <button type="button" className="action-btn" onClick={() => { setStep(1); setSaveError(''); }}>
+                    ← Back
+                  </button>
+                  <button type="button" className="action-btn primary" disabled={saving} onClick={handleSubmitAll}>
+                    {saving ? 'Creating…' : `Create Tournament${eventRows.length > 0 ? ` + ${eventRows.length} Event${eventRows.length !== 1 ? 's' : ''}` : ''}`}
+                  </button>
+                  <button type="button" className="action-btn" onClick={closeModal}>Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Content */}
       <div className="page-scroll">
+        {missingPlayerFields.length > 0 && (
+          <div style={{
+            background: '#7c3a00', color: '#ffd9b0',
+            borderRadius: 8, padding: '10px 14px',
+            margin: '0 16px 12px', fontSize: 13,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>⚠</span>
+            <span>
+              Complete your profile to enter tournaments — missing: <strong>{missingPlayerFields.join(', ')}</strong>.{' '}
+              <Link to="/profile" style={{ color: '#ffd9b0', textDecoration: 'underline' }}>Update Profile →</Link>
+            </span>
+          </div>
+        )}
         {error && <div className="history-empty">{error}</div>}
 
         {weeks === null && !error && (

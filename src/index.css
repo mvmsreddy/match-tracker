@@ -869,6 +869,15 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-icon-btn:hover { color: var(--accent); background: rgba(198,226,61,0.08); }
 .t-icon-btn-del:hover { color: #e05252; background: rgba(224,82,82,0.08); }
 
+/* Generic search input (used in modals) */
+.t-search-input { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 8px 12px; box-sizing: border-box; }
+.t-search-input:focus { outline: none; border-color: var(--accent); }
+
+/* Step 2 events panel inside the create wizard */
+.t-events-step { display: flex; flex-direction: column; gap: 4px; }
+.t-events-step select, .t-events-step input[type="number"] { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; }
+
+
 /* Platform search results */
 .t-search-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 4px; }
 .t-search-results { border: 1px solid var(--border); border-radius: 5px; margin-top: 4px; overflow: hidden; }

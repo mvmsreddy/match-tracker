@@ -60,6 +60,15 @@ export default function ProfilePage() {
   const isCoach     = form.role === 'coach';
   const isOrganizer = form.role === 'organizer';
 
+  // Profile completeness for players
+  const missingPlayerFields = isPlayer
+    ? [
+        !form.aitaReg && 'AITA Registration No.',
+        !form.dateOfBirth && 'Date of Birth',
+        !form.stateAbbr && 'State',
+      ].filter(Boolean)
+    : [];
+
   return (
     <div className="root">
       <TopNav />
@@ -81,6 +90,20 @@ export default function ProfilePage() {
       </div>
 
       <div className="page-scroll">
+        {missingPlayerFields.length > 0 && (
+          <div style={{
+            background: '#7c3a00', color: '#ffd9b0',
+            borderRadius: 8, padding: '10px 14px',
+            margin: '0 16px 12px', fontSize: 13,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>⚠</span>
+            <span>
+              Complete your profile to enter tournaments.
+              Missing: <strong>{missingPlayerFields.join(', ')}</strong>.
+            </span>
+          </div>
+        )}
         <form onSubmit={handleSave} className="profile-form">
 
           {/* Basic Info */}

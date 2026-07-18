@@ -235,6 +235,9 @@ export default function DashboardPage() {
   const [matches, setMatches]   = useState(null);
   const [links, setLinks]       = useState(null);
   const [error, setError]       = useState('');
+  // Phase 20 — My Entries + pending invitations
+  const [myEntries, setMyEntries]         = useState(null);
+  const [pendingInvites, setPendingInvites] = useState([]);
 
   // Load personal match history for players and coaches
   useEffect(() => {
@@ -255,6 +258,15 @@ export default function DashboardPage() {
       .catch(() => { /* non-critical */ });
     return () => { cancelled = true; };
   }, [user.id, role]);
+
+  // Phase 20 — load player's self-entered events + pending invitations
+  useEffect(() => {
+    if (role !== 'player') return;
+    let cancelled = false;
+    api.getMyEntries().then(data => { if (!cancelled) setMyEntries(data); }).catch(() => {});
+    api.getMyPendingInvitations().then(data => { if (!cancelled) setPendingInvites(data); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [role]);
 
   const matchesOnly = matches ? matches.filter(m => m.sessionType !== 'practice') : [];
   const practices   = matches ? matches.filter(m => m.sessionType === 'practice') : [];
@@ -301,6 +313,78 @@ export default function DashboardPage() {
             <div className="history-empty" style={{ marginTop: 20 }}>
               Use the <strong>Tournaments</strong> section to create events, manage draws, and enter scores.
             </div>
+          </div>
+        )}
+
+        {/* Player: pending doubles invitations */}
+        {role === 'player' && pendingInvites.length > 0 && (
+          <div className="dashboard-recent">
+            <div className="dashboard-section-title" style={{ color: '#f59e0b' }}>
+              Doubles Invitations ({pendingInvites.length})
+            </div>
+            {pendingInvites.map(inv => (
+              <div key={inv.id} className="dashboard-match-card" style={{ cursor: 'default' }}>
+                <div className="dashboard-match-info">
+                  <div className="dashboard-match-title">
+                    Doubles invitation — {inv.event?.tournament_week?.name || 'tournament'}
+                  </div>
+                  <div className="dashboard-match-sub">
+                    {inv.event?.category} {inv.event?.age_group} · From AITA {inv.inviter_aita_reg}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="action-btn primary"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={async () => {
+                      try {
+                        await api.respondToInvitation(inv.id, true);
+                        setPendingInvites(prev => prev.filter(i => i.id !== inv.id));
+                      } catch (e) { alert(e.message); }
+                    }}
+                  >Accept</button>
+                  <button
+                    className="action-btn"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={async () => {
+                      try {
+                        await api.respondToInvitation(inv.id, false);
+                        setPendingInvites(prev => prev.filter(i => i.id !== inv.id));
+                      } catch (e) { alert(e.message); }
+                    }}
+                  >Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Player: My Entries */}
+        {role === 'player' && myEntries !== null && myEntries.length > 0 && (
+          <div className="dashboard-recent">
+            <div className="dashboard-section-title">My Entries</div>
+            {myEntries.filter(e => e.entryStatus !== 'withdrawn').map(entry => (
+              <div key={entry.id} className="dashboard-match-card" style={{ cursor: 'default' }}>
+                <div className="dashboard-match-info">
+                  <div className="dashboard-match-title">
+                    <Link
+                      to={`/tournaments/${entry.event?.week?.id}/events/${entry.eventId}`}
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                    >
+                      {entry.event?.category} {entry.event?.ageGroup}
+                    </Link>
+                  </div>
+                  <div className="dashboard-match-sub">
+                    {entry.event?.week?.name}{entry.event?.week?.startDate ? ` · ${entry.event.week.startDate}` : ''}
+                    {' · '}
+                    {entry.isAlternate ? 'Alternate' : entry.drawType === 'main' ? `Main Draw #${entry.position}` : `Qualifying #${entry.position}`}
+                  </div>
+                </div>
+                <span className={`t-badge ${entry.entryStatus === 'placed' ? '' : 'pending'}`} style={{ fontSize: 12 }}>
+                  {entry.entryStatus === 'placed' ? 'Entered' : entry.entryStatus}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 

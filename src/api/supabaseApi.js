@@ -356,6 +356,12 @@ function rowToEvent(row) {
     qualifyingSize: row.qualifying_size,
     qualifyingSpots: row.qualifying_spots,
     status: row.status,
+    // Phase 14 fields
+    maxMainDirect: row.max_main_direct ?? (row.draw_size ? row.draw_size - 9 : null),
+    maxQualDirect: row.max_qual_direct ?? (row.qualifying_size ? row.qualifying_size - 4 : null),
+    entriesOpen: row.entries_open ?? false,
+    entryOpenDate: row.entry_open_date,
+    entryCloseDate: row.entry_close_date,
   };
 }
 
@@ -406,6 +412,11 @@ export async function updateEvent(eventId, updates) {
   if (updates.qualifyingSize !== undefined) row.qualifying_size = updates.qualifyingSize;
   if (updates.qualifyingSpots !== undefined) row.qualifying_spots = updates.qualifyingSpots;
   if (updates.status !== undefined) row.status = updates.status;
+  if (updates.entriesOpen !== undefined) row.entries_open = updates.entriesOpen;
+  if (updates.entryOpenDate !== undefined) row.entry_open_date = updates.entryOpenDate;
+  if (updates.entryCloseDate !== undefined) row.entry_close_date = updates.entryCloseDate;
+  if (updates.maxMainDirect !== undefined) row.max_main_direct = updates.maxMainDirect;
+  if (updates.maxQualDirect !== undefined) row.max_qual_direct = updates.maxQualDirect;
 
   const { data, error } = await supabase
     .from('events')
@@ -456,6 +467,12 @@ function rowToEntry(row) {
     isAlternate: row.is_alternate,
     replacingName: row.replacing_name,
     isWithdrawn: row.is_withdrawn || false,
+    // Phase 14 fields
+    entrySource: row.entry_source || 'organiser',
+    entryStatus: row.entry_status || 'placed',
+    enteredBy: row.entered_by || null,
+    withdrawalDate: row.withdrawal_date || null,
+    withdrawalType: row.withdrawal_type || null,
   };
 }
 
@@ -622,6 +639,279 @@ export async function getPlayerWeekParticipation(weekId, aitaReg, excludeEventId
     if (ev) result.push({ eventId: ev.id, category: ev.category, ageGroup: ev.age_group, isDoubles: ev.is_doubles });
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 18 — Player self-entry
+// ---------------------------------------------------------------------------
+
+// Check if the current user already has an active entry in this event
+export async function getMyEventEntry(eventId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('entered_by', user.id)
+    .neq('entry_status', 'withdrawn')
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? rowToEntry(data) : null;
+}
+
+// Determine where a player with the given rank would be placed in an event
+// Returns { drawType: 'main'|'qualifying'|'alternate', position: number }
+export async function computeSelfEntryPlacement(eventId, rankingRank) {
+  const event = await getEvent(eventId);
+  const maxMain = event.maxMainDirect ?? (event.drawSize - 9);
+  const maxQual = event.maxQualDirect ?? ((event.qualifyingSize || 32) - 4);
+
+  const [mainEntries, qualEntries] = await Promise.all([
+    supabase.from('draw_entries')
+      .select('position')
+      .eq('event_id', eventId)
+      .eq('draw_type', 'main')
+      .neq('entry_status', 'withdrawn')
+      .eq('is_bye', false),
+    supabase.from('draw_entries')
+      .select('position')
+      .eq('event_id', eventId)
+      .eq('draw_type', 'qualifying')
+      .neq('entry_status', 'withdrawn')
+      .eq('is_bye', false),
+  ]);
+
+  const mainCount = (mainEntries.data || []).filter(e => !e.is_alternate).length;
+  const qualCount = (qualEntries.data || []).filter(e => !e.is_alternate).length;
+
+  if (mainCount < maxMain) {
+    // Find next available position in main draw (1..drawSize)
+    const takenMain = new Set((mainEntries.data || []).map(e => e.position));
+    let pos = 1;
+    while (takenMain.has(pos) && pos <= event.drawSize) pos++;
+    return { drawType: 'main', position: pos, maxMain, mainCount, event };
+  }
+  if (event.hasQualifying && qualCount < maxQual) {
+    const takenQual = new Set((qualEntries.data || []).map(e => e.position));
+    let pos = 1;
+    while (takenQual.has(pos) && pos <= (event.qualifyingSize || 32)) pos++;
+    return { drawType: 'qualifying', position: pos, maxQual, qualCount, event };
+  }
+  // Alternate
+  const allEntries = [...(mainEntries.data || []), ...(qualEntries.data || [])];
+  const altPositions = new Set(allEntries.filter(e => e.is_alternate).map(e => e.position));
+  let pos = (event.drawSize || 32) + 1;
+  while (altPositions.has(pos)) pos++;
+  return { drawType: 'main', position: pos, isAlternate: true, event };
+}
+
+// Self-enter the currently logged-in player into the event singles draw
+export async function selfEnterSingles(eventId, profile) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+
+  // Check for existing active entry
+  const existing = await getMyEventEntry(eventId);
+  if (existing) throw new Error('You are already entered in this event.');
+
+  const placement = await computeSelfEntryPlacement(eventId, profile.ranking);
+  const row = {
+    event_id: eventId,
+    draw_type: placement.drawType,
+    position: placement.position,
+    is_bye: false,
+    is_alternate: placement.isAlternate || false,
+    family_name: profile.familyName || profile.displayName?.split(' ').pop() || '',
+    first_name: profile.firstName || (profile.displayName?.split(' ').slice(0, -1).join(' ')) || '',
+    aita_reg: profile.aitaReg || null,
+    player_state: profile.stateAbbr || null,
+    ranking: profile.ranking ? Number(profile.ranking) : null,
+    date_of_birth: profile.dateOfBirth || null,
+    player_id: user.id,
+    entry_source: 'player',
+    entry_status: 'placed',
+    entered_by: user.id,
+  };
+  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return { entry: rowToEntry(data), placement };
+}
+
+// Player withdraws from an event
+export async function withdrawFromEvent(entryId, withdrawalType = 'W') {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({ entry_status: 'withdrawn', withdrawal_date: today, withdrawal_type: withdrawalType })
+    .eq('id', entryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+// Get all draw entries where the current user has entered themselves (all tournaments)
+export async function getMyEntries() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade))')
+    .eq('entered_by', user.id)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data || []).map(row => ({
+    ...rowToEntry(row),
+    event: row.event ? { ...rowToEvent(row.event), week: row.event.tournament_week ? rowToWeek(row.event.tournament_week) : null } : null,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Phase 19 — Doubles invitations
+// ---------------------------------------------------------------------------
+
+// Search for a partner by name/AITA reg (for doubles invitation)
+// Returns aita_players rows filtered by age group + gender
+export async function searchDoublesPartners(query, ageGroup, gender) {
+  let q = supabase
+    .from('aita_players')
+    .select('aita_reg, family_name, first_name, state, ranking_rank, ranking_pts, age_group, gender')
+    .or(`family_name.ilike.%${query}%,first_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
+    .order('ranking_rank', { ascending: true })
+    .limit(15);
+  if (ageGroup) q = q.eq('age_group', ageGroup);
+  if (gender) q = q.eq('gender', gender);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data || []).map(p => ({
+    aitaReg: p.aita_reg,
+    familyName: p.family_name,
+    firstName: p.first_name,
+    state: p.state,
+    rankingRank: p.ranking_rank,
+    rankingPts: p.ranking_pts,
+    ageGroup: p.age_group,
+    gender: p.gender,
+  }));
+}
+
+// Send a doubles invitation to a partner
+export async function sendDoublesInvitation(eventId, inviterAitaReg, inviteeAitaReg) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+  // Find the invitee's user_id from user_profiles by aita_reg
+  const { data: inviteeProfile } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('aita_reg', inviteeAitaReg)
+    .maybeSingle();
+  const inviteeUserId = inviteeProfile?.id || null;
+
+  const { data, error } = await supabase
+    .from('doubles_invitations')
+    .insert({
+      event_id: eventId,
+      inviter_user_id: user.id,
+      invitee_user_id: inviteeUserId,
+      inviter_aita_reg: inviterAitaReg,
+      invitee_aita_reg: inviteeAitaReg,
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Get pending invitations received by the current user
+export async function getMyPendingInvitations() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('doubles_invitations')
+    .select('*, event:events(id, category, age_group, draw_size, tournament_week:tournament_weeks(id, name, start_date, city, state_abbr))')
+    .eq('invitee_user_id', user.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+// Get invitations sent by current user
+export async function getMySentInvitations(eventId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('doubles_invitations')
+    .select('*')
+    .eq('inviter_user_id', user.id)
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+// Respond to a doubles invitation
+export async function respondToInvitation(invitationId, accept) {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('doubles_invitations')
+    .update({ status: accept ? 'accepted' : 'declined', responded_at: now })
+    .eq('id', invitationId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  // If accepted, create the doubles entry
+  if (accept && data) {
+    const { data: event } = await supabase.from('events').select('*').eq('id', data.event_id).single();
+    if (event) {
+      const { data: { user } } = await supabase.auth.getUser();
+      // Get profiles for both players
+      const [inviterProfile, inviteeProfile] = await Promise.all([
+        supabase.from('user_profiles').select('*').eq('id', data.inviter_user_id).maybeSingle(),
+        supabase.from('user_profiles').select('*').eq('id', data.invitee_user_id).maybeSingle(),
+      ]);
+      const inviter = inviterProfile.data;
+      const invitee = inviteeProfile.data;
+      // Compute placement
+      const maxMain = event.draw_size || 16;
+      const { data: existing } = await supabase.from('draw_entries')
+        .select('position').eq('event_id', event.id).eq('draw_type', 'main').neq('entry_status', 'withdrawn');
+      const taken = new Set((existing || []).map(e => e.position));
+      let pos = 1;
+      while (taken.has(pos) && pos <= maxMain) pos++;
+      await supabase.from('draw_entries').insert({
+        event_id: event.id,
+        draw_type: 'main',
+        position: pos,
+        is_bye: false,
+        family_name: inviter?.display_name?.split(' ').pop() || data.inviter_aita_reg,
+        first_name: inviter?.display_name?.split(' ').slice(0, -1).join(' ') || '',
+        aita_reg: data.inviter_aita_reg,
+        player_state: inviter?.state_abbr || null,
+        ranking: inviter?.ranking || null,
+        date_of_birth: inviter?.date_of_birth || null,
+        player_id: data.inviter_user_id,
+        partner_family_name: invitee?.display_name?.split(' ').pop() || data.invitee_aita_reg,
+        partner_first_name: invitee?.display_name?.split(' ').slice(0, -1).join(' ') || '',
+        partner_aita_reg: data.invitee_aita_reg,
+        partner_state: invitee?.state_abbr || null,
+        partner_ranking: invitee?.ranking || null,
+        partner_id: data.invitee_user_id,
+        entry_source: 'player',
+        entry_status: 'placed',
+        entered_by: user?.id,
+      });
+    }
+  }
+  return data;
+}
+
+// Cancel/delete an invitation (by inviter)
+export async function cancelInvitation(invitationId) {
+  const { error } = await supabase.from('doubles_invitations').delete().eq('id', invitationId);
+  if (error) throw new Error(error.message);
 }
 
 // ---------------------------------------------------------------------------
@@ -805,9 +1095,22 @@ export async function upsertProfile(userId, profile) {
   return rowToProfile(data);
 }
 
-export async function searchPlayers(query) {
+export async function searchPlayers(query, ageGroup = null, gender = null) {
   // Search registered platform users first, then AITA rankings directory.
   // Results are merged and de-duped by aita_reg (platform user wins on match).
+  // ageGroup: 'U12' | 'U14' | 'U16' | 'U18' | null (no filter)
+  // gender:   'M' | 'F' | null (no filter)
+
+  let aitaQuery = supabase
+    .from('aita_players')
+    .select('aita_reg, family_name, first_name, dob, state, ranking_pts, ranking_rank, age_group, gender')
+    .or(`family_name.ilike.%${query}%,first_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
+    .order('ranking_rank', { ascending: true })
+    .limit(20);
+
+  if (ageGroup) aitaQuery = aitaQuery.eq('age_group', ageGroup);
+  if (gender)   aitaQuery = aitaQuery.eq('gender', gender);
+
   const [usersRes, aitaRes] = await Promise.all([
     supabase
       .from('user_profiles')
@@ -815,12 +1118,7 @@ export async function searchPlayers(query) {
       .eq('role', 'player')
       .or(`display_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
       .limit(10),
-    supabase
-      .from('aita_players')
-      .select('aita_reg, family_name, first_name, dob, state, ranking_pts, ranking_rank, age_group, gender')
-      .or(`family_name.ilike.%${query}%,first_name.ilike.%${query}%,aita_reg.ilike.%${query}%`)
-      .order('ranking_rank', { ascending: true })
-      .limit(15),
+    aitaQuery,
   ]);
 
   if (usersRes.error) throw new Error(usersRes.error.message);

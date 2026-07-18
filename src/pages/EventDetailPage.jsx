@@ -239,7 +239,10 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
     if (searchQuery.length < 2) { setSearchResults([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      try { setSearchResults(await api.searchPlayers(searchQuery)); }
+      try {
+          const gender = (event?.category?.toLowerCase().includes('girl') || event?.category?.toLowerCase().includes('women')) ? 'F' : 'M';
+          setSearchResults(await api.searchPlayers(searchQuery, event?.ageGroup, gender));
+        }
       catch { setSearchResults([]); }
       finally { setSearching(false); }
     }, 400);
@@ -1533,7 +1536,14 @@ export default function EventDetailPage() {
               <span>{event?.category} {event?.ageGroup}</span>
             </div>
             <h1 className="title">{event?.category}</h1>
-            <div className="subtitle">{event?.ageGroup} · {week?.name}</div>
+            <div className="subtitle">
+              {event?.ageGroup} · {week?.name}
+              {event?.entriesOpen && (
+                <span style={{ marginLeft: 10, background: '#1a6b3a', color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11, verticalAlign: 'middle' }}>
+                  Entries Open
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Action buttons — context-aware */}
@@ -1590,6 +1600,38 @@ export default function EventDetailPage() {
               <button className="action-btn t-promote-btn" onClick={handlePromoteQualifiers}>
                 ✓ Promote Qualifiers → Main
               </button>
+            )}
+            {/* Open / Close / Freeze entries — organiser only */}
+            {isOwner && (
+              <>
+                <button
+                  className="action-btn"
+                  style={{ background: event?.entriesOpen ? '#7c3a00' : 'var(--accent,#1a6b3a)', color: '#fff' }}
+                  onClick={async () => {
+                    try {
+                      const updated = await api.updateEvent(eventId, { entriesOpen: !event?.entriesOpen });
+                      setEvent(updated);
+                    } catch (err) { alert(err.message); }
+                  }}
+                >
+                  {event?.entriesOpen ? 'Close Entries' : 'Open Entries'}
+                </button>
+                {event?.entriesOpen && (
+                  <button
+                    className="action-btn"
+                    style={{ background: '#4b1fa0', color: '#fff' }}
+                    onClick={async () => {
+                      if (!window.confirm('Freeze entries? Players will no longer be able to self-enter or withdraw online. This cannot be undone easily.')) return;
+                      try {
+                        const updated = await api.updateEvent(eventId, { entriesOpen: false, entryCloseDate: new Date().toISOString().slice(0, 10) });
+                        setEvent(updated);
+                      } catch (err) { alert(err.message); }
+                    }}
+                  >
+                    🔒 Freeze Entries
+                  </button>
+                )}
+              </>
             )}
             {/* PDF draw sheet — always available when entries exist */}
             {mainEntries.length > 0 && (

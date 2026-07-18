@@ -53,7 +53,10 @@ function StatusBadge({ status }) {
 // EventCard
 // ---------------------------------------------------------------------------
 
-function EventCard({ event, weekId, isOwner, onDelete }) {
+function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithdraw, onInvitePartner }) {
+  const canEnterSingles = !event.isDoubles && !myEntry;
+  const canInviteDoubles = event.isDoubles && !myEntry;
+  const isEntered = !!myEntry && myEntry.entryStatus !== 'withdrawn';
   return (
     <div className="t-event-card">
       <Link to={`/tournaments/${weekId}/events/${event.id}`} className="t-event-card-main">
@@ -70,6 +73,36 @@ function EventCard({ event, weekId, isOwner, onDelete }) {
           )}
         </div>
       </Link>
+      {onEnter && isEntered && (
+        <button
+          className="action-btn"
+          style={{ fontSize: 12, padding: '4px 10px', background: 'var(--accent,#1a6b3a)', color: '#fff' }}
+          onClick={() => onWithdraw(event.id)}
+          title="Withdraw from this event"
+        >
+          ✓ Entered
+        </button>
+      )}
+      {onEnter && canEnterSingles && (
+        <button
+          className="action-btn"
+          style={{ fontSize: 12, padding: '4px 10px' }}
+          onClick={() => onEnter(event)}
+          title="Enter this event"
+        >
+          Enter →
+        </button>
+      )}
+      {onInvitePartner && canInviteDoubles && (
+        <button
+          className="action-btn"
+          style={{ fontSize: 12, padding: '4px 10px' }}
+          onClick={() => onInvitePartner(event)}
+          title="Invite a doubles partner"
+        >
+          + Partner
+        </button>
+      )}
       {isOwner && (
         <button className="t-delete-btn" onClick={() => onDelete(event.id)} title="Delete event">
           ✕
@@ -95,20 +128,40 @@ export default function TournamentDetailPage() {
   const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Self-entry state
+  const [entryModal, setEntryModal] = useState(null); // { event, placement } | null
+  const [myEntries, setMyEntries] = useState({}); // { [eventId]: entry | null }
+  const [entryError, setEntryError] = useState('');
+  const [enteringSelf, setEnteringSelf] = useState(false);
+  // Doubles invitation state
+  const [inviteModal, setInviteModal] = useState(null); // { event }
+  const [partnerQuery, setPartnerQuery] = useState('');
+  const [partnerResults, setPartnerResults] = useState([]);
+  const [inviteError, setInviteError] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   // Load week + events
   useEffect(() => {
     let cancelled = false;
     api.getTournamentWeek(weekId)
-      .then(data => {
-        if (!cancelled) {
-          setWeek(data);
-          setEvents(data.events || []);
+      .then(async data => {
+        if (cancelled) return;
+        setWeek(data);
+        const evList = data.events || [];
+        setEvents(evList);
+        // Load my entries for player role
+        if (user?.role === 'player' && evList.length > 0) {
+          const map = {};
+          await Promise.all(evList.map(async ev => {
+            try { map[ev.id] = await api.getMyEventEntry(ev.id); }
+            catch { map[ev.id] = null; }
+          }));
+          if (!cancelled) setMyEntries(map);
         }
       })
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournament'); });
     return () => { cancelled = true; };
-  }, [weekId]);
+  }, [weekId, user?.role]);
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -152,6 +205,80 @@ export default function TournamentDetailPage() {
   }
 
   const isOwner = week && user && week.createdBy === user.id;
+  const isPlayer = user?.role === 'player';
+
+  async function openEntryModal(event) {
+    setEntryError('');
+    try {
+      const placement = await api.computeSelfEntryPlacement(event.id, user?.ranking || null);
+      setEntryModal({ event, placement });
+    } catch (err) {
+      setEntryError(err.message);
+    }
+  }
+
+  async function handleSelfEnter() {
+    if (!entryModal || enteringSelf) return;
+    setEnteringSelf(true);
+    setEntryError('');
+    try {
+      const result = await api.selfEnterSingles(entryModal.event.id, {
+        familyName: user.displayName?.split(' ').slice(-1)[0] || user.displayName || '',
+        firstName: user.displayName?.split(' ').slice(0, -1).join(' ') || '',
+        aitaReg: user.aitaReg || '',
+        stateAbbr: user.stateAbbr || '',
+        ranking: user.ranking || null,
+        dateOfBirth: user.dateOfBirth || '',
+        displayName: user.displayName || '',
+      });
+      setMyEntries(prev => ({ ...prev, [entryModal.event.id]: result.entry }));
+      setEntryModal(null);
+    } catch (err) {
+      setEntryError(err.message);
+    } finally {
+      setEnteringSelf(false);
+    }
+  }
+
+  async function handleWithdraw(eventId) {
+    const entry = myEntries[eventId];
+    if (!entry) return;
+    if (!window.confirm('Withdraw from this event?')) return;
+    try {
+      await api.withdrawFromEvent(entry.id, 'W');
+      setMyEntries(prev => ({ ...prev, [eventId]: null }));
+    } catch (err) {
+      setEntryError(err.message);
+    }
+  }
+
+  async function searchPartners(query) {
+    if (!inviteModal || query.length < 2) { setPartnerResults([]); return; }
+    const gender = inviteModal.event.category.toLowerCase().includes('girl') || inviteModal.event.category.toLowerCase().includes('women') ? 'F' : 'M';
+    try {
+      const results = await api.searchDoublesPartners(query, inviteModal.event.ageGroup, gender);
+      setPartnerResults(results);
+    } catch { setPartnerResults([]); }
+  }
+
+  async function handleSendInvitation(partner) {
+    if (!inviteModal || !user?.aitaReg) {
+      setInviteError(!user?.aitaReg ? 'Set your AITA Reg in Profile first.' : 'No event selected.');
+      return;
+    }
+    setInviting(true);
+    setInviteError('');
+    try {
+      await api.sendDoublesInvitation(inviteModal.event.id, user.aitaReg, partner.aitaReg);
+      setInviteModal(null);
+      setPartnerQuery('');
+      setPartnerResults([]);
+    } catch (err) {
+      setInviteError(err.message);
+    } finally {
+      setInviting(false);
+    }
+  }
 
   if (error) {
     return (
@@ -369,6 +496,89 @@ export default function TournamentDetailPage() {
         </div>
       )}
 
+      {/* Self-entry confirmation modal */}
+      {entryModal && (
+        <div className="t-modal-overlay" onClick={() => setEntryModal(null)}>
+          <div className="t-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div className="t-modal-header">
+              <span className="t-modal-title">Confirm Entry</span>
+              <button className="drawer-close" onClick={() => setEntryModal(null)}>✕</button>
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+              <p style={{ margin: '0 0 8px' }}>
+                <strong>{entryModal.event.category} {entryModal.event.ageGroup}</strong>
+              </p>
+              <p style={{ margin: '0 0 4px' }}>Your AITA rank: <strong>{user?.ranking || 'Unranked'}</strong></p>
+              <p style={{ margin: '0 0 4px' }}>
+                Placement:{' '}
+                {entryModal.placement.isAlternate
+                  ? <span style={{ color: '#f59e0b' }}>Alternate (draw is full)</span>
+                  : entryModal.placement.drawType === 'main'
+                    ? <span style={{ color: '#22c55e' }}>Main Draw — position {entryModal.placement.position}</span>
+                    : <span style={{ color: '#60a5fa' }}>Qualifying Draw — position {entryModal.placement.position}</span>
+                }
+              </p>
+            </div>
+            {entryError && <div className="login-error" style={{ marginBottom: 8 }}>{entryError}</div>}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="action-btn primary" onClick={handleSelfEnter} disabled={enteringSelf}>
+                {enteringSelf ? 'Entering…' : 'Confirm Entry'}
+              </button>
+              <button className="action-btn" onClick={() => { setEntryModal(null); setEntryError(''); }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {entryError && !entryModal && (
+        <div style={{ margin: '0 16px 8px', color: '#ef4444', fontSize: 13 }}>{entryError}</div>
+      )}
+
+      {/* Doubles invitation modal */}
+      {inviteModal && (
+        <div className="t-modal-overlay" onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }}>
+          <div className="t-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="t-modal-header">
+              <span className="t-modal-title">Invite Doubles Partner</span>
+              <button className="drawer-close" onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text2,#888)' }}>
+              {inviteModal.event.category} {inviteModal.event.ageGroup} — search for a partner by name or AITA Reg.
+            </p>
+            <input
+              className="t-search-input"
+              style={{ width: '100%', marginBottom: 8 }}
+              placeholder="Search by name or AITA Reg…"
+              value={partnerQuery}
+              autoFocus
+              onChange={e => { setPartnerQuery(e.target.value); searchPartners(e.target.value); }}
+            />
+            {partnerResults.length > 0 && (
+              <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border,#333)', borderRadius: 6 }}>
+                {partnerResults.map(p => (
+                  <div
+                    key={p.aitaReg}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border,#222)', cursor: 'pointer' }}
+                    onClick={() => handleSendInvitation(p)}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{p.familyName}{p.firstName ? `, ${p.firstName}` : ''}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text2,#888)' }}>{p.aitaReg} · {p.state} · {p.rankingRank ? `Rank ${p.rankingRank}` : 'Unranked'}</div>
+                    </div>
+                    <button className="action-btn primary" style={{ fontSize: 12, padding: '3px 10px' }} disabled={inviting}>
+                      {inviting ? '…' : 'Invite'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {inviteError && <div className="login-error" style={{ marginTop: 8 }}>{inviteError}</div>}
+          </div>
+        </div>
+      )}
+
       {/* Events list */}
       <div className="page-scroll">
         {events.length === 0 ? (
@@ -392,6 +602,10 @@ export default function TournamentDetailPage() {
                 weekId={weekId}
                 isOwner={isOwner}
                 onDelete={handleDeleteEvent}
+                myEntry={isPlayer ? myEntries[ev.id] : undefined}
+                onEnter={isPlayer ? openEntryModal : undefined}
+                onWithdraw={isPlayer ? handleWithdraw : undefined}
+                onInvitePartner={isPlayer ? (event) => { setInviteModal({ event }); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); } : undefined}
               />
             ))}
           </div>

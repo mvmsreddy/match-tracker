@@ -79,6 +79,21 @@ export const getLuckyLosers         = hasSupabaseConfig ? supabaseApi.getLuckyLo
 // Phase 11 — Player & Coach Dashboards
 export const getDrawEntriesForPlayers = hasSupabaseConfig ? supabaseApi.getDrawEntriesForPlayers : async () => [];
 
+// Phase 18 — Player self-entry
+export const getMyEventEntry           = hasSupabaseConfig ? supabaseApi.getMyEventEntry           : async () => null;
+export const computeSelfEntryPlacement = hasSupabaseConfig ? supabaseApi.computeSelfEntryPlacement : noSupabase;
+export const selfEnterSingles          = hasSupabaseConfig ? supabaseApi.selfEnterSingles          : noSupabase;
+export const withdrawFromEvent         = hasSupabaseConfig ? supabaseApi.withdrawFromEvent         : noSupabase;
+export const getMyEntries              = hasSupabaseConfig ? supabaseApi.getMyEntries              : async () => [];
+
+// Phase 19 — Doubles invitations
+export const searchDoublesPartners     = hasSupabaseConfig ? supabaseApi.searchDoublesPartners     : async () => [];
+export const sendDoublesInvitation     = hasSupabaseConfig ? supabaseApi.sendDoublesInvitation     : noSupabase;
+export const getMyPendingInvitations   = hasSupabaseConfig ? supabaseApi.getMyPendingInvitations   : async () => [];
+export const getMySentInvitations      = hasSupabaseConfig ? supabaseApi.getMySentInvitations      : async () => [];
+export const respondToInvitation       = hasSupabaseConfig ? supabaseApi.respondToInvitation       : noSupabase;
+export const cancelInvitation          = hasSupabaseConfig ? supabaseApi.cancelInvitation          : async () => {};
+
 // Order of Play — Phase 7
 export const getWeekMatches      = hasSupabaseConfig ? supabaseApi.getWeekMatches      : async () => [];
 export const updateMatchSchedule = hasSupabaseConfig ? supabaseApi.updateMatchSchedule : async () => {};
