@@ -84,10 +84,76 @@ function parseBulk(text, existingPositions, maxPos) {
   return { entries, errors };
 }
 
+// parseBulkFull — handles a combined acceptance-list paste that contains rows for
+// MAIN DRAW, QUALIFYING DRAW, ALTERNATES and WITHDRAWAL LIST in a single block.
+// Detects and skips header row; auto-corrects State ↔ AitaReg column swap.
+function parseBulkFull(text) {
+  const empty = { main: [], qualifying: [], alternates: [], withdrawal: [] };
+  const rawLines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  if (!rawLines.length) return { sections: empty, errors: [] };
+
+  const sep = rawLines[0].includes('\t') ? '\t' : ',';
+
+  // Skip header when the first token is non-numeric (e.g. "Pos", "FamilyName", "#")
+  const firstTok = rawLines[0].split(sep)[0].trim();
+  const hasHeader = isNaN(Number(firstTok)) || firstTok === '';
+  const dataLines = hasHeader ? rawLines.slice(1) : rawLines;
+
+  const sections = { main: [], qualifying: [], alternates: [], withdrawal: [] };
+  const errors = [];
+
+  dataLines.forEach((line, idx) => {
+    const lineSep = line.includes('\t') ? '\t' : sep;
+    const p = line.split(lineSep).map(x => x.trim());
+    if (p.length < 2) return;
+
+    // Detect explicit leading position (pure integer > 0)
+    const hasPos = /^\d+$/.test(p[0]) && Number(p[0]) > 0;
+    const explicitPos = hasPos ? Number(p[0]) : null;
+    const f = hasPos ? p.slice(1) : p; // fields after stripping optional pos
+
+    const familyName = (f[0] || '').trim();
+    if (!familyName) { errors.push(`Line ${idx + 1}: family name required`); return; }
+
+    const firstName  = (f[1] || '').trim();
+    const col3       = (f[2] || '').trim();
+    const col4       = (f[3] || '').trim();
+    const rawRanking = (f[4] || '').trim();
+    const rawSeed    = (f[5] || '').trim();
+    const statusCode = (f[6] || '').trim();
+
+    // Auto-detect State ↔ AitaReg column order:
+    // AITA reg is always a 5–7 digit integer; State is alphabetic.
+    let aitaReg, playerState;
+    const c3Num = /^\d{4,7}$/.test(col3);
+    const c4Num = /^\d{4,7}$/.test(col4);
+    if (!c3Num && c4Num)      { playerState = col3; aitaReg = col4; } // State then AitaReg
+    else if (c3Num && !c4Num) { aitaReg = col3; playerState = col4; } // AitaReg then State
+    else                       { playerState = col3; aitaReg = col4; } // fallback
+
+    const ranking = /^\d+$/.test(rawRanking) ? Number(rawRanking) : null;
+    const seed    = /^\d+$/.test(rawSeed)    ? Number(rawSeed)    : null;
+
+    // Route by StatusCode
+    const sc = statusCode.toUpperCase();
+    let section;
+    if      (sc.includes('QUALIFYING'))                    section = 'qualifying';
+    else if (sc.includes('ALTERNATE'))                     section = 'alternates';
+    else if (sc.includes('WITHDRAW') || sc.includes('WD')) section = 'withdrawal';
+    else                                                    section = 'main';
+
+    const position = explicitPos ?? (sections[section].length + 1);
+    sections[section].push({ position, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode });
+  });
+
+  return { sections, errors };
+}
+
 // ---------------------------------------------------------------------------
-// BulkImportModal  — 4 tabs: Main Draw | Qualifying | Alternates | Withdrawal
+// BulkImportModal  — 5 tabs: Full List | Main Draw | Qualifying | Alternates | Withdrawal
 // ---------------------------------------------------------------------------
 const BULK_TABS = [
+  { key: 'full',       label: 'Full List' },
   { key: 'main',       label: 'Main Draw' },
   { key: 'qualifying', label: 'Qualifying' },
   { key: 'alternates', label: 'Alternates' },
@@ -328,10 +394,126 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
   );
 }
 
+// Full-list paste pane — accepts a combined acceptance-list CSV and auto-routes by StatusCode
+function FullListPane({ event, onImport, saving, onClose }) {
+  const [text, setText]           = useState('');
+  const [preview, setPreview]     = useState(null); // { main, qualifying, alternates, withdrawal }
+  const [parseErrors, setErrors]  = useState([]);
+  const [saveError, setSaveError] = useState('');
+
+  function handlePreview() {
+    const { sections, errors } = parseBulkFull(text);
+    setPreview(sections);
+    setErrors(errors);
+    setSaveError('');
+  }
+
+  async function handleImport() {
+    if (!preview) return;
+    setSaveError('');
+    try {
+      await onImport(preview);
+      onClose();
+    } catch (err) {
+      setSaveError(err.message || 'Import failed');
+    }
+  }
+
+  const totalToImport = preview
+    ? preview.main.length + preview.qualifying.length + preview.alternates.length
+    : 0;
+
+  const SectionTable = ({ label, arr }) => {
+    if (!arr || !arr.length) return null;
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <div className="t-section-label">{label} — {arr.length} player{arr.length !== 1 ? 's' : ''}</div>
+        <div className="t-entry-table-wrap">
+          <table className="t-entry-table">
+            <thead><tr><th>Pos</th><th>Name</th><th>State</th><th>AITA Reg</th><th>Rank</th><th>Seed</th></tr></thead>
+            <tbody>
+              {arr.map((e, i) => (
+                <tr key={i}>
+                  <td>{e.position}</td>
+                  <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
+                  <td>{e.playerState || '—'}</td>
+                  <td>{e.aitaReg || '—'}</td>
+                  <td>{e.ranking || '—'}</td>
+                  <td>{e.seed || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="t-bulk-help">
+        Paste the full AITA acceptance list in one go. Rows are auto-routed by the{' '}
+        <strong>StatusCode</strong> column:{' '}
+        <code>MAIN DRAW</code>, <code>QUALIFYING DRAW</code>, <code>ALTERNATES</code>, <code>WITHDRAWAL LIST</code>.
+        {' '}Comma or tab-separated. Header row and <em>State ↔ AitaReg</em> column order are auto-detected.
+        {' '}Withdrawal list rows are previewed but <em>not</em> imported.
+      </div>
+
+      {!preview && (
+        <>
+          <textarea
+            className="t-bulk-textarea"
+            rows={11}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={'Pos,FamilyName,FirstName,State,AitaReg,Ranking,Seed,StatusCode\n1,Sharma,Ananya,Maharashtra,440372,10,,MAIN DRAW\n...\n1,Reddy,Kavya,Telangana,444849,56,,QUALIFYING DRAW\n...\n1,Kumari,Divya,Karnataka,446519,702,,ALTERNATES\n...\n1,Pandey,Sidhhi,Uttar Pradesh,441965,3,,WITHDRAWAL LIST'}
+            autoFocus
+          />
+          {parseErrors.length > 0 && (
+            <div className="login-error" style={{ marginTop: 8 }}>
+              {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+        </>
+      )}
+
+      {preview && (
+        <div className="t-bulk-preview" style={{ maxHeight: 340, overflowY: 'auto' }}>
+          <SectionTable label="Main Draw"  arr={preview.main} />
+          <SectionTable label="Qualifying" arr={preview.qualifying} />
+          <SectionTable label="Alternates" arr={preview.alternates} />
+          {preview.withdrawal.length > 0 && (
+            <div className="t-section-label" style={{ color: 'var(--text3,#777)', marginBottom: 6 }}>
+              Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}{' '}
+              <em>(not imported)</em>
+            </div>
+          )}
+        </div>
+      )}
+
+      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        {!preview && (
+          <button className="action-btn primary" onClick={handlePreview} disabled={!text.trim()}>Preview</button>
+        )}
+        {preview && (
+          <>
+            <button className="action-btn primary" disabled={saving || totalToImport === 0} onClick={handleImport}>
+              {saving ? 'Importing…' : `Import ${totalToImport} Player${totalToImport !== 1 ? 's' : ''}`}
+            </button>
+            <button className="action-btn" onClick={() => { setPreview(null); setSaveError(''); }}>Back</button>
+          </>
+        )}
+        <button className="action-btn" onClick={onClose}>Cancel</button>
+      </div>
+    </>
+  );
+}
+
 function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdraw, onClose }) {
-  // Default to the current page draw type tab; 'main' if neither
-  const initTab = event.hasQualifying && drawType === 'qualifying' ? 'qualifying' : 'main';
-  const [activeTab, setActiveTab] = useState(initTab);
+  // Always open on Full List tab — user can switch to per-section tabs if needed
+  const [activeTab, setActiveTab] = useState('full');
   const [saving, setSaving] = useState(false);
 
   // Per-tab derived values
@@ -346,12 +528,42 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
     existingEntries.filter(e => e.drawType === 'qualifying' && !e.isAlternate && e.position <= qualMax).map(e => e.position)
   );
 
-  async function handleImport(entries) {
+  // Per-section import (used by Main Draw / Qualifying / Alternates tabs)
+  async function handlePaneImport(entries) {
     setSaving(true);
     try {
       if (activeTab === 'main')       await onImport(entries, 'main',       { isAlternate: false });
       if (activeTab === 'qualifying') await onImport(entries, 'qualifying', { isAlternate: false });
       if (activeTab === 'alternates') await onImport(entries, 'main',       { isAlternate: true });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Full-list import — routes each section to the right draw type
+  async function handleFullImport(sections) {
+    setSaving(true);
+    try {
+      const maxMainPos = sections.main.length > 0
+        ? Math.max(...sections.main.map(e => e.position))
+        : mainMax;
+      if (sections.main.length > 0) {
+        await onImport(sections.main, 'main', { isAlternate: false });
+      }
+      if (sections.qualifying.length > 0) {
+        await onImport(sections.qualifying, 'qualifying', { isAlternate: false });
+      }
+      if (sections.alternates.length > 0) {
+        const altCsvMin = Math.min(...sections.alternates.map(e => e.position));
+        const altOffset = maxMainPos + 1;
+        const alts = sections.alternates.map(e => ({
+          ...e,
+          position: e.position - altCsvMin + altOffset,
+          isAlternate: true,
+        }));
+        await onImport(alts, 'main', { isAlternate: true });
+      }
+      // Withdrawal list rows: preview only, not imported
     } finally {
       setSaving(false);
     }
@@ -386,13 +598,21 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
           ))}
         </div>
 
+        {activeTab === 'full' && (
+          <FullListPane
+            event={event}
+            onImport={handleFullImport}
+            saving={saving}
+            onClose={onClose}
+          />
+        )}
         {activeTab === 'main' && (
           <ImportPane
             maxPos={mainMax}
             startPos={1}
             existingPositions={mainExisting}
             isAlternate={false}
-            onImport={handleImport}
+            onImport={handlePaneImport}
             saving={saving}
             onClose={onClose}
           />
@@ -403,7 +623,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
             startPos={1}
             existingPositions={qualExisting}
             isAlternate={false}
-            onImport={handleImport}
+            onImport={handlePaneImport}
             saving={saving}
             onClose={onClose}
           />
@@ -414,7 +634,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
             startPos={altStart}
             existingPositions={new Set([...Array(altStart - 1)].map((_, i) => i + 1))}
             isAlternate={true}
-            onImport={handleImport}
+            onImport={handlePaneImport}
             saving={saving}
             onClose={onClose}
           />
