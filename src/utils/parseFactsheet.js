@@ -181,11 +181,13 @@ export async function parseFactsheetPdf(file) {
   // ── Officials ─────────────────────────────────────────────────────────────
   const directorName = between(text, 'TOURNAMENT DIRECTOR', 'MOBILE NO.');
   const directorPhone = between(text, 'MOBILE NO.', 'E-MAIL', 1);
-  const directorEmail = between(text, 'E-MAIL', 'TOURNAMENT REFEREE', 1);
+  const directorEmailRaw = between(text, 'E-MAIL', 'TOURNAMENT REFEREE', 1);
+  const directorEmail = directorEmailRaw.match(/[\w._%+-]+@[\w.-]+\.[a-z]{2,}/i)?.[0] || '';
 
   const referee = between(text, 'TOURNAMENT REFEREE', 'MOBILE NO.');
   const refereePhone = between(text, 'MOBILE NO.', 'E-MAIL', 2);
-  const refereeEmail = between(text, 'E-MAIL', 'HOTEL', 2);
+  const refereeEmailRaw = between(text, 'E-MAIL', 'HOTEL', 2);
+  const refereeEmail = refereeEmailRaw.match(/[\w._%+-]+@[\w.-]+\.[a-z]{2,}/i)?.[0] || '';
 
   // ── Fees ─────────────────────────────────────────────────────────────────
   const feesBlock = between(text, 'ENTRY FEES', 'AGE ELIGIBILITY');
