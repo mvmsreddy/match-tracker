@@ -125,6 +125,7 @@ export default function TournamentDetailPage() {
   const [events, setEvents] = useState([]);
   const [error, setError] = useState('');
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [showDetails, setShowDetails] = useState(false); // factsheet panel collapsed by default
   const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -359,58 +360,71 @@ export default function TournamentDetailPage() {
       {(week.directorName || week.entryDeadline || week.qualifyingStartDate ||
         week.venueAddress || week.entryFeeSingles || week.signinInstructions) && (
         <div className="t-factsheet-panel">
-          {(week.entryDeadline || week.withdrawalDeadline) && (
-            <div className="t-fs-row">
+          {/* Always-visible summary row */}
+          <div className="t-fs-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
               {week.entryDeadline && <span className="t-fs-item"><b>Entry deadline:</b> {week.entryDeadline}</span>}
               {week.withdrawalDeadline && <span className="t-fs-item"><b>Withdrawal deadline:</b> {week.withdrawalDeadline}</span>}
+              {(week.qualifyingStartDate || week.qualifyingEndDate) && (
+                <span className="t-fs-item">
+                  <b>Qualifying:</b> {week.qualifyingStartDate}
+                  {week.qualifyingEndDate && week.qualifyingEndDate !== week.qualifyingStartDate ? ` – ${week.qualifyingEndDate}` : ''}
+                </span>
+              )}
             </div>
-          )}
-          {(week.qualifyingStartDate || week.qualifyingEndDate) && (
-            <div className="t-fs-row">
-              <span className="t-fs-item">
-                <b>Qualifying dates:</b> {week.qualifyingStartDate}
-                {week.qualifyingEndDate && week.qualifyingEndDate !== week.qualifyingStartDate ? ` – ${week.qualifyingEndDate}` : ''}
-              </span>
-            </div>
-          )}
-          {(week.directorName || week.directorPhone || week.directorEmail) && (
-            <div className="t-fs-row">
-              <span className="t-fs-item">
-                <b>Director:</b> {[week.directorName, week.directorPhone, week.directorEmail].filter(Boolean).join(' · ')}
-              </span>
-            </div>
-          )}
-          {(week.refereePhone || week.refereeEmail) && (
-            <div className="t-fs-row">
-              <span className="t-fs-item">
-                <b>Referee contact:</b> {[week.refereePhone, week.refereeEmail].filter(Boolean).join(' · ')}
-              </span>
-            </div>
-          )}
-          {(week.venueAddress || week.venuePincode || week.venuePhone) && (
-            <div className="t-fs-row">
-              <span className="t-fs-item">
-                <b>Venue:</b> {[week.venueAddress, week.venuePincode, week.venuePhone].filter(Boolean).join(', ')}
-              </span>
-            </div>
-          )}
-          {(week.ballBrand || week.hasFloodlights) && (
-            <div className="t-fs-row">
-              {week.ballBrand && <span className="t-fs-item"><b>Balls:</b> {week.ballBrand}</span>}
-              {week.hasFloodlights && <span className="t-fs-item">Floodlights available</span>}
-            </div>
-          )}
-          {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance) && (
-            <div className="t-fs-row">
-              {week.entryFeeSingles && <span className="t-fs-item"><b>Singles entry:</b> ₹{week.entryFeeSingles}</span>}
-              {week.entryFeeDoubles && <span className="t-fs-item"><b>Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
-              {week.dailyAllowance && <span className="t-fs-item"><b>Daily allowance:</b> ₹{week.dailyAllowance}</span>}
-            </div>
-          )}
-          {week.signinInstructions && (
-            <div className="t-fs-row">
-              <span className="t-fs-item"><b>Sign-in:</b> {week.signinInstructions}</span>
-            </div>
+            <button
+              onClick={() => setShowDetails(v => !v)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent,#1a6b3a)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap', padding: '2px 6px' }}
+            >
+              {showDetails ? '▲ Less' : '▼ More info'}
+            </button>
+          </div>
+
+          {/* Collapsible extra detail */}
+          {showDetails && (
+            <>
+              {(week.directorName || week.directorPhone || week.directorEmail) && (
+                <div className="t-fs-row">
+                  <span className="t-fs-item">
+                    <b>Director:</b> {[week.directorName, week.directorPhone, week.directorEmail].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+              )}
+              {(week.refereePhone || week.refereeEmail) && (
+                <div className="t-fs-row">
+                  <span className="t-fs-item">
+                    <b>Referee contact:</b> {[week.refereePhone, week.refereeEmail].filter(Boolean).join(' · ')}
+                  </span>
+                </div>
+              )}
+              {(week.venueAddress || week.venuePincode || week.venuePhone) && (
+                <div className="t-fs-row">
+                  <span className="t-fs-item" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', maxHeight: 120, overflowY: 'auto', display: 'block' }}>
+                    <b>Venue:</b> {[week.venueAddress, week.venuePincode, week.venuePhone].filter(Boolean).join(', ')}
+                  </span>
+                </div>
+              )}
+              {(week.ballBrand || week.hasFloodlights) && (
+                <div className="t-fs-row">
+                  {week.ballBrand && <span className="t-fs-item"><b>Balls:</b> {week.ballBrand}</span>}
+                  {week.hasFloodlights && <span className="t-fs-item">Floodlights available</span>}
+                </div>
+              )}
+              {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance) && (
+                <div className="t-fs-row">
+                  {week.entryFeeSingles && <span className="t-fs-item"><b>Singles entry:</b> ₹{week.entryFeeSingles}</span>}
+                  {week.entryFeeDoubles && <span className="t-fs-item"><b>Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
+                  {week.dailyAllowance && <span className="t-fs-item"><b>Daily allowance:</b> ₹{week.dailyAllowance}</span>}
+                </div>
+              )}
+              {week.signinInstructions && (
+                <div className="t-fs-row">
+                  <span className="t-fs-item" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                    <b>Sign-in:</b> {week.signinInstructions}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
