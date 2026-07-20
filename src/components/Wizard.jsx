@@ -167,7 +167,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   function handleShotType(type) {
     const stroke = type + ' ' + pending.shotWing;
-    if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError') {
+    if (pending.serviceChoice === 'ballIn') {
+      // Ball-in points still have the optional Infraction step ahead — don't commit yet.
       setPendingStep((p) => ({ ...p, shotType: type, stroke }));
     } else {
       commitAndReset({ shotType: type, stroke });
@@ -177,7 +178,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Error location ───────────────────────────────────────────────────────
 
   function handleErrorLocation(location) {
-    commitAndReset({ location });
+    // Ball-in points still have the optional Infraction step ahead — don't commit yet.
+    setPendingStep((p) => ({ ...p, location }));
   }
 
   // ── Display helpers ──────────────────────────────────────────────────────

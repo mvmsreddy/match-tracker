@@ -87,7 +87,10 @@ export function buildPointEntry(pending) {
   // ballIn case
   const who = pending.ballInWho;
   const reason = pending.ballInReason;
-  const pointWinner = reason === 'Winner' ? who : other(who);
+  const infraction = (pending.infraction && pending.infraction !== 'none') ? pending.infraction : null;
+  // An infraction is charged against whoever ended the rally (who) and costs them the point,
+  // even if their shot would otherwise have won it (e.g. a winner followed by a net touch).
+  const pointWinner = (reason === 'Winner' && !infraction) ? who : other(who);
 
   return {
     server,
@@ -100,6 +103,6 @@ export function buildPointEntry(pending) {
     rally: pending.rallyCount ?? 2,
     pointWinner,
     firstFaultLocation: pending.firstFaultLocation || null,
-    infraction: (pending.infraction && pending.infraction !== 'none') ? pending.infraction : null,
+    infraction,
   };
 }
