@@ -15,6 +15,8 @@ export function freshPending(server) {
     infraction: null,           // null = not yet answered; 'none' = skipped; string = infraction type
     firstFaultLocation: null,   // 'Long' | 'Wide' | 'Net' — location of the 1st serve fault
     location: null,             // 'Long' | 'Wide' | 'Net' — where an unforced error landed
+    shotHitFrom: null,          // court zone name — where the rally-ending shot was struck from
+    shotDroppedAt: null,        // court zone name — where that shot landed
   };
 }
 
@@ -66,6 +68,8 @@ export function buildPointEntry(pending) {
       rally: 1,
       pointWinner: server,
       firstFaultLocation: pending.firstFaultLocation || null,
+      hitFrom: pending.shotHitFrom || null,
+      droppedAt: pending.shotDroppedAt || null,
     };
   }
 
@@ -81,6 +85,8 @@ export function buildPointEntry(pending) {
       rally: 1,
       pointWinner: receiver,
       firstFaultLocation: pending.firstFaultLocation || null,
+      hitFrom: pending.shotHitFrom || null,
+      droppedAt: pending.shotDroppedAt || null,
     };
   }
 
@@ -104,5 +110,7 @@ export function buildPointEntry(pending) {
     pointWinner,
     firstFaultLocation: pending.firstFaultLocation || null,
     infraction,
+    hitFrom: pending.shotHitFrom || null,
+    droppedAt: pending.shotDroppedAt || null,
   };
 }

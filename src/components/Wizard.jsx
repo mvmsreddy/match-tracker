@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { freshPending, buildPointEntry } from '../lib/wizardLogic';
+import ShotLocationCourt from './ShotLocationCourt';
 
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
@@ -10,6 +11,7 @@ function getActiveStep(pending) {
   if (pending.serviceChoice === 'faultPending') return 'faultLocation';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
   if (pending.serviceChoice === 'returnError' && !pending.shotWing) return 'shotWing';
+  if (pending.serviceChoice === 'returnError' && !pending.shotDroppedAt) return 'shotLocation';
   if (pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'UnforcedError' && !pending.location) return 'errorLocation';
   if (pending.serviceChoice === 'ballIn' && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
@@ -18,6 +20,8 @@ function getActiveStep(pending) {
     if (!pending.shotWing) return 'shotWing';
     return 'shotType';
   }
+  // Every rally-ending shot gets a court tap: where was it hit from, where did it drop?
+  if (needsShot && pending.stroke && !pending.shotDroppedAt) return 'shotLocation';
   // Unforced errors get one more tap: where did it land?
   if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && pending.stroke && !pending.location) {
     return 'errorLocation';
@@ -152,12 +156,9 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   function handleShotWing(wing) {
     if (pending.serviceChoice === 'returnError') {
+      // Every return error still has the Shot Location court tap ahead — don't commit yet.
       const stroke = 'Return ' + wing;
-      if (pending.returnErrorReason === 'UnforcedError') {
-        setPendingStep((p) => ({ ...p, shotWing: wing, stroke }));
-      } else {
-        commitAndReset({ shotWing: wing, stroke });
-      }
+      setPendingStep((p) => ({ ...p, shotWing: wing, stroke }));
       return;
     }
     setPendingStep((p) => ({ ...p, shotWing: wing }));
@@ -166,20 +167,36 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Shot type ────────────────────────────────────────────────────────────
 
   function handleShotType(type) {
+    // Every ball-in/return-winner point still has the Shot Location court tap ahead — don't commit yet.
     const stroke = type + ' ' + pending.shotWing;
-    if (pending.serviceChoice === 'ballIn') {
-      // Ball-in points still have the optional Infraction step ahead — don't commit yet.
-      setPendingStep((p) => ({ ...p, shotType: type, stroke }));
+    setPendingStep((p) => ({ ...p, shotType: type, stroke }));
+  }
+
+  // ── Shot location (court tap: Hit From → Dropped At) ────────────────────
+
+  function handleShotLocationComplete(hitFrom, droppedAt) {
+    const extra = { shotHitFrom: hitFrom, shotDroppedAt: droppedAt };
+    // Return Winner and a Forced return error have no further steps — commit now.
+    // Everything else (ball-in, or an unforced return error) still has a step ahead.
+    const isReturnWinner = pending.serviceChoice === 'returnWinner';
+    const isReturnForcedError = pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'ForcedError';
+    if (isReturnWinner || isReturnForcedError) {
+      commitAndReset(extra);
     } else {
-      commitAndReset({ shotType: type, stroke });
+      setPendingStep((p) => ({ ...p, ...extra }));
     }
   }
 
   // ── Error location ───────────────────────────────────────────────────────
 
   function handleErrorLocation(location) {
-    // Ball-in points still have the optional Infraction step ahead — don't commit yet.
-    setPendingStep((p) => ({ ...p, location }));
+    if (pending.serviceChoice === 'returnError') {
+      // Return errors have no Infraction step — this is always the last one.
+      commitAndReset({ location });
+    } else {
+      // Ball-in points still have the optional Infraction step ahead — don't commit yet.
+      setPendingStep((p) => ({ ...p, location }));
+    }
   }
 
   // ── Display helpers ──────────────────────────────────────────────────────
@@ -411,6 +428,10 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
             </>
           );
         })()}
+
+        {activeStep === 'shotLocation' && (
+          <ShotLocationCourt onComplete={handleShotLocationComplete} />
+        )}
 
         {activeStep === 'errorLocation' && (
           <>

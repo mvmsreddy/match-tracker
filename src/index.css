@@ -13,6 +13,7 @@ body { margin: 0; }
   --win: #6AAF5A; --win-text: #9DD98E; --win-hover: #1A3520;
   --forced: #B8922A; --forced-text: #D4A843; --forced-hover: #251E0E;
   --shadow: rgba(0,0,0,0.45);
+  --court-fill: #1C5266; --court-fill2: #194A5C; --court-line: #E8E4D6;
 }
 [data-theme="light"] {
   --bg: #F0F4F8; --bg2: #FFFFFF; --bg3: #E8EFF5;
@@ -23,6 +24,7 @@ body { margin: 0; }
   --win: #388E3C; --win-text: #1B5E20; --win-hover: #E8F5E9;
   --forced: #F57C00; --forced-text: #E65100; --forced-hover: #FFF3E0;
   --shadow: rgba(0,0,0,0.12);
+  --court-fill: #BFE0D8; --court-fill2: #A8D2C4; --court-line: #5A8A78;
 }
 [data-theme="court"] {
   --bg: #2C1810; --bg2: #3D2218; --bg3: #341A0E;
@@ -33,6 +35,7 @@ body { margin: 0; }
   --win: #7AB85A; --win-text: #A8D890; --win-hover: #1C3010;
   --forced: #C8922A; --forced-text: #E8B040; --forced-hover: #2A1C08;
   --shadow: rgba(0,0,0,0.55);
+  --court-fill: #8B4A2E; --court-fill2: #7A3F26; --court-line: #F5E6D0;
 }
 [data-theme="midnight"] {
   --bg: #0D0A1F; --bg2: #1A1535; --bg3: #120F28;
@@ -43,6 +46,7 @@ body { margin: 0; }
   --win: #34D399; --win-text: #6EE7B7; --win-hover: #0A1F18;
   --forced: #FBBF24; --forced-text: #FCD34D; --forced-hover: #1F1A08;
   --shadow: rgba(0,0,0,0.7);
+  --court-fill: #2A2158; --court-fill2: #241D4A; --court-line: #E8E0FF;
 }
 
 .root { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
@@ -91,6 +95,21 @@ body { margin: 0; }
 
 /* Breadcrumb showing completed choices */
 .wizard-breadcrumb { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: var(--text3); padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--bg2); line-height: 1.5; word-break: break-word; }
+
+/* Shot Location — two-tap court diagram (Hit From, then Dropped At) */
+.shot-location-court { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; }
+.shot-location-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); text-align: center; }
+.court-svg-wrap { width: 100%; max-width: 300px; }
+.court-svg-wrap svg { width: 100%; height: auto; touch-action: manipulation; }
+.court-zone { fill: var(--court-fill); stroke: var(--court-line); stroke-width: 1; stroke-opacity: 0.35; cursor: pointer; }
+.court-zone:hover { fill: var(--court-fill2); }
+.court-zone.out { fill: var(--bg2); stroke-opacity: 0.2; }
+.court-zone.out:hover { fill: var(--bg3); }
+.court-line-main { stroke: var(--court-line); stroke-width: 2; fill: none; pointer-events: none; }
+.court-zone-label { font-family: 'JetBrains Mono', monospace; font-size: 6.5px; fill: var(--text4); text-anchor: middle; pointer-events: none; text-transform: uppercase; letter-spacing: 0.02em; }
+.court-marker-crosshair line, .court-marker-crosshair circle { pointer-events: none; }
+.court-marker-crosshair line { stroke: var(--forced-text); stroke-width: 2.2; }
+.court-marker-crosshair circle { fill: none; stroke: var(--forced-text); stroke-width: 2; }
 
 /* wizard-grow: applied to the main content element inside each step to make it expand */
 .wizard-grow { flex: 1; min-height: 0; }
