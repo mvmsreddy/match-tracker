@@ -100,10 +100,33 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
             strokeLinecap="round"
           />
 
-          {/* Dot marker at every point played */}
-          {data.map((v, i) => (
-            <circle key={i} cx={gx(i).toFixed(1)} cy={gy(v).toFixed(1)} r="1.75" fill={lineColor} opacity="0.8" />
-          ))}
+          {/* Point-level markers: small tick + score label (e.g. 0-15, 15-30) at every point */}
+          {data.map((v, i) => {
+            const px = gx(i).toFixed(1);
+            const py = gy(v);
+            const tickTop = (py - 4).toFixed(1);
+            const tickBottom = (py + 4).toFixed(1);
+            const label = i === 0 ? null : points[i - 1].scoreAfter;
+            return (
+              <g key={i}>
+                <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="#7C93A6" strokeWidth="0.6" opacity="0.6" />
+                <circle cx={px} cy={py.toFixed(1)} r="1.2" fill={lineColor} opacity="0.9" />
+                {label && (
+                  <text
+                    x={px}
+                    y={tickTop}
+                    transform={`rotate(-90 ${px} ${tickTop})`}
+                    fontSize="4.5"
+                    fill="#9FB2C2"
+                    fontFamily="monospace"
+                    textAnchor="start"
+                  >
+                    {label}
+                  </text>
+                )}
+              </g>
+            );
+          })}
 
           {/* Current position dot */}
           <circle cx={lastX} cy={lastY} r="4" fill={lineColor} />

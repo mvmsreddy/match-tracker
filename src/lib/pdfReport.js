@@ -63,7 +63,7 @@ function pdfBarChart(doc, opts) {
 }
 
 function pdfLineChart(doc, opts, selfName, oppName) {
-  const { x, y, width, height, values, title, vLines, gameVLines } = opts;
+  const { x, y, width, height, values, title, vLines, gameVLines, pointLabels } = opts;
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20, 39, 51);
   doc.text(title, x, y);
   const chartTop = y + 12;
@@ -99,10 +99,18 @@ function pdfLineChart(doc, opts, selfName, oppName) {
     const x2 = x + i * stepX, y2 = pointY(i);
     doc.line(x1, y1, x2, y2);
   }
-  // Dot marker at every point played
-  doc.setFillColor(20, 39, 51);
+  // Point-level markers: small tick + score label (e.g. 0-15, 15-30) at every point
   for (let i = 0; i < n; i++) {
-    doc.circle(x + i * stepX, pointY(i), 1, 'F');
+    const px = x + i * stepX, py = pointY(i);
+    doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.3);
+    doc.line(px, py - 3, px, py + 3);
+    doc.setFillColor(20, 39, 51);
+    doc.circle(px, py, 1, 'F');
+    const label = (pointLabels || [])[i];
+    if (label) {
+      doc.setFontSize(4); doc.setTextColor(140, 140, 140);
+      doc.text(label, px, py - 3.5, { angle: 90 });
+    }
   }
   doc.setDrawColor(210, 210, 210); doc.setLineWidth(1);
   doc.line(x, chartBottom, x + width, chartBottom);
@@ -294,9 +302,10 @@ export function buildMatchPdf(ctx) {
     const momentum = computeMomentumSeries(points);
     const boundaries = isPractice ? [] : analytics.boundaries;
     const gameBoundaries = isPractice ? [] : analytics.gameBoundaries;
+    const pointLabels = [null, ...points.map((pt) => pt.scoreAfter)];
     y = pdfLineChart(doc, {
       x: marginX, y, width: 515, height: 90, values: momentum,
-      title: 'Cumulative point differential', vLines: boundaries, gameVLines: gameBoundaries,
+      title: 'Cumulative point differential', vLines: boundaries, gameVLines: gameBoundaries, pointLabels,
     }, selfName, oppName);
     y += 12;
   }
