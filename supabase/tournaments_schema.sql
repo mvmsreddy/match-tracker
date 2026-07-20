@@ -63,7 +63,7 @@ create table if not exists public.draw_entries (
   draw_type      text not null,        -- 'qualifying' | 'main'
   position       integer not null,     -- 1-based draw position (1–32, 1–16, etc.)
   aita_reg       text,
-  status_code    text,                 -- 'WC', 'LL', 'Q', 'PR', etc.
+  status_code    text,                 -- 'WC', 'LL', 'Q', 'SE', 'PR', etc.
   rank           integer,
   seed           integer,
   family_name    text not null,

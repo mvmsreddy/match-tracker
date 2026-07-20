@@ -151,7 +151,7 @@ create table if not exists public.draw_entries (
   player_state          text,
   ranking               integer,
   date_of_birth         date,
-  status_code           text,               -- 'WC' | 'LL' | 'Q' | 'PR' | 'ITF'
+  status_code           text,               -- 'WC' | 'LL' | 'Q' | 'SE' | 'PR' | 'ITF'
 
   -- Partner (doubles only)
   partner_id            uuid references public.user_profiles(id) on delete set null,

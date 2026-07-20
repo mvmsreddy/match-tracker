@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
+import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw } from '../utils/aitaGradeRules';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
@@ -12,28 +13,19 @@ const CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doub
 const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 const DRAW_SIZES = [4, 8, 16, 32, 48, 64, 128];
 
-// AITA draw defaults by grade + category
+// AITA draw defaults by grade + category — verified against the source PDF
+// (see src/utils/aitaGradeRules.js). Also attaches maxMainDirect/maxQualDirect
+// so the acceptance-list composition (direct/qualifiers/special-exempt/wild-card
+// split) is set at creation time instead of only being backfilled later.
 function getDrawDefaults(grade, category) {
-  const isDoubles = /double/i.test(category);
-  const isGirls = /girl|women/i.test(category);
-  const g = (grade || '').toLowerCase();
-  if (isDoubles) return { drawSize: 16, numSeeds: 8, hasQualifying: false, qualifyingSize: 32, qualifyingSpots: 0 };
-  let drawSize, qualSize, hasQual;
-  if (g.includes('national series')) {
-    drawSize = isGirls ? 48 : 64; qualSize = isGirls ? 32 : 48; hasQual = true;
-  } else if (g.includes('super series')) {
-    drawSize = 32; qualSize = isGirls ? 32 : 48; hasQual = true;
-  } else if (g.includes('nationals')) {
-    drawSize = isGirls ? 48 : 64; qualSize = isGirls ? 48 : 64; hasQual = true;
-  } else if (g.includes('championship') && g.includes('3')) {
-    drawSize = 48; qualSize = 32; hasQual = false;
-  } else if (g.includes('championship') || g.includes('talent') || g.includes('state')) {
-    drawSize = 32; qualSize = 32; hasQual = true;
-  } else {
-    drawSize = 32; qualSize = 32; hasQual = false;
-  }
-  const numSeeds = drawSize > 32 ? 16 : 8;
-  return { drawSize, numSeeds, hasQualifying: hasQual, qualifyingSize: qualSize, qualifyingSpots: hasQual ? 8 : 0 };
+  const d = getAitaDrawDefaults(grade, category);
+  const mainComp = mainDrawComposition(d.drawSize);
+  const qualComp = d.hasQualifying ? qualifyingDrawComposition(d.qualifyingSize) : null;
+  return {
+    ...d,
+    maxMainDirect: mainComp ? mainComp.directAcceptance : null,
+    maxQualDirect: qualComp ? qualComp.directAcceptance : null,
+  };
 }
 
 const EMPTY_FORM = {
@@ -175,7 +167,13 @@ export default function TournamentsListPage() {
         return { ...updated, ...getDrawDefaults(form.grade, value) };
       }
       if (field === 'drawSize') {
-        updated.numSeeds = Number(value) > 32 ? 16 : 8;
+        updated.numSeeds = seedCountForDraw(Number(value));
+        const comp = mainDrawComposition(Number(value));
+        updated.maxMainDirect = comp ? comp.directAcceptance : null;
+      }
+      if (field === 'qualifyingSize') {
+        const comp = qualifyingDrawComposition(Number(value));
+        updated.maxQualDirect = comp ? comp.directAcceptance : null;
       }
       return updated;
     }));
@@ -655,9 +653,16 @@ export default function TournamentsListPage() {
                             </td>
                             <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                               {row.hasQualifying ? (
-                                <select value={row.qualifyingSize} onChange={e => updateEventRow(idx, 'qualifyingSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
-                                  {[16,32,48,64].map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                                <>
+                                  <select value={row.qualifyingSize} onChange={e => updateEventRow(idx, 'qualifyingSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
+                                    {[16,32,48,64].map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                  {row.qualifyingOpen && (
+                                    <div style={{ fontSize: 11, color: 'var(--text2,#888)', marginTop: 2 }} title="AITA rules: qualifying for this grade is open (no cap) — this is just a starting size, set the real count once qualifying sign-in closes.">
+                                      Open draw — adjust after sign-in
+                                    </div>
+                                  )}
+                                </>
                               ) : '—'}
                             </td>
                             <td style={{ padding: '4px 6px' }}>

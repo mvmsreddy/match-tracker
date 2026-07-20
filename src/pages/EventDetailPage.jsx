@@ -5,12 +5,13 @@ import * as api from '../api';
 import TopNav from '../components/TopNav';
 import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
-import { checkAgeEligibility } from '../utils/eligibility';
+import { checkAgeEligibility, minEligibleAgeGroup } from '../utils/eligibility';
+import { DOUBLES_MIN_PAIRS_FOR_POINTS, ANNUAL_TOURNAMENT_LIMITS } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const STATUS_CODES = ['', 'WC', 'LL', 'Q', 'PR', 'ITF'];
+const STATUS_CODES = ['', 'WC', 'LL', 'Q', 'SE', 'PR', 'ITF'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR',
                  'UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
 
@@ -368,6 +369,11 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
             {WD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           <input type="date" value={wdDate} onChange={e => setWdDate(e.target.value)} style={{ fontSize: 13 }} />
+          {(wdType === 'NS' || wdType === 'LW') && (
+            <span style={{ fontSize: 11, color: 'var(--text2,#888)' }} title="AITA rules: No-Show deducts ranking points by grade; a 3rd+ Late Withdrawal in a calendar year (SS/NS/Nationals only) deducts 15. See the Audit Log tab for the computed amount.">
+              ranking-point penalty may apply
+            </span>
+          )}
         </div>
       </div>
 
@@ -715,6 +721,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [limitWarning, setLimitWarning] = useState('');
 
   // Alternates occupy positions beyond the draw size — auto-assign/keep that
   // slot instead of the normal 1..maxPos position field.
@@ -765,9 +772,10 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
     setForm(prev => ({ ...prev, [field]: value }));
   }
 
-  async function handleSave(e) {
-    e.preventDefault();
+  async function handleSave(e, opts = {}) {
+    e?.preventDefault?.();
     setError('');
+    if (!opts.skipLimitCheck) setLimitWarning('');
 
     if (!form.familyName.trim()) { setError('Family name is required.'); return; }
     if (event.isDoubles && !form.partnerFamilyName.trim()) {
@@ -815,6 +823,40 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
         week.playingUpAllowed, week.playingDownAllowed,
       );
       if (!ageCheck.allowed) { setError(ageCheck.reason); return; }
+    }
+
+    // Annual AITA tournament-limit advisory (§ ANNUAL_TOURNAMENT_LIMITS) —
+    // U12/U14/U16 caps combine every age group the player is entered in, so
+    // this is a cross-tournament count, not scoped to this event. Advisory
+    // only (not blocking): it can't fully replicate the PDF's edge cases
+    // (e.g. singles+doubles at one tournament = 1, two age groups at one
+    // venue = 2), so a false positive shouldn't stop a legitimate entry.
+    if (form.aitaReg && form.dateOfBirth && week?.startDate && !opts.skipLimitCheck) {
+      try {
+        const year = new Date(week.startDate).getFullYear();
+        const nativeGroup = minEligibleAgeGroup(form.dateOfBirth, year);
+        const limit = ANNUAL_TOURNAMENT_LIMITS[nativeGroup];
+        if (limit) {
+          const priorEntries = await api.getDrawEntriesForPlayers([form.aitaReg]);
+          const counted = new Set();
+          for (const en of priorEntries) {
+            const w = en.event?.week;
+            if (!w?.startDate || !en.event?.ageGroup) continue;
+            if (new Date(w.startDate).getFullYear() !== year) continue;
+            if ((w.grade || '').toUpperCase().startsWith('ITF')) continue;
+            counted.add(`${w.id}|${en.event.ageGroup}`);
+          }
+          if (counted.size >= limit) {
+            // Block once so the warning is actually visible — "Add Anyway"
+            // resubmits with skipLimitCheck to proceed past it.
+            setLimitWarning(
+              `${form.familyName} already has ${counted.size} AITA tournament(s) counted for ${year} — ` +
+              `the ${nativeGroup} annual cap is ${limit}. Advisory only (may not account for every edge case).`
+            );
+            return;
+          }
+        }
+      } catch { /* non-blocking */ }
     }
 
     setSaving(true);
@@ -1031,12 +1073,22 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
             )}
           </div>
 
+          {limitWarning && (
+            <div className="t-stat-gap" style={{ marginTop: 10, fontSize: 12 }}>{limitWarning}</div>
+          )}
           {error && <div className="login-error" style={{ marginTop: 10 }}>{error}</div>}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" className="action-btn primary" disabled={saving}>
-              {saving ? 'Saving…' : editingEntry ? 'Save Changes' : 'Add Player'}
-            </button>
+            {limitWarning ? (
+              <button type="button" className="action-btn primary" disabled={saving}
+                onClick={() => handleSave(null, { skipLimitCheck: true })}>
+                {saving ? 'Saving…' : 'Add Anyway'}
+              </button>
+            ) : (
+              <button type="submit" className="action-btn primary" disabled={saving}>
+                {saving ? 'Saving…' : editingEntry ? 'Save Changes' : 'Add Player'}
+              </button>
+            )}
             <button type="button" className="action-btn" onClick={onClose}>Cancel</button>
           </div>
         </form>
@@ -1380,6 +1432,7 @@ function AuditLogPanel({ eventId }) {
                 <th>Type</th>
                 <th>Date</th>
                 <th>Initiated By</th>
+                <th>Penalty</th>
                 <th>Replacement</th>
               </tr>
             </thead>
@@ -1391,6 +1444,11 @@ function AuditLogPanel({ eventId }) {
                   <td>{row.withdrawalType}</td>
                   <td>{row.withdrawalDate}</td>
                   <td>{row.initiatedBy === 'self' ? 'Self' : 'Referee'}</td>
+                  <td>
+                    {row.penaltyPoints
+                      ? <span className="t-stat-gap" title={row.penaltyReason || ''}>{row.penaltyPoints} pts</span>
+                      : <span className="t-entry-dash">—</span>}
+                  </td>
                   <td>{row.replacementName || <span className="t-entry-dash">—</span>}</td>
                 </tr>
               ))}
@@ -2424,6 +2482,11 @@ export default function EventDetailPage() {
           <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
           {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
           {hasGaps && <span className="t-stat-gap"> · {maxPos - mainEntries.length} open</span>}
+          {activeTab === 'main' && event?.isDoubles && playerCount > 0 && playerCount < DOUBLES_MIN_PAIRS_FOR_POINTS && (
+            <span className="t-stat-gap" title="AITA rule: doubles draws need at least 8 pairs for ranking points to be awarded.">
+              {' '}· below {DOUBLES_MIN_PAIRS_FOR_POINTS} pairs — no ranking points
+            </span>
+          )}
           {event?.status && event.status !== 'setup' && (
             <span className={`t-status-badge t-status-${event.status}`} style={{ marginLeft: 8 }}>
               {event.status.replace('_', ' ')}

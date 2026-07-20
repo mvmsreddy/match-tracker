@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
+import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -416,6 +417,8 @@ export async function createEvent(weekId, event) {
     has_qualifying: event.hasQualifying || false,
     qualifying_size: event.qualifyingSize || null,
     qualifying_spots: event.qualifyingSpots || null,
+    max_main_direct: event.maxMainDirect ?? null,
+    max_qual_direct: event.maxQualDirect ?? null,
     status: 'setup',
     // Phase 19 — per-category sign-in window & play dates
     signin_date: event.signinDate || null,
@@ -1578,8 +1581,40 @@ function rowToAuditEntry(row) {
     replacementName: row.replacement_name,
     replacementEntryId: row.replacement_entry_id,
     replacementSource: row.replacement_source,
+    penaltyPoints: row.penalty_points,
+    penaltyReason: row.penalty_reason,
     createdAt: row.created_at,
   };
+}
+
+// AITA no-show / late-withdrawal ranking-point penalties (verified against
+// the source PDF — see src/utils/aitaGradeRules.js for the per-grade table).
+// No-Show is a flat per-grade lookup. Late Withdrawal only bites SS/NS/
+// Nationals, and only from the 3rd occurrence in a calendar year onward, so
+// it needs a count of the player's prior LW rows this year at that grade tier.
+async function computeWithdrawalPenalty({ grade, withdrawalType, playerId, withdrawalDate }) {
+  if (withdrawalType === 'NS') {
+    const points = noShowPenaltyPoints(grade);
+    return points > 0 ? { points: -points, reason: `No-Show (${grade})` } : null;
+  }
+  if (withdrawalType === 'LW' && usesLateWithdrawalPenalty(grade) && playerId) {
+    const year = new Date(withdrawalDate || Date.now()).getFullYear();
+    const { data, error } = await supabase
+      .from('withdrawal_audit')
+      .select('id, event:events(tournament_week:tournament_weeks(grade))')
+      .eq('player_id', playerId)
+      .eq('withdrawal_type', 'LW')
+      .gte('withdrawal_date', `${year}-01-01`)
+      .lte('withdrawal_date', `${year}-12-31`);
+    if (error) return null; // non-blocking — a failed lookup just skips the penalty
+    const priorAtTier = (data || []).filter(
+      row => usesLateWithdrawalPenalty(row.event?.tournament_week?.grade)
+    ).length;
+    if (priorAtTier + 1 >= 3) {
+      return { points: -LATE_WITHDRAWAL_PENALTY_POINTS, reason: `Late Withdrawal — 3rd+ this year (${grade})` };
+    }
+  }
+  return null;
 }
 
 // Logs a withdrawal (and optionally its replacement, if already known) BEFORE
@@ -1589,8 +1624,12 @@ function rowToAuditEntry(row) {
 export async function logWithdrawal({
   eventId, entryId, drawType, playerName, aitaReg, playerId,
   withdrawalType, withdrawalDate, initiatedBy, initiatedByUserId,
-  replacementName, replacementEntryId, replacementSource,
+  replacementName, replacementEntryId, replacementSource, grade,
 }) {
+  const finalWithdrawalDate = withdrawalDate || new Date().toISOString().slice(0, 10);
+  const penalty = await computeWithdrawalPenalty({
+    grade, withdrawalType, playerId, withdrawalDate: finalWithdrawalDate,
+  });
   const row = {
     event_id: eventId,
     entry_id: entryId || null,
@@ -1599,12 +1638,14 @@ export async function logWithdrawal({
     aita_reg: aitaReg || null,
     player_id: playerId || null,
     withdrawal_type: withdrawalType || 'W',
-    withdrawal_date: withdrawalDate || new Date().toISOString().slice(0, 10),
+    withdrawal_date: finalWithdrawalDate,
     initiated_by: initiatedBy,
     initiated_by_user_id: initiatedByUserId,
     replacement_name: replacementName || null,
     replacement_entry_id: replacementEntryId || null,
     replacement_source: replacementSource || null,
+    penalty_points: penalty ? penalty.points : null,
+    penalty_reason: penalty ? penalty.reason : null,
   };
   const { data, error } = await supabase.from('withdrawal_audit').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -1694,7 +1735,7 @@ export async function bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate)
   const { data: { user } } = await supabase.auth.getUser();
   const { data: targets, error: tErr } = await supabase
     .from('draw_entries')
-    .select('id, event_id, draw_type, family_name, first_name, aita_reg, player_id')
+    .select('id, event_id, draw_type, family_name, first_name, aita_reg, player_id, event:events(tournament_week:tournament_weeks(grade))')
     .in('id', entryIds);
   if (tErr) throw new Error(tErr.message);
   await Promise.all((targets || []).map(target => logWithdrawal({
@@ -1708,6 +1749,7 @@ export async function bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate)
     withdrawalDate: today,
     initiatedBy: 'referee',
     initiatedByUserId: user?.id,
+    grade: target.event?.tournament_week?.grade || null,
   })));
 
   const { data, error } = await supabase
