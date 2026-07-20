@@ -117,13 +117,23 @@ export default function TournamentsListPage() {
         dayStartTime: form.dayStartTime + ':00',
       });
       const validRows = eventRows.filter(r => r.category && r.ageGroup);
-      for (const ev of validRows) {
+      const seen = new Set();
+      const uniqueRows = validRows.filter(r => {
+        const key = `${r.category}|${r.ageGroup}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      for (const ev of uniqueRows) {
         await api.createEvent(created.id, ev);
       }
-      setWeeks(prev => [{ ...created, eventCount: validRows.length }, ...(prev || [])]);
+      setWeeks(prev => [{ ...created, eventCount: uniqueRows.length }, ...(prev || [])]);
       closeModal();
     } catch (err) {
-      setSaveError(err.message || 'Failed to create tournament');
+      const message = /duplicate key value|unique constraint/i.test(err.message)
+        ? 'Two events have the same category and age group — each combination can only be added once.'
+        : (err.message || 'Failed to create tournament');
+      setSaveError(message);
     } finally {
       setSaving(false);
     }

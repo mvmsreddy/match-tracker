@@ -170,8 +170,15 @@ export default function TournamentDetailPage() {
 
   async function handleAddEvent(e) {
     e.preventDefault();
-    setSaving(true);
     setSaveError('');
+    const duplicate = events.some(
+      ev => ev.category === form.category && ev.ageGroup === form.ageGroup
+    );
+    if (duplicate) {
+      setSaveError(`${form.category} ${form.ageGroup} already exists for this tournament.`);
+      return;
+    }
+    setSaving(true);
     try {
       const isDoubles = form.category.includes('Doubles');
       const created = await api.createEvent(weekId, { ...form, isDoubles });
@@ -179,7 +186,10 @@ export default function TournamentDetailPage() {
       setShowAddEvent(false);
       setForm(EMPTY_EVENT_FORM);
     } catch (err) {
-      setSaveError(err.message || 'Failed to add event');
+      const message = /duplicate key value|unique constraint/i.test(err.message)
+        ? `${form.category} ${form.ageGroup} already exists for this tournament.`
+        : (err.message || 'Failed to add event');
+      setSaveError(message);
     } finally {
       setSaving(false);
     }
