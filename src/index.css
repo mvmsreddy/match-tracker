@@ -69,13 +69,25 @@ body { margin: 0; }
 .score-current { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1; }
 .server-tag { font-size: 0.62rem; color: var(--text4); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
 
-.wizard { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 8px 16px 6px; }
+/* min-height is an explicit floor (not 0, not auto). auto would measure
+   content using chip flex-grow's max-height potential and balloon this way
+   past what's actually needed; 0 lets tab-content's overflow-y:auto never
+   see an overflow, silently clipping the undo bar / delete button off small
+   screens instead of scrolling to reach them. A fixed floor avoids both. */
+.wizard { display: flex; flex-direction: column; flex: 1; min-height: 300px; padding: 8px 16px 6px; }
 
 .wizard-title { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; flex-shrink: 0; }
 
-/* Step card — highlights the current active step, grows to fill wizard */
-.wizard-step-card { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg3); border: 1px solid var(--border2); border-left: 3px solid var(--accent); border-radius: 5px; padding: 14px 14px 12px; margin-bottom: 8px; }
+/* Step card — highlights the current active step, grows to fill wizard.
+   min-height keeps it from being squeezed to an unusably tiny sliver; once a
+   step's own content (e.g. a 7-option chip list) exceeds the card, it
+   scrolls internally instead of overflowing into the undo bar below it. */
+.wizard-step-card { flex: 1; display: flex; flex-direction: column; min-height: 180px; background: var(--bg3); border: 1px solid var(--border2); border-left: 3px solid var(--accent); border-radius: 5px; padding: 14px 14px 12px; margin-bottom: 8px; touch-action: pan-y; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .wizard-step-label { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 10px; }
+
+/* In-wizard back navigation — steps back one screen within the current point */
+.wizard-back-btn { align-self: flex-start; flex-shrink: 0; background: none; border: none; color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; padding: 2px 6px 10px 0; margin-bottom: 2px; cursor: pointer; }
+.wizard-back-btn:hover { color: var(--accent); }
 
 /* Breadcrumb showing completed choices */
 .wizard-breadcrumb { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: var(--text3); padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--bg2); line-height: 1.5; word-break: break-word; }

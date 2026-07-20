@@ -29,13 +29,49 @@ function shotLabel(type) {
 
 export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onDelete }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
+  const [history, setHistory] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
+  const touchStartRef = useRef(null);
 
   useEffect(() => {
     setPending((p) => (p.server === nextServer ? p : freshPending(nextServer)));
+    setHistory([]);
   }, [nextServer]);
+
+  // Records the pre-change pending snapshot before applying an in-point
+  // (non-committing) step, so goBack() can restore it.
+  function setPendingStep(updater) {
+    setHistory((h) => [...h, pending]);
+    setPending(updater);
+  }
+
+  // Steps back one screen within the point being built. If there's no
+  // earlier screen in this point, falls back to undoing the last committed point.
+  function goBack() {
+    if (history.length > 0) {
+      setPending(history[history.length - 1]);
+      setHistory((h) => h.slice(0, -1));
+    } else if (canUndo) {
+      onUndo();
+    }
+  }
+
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchEnd(e) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (dx > 60 && Math.abs(dy) < 40) goBack();
+  }
 
   const activeStep = getActiveStep(pending);
 
@@ -54,6 +90,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
     const entry = buildPointEntry({ ...pending, ...extra });
     onCommit(entry);
     setPending(freshPending(pending.server));
+    setHistory([]);
   }
 
   // ── Service screen ───────────────────────────────────────────────────────
@@ -63,13 +100,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   }
 
   function handleFault() {
-    setPending((p) => ({ ...p, serviceChoice: 'faultPending' }));
+    setPendingStep((p) => ({ ...p, serviceChoice: 'faultPending' }));
   }
 
   function handleFaultLocation(location) {
     if (pending.serveAttempt === '1st') {
       // Record fault location, advance to 2nd serve
-      setPending(() => ({ ...freshPending(pending.server), serveAttempt: '2nd', firstFaultLocation: location }));
+      setPendingStep(() => ({ ...freshPending(pending.server), serveAttempt: '2nd', firstFaultLocation: location }));
     } else {
       // Double fault — commit with both fault locations
       commitAndReset({ serviceChoice: 'doubleFault', faultLocation: location });
@@ -78,19 +115,19 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   // Let: repeats the same serve attempt — no DB write, no state change
   function handleLet() {
-    setPending((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt, firstFaultLocation: p.firstFaultLocation }));
+    setPendingStep((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt, firstFaultLocation: p.firstFaultLocation }));
   }
 
   function handleReturnWinner() {
-    setPending((p) => ({ ...p, serviceChoice: 'returnWinner' }));
+    setPendingStep((p) => ({ ...p, serviceChoice: 'returnWinner' }));
   }
 
   function handleReturnError() {
-    setPending((p) => ({ ...p, serviceChoice: 'returnError' }));
+    setPendingStep((p) => ({ ...p, serviceChoice: 'returnError' }));
   }
 
   function handleBallIn() {
-    setPending((p) => ({ ...p, serviceChoice: 'ballIn' }));
+    setPendingStep((p) => ({ ...p, serviceChoice: 'ballIn' }));
   }
 
   // ── Return error type ────────────────────────────────────────────────────
@@ -102,13 +139,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Ball in play ─────────────────────────────────────────────────────────
 
   function handleBallInOutcome(who, reason) {
-    setPending((p) => ({ ...p, ballInWho: who, ballInReason: reason }));
+    setPendingStep((p) => ({ ...p, ballInWho: who, ballInReason: reason }));
   }
 
   // ── Shot wing ────────────────────────────────────────────────────────────
 
   function handleShotWing(wing) {
-    setPending((p) => ({ ...p, shotWing: wing }));
+    setPendingStep((p) => ({ ...p, shotWing: wing }));
   }
 
   // ── Shot type ────────────────────────────────────────────────────────────
@@ -149,7 +186,22 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
       )}
 
       {/* Active step card */}
-      <div className="wizard-step-card" ref={stepCardRef}>
+      <div
+        className="wizard-step-card"
+        ref={stepCardRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {(history.length > 0 || canUndo) && (
+          <button
+            type="button"
+            className="wizard-back-btn"
+            onClick={goBack}
+            title="Go back one step (or swipe right)"
+          >
+            ‹ Back
+          </button>
+        )}
 
         {activeStep === 'faultLocation' && (
           <>
@@ -244,7 +296,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                   key={n}
                   className="chip chip-lg"
                   style={{ textAlign: 'center' }}
-                  onClick={() => setPending((p) => ({ ...p, rallyCount: n }))}
+                  onClick={() => setPendingStep((p) => ({ ...p, rallyCount: n }))}
                 >
                   {n === 7 ? '7+' : n}
                 </div>
