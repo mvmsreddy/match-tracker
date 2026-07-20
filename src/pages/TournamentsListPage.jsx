@@ -51,7 +51,11 @@ const EMPTY_FORM = {
   ballBrand: '', hasFloodlights: false,
   entryFeeSingles: '', entryFeeDoubles: '', dailyAllowance: '',
   signinInstructions: '',
+  // Phase 19 — organiser extra fields
+  stringingCharges: '', aitaCardRequired: false, hotelOptions: [],
 };
+
+const EMPTY_HOTEL = { name: '', address: '', phone: '', roomRate: '', breakfastIncluded: false, distanceToVenue: '' };
 
 function formatDateRange(start, end) {
   if (!start && !end) return '';
@@ -137,6 +141,21 @@ export default function TournamentsListPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function addHotelRow() {
+    setForm(prev => ({ ...prev, hotelOptions: [...prev.hotelOptions, { ...EMPTY_HOTEL }] }));
+  }
+
+  function removeHotelRow(idx) {
+    setForm(prev => ({ ...prev, hotelOptions: prev.hotelOptions.filter((_, i) => i !== idx) }));
+  }
+
+  function updateHotelRow(idx, field, value) {
+    setForm(prev => ({
+      ...prev,
+      hotelOptions: prev.hotelOptions.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
+    }));
   }
 
   function addEventRow() {
@@ -508,6 +527,48 @@ export default function TournamentsListPage() {
                       <label>Daily Allowance (₹)</label>
                       <input type="number" min="0" value={form.dailyAllowance} onChange={e => set('dailyAllowance', e.target.value)} placeholder="0" />
                     </div>
+                    <div className="field">
+                      <label>Stringing Charges</label>
+                      <input value={form.stringingCharges} onChange={e => set('stringingCharges', e.target.value)} placeholder="e.g. ₹150/set" />
+                    </div>
+                  </div>
+
+                  {/* AITA registration card */}
+                  <div className="field">
+                    <label className="t-checkbox-label">
+                      <input type="checkbox" checked={form.aitaCardRequired} onChange={e => set('aitaCardRequired', e.target.checked)} />
+                      AITA registration card required at sign-in
+                    </label>
+                  </div>
+
+                  {/* Hotel / accommodation (informational reference only) */}
+                  <div className="field">
+                    <label>Hotel / Accommodation</label>
+                    {form.hotelOptions.map((hotel, idx) => (
+                      <div key={idx} className="t-form-row" style={{ marginBottom: 6, alignItems: 'flex-end' }}>
+                        <div className="field">
+                          <input value={hotel.name} onChange={e => updateHotelRow(idx, 'name', e.target.value)} placeholder="Hotel name" />
+                        </div>
+                        <div className="field">
+                          <input value={hotel.address} onChange={e => updateHotelRow(idx, 'address', e.target.value)} placeholder="Address" />
+                        </div>
+                        <div className="field">
+                          <input value={hotel.phone} onChange={e => updateHotelRow(idx, 'phone', e.target.value)} placeholder="Phone" />
+                        </div>
+                        <div className="field">
+                          <input type="number" min="0" value={hotel.roomRate} onChange={e => updateHotelRow(idx, 'roomRate', e.target.value)} placeholder="Room rate (₹)" />
+                        </div>
+                        <div className="field">
+                          <input value={hotel.distanceToVenue} onChange={e => updateHotelRow(idx, 'distanceToVenue', e.target.value)} placeholder="Distance to venue" />
+                        </div>
+                        <label className="t-checkbox-label" style={{ paddingBottom: 8 }}>
+                          <input type="checkbox" checked={hotel.breakfastIncluded} onChange={e => updateHotelRow(idx, 'breakfastIncluded', e.target.checked)} />
+                          Breakfast
+                        </label>
+                        <button type="button" className="t-icon-btn t-icon-btn-del" onClick={() => removeHotelRow(idx)} title="Remove">✕</button>
+                      </div>
+                    ))}
+                    <button type="button" className="action-btn" onClick={addHotelRow}>+ Add Hotel</button>
                   </div>
 
                   {/* Sign-in instructions */}

@@ -68,6 +68,20 @@ export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : asy
 export const getQualifyingWinners = hasSupabaseConfig ? supabaseApi.getQualifyingWinners : async () => null;
 export const promoteQualifiers    = hasSupabaseConfig ? supabaseApi.promoteQualifiers    : async () => [];
 
+// Phase 18 — Withdrawal audit log
+export const logWithdrawal            = hasSupabaseConfig ? supabaseApi.logWithdrawal            : noSupabase;
+export const attachReplacementToAudit = hasSupabaseConfig ? supabaseApi.attachReplacementToAudit : noSupabase;
+export const getWithdrawalAuditLog    = hasSupabaseConfig ? supabaseApi.getWithdrawalAuditLog    : async () => [];
+
+// Phase 17 — Notifications
+export const getEligiblePlayerUserIds  = hasSupabaseConfig ? supabaseApi.getEligiblePlayerUserIds  : async () => [];
+export const createNotificationsForUsers = hasSupabaseConfig ? supabaseApi.createNotificationsForUsers : async () => [];
+export const getMyNotifications          = hasSupabaseConfig ? supabaseApi.getMyNotifications          : async () => [];
+export const getUnreadNotificationCount  = hasSupabaseConfig ? supabaseApi.getUnreadNotificationCount  : async () => 0;
+export const markNotificationRead        = hasSupabaseConfig ? supabaseApi.markNotificationRead        : async () => ({ ok: true });
+export const markAllNotificationsRead    = hasSupabaseConfig ? supabaseApi.markAllNotificationsRead    : async () => ({ ok: true });
+export const sendNotificationEmails      = hasSupabaseConfig ? supabaseApi.sendNotificationEmails      : async () => ({ ok: true, skipped: true });
+
 // Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
 export const setEntryWithdrawn      = hasSupabaseConfig ? supabaseApi.setEntryWithdrawn      : noSupabase;
 export const bulkSetWithdrawn       = hasSupabaseConfig ? supabaseApi.bulkSetWithdrawn       : noSupabase;

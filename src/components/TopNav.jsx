@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import SideDrawer from './SideDrawer';
+import NotificationsBell from './NotificationsBell';
 
 export default function TopNav() {
   const { user, logout } = useAuth();
@@ -16,8 +17,11 @@ export default function TopNav() {
         </button>
         <span className="top-nav-brand">Tennis Tracker</span>
         {user && (
-          <div className="top-nav-avatar" title={user.name}>
-            {user.name.charAt(0).toUpperCase()}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <NotificationsBell />
+            <div className="top-nav-avatar" title={user.name}>
+              {user.name.charAt(0).toUpperCase()}
+            </div>
           </div>
         )}
       </div>

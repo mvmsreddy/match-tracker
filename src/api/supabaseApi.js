@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { computeCascadingPlacement } from '../utils/nominationSort';
+import { checkAgeEligibility } from '../utils/eligibility';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -203,6 +205,10 @@ function rowToWeek(row) {
     entryFeeDoubles: row.entry_fee_doubles,
     dailyAllowance: row.daily_allowance,
     signinInstructions: row.signin_instructions,
+    // Phase 19 — organiser extra fields
+    stringingCharges: row.stringing_charges,
+    aitaCardRequired: row.aita_card_required || false,
+    hotelOptions: row.hotel_options || [],
     // joined events count if present
     eventCount: row.events ? row.events.length : undefined,
   };
@@ -276,6 +282,10 @@ export async function createTournamentWeek(userId, week) {
     entry_fee_doubles: week.entryFeeDoubles ? Number(week.entryFeeDoubles) : null,
     daily_allowance: week.dailyAllowance ? Number(week.dailyAllowance) : null,
     signin_instructions: week.signinInstructions || null,
+    // Phase 19 — organiser extra fields
+    stringing_charges: week.stringingCharges || null,
+    aita_card_required: week.aitaCardRequired !== undefined ? week.aitaCardRequired : false,
+    hotel_options: week.hotelOptions || [],
   };
   const { data, error } = await supabase.from('tournament_weeks').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -317,6 +327,10 @@ export async function updateTournamentWeek(weekId, week) {
   if (week.entryFeeDoubles !== undefined) updates.entry_fee_doubles = week.entryFeeDoubles ? Number(week.entryFeeDoubles) : null;
   if (week.dailyAllowance !== undefined) updates.daily_allowance = week.dailyAllowance ? Number(week.dailyAllowance) : null;
   if (week.signinInstructions !== undefined) updates.signin_instructions = week.signinInstructions;
+  // Phase 19 — organiser extra fields
+  if (week.stringingCharges !== undefined) updates.stringing_charges = week.stringingCharges;
+  if (week.aitaCardRequired !== undefined) updates.aita_card_required = week.aitaCardRequired;
+  if (week.hotelOptions !== undefined) updates.hotel_options = week.hotelOptions;
 
   const { data, error } = await supabase
     .from('tournament_weeks')
@@ -362,6 +376,11 @@ function rowToEvent(row) {
     entriesOpen: row.entries_open ?? false,
     entryOpenDate: row.entry_open_date,
     entryCloseDate: row.entry_close_date,
+    // Phase 19 — per-category sign-in window & play dates
+    signinDate: row.signin_date,
+    signinTime: row.signin_time,
+    firstDayOfPlay: row.first_day_of_play,
+    lastDayOfPlay: row.last_day_of_play,
   };
 }
 
@@ -398,6 +417,11 @@ export async function createEvent(weekId, event) {
     qualifying_size: event.qualifyingSize || null,
     qualifying_spots: event.qualifyingSpots || null,
     status: 'setup',
+    // Phase 19 — per-category sign-in window & play dates
+    signin_date: event.signinDate || null,
+    signin_time: event.signinTime || null,
+    first_day_of_play: event.firstDayOfPlay || null,
+    last_day_of_play: event.lastDayOfPlay || null,
   };
   const { data, error } = await supabase.from('events').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -417,6 +441,11 @@ export async function updateEvent(eventId, updates) {
   if (updates.entryCloseDate !== undefined) row.entry_close_date = updates.entryCloseDate;
   if (updates.maxMainDirect !== undefined) row.max_main_direct = updates.maxMainDirect;
   if (updates.maxQualDirect !== undefined) row.max_qual_direct = updates.maxQualDirect;
+  // Phase 19 — per-category sign-in window & play dates
+  if (updates.signinDate !== undefined) row.signin_date = updates.signinDate;
+  if (updates.signinTime !== undefined) row.signin_time = updates.signinTime;
+  if (updates.firstDayOfPlay !== undefined) row.first_day_of_play = updates.firstDayOfPlay;
+  if (updates.lastDayOfPlay !== undefined) row.last_day_of_play = updates.lastDayOfPlay;
 
   const { data, error } = await supabase
     .from('events')
@@ -708,50 +737,85 @@ export async function getMyEventEntry(eventId) {
   return data ? rowToEntry(data) : null;
 }
 
-// Determine where a player with the given rank would be placed in an event
-// Returns { drawType: 'main'|'qualifying'|'alternate', position: number }
+// Determine where a player with the given rank would be placed in an event,
+// cascading a lower-ranked occupant down a tier (Main -> Qualifying ->
+// Alternates) if the new entrant outranks them and the tier is full.
+// Returns { drawType, position, isAlternate, bumps, event }. `bumps` (each
+// {id, drawType, position, isAlternate}) must be written to the DB, in
+// order, before the new entrant's own row — see applyCascadingPlacement.
 export async function computeSelfEntryPlacement(eventId, rankingRank) {
   const event = await getEvent(eventId);
   const maxMain = event.maxMainDirect ?? (event.drawSize - 9);
   const maxQual = event.maxQualDirect ?? ((event.qualifyingSize || 32) - 4);
+  const rank = rankingRank ? Number(rankingRank) : null;
 
-  const [mainEntries, qualEntries] = await Promise.all([
-    supabase.from('draw_entries')
-      .select('position')
-      .eq('event_id', eventId)
-      .eq('draw_type', 'main')
-      .neq('entry_status', 'withdrawn')
-      .eq('is_bye', false),
-    supabase.from('draw_entries')
-      .select('position')
-      .eq('event_id', eventId)
-      .eq('draw_type', 'qualifying')
-      .neq('entry_status', 'withdrawn')
-      .eq('is_bye', false),
+  const [mainRes, qualRes, altRes] = await Promise.all([
+    supabase.from('draw_entries').select('id, position, ranking')
+      .eq('event_id', eventId).eq('draw_type', 'main')
+      .eq('is_alternate', false).neq('entry_status', 'withdrawn').eq('is_bye', false),
+    supabase.from('draw_entries').select('id, position, ranking')
+      .eq('event_id', eventId).eq('draw_type', 'qualifying')
+      .eq('is_alternate', false).neq('entry_status', 'withdrawn').eq('is_bye', false),
+    supabase.from('draw_entries').select('id, position, ranking')
+      .eq('event_id', eventId).eq('draw_type', 'main')
+      .eq('is_alternate', true).neq('entry_status', 'withdrawn').eq('is_bye', false),
   ]);
+  if (mainRes.error) throw new Error(mainRes.error.message);
+  if (qualRes.error) throw new Error(qualRes.error.message);
+  if (altRes.error) throw new Error(altRes.error.message);
 
-  const mainCount = (mainEntries.data || []).filter(e => !e.is_alternate).length;
-  const qualCount = (qualEntries.data || []).filter(e => !e.is_alternate).length;
+  const newEntrant = { ranking: rank };
 
-  if (mainCount < maxMain) {
-    // Find next available position in main draw (1..drawSize)
-    const takenMain = new Set((mainEntries.data || []).map(e => e.position));
-    let pos = 1;
-    while (takenMain.has(pos) && pos <= event.drawSize) pos++;
-    return { drawType: 'main', position: pos, maxMain, mainCount, event };
+  if (!event.hasQualifying) {
+    // No qualifying draw — full field is Main + Alternates only.
+    if (mainRes.data.length < event.drawSize) {
+      const taken = new Set(mainRes.data.map(e => e.position));
+      let pos = 1;
+      while (taken.has(pos) && pos <= event.drawSize) pos++;
+      return { drawType: 'main', position: pos, isAlternate: false, bumps: [], event };
+    }
+    const worstMain = mainRes.data.reduce(
+      (w, e) => ((e.ranking ?? Infinity) > (w.ranking ?? Infinity) ? e : w), mainRes.data[0]);
+    if (worstMain && rank != null && rank < (worstMain.ranking ?? Infinity)) {
+      const altTaken = new Set(altRes.data.map(e => e.position));
+      let altPos = Math.max(event.drawSize, ...altRes.data.map(e => e.position)) + 1;
+      while (altTaken.has(altPos)) altPos++;
+      return {
+        drawType: 'main', position: worstMain.position, isAlternate: false, event,
+        bumps: [{ id: worstMain.id, drawType: 'main', position: altPos, isAlternate: true }],
+      };
+    }
+    const altTaken = new Set(altRes.data.map(e => e.position));
+    let altPos = Math.max(event.drawSize, ...altRes.data.map(e => e.position)) + 1;
+    while (altTaken.has(altPos)) altPos++;
+    return { drawType: 'main', position: altPos, isAlternate: true, bumps: [], event };
   }
-  if (event.hasQualifying && qualCount < maxQual) {
-    const takenQual = new Set((qualEntries.data || []).map(e => e.position));
-    let pos = 1;
-    while (takenQual.has(pos) && pos <= (event.qualifyingSize || 32)) pos++;
-    return { drawType: 'qualifying', position: pos, maxQual, qualCount, event };
+
+  const { placement, bumps } = computeCascadingPlacement(
+    mainRes.data, qualRes.data, altRes.data, newEntrant,
+    maxMain, maxQual, event.drawSize, event.qualifyingSize || 32,
+  );
+  return { ...placement, bumps, event };
+}
+
+// Writes a cascading-placement plan (see computeSelfEntryPlacement above):
+// applies each bump in order, then inserts the new entrant's row.
+async function applyCascadingPlacement(eventId, placement, newEntrantRow) {
+  for (const bump of placement.bumps) {
+    const { error } = await supabase.from('draw_entries')
+      .update({ draw_type: bump.drawType, position: bump.position, is_alternate: bump.isAlternate })
+      .eq('id', bump.id);
+    if (error) throw new Error(error.message);
   }
-  // Alternate
-  const allEntries = [...(mainEntries.data || []), ...(qualEntries.data || [])];
-  const altPositions = new Set(allEntries.filter(e => e.is_alternate).map(e => e.position));
-  let pos = (event.drawSize || 32) + 1;
-  while (altPositions.has(pos)) pos++;
-  return { drawType: 'main', position: pos, isAlternate: true, event };
+  const row = {
+    ...newEntrantRow,
+    draw_type: placement.drawType,
+    position: placement.position,
+    is_alternate: placement.isAlternate || false,
+  };
+  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
 }
 
 // Self-enter the currently logged-in player into the event singles draw
@@ -764,12 +828,9 @@ export async function selfEnterSingles(eventId, profile) {
   if (existing) throw new Error('You are already entered in this event.');
 
   const placement = await computeSelfEntryPlacement(eventId, profile.ranking);
-  const row = {
+  const newEntrantRow = {
     event_id: eventId,
-    draw_type: placement.drawType,
-    position: placement.position,
     is_bye: false,
-    is_alternate: placement.isAlternate || false,
     family_name: profile.familyName || profile.displayName?.split(' ').pop() || '',
     first_name: profile.firstName || (profile.displayName?.split(' ').slice(0, -1).join(' ')) || '',
     aita_reg: profile.aitaReg || null,
@@ -781,14 +842,34 @@ export async function selfEnterSingles(eventId, profile) {
     entry_status: 'placed',
     entered_by: user.id,
   };
-  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
-  if (error) throw new Error(error.message);
-  return { entry: rowToEntry(data), placement };
+  const entry = await applyCascadingPlacement(eventId, placement, newEntrantRow);
+  return { entry, placement };
 }
 
 // Player withdraws from an event
 export async function withdrawFromEvent(entryId, withdrawalType = 'W') {
   const today = new Date().toISOString().slice(0, 10);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: target, error: tErr } = await supabase
+    .from('draw_entries')
+    .select('event_id, draw_type, family_name, first_name, aita_reg, player_id')
+    .eq('id', entryId)
+    .single();
+  if (tErr) throw new Error(tErr.message);
+  await logWithdrawal({
+    eventId: target.event_id,
+    entryId,
+    drawType: target.draw_type,
+    playerName: target.family_name + (target.first_name ? `, ${target.first_name}` : ''),
+    aitaReg: target.aita_reg,
+    playerId: target.player_id,
+    withdrawalType,
+    withdrawalDate: today,
+    initiatedBy: 'self',
+    initiatedByUserId: user?.id,
+  });
+
   const { data, error } = await supabase
     .from('draw_entries')
     .update({ entry_status: 'withdrawn', withdrawal_date: today, withdrawal_type: withdrawalType })
@@ -1468,10 +1549,123 @@ export async function getQualifyingWinners(eventId) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 18 — Withdrawal audit log
+// ---------------------------------------------------------------------------
+
+function rowToAuditEntry(row) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    entryId: row.entry_id,
+    drawType: row.draw_type,
+    playerName: row.player_name,
+    aitaReg: row.aita_reg,
+    playerId: row.player_id,
+    withdrawalType: row.withdrawal_type,
+    withdrawalDate: row.withdrawal_date,
+    initiatedBy: row.initiated_by,
+    initiatedByUserId: row.initiated_by_user_id,
+    replacementName: row.replacement_name,
+    replacementEntryId: row.replacement_entry_id,
+    replacementSource: row.replacement_source,
+    createdAt: row.created_at,
+  };
+}
+
+// Logs a withdrawal (and optionally its replacement, if already known) BEFORE
+// the underlying draw_entries row is mutated — callInReplacement() overwrites
+// the withdrawn player's identity in place, so this snapshot is the only
+// place it survives.
+export async function logWithdrawal({
+  eventId, entryId, drawType, playerName, aitaReg, playerId,
+  withdrawalType, withdrawalDate, initiatedBy, initiatedByUserId,
+  replacementName, replacementEntryId, replacementSource,
+}) {
+  const row = {
+    event_id: eventId,
+    entry_id: entryId || null,
+    draw_type: drawType,
+    player_name: playerName,
+    aita_reg: aitaReg || null,
+    player_id: playerId || null,
+    withdrawal_type: withdrawalType || 'W',
+    withdrawal_date: withdrawalDate || new Date().toISOString().slice(0, 10),
+    initiated_by: initiatedBy,
+    initiated_by_user_id: initiatedByUserId,
+    replacement_name: replacementName || null,
+    replacement_entry_id: replacementEntryId || null,
+    replacement_source: replacementSource || null,
+  };
+  const { data, error } = await supabase.from('withdrawal_audit').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return rowToAuditEntry(data);
+}
+
+export async function attachReplacementToAudit(auditId, { replacementName, replacementEntryId, replacementSource }) {
+  const { data, error } = await supabase
+    .from('withdrawal_audit')
+    .update({
+      replacement_name: replacementName,
+      replacement_entry_id: replacementEntryId,
+      replacement_source: replacementSource,
+    })
+    .eq('id', auditId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAuditEntry(data);
+}
+
+// Finds the most recent still-open (no replacement yet) audit row for this
+// entry slot — used when a replacement is called in later for a player who
+// was withdrawn earlier with no replacement at the time.
+async function findOpenAuditForEntry(entryId) {
+  const { data, error } = await supabase
+    .from('withdrawal_audit')
+    .select('id')
+    .eq('entry_id', entryId)
+    .is('replacement_entry_id', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? data.id : null;
+}
+
+export async function getWithdrawalAuditLog(eventId) {
+  const { data, error } = await supabase
+    .from('withdrawal_audit')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAuditEntry);
+}
+
+// ---------------------------------------------------------------------------
 // Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
 // ---------------------------------------------------------------------------
 
 export async function setEntryWithdrawn(entryId, isWithdrawn) {
+  if (isWithdrawn) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: target, error: tErr } = await supabase
+      .from('draw_entries')
+      .select('event_id, draw_type, family_name, first_name, aita_reg, player_id')
+      .eq('id', entryId)
+      .single();
+    if (tErr) throw new Error(tErr.message);
+    await logWithdrawal({
+      eventId: target.event_id,
+      entryId,
+      drawType: target.draw_type,
+      playerName: target.family_name + (target.first_name ? `, ${target.first_name}` : ''),
+      aitaReg: target.aita_reg,
+      playerId: target.player_id,
+      initiatedBy: 'referee',
+      initiatedByUserId: user?.id,
+    });
+  }
   const { data, error } = await supabase
     .from('draw_entries')
     .update({ is_withdrawn: isWithdrawn })
@@ -1486,6 +1680,26 @@ export async function setEntryWithdrawn(entryId, isWithdrawn) {
 export async function bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate) {
   if (!entryIds.length) return [];
   const today = withdrawalDate || new Date().toISOString().slice(0, 10);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: targets, error: tErr } = await supabase
+    .from('draw_entries')
+    .select('id, event_id, draw_type, family_name, first_name, aita_reg, player_id')
+    .in('id', entryIds);
+  if (tErr) throw new Error(tErr.message);
+  await Promise.all((targets || []).map(target => logWithdrawal({
+    eventId: target.event_id,
+    entryId: target.id,
+    drawType: target.draw_type,
+    playerName: target.family_name + (target.first_name ? `, ${target.first_name}` : ''),
+    aitaReg: target.aita_reg,
+    playerId: target.player_id,
+    withdrawalType,
+    withdrawalDate: today,
+    initiatedBy: 'referee',
+    initiatedByUserId: user?.id,
+  })));
+
   const { data, error } = await supabase
     .from('draw_entries')
     .update({
@@ -1508,11 +1722,34 @@ export async function bulkSetWithdrawn(entryIds, withdrawalType, withdrawalDate)
 export async function callInReplacement(targetEntryId, sourceEntry, sourceKind) {
   const { data: targetRow, error: tErr } = await supabase
     .from('draw_entries')
-    .select('family_name, first_name')
+    .select('event_id, draw_type, family_name, first_name, aita_reg, player_id')
     .eq('id', targetEntryId)
     .single();
   if (tErr) throw new Error(tErr.message);
   const originalName = targetRow.family_name + (targetRow.first_name ? `, ${targetRow.first_name}` : '');
+  const replacementName = sourceEntry.familyName + (sourceEntry.firstName ? `, ${sourceEntry.firstName}` : '');
+
+  // If this slot was already logged as withdrawn (no replacement yet), attach
+  // the replacement to that row instead of creating a duplicate audit entry.
+  const openAuditId = await findOpenAuditForEntry(targetEntryId);
+  if (openAuditId) {
+    await attachReplacementToAudit(openAuditId, {
+      replacementName, replacementEntryId: sourceEntry.id, replacementSource: sourceKind,
+    });
+  } else {
+    const { data: { user } } = await supabase.auth.getUser();
+    await logWithdrawal({
+      eventId: targetRow.event_id,
+      entryId: targetEntryId,
+      drawType: targetRow.draw_type,
+      playerName: originalName,
+      aitaReg: targetRow.aita_reg,
+      playerId: targetRow.player_id,
+      initiatedBy: 'referee',
+      initiatedByUserId: user?.id,
+      replacementName, replacementEntryId: sourceEntry.id, replacementSource: sourceKind,
+    });
+  }
 
   const { data, error } = await supabase
     .from('draw_entries')
@@ -1741,4 +1978,120 @@ export async function promoteQualifiers(eventId, qualifierEntries) {
   const failed = results.find(r => r.error);
   if (failed) throw new Error(failed.error.message);
   return results.map(r => rowToEntry(r.data));
+}
+
+// ---------------------------------------------------------------------------
+// Phase 17 — Notifications
+// ---------------------------------------------------------------------------
+
+function rowToNotification(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    tournamentWeekId: row.tournament_week_id,
+    eventId: row.event_id,
+    isRead: row.is_read,
+    createdAt: row.created_at,
+  };
+}
+
+// Player accounts eligible for a category by age (§4.2 rules). No gender
+// column exists on user_profiles, so this filters by age only — category
+// gender is still shown to the player in the notification/email copy.
+export async function getEligiblePlayerUserIds(ageGroup, tournamentYear, playingUpAllowed, playingDownAllowed) {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, date_of_birth')
+    .eq('role', 'player')
+    .not('date_of_birth', 'is', null);
+  if (error) throw new Error(error.message);
+  return data
+    .filter(p => checkAgeEligibility(p.date_of_birth, ageGroup, tournamentYear, playingUpAllowed, playingDownAllowed).allowed)
+    .map(p => p.id);
+}
+
+// Bulk in-app notification insert. { type, title, body, tournamentWeekId, eventId }
+export async function createNotificationsForUsers(userIds, { type, title, body, tournamentWeekId, eventId }) {
+  const ids = [...new Set(userIds)].filter(Boolean);
+  if (ids.length === 0) return [];
+  const rows = ids.map(userId => ({
+    user_id: userId,
+    type,
+    title,
+    body: body || null,
+    tournament_week_id: tournamentWeekId || null,
+    event_id: eventId || null,
+  }));
+  const { data, error } = await supabase.from('notifications').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return data.map(rowToNotification);
+}
+
+export async function getMyNotifications() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return data.map(rowToNotification);
+}
+
+export async function getUnreadNotificationCount() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('is_read', false);
+  if (error) throw new Error(error.message);
+  return count || 0;
+}
+
+export async function markNotificationRead(id) {
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+export async function markAllNotificationsRead() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: true };
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('user_id', user.id)
+    .eq('is_read', false);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+// Best-effort email delivery via the send-notification-email Edge Function.
+// Never throws — an email failure shouldn't block the underlying organiser
+// action; the in-app notification row (already written) is the source of truth.
+export async function sendNotificationEmails(userIds, { subject, html }) {
+  const ids = [...new Set(userIds)].filter(Boolean);
+  if (ids.length === 0) return { ok: true, skipped: true };
+  try {
+    const { error } = await supabase.functions.invoke('send-notification-email', {
+      body: { userIds: ids, subject, html },
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Notification email send failed:', error.message);
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('Notification email send failed:', err.message);
+    return { ok: false };
+  }
 }

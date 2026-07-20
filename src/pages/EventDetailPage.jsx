@@ -1349,6 +1349,60 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
 }
 
 // ---------------------------------------------------------------------------
+// AuditLogPanel  (Phase 18 — organiser-only withdrawal audit trail)
+// ---------------------------------------------------------------------------
+function AuditLogPanel({ eventId }) {
+  const [rows, setRows] = useState(null);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getWithdrawalAuditLog(eventId)
+      .then(list => { if (!cancelled) setRows(list); })
+      .catch(err => { if (!cancelled) setLoadError(err.message); });
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  if (loadError) return <div className="page-scroll"><div className="login-error">{loadError}</div></div>;
+  if (rows === null) return <div className="page-scroll"><div className="history-empty">Loading…</div></div>;
+
+  return (
+    <div className="page-scroll">
+      {rows.length === 0 ? (
+        <div className="history-empty">No withdrawals logged yet.</div>
+      ) : (
+        <div className="t-entry-table-wrap">
+          <table className="t-entry-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Draw</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Initiated By</th>
+                <th>Replacement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => (
+                <tr key={row.id}>
+                  <td className="t-entry-name">{row.playerName}{row.aitaReg ? ` (${row.aitaReg})` : ''}</td>
+                  <td>{row.drawType === 'qualifying' ? 'Qualifying' : 'Main'}</td>
+                  <td>{row.withdrawalType}</td>
+                  <td>{row.withdrawalDate}</td>
+                  <td>{row.initiatedBy === 'self' ? 'Self' : 'Referee'}</td>
+                  <td>{row.replacementName || <span className="t-entry-dash">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // DrawLinePlayer  (one player line inside a draw-sheet match box)
 // ---------------------------------------------------------------------------
 function DrawLinePlayer({ entry, pos, selected, swapMode, onClick }) {
@@ -1777,8 +1831,10 @@ export default function EventDetailPage() {
   // Alternates live at positions beyond the draw size — keep them out of the
   // main bracket entries (fill %, BYE count, drawFull, DrawSheet/Bracket math).
   const mainEntries      = entries.filter(e => e.position <= maxPos);
+  // Waitlist ordered by ranking (doc §4) — lower ranking number = better,
+  // unranked players fall to the back; join order (position) breaks ties.
   const alternateEntries = entries.filter(e => e.position > maxPos)
-    .sort((a, b) => a.position - b.position);
+    .sort((a, b) => (a.ranking || Infinity) - (b.ranking || Infinity) || a.position - b.position);
   const sortedEntries = [...mainEntries].sort((a, b) => a.position - b.position);
   const playerCount = mainEntries.filter(e => !e.isBye).length;
   const byeCount    = mainEntries.filter(e => e.isBye).length;
@@ -1910,6 +1966,19 @@ export default function EventDetailPage() {
   }
 
   // ---- GENERATE BRACKET / PUBLISH DRAW ------------------------------------
+  // Best-effort in-app + email notification. Never blocks the underlying
+  // organiser action if it fails — the action itself already succeeded.
+  async function notifyUsers(userIds, { type, title, body, html }) {
+    if (!userIds || userIds.length === 0) return;
+    try {
+      await api.createNotificationsForUsers(userIds, { type, title, body, tournamentWeekId: weekId, eventId });
+      await api.sendNotificationEmails(userIds, { subject: title, html: html || `<p>${body || title}</p>` });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Notification failed:', err.message);
+    }
+  }
+
   async function handleGenerateBracket() {
     const isPublished = event?.status !== 'setup';
     const msg = isPublished
@@ -1956,6 +2025,13 @@ export default function EventDetailPage() {
       const fresh = await api.getEventMatches(eventId, drawType);
       setMatches(fresh);
       setViewMode('bracket');
+
+      const playerIds = allEntries.filter(e => e.playerId && !e.isBye).map(e => e.playerId);
+      notifyUsers(playerIds, {
+        type: 'draw_published',
+        title: `Draw published: ${event?.category} ${event?.ageGroup}`,
+        body: `The ${drawType === 'qualifying' ? 'qualifying' : 'main'} draw for ${week?.name || 'your tournament'} has been published.`,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -2004,6 +2080,13 @@ export default function EventDetailPage() {
       setViewMode('list');
       setSwapMode(false);
       setSelectedEntry(null);
+
+      const playerIds = winners.filter(w => w.playerId).map(w => w.playerId);
+      notifyUsers(playerIds, {
+        type: 'qualifier_promoted',
+        title: `You qualified: ${event?.category} ${event?.ageGroup}`,
+        body: `Congratulations — you've been promoted from qualifying to the main draw of ${week?.name || 'your tournament'}.`,
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -2068,6 +2151,13 @@ export default function EventDetailPage() {
     await api.callInReplacement(target.id, altEntry, 'alternate');
     await api.clearScheduleForEntry(target.id);
     await reloadAfterWithdrawal();
+    if (altEntry.playerId) {
+      notifyUsers([altEntry.playerId], {
+        type: 'withdrawal_replacement',
+        title: `You're in: ${event?.category} ${event?.ageGroup}`,
+        body: `A slot opened up in ${week?.name || 'your tournament'} and you've been called in from the alternates list.`,
+      });
+    }
   }
 
   async function handleCallInLuckyLoser(ll) {
@@ -2075,6 +2165,13 @@ export default function EventDetailPage() {
     await api.callInReplacement(target.id, ll.entry, 'lucky_loser');
     await api.clearScheduleForEntry(target.id);
     await reloadAfterWithdrawal();
+    if (ll.entry?.playerId) {
+      notifyUsers([ll.entry.playerId], {
+        type: 'withdrawal_replacement',
+        title: `You're in: ${event?.category} ${event?.ageGroup}`,
+        body: `A main-draw slot opened up in ${week?.name || 'your tournament'} and you've been called in as a lucky loser.`,
+      });
+    }
   }
 
   async function handleRandomDrawLuckyLosers() {
@@ -2102,6 +2199,13 @@ export default function EventDetailPage() {
       ]);
       setEntries(freshEntries);
       setLuckyLosers(freshLL);
+      if (ll.entry?.playerId) {
+        notifyUsers([ll.entry.playerId], {
+          type: 'withdrawal_replacement',
+          title: `You're in: ${event?.category} ${event?.ageGroup}`,
+          body: `A main-draw slot opened up in ${week?.name || 'your tournament'} and you've been called in as a lucky loser.`,
+        });
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -2224,8 +2328,20 @@ export default function EventDetailPage() {
                   style={{ background: event?.entriesOpen ? '#7c3a00' : 'var(--accent,#1a6b3a)', color: '#fff' }}
                   onClick={async () => {
                     try {
-                      const updated = await api.updateEvent(eventId, { entriesOpen: !event?.entriesOpen });
+                      const opening = !event?.entriesOpen;
+                      const updated = await api.updateEvent(eventId, { entriesOpen: opening });
                       setEvent(updated);
+                      if (opening) {
+                        const tournamentYear = new Date(week?.startDate || Date.now()).getFullYear();
+                        const eligibleIds = await api.getEligiblePlayerUserIds(
+                          event.ageGroup, tournamentYear, week?.playingUpAllowed, week?.playingDownAllowed,
+                        );
+                        notifyUsers(eligibleIds, {
+                          type: 'entries_open',
+                          title: `Entries open: ${event.category} ${event.ageGroup}`,
+                          body: `Nominations are now open for ${event.category} ${event.ageGroup} at ${week?.name || 'a tournament'}. Enter before the deadline.`,
+                        });
+                      }
                     } catch (err) { alert(err.message); }
                   }}
                 >
@@ -2293,6 +2409,12 @@ export default function EventDetailPage() {
             Lucky Losers
           </button>
         )}
+        {isOwner && (
+          <button className={'t-draw-tab' + (activeTab === 'audit_log' ? ' active' : '')}
+            onClick={() => { setActiveTab('audit_log'); setSwapMode(false); setSelectedEntry(null); }}>
+            Audit Log
+          </button>
+        )}
       </div>
 
       {/* View toggle + stats — only for draw tabs; hidden from players before draw is published */}
@@ -2346,7 +2468,9 @@ export default function EventDetailPage() {
       )}
 
       {/* ---- Content ---- */}
-      {activeTab === 'lucky_losers' ? (
+      {activeTab === 'audit_log' ? (
+        <AuditLogPanel eventId={eventId} />
+      ) : activeTab === 'lucky_losers' ? (
         <LuckyLosersPanel
           luckyLosers={luckyLosers}
           mainEntries={mainEntries}

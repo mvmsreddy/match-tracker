@@ -29,6 +29,11 @@ const EMPTY_EVENT_FORM = {
   hasQualifying: false,
   qualifyingSize: 32,
   qualifyingSpots: 4,
+  // Phase 19 — per-category sign-in window & play dates
+  signinDate: '',
+  signinTime: '',
+  firstDayOfPlay: '',
+  lastDayOfPlay: '',
 };
 
 // ---------------------------------------------------------------------------
@@ -70,6 +75,16 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
           <span className="t-badge">{event.numSeeds} seeds</span>
           {event.hasQualifying && (
             <span className="t-badge t-badge-qual">Qualifying {event.qualifyingSize}</span>
+          )}
+          {event.signinDate && (
+            <span className="t-badge" title="Sign-in">
+              Sign-in {event.signinDate}{event.signinTime ? ` ${event.signinTime}` : ''}
+            </span>
+          )}
+          {event.firstDayOfPlay && (
+            <span className="t-badge" title="Play dates">
+              Play {event.firstDayOfPlay}{event.lastDayOfPlay ? ` – ${event.lastDayOfPlay}` : ''}
+            </span>
           )}
         </div>
       </Link>
@@ -368,7 +383,8 @@ export default function TournamentDetailPage() {
 
       {/* Extended details panel — Phase 12 factsheet fields */}
       {(week.directorName || week.entryDeadline || week.qualifyingStartDate ||
-        week.venueAddress || week.entryFeeSingles || week.signinInstructions) && (
+        week.venueAddress || week.entryFeeSingles || week.signinInstructions ||
+        week.stringingCharges || week.aitaCardRequired || (week.hotelOptions && week.hotelOptions.length > 0)) && (
         <div className="t-factsheet-panel">
           {/* Always-visible summary row */}
           <div className="t-fs-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -420,11 +436,17 @@ export default function TournamentDetailPage() {
                   {week.hasFloodlights && <span className="t-fs-item">Floodlights available</span>}
                 </div>
               )}
-              {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance) && (
+              {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance || week.stringingCharges) && (
                 <div className="t-fs-row">
                   {week.entryFeeSingles && <span className="t-fs-item"><b>Singles entry:</b> ₹{week.entryFeeSingles}</span>}
                   {week.entryFeeDoubles && <span className="t-fs-item"><b>Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
                   {week.dailyAllowance && <span className="t-fs-item"><b>Daily allowance:</b> ₹{week.dailyAllowance}</span>}
+                  {week.stringingCharges && <span className="t-fs-item"><b>Stringing:</b> {week.stringingCharges}</span>}
+                </div>
+              )}
+              {week.aitaCardRequired && (
+                <div className="t-fs-row">
+                  <span className="t-fs-item">AITA registration card required at sign-in</span>
                 </div>
               )}
               {week.signinInstructions && (
@@ -432,6 +454,21 @@ export default function TournamentDetailPage() {
                   <span className="t-fs-item" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                     <b>Sign-in:</b> {week.signinInstructions}
                   </span>
+                </div>
+              )}
+              {week.hotelOptions && week.hotelOptions.length > 0 && (
+                <div className="t-fs-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                  <span className="t-fs-item"><b>Hotels:</b></span>
+                  {week.hotelOptions.map((hotel, idx) => (
+                    <span key={idx} className="t-fs-item" style={{ paddingLeft: 12 }}>
+                      {hotel.name}
+                      {hotel.address ? ` — ${hotel.address}` : ''}
+                      {hotel.phone ? ` · ${hotel.phone}` : ''}
+                      {hotel.roomRate ? ` · ₹${hotel.roomRate}/night` : ''}
+                      {hotel.breakfastIncluded ? ' · breakfast included' : ''}
+                      {hotel.distanceToVenue ? ` · ${hotel.distanceToVenue} from venue` : ''}
+                    </span>
+                  ))}
                 </div>
               )}
             </>
@@ -504,6 +541,28 @@ export default function TournamentDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Phase 19 — per-category sign-in window & play dates */}
+              <div className="t-form-row">
+                <div className="field">
+                  <label>Sign-in Date</label>
+                  <input type="date" value={form.signinDate} onChange={e => set('signinDate', e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Sign-in Time</label>
+                  <input type="time" value={form.signinTime} onChange={e => set('signinTime', e.target.value)} />
+                </div>
+              </div>
+              <div className="t-form-row">
+                <div className="field">
+                  <label>First Day of Play</label>
+                  <input type="date" value={form.firstDayOfPlay} onChange={e => set('firstDayOfPlay', e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Last Day of Play</label>
+                  <input type="date" value={form.lastDayOfPlay} onChange={e => set('lastDayOfPlay', e.target.value)} />
+                </div>
+              </div>
 
               {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
 
