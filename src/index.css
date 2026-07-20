@@ -138,7 +138,11 @@ body { margin: 0; }
 
 /* Ball in play: two player columns */
 .ball-in-play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.player-col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+/* Each column's chips have a hard min-height floor (below) — when the column
+   is squeezed shorter than its chips' combined minimum, they must scroll
+   within the column rather than spill into whatever sits below the grid
+   (e.g. the "Let" chip-row on the service screen). */
+.player-col { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 /* Chips inside player columns grow to fill available height */
 .player-col .chip-lg { flex: 1; min-height: 52px; max-height: 160px; }
 .player-col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
