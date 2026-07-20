@@ -148,6 +148,7 @@ export default function TrackerPage() {
             points={t.points}
             selfName={t.header.selfName || 'Self'}
             oppName={t.header.oppName || 'Opponent'}
+            analytics={t.analytics}
           />
           <StatsPanel
             points={t.points} header={t.header} sessionType={t.sessionType} analytics={t.analytics}

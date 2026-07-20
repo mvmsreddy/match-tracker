@@ -63,7 +63,7 @@ function pdfBarChart(doc, opts) {
 }
 
 function pdfLineChart(doc, opts, selfName, oppName) {
-  const { x, y, width, height, values, title, vLines } = opts;
+  const { x, y, width, height, values, title, vLines, gameVLines } = opts;
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20, 39, 51);
   doc.text(title, x, y);
   const chartTop = y + 12;
@@ -73,21 +73,36 @@ function pdfLineChart(doc, opts, selfName, oppName) {
   const range = (maxV - minV) || 1;
   const n = values.length;
   const stepX = width / Math.max(1, n - 1);
+  const pointY = (i) => chartBottom - ((values[i] - minV) / range) * height;
   const zeroY = chartBottom - ((0 - minV) / range) * height;
   doc.setDrawColor(225, 225, 225); doc.setLineWidth(0.6);
   doc.line(x, zeroY, x + width, zeroY);
+  // Game boundaries: light, thin lines with a small running game-score label
+  (gameVLines || []).forEach((vl) => {
+    const px = x + Math.min(vl.index, n - 1) * stepX;
+    doc.setDrawColor(222, 222, 222); doc.setLineWidth(0.4);
+    doc.line(px, chartTop, px, chartBottom);
+    doc.setFontSize(5.5); doc.setTextColor(150, 150, 150);
+    doc.text(vl.label, px, chartTop - 2, { align: 'center' });
+  });
+  // Set boundaries: darker lines with a bold set-score label
   (vLines || []).forEach((vl) => {
     const px = x + Math.min(vl.index, n - 1) * stepX;
-    doc.setDrawColor(190, 190, 190);
+    doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.6);
     doc.line(px, chartTop, px, chartBottom);
     doc.setFontSize(6.5); doc.setTextColor(100, 100, 100);
     doc.text(vl.label, px, chartBottom + 10, { align: 'center' });
   });
   doc.setDrawColor(20, 39, 51); doc.setLineWidth(1.1);
   for (let i = 1; i < n; i++) {
-    const x1 = x + (i - 1) * stepX, y1 = chartBottom - ((values[i - 1] - minV) / range) * height;
-    const x2 = x + i * stepX, y2 = chartBottom - ((values[i] - minV) / range) * height;
+    const x1 = x + (i - 1) * stepX, y1 = pointY(i - 1);
+    const x2 = x + i * stepX, y2 = pointY(i);
     doc.line(x1, y1, x2, y2);
+  }
+  // Dot marker at every point played
+  doc.setFillColor(20, 39, 51);
+  for (let i = 0; i < n; i++) {
+    doc.circle(x + i * stepX, pointY(i), 1, 'F');
   }
   doc.setDrawColor(210, 210, 210); doc.setLineWidth(1);
   doc.line(x, chartBottom, x + width, chartBottom);
@@ -278,9 +293,10 @@ export function buildMatchPdf(ctx) {
     ensureSpace(160);
     const momentum = computeMomentumSeries(points);
     const boundaries = isPractice ? [] : analytics.boundaries;
+    const gameBoundaries = isPractice ? [] : analytics.gameBoundaries;
     y = pdfLineChart(doc, {
       x: marginX, y, width: 515, height: 90, values: momentum,
-      title: 'Cumulative point differential', vLines: boundaries,
+      title: 'Cumulative point differential', vLines: boundaries, gameVLines: gameBoundaries,
     }, selfName, oppName);
     y += 12;
   }

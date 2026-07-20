@@ -1,4 +1,4 @@
-export default function MomentumGraph({ points, selfName, oppName }) {
+export default function MomentumGraph({ points, selfName, oppName, analytics }) {
   if (points.length < 3) {
     return (
       <div className="panel">
@@ -23,6 +23,8 @@ export default function MomentumGraph({ points, selfName, oppName }) {
 
   const gx = (i) => PX + (i / (data.length - 1)) * (W - PX * 2);
   const gy = (v) => midY - (v / maxAbs) * (midY - PY);
+
+  const gameBoundaries = analytics?.gameBoundaries || [];
 
   const linePts = data.map((v, i) => `${gx(i).toFixed(1)},${gy(v).toFixed(1)}`).join(' ');
   const areaPts = `${gx(0).toFixed(1)},${midY} ${linePts} ${gx(data.length - 1).toFixed(1)},${midY}`;
@@ -70,6 +72,19 @@ export default function MomentumGraph({ points, selfName, oppName }) {
           {/* Zero / neutral line */}
           <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="#2C4C68" strokeWidth="1.5" strokeDasharray="4,4" />
 
+          {/* Game boundary markers */}
+          {gameBoundaries.map((gb) => {
+            const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
+            return (
+              <g key={gb.index}>
+                <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="#2C4C68" strokeWidth="0.75" opacity="0.6" />
+                <text x={px} y={PY - 4} fill="#7C93A6" fontSize="7" fontFamily="monospace" textAnchor="middle">
+                  {gb.label}
+                </text>
+              </g>
+            );
+          })}
+
           {/* Green fill: self is ahead */}
           <polygon points={areaPts} fill="#C6E23D" opacity="0.18" clipPath="url(#clip-above)" />
           {/* Red fill: opp is ahead */}
@@ -84,6 +99,11 @@ export default function MomentumGraph({ points, selfName, oppName }) {
             strokeLinejoin="round"
             strokeLinecap="round"
           />
+
+          {/* Dot marker at every point played */}
+          {data.map((v, i) => (
+            <circle key={i} cx={gx(i).toFixed(1)} cy={gy(v).toFixed(1)} r="1.75" fill={lineColor} opacity="0.8" />
+          ))}
 
           {/* Current position dot */}
           <circle cx={lastX} cy={lastY} r="4" fill={lineColor} />

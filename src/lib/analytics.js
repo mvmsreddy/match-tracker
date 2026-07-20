@@ -141,12 +141,13 @@ export function computeMomentumSeries(points) {
  */
 export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
   const boundaries = [];
+  const gameBoundaries = [];
   const bp = {
     self: { facedServing: 0, savedServing: 0, facedReturning: 0, wonReturning: 0 },
     opp: { facedServing: 0, savedServing: 0, facedReturning: 0, wonReturning: 0 },
   };
   const svcGamesWon = { self: 0, opp: 0 };
-  if (sessionType === 'practice' || points.length === 0) return { boundaries, bp, svcGamesWon };
+  if (sessionType === 'practice' || points.length === 0) return { boundaries, gameBoundaries, bp, svcGamesWon };
 
   const cfg = getFormatConfig(formatPreset);
   let gp = { self: 0, opp: 0 }, sg = { self: 0, opp: 0 }, setsWonLocal = { self: 0, opp: 0 };
@@ -188,6 +189,7 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
     if (Math.max(gp.self, gp.opp) >= 4 && Math.abs(gp.self - gp.opp) >= 2) {
       if (w === srv) svcGamesWon[srv]++;
       sg[w]++; gp = { self: 0, opp: 0 };
+      gameBoundaries.push({ index: idx + 1, label: sg.self + '-' + sg.opp });
       const a = sg.self, b = sg.opp, target = cfg.gamesTarget;
       if ((Math.max(a, b) >= target && Math.abs(a - b) >= 2) || a === target + 1 || b === target + 1) {
         boundaries.push({ index: idx + 1, label: a + '-' + b });
@@ -200,7 +202,7 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
       }
     }
   });
-  return { boundaries, bp, svcGamesWon };
+  return { boundaries, gameBoundaries, bp, svcGamesWon };
 }
 
 export function computeBreakPointStats(points, cfgOpts, player) {
