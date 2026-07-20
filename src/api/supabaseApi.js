@@ -722,7 +722,10 @@ export async function getPlayerWeekParticipation(weekId, aitaReg, excludeEventId
 // Phase 18 — Player self-entry
 // ---------------------------------------------------------------------------
 
-// Check if the current user already has an active entry in this event
+// Check if the current user already has an active entry in this event —
+// whether they entered themselves (entered_by) or an organiser added them
+// directly and linked their account (player_id). Ordered + limited to 1
+// rather than maybeSingle() since both columns can independently match.
 export async function getMyEventEntry(eventId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -730,11 +733,12 @@ export async function getMyEventEntry(eventId) {
     .from('draw_entries')
     .select('*')
     .eq('event_id', eventId)
-    .eq('entered_by', user.id)
+    .or(`entered_by.eq.${user.id},player_id.eq.${user.id}`)
     .neq('entry_status', 'withdrawn')
-    .maybeSingle();
+    .eq('is_withdrawn', false)
+    .limit(1);
   if (error) throw new Error(error.message);
-  return data ? rowToEntry(data) : null;
+  return data && data.length > 0 ? rowToEntry(data[0]) : null;
 }
 
 // Determine where a player with the given rank would be placed in an event,
@@ -798,24 +802,30 @@ export async function computeSelfEntryPlacement(eventId, rankingRank) {
   return { ...placement, bumps, event };
 }
 
-// Writes a cascading-placement plan (see computeSelfEntryPlacement above):
-// applies each bump in order, then inserts the new entrant's row.
+// Writes a cascading-placement plan (see computeSelfEntryPlacement above) via
+// the apply_self_entry_placement() RPC (phase20). A bump can demote an entry
+// that belongs to someone else (organiser-added, or another self-entered
+// player) — self-entry RLS (phase15) only lets a player touch their own row,
+// so this can't be done as plain client-side updates; the RPC runs as
+// SECURITY DEFINER and re-validates the essential constraints itself.
 async function applyCascadingPlacement(eventId, placement, newEntrantRow) {
-  for (const bump of placement.bumps) {
-    const { error } = await supabase.from('draw_entries')
-      .update({ draw_type: bump.drawType, position: bump.position, is_alternate: bump.isAlternate })
-      .eq('id', bump.id);
-    if (error) throw new Error(error.message);
-  }
+  const bumps = placement.bumps.map(b => ({
+    id: b.id, draw_type: b.drawType, position: b.position, is_alternate: b.isAlternate || false,
+  }));
   const row = {
     ...newEntrantRow,
     draw_type: placement.drawType,
     position: placement.position,
     is_alternate: placement.isAlternate || false,
   };
-  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
+  const { data, error } = await supabase.rpc('apply_self_entry_placement', {
+    p_event_id: eventId,
+    p_bumps: bumps,
+    p_new_row: row,
+  });
   if (error) throw new Error(error.message);
-  return rowToEntry(data);
+  const created = Array.isArray(data) ? data[0] : data;
+  return rowToEntry(created);
 }
 
 // Self-enter the currently logged-in player into the event singles draw
