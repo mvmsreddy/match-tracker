@@ -14,6 +14,7 @@ export function freshPending(server) {
     rallyCount: null,           // null = not yet selected; must be chosen before ballInPlay
     infraction: null,           // null = not yet answered; 'none' = skipped; string = infraction type
     firstFaultLocation: null,   // 'Long' | 'Wide' | 'Net' — location of the 1st serve fault
+    location: null,             // 'Long' | 'Wide' | 'Net' — where an unforced error landed
   };
 }
 
@@ -59,9 +60,9 @@ export function buildPointEntry(pending) {
       serveResult: pending.serveAttempt,
       endedBy: receiver,
       reason,
-      stroke: 'Return',
+      stroke: pending.stroke || 'Return',
       isReturn: true,
-      location: null,
+      location: pending.location || null,
       rally: 1,
       pointWinner: server,
       firstFaultLocation: pending.firstFaultLocation || null,
@@ -95,7 +96,7 @@ export function buildPointEntry(pending) {
     reason,
     stroke: pending.stroke,
     isReturn: false,
-    location: null,
+    location: pending.location || null,
     rally: pending.rallyCount ?? 2,
     pointWinner,
     firstFaultLocation: pending.firstFaultLocation || null,

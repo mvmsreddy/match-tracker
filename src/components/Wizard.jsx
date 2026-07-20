@@ -9,12 +9,18 @@ function getActiveStep(pending) {
   if (!pending.serviceChoice) return 'serviceScreen';
   if (pending.serviceChoice === 'faultPending') return 'faultLocation';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
+  if (pending.serviceChoice === 'returnError' && !pending.shotWing) return 'shotWing';
+  if (pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'UnforcedError' && !pending.location) return 'errorLocation';
   if (pending.serviceChoice === 'ballIn' && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
   const needsShot = pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn';
   if (needsShot && !pending.stroke) {
     if (!pending.shotWing) return 'shotWing';
     return 'shotType';
+  }
+  // Unforced errors get one more tap: where did it land?
+  if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && pending.stroke && !pending.location) {
+    return 'errorLocation';
   }
   // Optional infraction step — only for ballIn, only if not yet answered
   if (pending.serviceChoice === 'ballIn' && pending.stroke && pending.infraction === null) return 'infractionSelect';
@@ -133,7 +139,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Return error type ────────────────────────────────────────────────────
 
   function handleReturnErrorReason(reason) {
-    commitAndReset({ returnErrorReason: reason });
+    setPendingStep((p) => ({ ...p, returnErrorReason: reason }));
   }
 
   // ── Ball in play ─────────────────────────────────────────────────────────
@@ -145,6 +151,15 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Shot wing ────────────────────────────────────────────────────────────
 
   function handleShotWing(wing) {
+    if (pending.serviceChoice === 'returnError') {
+      const stroke = 'Return ' + wing;
+      if (pending.returnErrorReason === 'UnforcedError') {
+        setPendingStep((p) => ({ ...p, shotWing: wing, stroke }));
+      } else {
+        commitAndReset({ shotWing: wing, stroke });
+      }
+      return;
+    }
     setPendingStep((p) => ({ ...p, shotWing: wing }));
   }
 
@@ -152,7 +167,17 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   function handleShotType(type) {
     const stroke = type + ' ' + pending.shotWing;
-    commitAndReset({ shotType: type, stroke });
+    if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError') {
+      setPendingStep((p) => ({ ...p, shotType: type, stroke }));
+    } else {
+      commitAndReset({ shotType: type, stroke });
+    }
+  }
+
+  // ── Error location ───────────────────────────────────────────────────────
+
+  function handleErrorLocation(location) {
+    commitAndReset({ location });
   }
 
   // ── Display helpers ──────────────────────────────────────────────────────
@@ -384,6 +409,17 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
             </>
           );
         })()}
+
+        {activeStep === 'errorLocation' && (
+          <>
+            <div className="wizard-step-label">Unforced Error — Where did it go?</div>
+            <div className="chip-row">
+              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Long')}>Long</div>
+              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Wide')}>Wide</div>
+              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Net')}>Net</div>
+            </div>
+          </>
+        )}
 
         {activeStep === 'infractionSelect' && (
           <>
