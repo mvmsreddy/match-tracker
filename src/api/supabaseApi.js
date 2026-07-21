@@ -620,6 +620,23 @@ export async function updateDrawEntry(entryId, updates) {
   return rowToEntry(data);
 }
 
+// Swaps two entries' positions safely. draw_entries has a unique
+// (event_id, draw_type, position) constraint, so writing both new positions
+// independently — even "at the same time" via Promise.all — collides:
+// whichever update commits finds the other row still sitting at the
+// position it's trying to move into. Routing one entry through a temporary
+// out-of-range position (-1, never used by a real draw position) means
+// neither write ever collides with the other's current row.
+export async function swapEntryPositions(entryAId, positionA, entryBId, positionB) {
+  const setPos = async (id, position) => {
+    const { error } = await supabase.from('draw_entries').update({ position }).eq('id', id);
+    if (error) throw new Error(error.message);
+  };
+  await setPos(entryAId, -1);
+  await setPos(entryBId, positionA);
+  await setPos(entryAId, positionB);
+}
+
 export async function deleteDrawEntry(entryId) {
   const { error } = await supabase.from('draw_entries').delete().eq('id', entryId);
   if (error) throw new Error(error.message);

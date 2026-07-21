@@ -2207,16 +2207,12 @@ export default function EventDetailPage() {
       return;
     }
     // Perform swap
-    const newEntries = swapPositions(entries, selectedEntry.position, entry.position);
+    const posA = selectedEntry.position;
+    const posB = entry.position;
+    const newEntries = swapPositions(entries, posA, posB);
     setSelectedEntry(null);
 
-    // Persist both
-    const a = newEntries.find(e => e.id === selectedEntry.id);
-    const b = newEntries.find(e => e.id === entry.id);
-    Promise.all([
-      api.updateDrawEntry(a.id, { ...a }),
-      api.updateDrawEntry(b.id, { ...b }),
-    ])
+    api.swapEntryPositions(selectedEntry.id, posA, entry.id, posB)
       .then(() => setEntries(newEntries))
       .catch(err => setError(err.message));
   }

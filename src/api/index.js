@@ -55,6 +55,7 @@ export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : a
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];
 export const addDrawEntry = hasSupabaseConfig ? supabaseApi.addDrawEntry : noSupabase;
 export const updateDrawEntry = hasSupabaseConfig ? supabaseApi.updateDrawEntry : noSupabase;
+export const swapEntryPositions = hasSupabaseConfig ? supabaseApi.swapEntryPositions : noSupabase;
 export const deleteDrawEntry = hasSupabaseConfig ? supabaseApi.deleteDrawEntry : async () => {};
 export const moveEntryToGroup = hasSupabaseConfig ? supabaseApi.moveEntryToGroup : noSupabase;
 export const bulkAddDrawEntries = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntries : async () => [];
