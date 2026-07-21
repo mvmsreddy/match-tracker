@@ -4,3 +4,14 @@ dist/
 .env.local
 *.log
 .DS_Store
+
+# Android (Capacitor) build artifacts
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+android/local.properties
+android/.idea/
+android/keystore.properties
+*.jks
+*.keystore

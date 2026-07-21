@@ -1,4 +1,8 @@
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { supabase } from '../lib/supabaseClient';
+
+const NATIVE_OAUTH_REDIRECT = 'com.matchtrackerpro.app://login-callback';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
 import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
@@ -33,11 +37,45 @@ export async function signup(email, password, name, role = 'player') {
 }
 
 export async function loginWithGoogle() {
+  if (Capacitor.isNativePlatform()) {
+    // Google refuses to authenticate inside an embedded WebView, so the flow
+    // has to go through a real browser (a Custom Tab via the Browser plugin)
+    // and come back through a custom URL scheme deep link — see
+    // completeNativeOAuthLogin() below, wired up to appUrlOpen in main.jsx.
+    // The redirect URL must be added to Supabase's Authentication ->
+    // URL Configuration -> Redirect URLs allow list, or GoTrue rejects it.
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: NATIVE_OAUTH_REDIRECT, skipBrowserRedirect: true },
+    });
+    if (error) throw new Error(error.message);
+    await Browser.open({ url: data.url });
+    return;
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin + '/' },
   });
   if (error) throw new Error(error.message);
+}
+
+// Called with the deep-link URL Android hands back after the Custom Tab
+// completes Google sign-in (see appUrlOpen listener in main.jsx). Implicit
+// flow (this project's default) puts the session directly in the URL
+// fragment, so no code exchange is needed — just lift the tokens out and
+// hand them to the client. Returns true if the URL was an OAuth callback.
+export async function completeNativeOAuthLogin(url) {
+  if (!url.startsWith(NATIVE_OAUTH_REDIRECT)) return false;
+  const hash = url.split('#')[1];
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (!access_token || !refresh_token) return false;
+  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  if (error) throw new Error(error.message);
+  await Browser.close();
+  return true;
 }
 
 export async function login(email, password) {

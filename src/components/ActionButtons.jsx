@@ -1,9 +1,23 @@
 import { useState, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { computeStats } from '../lib/analytics';
 import { formatDuration } from '../lib/storage';
+
+async function saveAndSharePdfNative(doc, filename) {
+  const dataUri = doc.output('datauristring');
+  const base64 = dataUri.slice(dataUri.indexOf(',') + 1);
+  const { uri } = await Filesystem.writeFile({
+    path: filename,
+    data: base64,
+    directory: Directory.Cache,
+  });
+  await Share.share({ title: filename, url: uri });
+}
 
 export default function ActionButtons({
   header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget,
@@ -66,8 +80,14 @@ export default function ActionButtons({
         indoorOutdoor: header.indoorOutdoor, oppHandedness: header.oppHandedness, weather: header.weather,
         notes: header.notes, matchStartTime, matchDurationMs,
       });
-      doc.save(pdfFilename(selfName, oppName, sessionType));
-      showStatus('PDF downloaded');
+      const filename = pdfFilename(selfName, oppName, sessionType);
+      if (Capacitor.isNativePlatform()) {
+        await saveAndSharePdfNative(doc, filename);
+        showStatus('PDF ready to save or share');
+      } else {
+        doc.save(filename);
+        showStatus('PDF downloaded');
+      }
     } catch (err) {
       showStatus('Could not generate PDF: ' + err.message, 4000);
     } finally {
