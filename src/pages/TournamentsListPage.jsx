@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
-import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw } from '../utils/aitaGradeRules';
+import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
@@ -167,7 +167,8 @@ export default function TournamentsListPage() {
         return { ...updated, ...getDrawDefaults(form.grade, value) };
       }
       if (field === 'drawSize') {
-        updated.numSeeds = seedCountForDraw(Number(value));
+        const isDoubles = /double/i.test(row.category || '');
+        updated.numSeeds = isDoubles ? DOUBLES_NUM_SEEDS : seedCountForDraw(Number(value));
         const comp = mainDrawComposition(Number(value));
         updated.maxMainDirect = comp ? comp.directAcceptance : null;
       }

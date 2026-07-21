@@ -4,6 +4,7 @@
 // Pure function, no side-effects beyond triggering file download.
 // ============================================================
 import jsPDF from 'jspdf';
+import { bracketSize } from './aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // Coordinate helpers
@@ -30,8 +31,14 @@ function makeHelpers(drawTop, slotH) {
 // ---------------------------------------------------------------------------
 // Round label helper
 // ---------------------------------------------------------------------------
-function roundLabel(r, totalRounds) {
+// Qualifying draws stop at the "deciding round" (enough winners to fill the
+// promotion spots) rather than running to a single champion — real AITA
+// qualifying sheets only ever say "Finals" for the last round, never QF/SF.
+function roundLabel(r, totalRounds, isQualifying) {
   const fromEnd = totalRounds - r;
+  if (isQualifying) {
+    return fromEnd === 0 ? 'FINALS' : `ROUND ${r}`;
+  }
   if (fromEnd === 0) return 'FINAL';
   if (fromEnd === 1) return 'SEMI-FINALS';
   if (fromEnd === 2) return 'QUARTER-FINALS';
@@ -42,9 +49,14 @@ function roundLabel(r, totalRounds) {
 // Main export
 // ---------------------------------------------------------------------------
 export function generateDrawSheetPDF({ event, week, entries, matches }) {
-  const drawSize    = entries.length; // actual filled draw size
+  const drawSize = entries.length; // actual filled draw size (already padded to a power of two)
   if (drawSize < 2) return;
-  const totalRounds = Math.ceil(Math.log2(drawSize));
+  const isQualifying = event.drawType === 'qualifying';
+  const fullRounds = Math.ceil(Math.log2(drawSize));
+  const decidingRound = (isQualifying && event.qualifyingSize && event.qualifyingSpots)
+    ? Math.round(Math.log2(bracketSize(event.qualifyingSize) / event.qualifyingSpots))
+    : 0;
+  const totalRounds = (isQualifying && decidingRound > 0) ? Math.min(decidingRound, fullRounds) : fullRounds;
 
   // Page setup — landscape for 32+ draws
   const landscape = drawSize >= 32;
@@ -119,7 +131,7 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
   doc.setFontSize(6);
   doc.setTextColor(80, 80, 80);
   for (let r = 1; r <= totalRounds; r++) {
-    const lbl = roundLabel(r, totalRounds);
+    const lbl = roundLabel(r, totalRounds, isQualifying);
     doc.text(lbl, colX(r) + colW / 2, drawTop - 3, { align: 'center' });
   }
   doc.setTextColor(0, 0, 0);
@@ -223,12 +235,17 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
     }
   }
 
-  // ---- CHAMPION LABEL --------------------------------------------------------
-  const champY = midY(totalRounds, 1);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6.5);
-  doc.text('CHAMPION', pageW - margin - 1.5, champY - 1, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
+  // ---- CHAMPION LABEL ---------------------------------------------------------
+  // Qualifying draws don't produce a single champion — the deciding round can
+  // have several simultaneous winners (all promoted as qualifiers), so there's
+  // no single position for this label. Skip it for qualifying draws.
+  if (!isQualifying) {
+    const champY = midY(totalRounds, 1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.text('CHAMPION', pageW - margin - 1.5, champY - 1, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+  }
 
   // ---- SEEDINGS LEGEND (if any seeded players) --------------------------------
   const seededEntries = entries.filter(e => e.seed && !e.isBye).sort((a, b) => a.seed - b.seed);

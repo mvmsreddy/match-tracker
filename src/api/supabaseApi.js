@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
-import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS } from '../utils/aitaGradeRules';
+import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -1129,7 +1129,16 @@ export async function getEventMatches(eventId, drawType) {
   return data.map(rowToEventMatch);
 }
 
-export async function initializeEventMatches(eventId, drawType, entries) {
+// `entries` must already be padded (with BYE rows) to the PHYSICAL bracket
+// size — see bracketSize() in aitaGradeRules.js — so entries.length is
+// always a power of two here; otherwise round match-counts (drawSize/2^round)
+// go fractional partway through and later rounds silently get the wrong
+// number of match slots. `maxRound`, when given, caps generation at that
+// round instead of building all the way to a single champion — AITA
+// qualifying draws stop at the "deciding round" once enough winners exist to
+// fill the promotion spots (verified against real qualifying sheets: they
+// never show a "Champion", only a "Qualifiers" list at the deciding round).
+export async function initializeEventMatches(eventId, drawType, entries, maxRound) {
   await supabase
     .from('event_matches')
     .delete()
@@ -1137,7 +1146,8 @@ export async function initializeEventMatches(eventId, drawType, entries) {
     .eq('draw_type', drawType);
 
   const drawSize = entries.length;
-  const totalRounds = Math.ceil(Math.log2(drawSize));
+  const totalRoundsFull = Math.ceil(Math.log2(drawSize));
+  const totalRounds = maxRound ? Math.min(maxRound, totalRoundsFull) : totalRoundsFull;
   const allMatches = [];
 
   for (let i = 0; i < entries.length; i += 2) {
@@ -1533,7 +1543,7 @@ export async function getQualifyingWinners(eventId) {
   const { qualifying_size: qSize, qualifying_spots: qSpots } = evRow;
   if (!qSize || !qSpots) throw new Error('Event has no qualifying configuration.');
 
-  const decidingRound = Math.round(Math.log2(qSize / qSpots));
+  const decidingRound = Math.round(Math.log2(bracketSize(qSize) / qSpots));
 
   const { data: roundMatches, error: mErr } = await supabase
     .from('event_matches')
@@ -1900,7 +1910,7 @@ export async function getQualifyingLosers(eventId) {
   const { qualifying_size: qSize, qualifying_spots: qSpots } = evRow;
   if (!qSize || !qSpots) throw new Error('Event has no qualifying configuration.');
 
-  const decidingRound = Math.round(Math.log2(qSize / qSpots));
+  const decidingRound = Math.round(Math.log2(bracketSize(qSize) / qSpots));
 
   const { data: roundMatches, error: mErr } = await supabase
     .from('event_matches')

@@ -6,7 +6,7 @@ import TopNav from '../components/TopNav';
 import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
 import { checkAgeEligibility, minEligibleAgeGroup } from '../utils/eligibility';
-import { DOUBLES_MIN_PAIRS_FOR_POINTS, ANNUAL_TOURNAMENT_LIMITS } from '../utils/aitaGradeRules';
+import { DOUBLES_MIN_PAIRS_FOR_POINTS, ANNUAL_TOURNAMENT_LIMITS, bracketSize } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -538,8 +538,8 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
   const [saving, setSaving] = useState(false);
 
   // Per-tab derived values
-  const mainMax  = event.drawSize || 32;
-  const qualMax  = event.qualifyingSize || 32;
+  const mainMax  = bracketSize(event.drawSize || 32);
+  const qualMax  = bracketSize(event.qualifyingSize || 32);
   const altStart = mainMax + 1; // alternates live after the main draw
 
   const mainExisting = new Set(
@@ -681,7 +681,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
 // AddEntryModal
 // ---------------------------------------------------------------------------
 function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, onSave, onClose }) {
-  const maxPos = drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32);
+  const maxPos = bracketSize(drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32));
 
   const [form, setForm] = useState(() => {
     if (editingEntry) {
@@ -1531,8 +1531,15 @@ function DrawSheet({ entries, drawSize, isOwner, swapMode, selectedEntry, onSele
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function roundLabel(round, total) {
+// Qualifying draws never crown a champion — they stop at the deciding round
+// once enough winners exist to promote. Real AITA qualifying sheets only
+// ever label rounds "2nd Round"/"3rd Round"/... up to "Finals" at the
+// deciding round — Quarter-Finals/Semi-Finals never appear there.
+function roundLabel(round, total, drawType = 'main') {
   const fromEnd = total - round;
+  if (drawType === 'qualifying') {
+    return fromEnd === 0 ? 'Finals' : `R${round}`;
+  }
   if (fromEnd === 0) return 'Final';
   if (fromEnd === 1) return 'Semi-Finals';
   if (fromEnd === 2) return 'Quarter-Finals';
@@ -1723,7 +1730,7 @@ const CARD_H = 80;   // height of the match card itself (px)
 const COL_W  = 236;  // column width (px)
 const COL_GAP = 40;  // gap between columns (px)
 
-function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore }) {
+function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore, drawType = 'main' }) {
   const entryMap = new Map(entries.map(e => [e.id, e]));
 
   const byRound = {};
@@ -1742,7 +1749,7 @@ function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore
         {Array.from({ length: totalRounds }, (_, i) => i + 1).map(r => (
           <div key={r} className="t-bracket-label"
             style={{ width: COL_W, marginLeft: r === 1 ? 0 : COL_GAP }}>
-            {roundLabel(r, totalRounds)}
+            {roundLabel(r, totalRounds, drawType)}
           </div>
         ))}
       </div>
@@ -1873,14 +1880,25 @@ export default function EventDetailPage() {
   }, [eventId, event?.hasQualifying]);
 
   const isOwner     = !!(week && user && week.createdBy === user.id);
-  const maxPos      = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
+  // maxPos is the PHYSICAL bracket size (always a power of two) — a nominal
+  // "48" draw is physically a 64-slot bracket padded with BYEs (verified
+  // against real AITA sheets: Seed 2 sits at physical position 64, not 48).
+  // event.drawSize/qualifyingSize stay nominal for labels and composition math.
+  const nominalMax  = event ? (drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : 0;
+  const maxPos      = bracketSize(nominalMax);
   const numSeeds    = event?.numSeeds || 4;
-  const totalRounds = maxPos > 0 ? Math.ceil(Math.log2(maxPos)) : 0;
 
-  // Phase 6 — qualifying completion check
+  // Qualifying draws don't run to a single champion — they stop at the
+  // "deciding round" once enough winners exist to fill the promotion spots
+  // (verified: real qualifying sheets end at "Finals"/"Qualifiers", never a
+  // Champion box). Main draw always plays out the full physical bracket.
   const qualDecidingRound = (event?.qualifyingSize && event?.qualifyingSpots)
-    ? Math.round(Math.log2(event.qualifyingSize / event.qualifyingSpots))
+    ? Math.round(Math.log2(bracketSize(event.qualifyingSize) / event.qualifyingSpots))
     : 0;
+  const totalRounds = maxPos <= 0 ? 0
+    : (drawType === 'qualifying' && qualDecidingRound > 0)
+      ? qualDecidingRound
+      : Math.ceil(Math.log2(maxPos));
   const qualDecidingMatches = matches.filter(m => m.round === qualDecidingRound);
   const qualComplete = drawType === 'qualifying'
     && qualDecidingRound > 0
@@ -1967,7 +1985,7 @@ export default function EventDetailPage() {
     try {
       // saveDrawEntries replaces ALL rows for this draw — reseed only the
       // real bracket positions, then carry the (untouched) alternates along.
-      const reseeded = applySeeding(mainEntries, maxPos, numSeeds);
+      const reseeded = applySeeding(mainEntries, maxPos, numSeeds, drawType);
       const saved    = await api.saveDrawEntries(eventId, drawType, [...reseeded, ...alternateEntries]);
       setEntries(saved);
     } catch (err) { setError(err.message); }
@@ -2011,7 +2029,7 @@ export default function EventDetailPage() {
     try {
       // Randomize only real players (drop existing BYEs first)
       const playerEntries = mainEntries.filter(e => !e.isBye);
-      const randomized    = randomizeDraw(playerEntries, maxPos, numSeeds);
+      const randomized    = randomizeDraw(playerEntries, maxPos, numSeeds, drawType);
       // Auto-fill BYEs for any empty slots
       const byeEntries    = buildByeEntries(maxPos, randomized);
       const allEntries    = [...randomized, ...byeEntries];
@@ -2058,7 +2076,8 @@ export default function EventDetailPage() {
       }
 
       const sorted = [...allEntries].filter(e => e.position <= maxPos).sort((a, b) => a.position - b.position);
-      const initialized = await api.initializeEventMatches(eventId, drawType, sorted);
+      const maxRound = drawType === 'qualifying' && qualDecidingRound > 0 ? qualDecidingRound : undefined;
+      const initialized = await api.initializeEventMatches(eventId, drawType, sorted, maxRound);
 
       // Auto-advance BYE matches (R1 only)
       const entryMap = new Map(entries.map(e => [e.id, e]));
@@ -2638,6 +2657,7 @@ export default function EventDetailPage() {
               totalRounds={totalRounds}
               isOwner={isOwner}
               onScore={match => setScoringMatch(match)}
+              drawType={drawType}
             />
           )
 

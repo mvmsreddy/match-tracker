@@ -1,7 +1,16 @@
 // ============================================================
-// Draw Engine — ITF seeding placement + BYE fill logic
+// Draw Engine — ITF/AITA seeding placement + BYE fill logic
 // Pure functions, no side effects, no API calls.
+//
+// Every function here that takes a `drawSize` expects the PHYSICAL bracket
+// size (a power of two — see bracketSize() in aitaGradeRules.js), not the
+// nominal AITA draw size. A "48" nominal draw is physically a 64-slot
+// bracket with 16 BYEs — callers are responsible for padding before calling
+// in here. Verified against real AITA draw sheets (NS U14, July 2026).
 // ============================================================
+import { bracketSize } from './aitaGradeRules';
+
+export { bracketSize };
 
 // Fisher-Yates shuffle
 function shuffle(arr) {
@@ -14,16 +23,17 @@ function shuffle(arr) {
 }
 
 // ---------------------------------------------------------------------------
-// getSeededPositions(drawSize, numSeeds)
+// getSeededPositions(drawSize, numSeeds)  — MAIN DRAW only.
 //
 // Returns array where result[i] is the 1-based draw position for seed (i+1).
 //
-// ITF/AITA rules:
-//   Seed 1  → position 1       (top of draw)
-//   Seed 2  → position N       (bottom of draw)
-//   Seeds 3-4  → drawn to {N/2, N/2+1}      (end H1 / start H2)
-//   Seeds 5-8  → drawn to {N/4, N/4+1, 3N/4, 3N/4+1}  (quarter ends)
-//   Seeds 9-16 → drawn to eighth boundaries (filtered to avoid taken positions)
+// Verified against real AITA main-draw sheets (N=16 doubles, N=64 singles):
+//   Seed 1     → position 1
+//   Seed 2     → position N
+//   Seeds 3-4  → drawn to {N/4+1, 3N/4}
+//   Seeds 5-8  → drawn to {N/8+1, 3N/8, 5N/8+1, 7N/8}
+//   Seeds 9-16 → drawn to whichever N/8-boundary positions tiers 1-8 left
+//                unclaimed (exactly 8 remain when numSeeds=16)
 // ---------------------------------------------------------------------------
 export function getSeededPositions(drawSize, numSeeds) {
   const positions = [];
@@ -34,15 +44,15 @@ export function getSeededPositions(drawSize, numSeeds) {
   positions.push(drawSize);      // Seed 2
 
   if (numSeeds >= 4) {
-    const half = drawSize / 2;
-    const pool34 = shuffle([half, half + 1]);
+    const q = drawSize / 4;
+    const pool34 = shuffle([q + 1, 3 * q]);
     positions.push(pool34[0]);   // Seed 3
     positions.push(pool34[1]);   // Seed 4
   }
 
   if (numSeeds >= 8) {
-    const q = drawSize / 4;
-    const pool58 = shuffle([q, q + 1, 3 * q, 3 * q + 1]);
+    const e = drawSize / 8;
+    const pool58 = shuffle([e + 1, 3 * e, 5 * e + 1, 7 * e]);
     pool58.forEach(p => positions.push(p)); // Seeds 5-8
   }
 
@@ -50,10 +60,12 @@ export function getSeededPositions(drawSize, numSeeds) {
     const e = drawSize / 8;
     const taken = new Set(positions);
     const candidates = [];
-    for (let i = 1; i <= 7; i += 2) {
-      candidates.push(i * e, i * e + 1);
+    for (let i = 1; i <= 7; i++) {
+      const lo = i * e, hi = i * e + 1;
+      if (!taken.has(lo)) candidates.push(lo);
+      if (!taken.has(hi)) candidates.push(hi);
     }
-    const pool916 = shuffle(candidates.filter(p => !taken.has(p))).slice(0, 8);
+    const pool916 = shuffle(candidates).slice(0, 8);
     pool916.forEach(p => positions.push(p)); // Seeds 9-16
   }
 
@@ -61,41 +73,70 @@ export function getSeededPositions(drawSize, numSeeds) {
 }
 
 // ---------------------------------------------------------------------------
-// applySeeding(entries, drawSize, numSeeds)
+// getQualifyingSeededPositions(drawSize, numSeeds)  — QUALIFYING DRAW only.
+//
+// A materially different, simpler algorithm from the main draw: qualifying
+// doesn't crown a single champion (it stops at the "deciding round" once
+// enough winners exist to fill the promotion spots), so it doesn't need the
+// main draw's "protect top seeds from meeting" recursive halving — it just
+// spreads seeds evenly. Verified against real sheets (N=32/8 seeds,
+// N=64/16 seeds): unit = N/8; seed k (k<=8) → 1+(k-1)*unit;
+// seed k (9<=k<=16) → (k-8)*unit.
+// ---------------------------------------------------------------------------
+export function getQualifyingSeededPositions(drawSize, numSeeds) {
+  const positions = [];
+  const unit = drawSize / 8;
+  for (let k = 1; k <= Math.min(numSeeds, 8); k++) {
+    positions.push(1 + (k - 1) * unit);
+  }
+  for (let k = 9; k <= numSeeds; k++) {
+    positions.push((k - 8) * unit);
+  }
+  return positions;
+}
+
+// ---------------------------------------------------------------------------
+// applySeeding(entries, drawSize, numSeeds, drawType = 'main')
 //
 // Rearranges entries so seeded players land on their ITF positions.
 // Unseeded players fill remaining slots, sorted by ranking (lower = better).
 // BYEs are dropped — call fillByes afterwards to repopulate gaps.
 //
+// drawType picks the seed-placement algorithm: 'main' uses the protect-top-
+// seeds ITF formula, 'qualifying' uses the simpler evenly-spaced formula
+// (see getQualifyingSeededPositions above — the two are NOT interchangeable).
+//
 // Returns a new array of entry objects with updated `position` field.
 // ---------------------------------------------------------------------------
-export function applySeeding(entries, drawSize, numSeeds) {
+export function applySeeding(entries, drawSize, numSeeds, drawType = 'main') {
   const seeded   = entries.filter(e => e.seed && !e.isBye).sort((a, b) => a.seed - b.seed);
   const unseeded = entries.filter(e => !e.seed && !e.isBye).sort((a, b) => {
     if (a.ranking && b.ranking) return a.ranking - b.ranking;
     return a.ranking ? -1 : b.ranking ? 1 : 0;
   });
-  return _placeInDraw(seeded, unseeded, drawSize, numSeeds);
+  return _placeInDraw(seeded, unseeded, drawSize, numSeeds, drawType);
 }
 
 // ---------------------------------------------------------------------------
-// randomizeDraw(entries, drawSize, numSeeds)
+// randomizeDraw(entries, drawSize, numSeeds, drawType = 'main')
 //
 // Same as applySeeding but unseeded players are placed in RANDOM order rather
 // than sorted by ranking — this is the proper AITA random draw procedure.
-// Seeded players still land on their ITF draw positions.
+// Seeded players still land on their ITF/qualifying draw positions.
 // BYEs are dropped — call fillByes afterwards to repopulate gaps.
 // ---------------------------------------------------------------------------
-export function randomizeDraw(entries, drawSize, numSeeds) {
+export function randomizeDraw(entries, drawSize, numSeeds, drawType = 'main') {
   const seeded   = entries.filter(e => e.seed && !e.isBye).sort((a, b) => a.seed - b.seed);
   const unseeded = shuffle(entries.filter(e => !e.seed && !e.isBye)); // random order
-  return _placeInDraw(seeded, unseeded, drawSize, numSeeds);
+  return _placeInDraw(seeded, unseeded, drawSize, numSeeds, drawType);
 }
 
 // Internal helper used by both applySeeding and randomizeDraw
-function _placeInDraw(seeded, unseeded, drawSize, numSeeds) {
+function _placeInDraw(seeded, unseeded, drawSize, numSeeds, drawType) {
 
-  const seedPositions = getSeededPositions(drawSize, numSeeds);
+  const seedPositions = drawType === 'qualifying'
+    ? getQualifyingSeededPositions(drawSize, numSeeds)
+    : getSeededPositions(drawSize, numSeeds);
   const result        = new Map(); // position → entry
 
   // Place seeds

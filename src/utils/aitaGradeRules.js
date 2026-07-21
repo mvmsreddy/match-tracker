@@ -30,8 +30,20 @@ export const WILD_CARDS_IN_QUALIFYING = 4; // fixed regardless of qual draw size
 export const WILD_CARDS_IN_MAIN = 0;     // no wild cards in any main draw
 
 export const DOUBLES_DRAW_SIZE = 16;
+export const DOUBLES_NUM_SEEDS = 4; // verified against real NS U14 doubles sheets — NOT seedCountForDraw(16)
 export const DOUBLES_MIN_PAIRS_FOR_POINTS = 8;
 export const SINGLES_MIN_PLAYERS_FOR_POINTS = 16;
+
+// A "48" nominal draw size isn't a power of two, so it can't be a physical
+// single-elimination bracket on its own — real AITA sheets pad it to the
+// next power of two (64) with BYEs, e.g. Seed 2 sits at physical position
+// 64, not 48. This is the physical slot count for all bracket-topology math
+// (seed placement, BYE placement, round generation) — 32/64/128 pass through
+// unchanged since they're already powers of two.
+export function bracketSize(nominalSize) {
+  if (!nominalSize || nominalSize < 2) return nominalSize || 0;
+  return Math.pow(2, Math.ceil(Math.log2(nominalSize)));
+}
 
 const GRADE_RULES = {
   'talent series': {
@@ -136,7 +148,7 @@ export function getAitaDrawDefaults(grade, category) {
   if (isDoubles) {
     return {
       drawSize: DOUBLES_DRAW_SIZE,
-      numSeeds: seedCountForDraw(DOUBLES_DRAW_SIZE),
+      numSeeds: DOUBLES_NUM_SEEDS,
       hasQualifying: false,
       qualifyingOpen: false,
       qualifyingSize: null,
