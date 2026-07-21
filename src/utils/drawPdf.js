@@ -79,8 +79,9 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
   const slotH   = drawH / drawSize;
   // Cap column width so low-round-count draws (e.g. a 2-round qualifying
   // sheet) don't stretch each column across the whole page — that pushes the
-  // bracket connector far right, disconnected from its round's label.
-  const MAX_COL_W = 60;
+  // bracket connector far right, disconnected from its round's label. 42mm
+  // is enough for a full name + state at this font size with no overlap.
+  const MAX_COL_W = 42;
   const colW    = Math.min(MAX_COL_W, drawW / totalRounds);
 
   const colX   = r => margin + posColW + (r - 1) * colW;
