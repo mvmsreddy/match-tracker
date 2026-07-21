@@ -209,3 +209,11 @@ export function getAitaDrawDefaults(grade, category) {
     minForPoints: SINGLES_MIN_PLAYERS_FOR_POINTS,
   };
 }
+
+// The gender a category is restricted to, or null for Mixed Doubles (which
+// takes one player of each gender as partners — not a self-entry gate).
+export function categoryGender(category) {
+  const c = (category || '').toLowerCase();
+  if (c.includes('mixed')) return null;
+  return /girl|women/.test(c) ? 'F' : 'M';
+}

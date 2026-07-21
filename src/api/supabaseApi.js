@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
-import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
+import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -747,15 +747,20 @@ export async function getMyEventEntry(eventId) {
   return data && data.length > 0 ? rowToEntry(data[0]) : null;
 }
 
-// Fetches the event's tournament-week deadlines and throws if today's stage
-// isn't one of `allowedStages` — the single choke point self-entry, doubles
-// invitations, and self-withdrawal all go through, so the deadline rules
-// can't be bypassed by calling the API directly even if a UI button is
-// hidden. See ENTRY_STAGE / getEntryStage in aitaGradeRules.js.
-async function assertEntryStage(eventId, allowedStages, actionLabel) {
+// Fetches the event's tournament-week deadlines (and, for entry actions,
+// the organiser's entries_open toggle) and throws if the action isn't
+// currently allowed — the single choke point self-entry, doubles
+// invitations, and self-withdrawal all go through, so neither the deadline
+// rules nor the organiser's manual toggle can be bypassed by calling the
+// API directly even if a UI button is hidden. `checkEntriesOpen` should be
+// true for entry actions (entries_open defaults to false until the
+// organiser explicitly opens them) and left false for withdrawal, which
+// entries_open has no bearing on. See ENTRY_STAGE / getEntryStage in
+// aitaGradeRules.js.
+async function assertEntryStage(eventId, allowedStages, actionLabel, checkEntriesOpen = false) {
   const { data, error } = await supabase
     .from('events')
-    .select('tournament_week:tournament_weeks(entry_deadline, withdrawal_deadline, freeze_deadline)')
+    .select('entries_open, tournament_week:tournament_weeks(entry_deadline, withdrawal_deadline, freeze_deadline)')
     .eq('id', eventId)
     .single();
   if (error) throw new Error(error.message);
@@ -765,6 +770,9 @@ async function assertEntryStage(eventId, allowedStages, actionLabel) {
     withdrawalDeadline: week?.withdrawal_deadline,
     freezeDeadline: week?.freeze_deadline,
   });
+  if (checkEntriesOpen && !data?.entries_open) {
+    throw new Error('Entries are not open for this event.');
+  }
   if (!allowedStages.includes(stage)) {
     const messages = {
       [ENTRY_STAGE.ENTRY_CLOSED]: 'Entries are closed for this tournament.',
@@ -868,13 +876,22 @@ export async function selfEnterSingles(eventId, profile) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not logged in');
 
-  await assertEntryStage(eventId, [ENTRY_STAGE.OPEN], 'Entry');
+  await assertEntryStage(eventId, [ENTRY_STAGE.OPEN], 'Entry', true);
 
   // Check for existing active entry
   const existing = await getMyEventEntry(eventId);
   if (existing) throw new Error('You are already entered in this event.');
 
   const placement = await computeSelfEntryPlacement(eventId, profile.ranking);
+
+  const requiredGender = categoryGender(placement.event?.category);
+  if (requiredGender && profile.gender && profile.gender !== requiredGender) {
+    throw new Error(`This is a ${placement.event.category} event — your profile gender doesn't match. Contact the organiser if this is a mistake.`);
+  }
+  if (requiredGender && !profile.gender) {
+    throw new Error('Set your gender in your Profile before entering this event.');
+  }
+
   const newEntrantRow = {
     event_id: eventId,
     is_bye: false,
@@ -989,7 +1006,7 @@ export async function sendDoublesInvitation(eventId, inviterAitaReg, inviteeAita
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not logged in');
 
-  await assertEntryStage(eventId, [ENTRY_STAGE.OPEN], 'Entry');
+  await assertEntryStage(eventId, [ENTRY_STAGE.OPEN], 'Entry', true);
 
   // Find the invitee's user_id from user_profiles by aita_reg
   const { data: inviteeProfile } = await supabase
@@ -1047,7 +1064,7 @@ export async function getMySentInvitations(eventId) {
 export async function respondToInvitation(invitationId, accept) {
   if (accept) {
     const { data: inv } = await supabase.from('doubles_invitations').select('event_id').eq('id', invitationId).single();
-    if (inv) await assertEntryStage(inv.event_id, [ENTRY_STAGE.OPEN], 'Entry');
+    if (inv) await assertEntryStage(inv.event_id, [ENTRY_STAGE.OPEN], 'Entry', true);
   }
   const now = new Date().toISOString();
   const { data, error } = await supabase
@@ -1257,6 +1274,7 @@ function rowToProfile(row) {
     aitaReg: row.aita_reg,
     stateAbbr: row.state_abbr,
     dateOfBirth: row.date_of_birth,
+    gender: row.gender,
     ranking: row.ranking,
     clubName: row.club_name,
     bio: row.bio,
@@ -1287,6 +1305,7 @@ export async function upsertProfile(userId, profile) {
     aita_reg: profile.aitaReg || null,
     state_abbr: profile.stateAbbr || null,
     date_of_birth: profile.dateOfBirth || null,
+    gender: profile.gender || null,
     ranking: profile.ranking ? Number(profile.ranking) : null,
     club_name: profile.clubName || null,
     bio: profile.bio || null,

@@ -24,6 +24,7 @@ export default function ProfilePage() {
     aitaReg:     user.aitaReg || '',
     stateAbbr:   user.stateAbbr || '',
     dateOfBirth: user.dateOfBirth || '',
+    gender:      user.gender || '',
     ranking:     user.ranking || '',
     clubName:    user.clubName || '',
     bio:         user.bio || '',
@@ -65,6 +66,7 @@ export default function ProfilePage() {
     ? [
         !form.aitaReg && 'AITA Registration No.',
         !form.dateOfBirth && 'Date of Birth',
+        !form.gender && 'Gender',
         !form.stateAbbr && 'State',
       ].filter(Boolean)
     : [];
@@ -180,6 +182,16 @@ export default function ProfilePage() {
                       value={form.dateOfBirth}
                       onChange={e => handleChange('dateOfBirth', e.target.value)}
                     />
+                  </div>
+                )}
+                {isPlayer && (
+                  <div className="field">
+                    <label>Gender</label>
+                    <select value={form.gender} onChange={e => handleChange('gender', e.target.value)}>
+                      <option value="">Select…</option>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
+                    </select>
                   </div>
                 )}
                 {isCoach && (

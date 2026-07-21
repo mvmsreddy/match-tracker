@@ -18,6 +18,7 @@ async function loadFullUser(authUser) {
       aitaReg: profile?.aitaReg || null,
       stateAbbr: profile?.stateAbbr || null,
       dateOfBirth: profile?.dateOfBirth || null,
+      gender: profile?.gender || null,
       ranking: profile?.ranking || null,
       clubName: profile?.clubName || null,
       bio: profile?.bio || null,

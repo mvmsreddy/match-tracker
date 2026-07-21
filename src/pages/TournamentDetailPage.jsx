@@ -279,6 +279,7 @@ export default function TournamentDetailPage() {
         stateAbbr: user.stateAbbr || '',
         ranking: user.ranking || null,
         dateOfBirth: user.dateOfBirth || '',
+        gender: user.gender || '',
         displayName: user.displayName || '',
       });
       setMyEntries(prev => ({ ...prev, [entryModal.event.id]: result.entry }));
