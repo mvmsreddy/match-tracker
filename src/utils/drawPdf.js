@@ -77,7 +77,11 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
   const drawH   = pageH - drawTop - footerH - margin;
   const drawW   = pageW - 2 * margin - posColW;
   const slotH   = drawH / drawSize;
-  const colW    = drawW / totalRounds;
+  // Cap column width so low-round-count draws (e.g. a 2-round qualifying
+  // sheet) don't stretch each column across the whole page — that pushes the
+  // bracket connector far right, disconnected from its round's label.
+  const MAX_COL_W = 60;
+  const colW    = Math.min(MAX_COL_W, drawW / totalRounds);
 
   const colX   = r => margin + posColW + (r - 1) * colW;
   const brackX = r => colX(r) + colW * 0.80;
@@ -193,7 +197,13 @@ export function generateDrawSheetPDF({ event, week, entries, matches }) {
   for (let r = 1; r <= totalRounds; r++) {
     const matchCount = drawSize / Math.pow(2, r);
     const xB   = brackX(r);
-    const xOut = r < totalRounds ? colX(r + 1) : pageW - margin - 2;
+    // Qualifying draws end in several simultaneous "Finals" matches, not one
+    // champion — so the last round's stub only needs to span its own column,
+    // not run all the way to the page edge (that's reserved for the main
+    // draw's single-champion connector, which the CHAMPION label sits at).
+    const xOut = r < totalRounds
+      ? colX(r + 1)
+      : (isQualifying ? colX(r) + colW : pageW - margin - 2);
 
     for (let s = 1; s <= matchCount; s++) {
       const tY = bracketTopY(r, s);
