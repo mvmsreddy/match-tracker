@@ -500,6 +500,7 @@ function rowToEntry(row) {
     partnerRanking: row.partner_ranking,
     // Alternate
     isAlternate: row.is_alternate,
+    isOnsiteSignin: row.is_onsite_signin || false,
     replacingName: row.replacing_name,
     isWithdrawn: row.is_withdrawn || false,
     // Phase 14 fields
@@ -584,6 +585,7 @@ export async function addDrawEntry(eventId, drawType, entry) {
     partner_state: entry.partnerState || null,
     partner_ranking: entry.partnerRanking ? Number(entry.partnerRanking) : null,
     is_alternate: entry.isAlternate || false,
+    is_onsite_signin: entry.isOnsiteSignin || false,
     replacing_name: entry.replacingName || null,
   };
   const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
@@ -609,6 +611,7 @@ export async function updateDrawEntry(entryId, updates) {
     partner_state: updates.partnerState || null,
     partner_ranking: updates.partnerRanking ? Number(updates.partnerRanking) : null,
     is_alternate: updates.isAlternate || false,
+    is_onsite_signin: updates.isOnsiteSignin || false,
     replacing_name: updates.replacingName || null,
   };
   const { data, error } = await supabase
@@ -2010,9 +2013,25 @@ export async function getQualifyingLosers(eventId) {
   return entryRows.map(rowToEntry);
 }
 
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // Random-draw priority: shuffles newly-eligible qualifying losers (not
 // already in the lucky_losers pool for this event) and inserts them with
 // priority continuing after the current max. Never touches already-drawn rows.
+//
+// Verified against the source PDF: "1st Preference – To all ranked players
+// losing in the final qualifying round picked up by lots. 2nd Preference –
+// To all unranked players losing in the final qualifying round picked up by
+// lots." That's two separate lots draws, ranked exhausted before unranked —
+// not one flat shuffle across both groups (a single shuffle could hand an
+// unranked loser a lower priority number than a ranked one, which the rule
+// never allows).
 export async function randomizeLuckyLosers(eventId) {
   const losers = await getQualifyingLosers(eventId);
   if (!losers) throw new Error('Qualifying deciding round is not complete yet.');
@@ -2027,14 +2046,12 @@ export async function randomizeLuckyLosers(eventId) {
   const newLosers = losers.filter(l => !existingIds.has(l.id));
   if (newLosers.length === 0) return [];
 
-  // Fisher–Yates shuffle
-  for (let i = newLosers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newLosers[i], newLosers[j]] = [newLosers[j], newLosers[i]];
-  }
+  const ranked   = shuffleInPlace(newLosers.filter(l => l.ranking != null));
+  const unranked = shuffleInPlace(newLosers.filter(l => l.ranking == null));
+  const ordered  = [...ranked, ...unranked];
 
   let nextPriority = (existing || []).reduce((max, r) => Math.max(max, r.priority), 0) + 1;
-  const rows = newLosers.map(l => ({
+  const rows = ordered.map(l => ({
     event_id: eventId,
     entry_id: l.id,
     priority: nextPriority++,

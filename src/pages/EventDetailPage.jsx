@@ -696,6 +696,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
         ranking: editingEntry.ranking || '',
         dateOfBirth: editingEntry.dateOfBirth || '',
         isAlternate: editingEntry.isAlternate || false,
+        isOnsiteSignin: editingEntry.isOnsiteSignin || false,
         replacingName: editingEntry.replacingName || '',
         partnerFamilyName: editingEntry.partnerFamilyName || '',
         partnerFirstName: editingEntry.partnerFirstName || '',
@@ -710,7 +711,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
       seed: '', statusCode: '',
       familyName: '', firstName: '', aitaReg: '', playerState: '',
       ranking: '', dateOfBirth: '',
-      isAlternate: false, replacingName: '',
+      isAlternate: false, isOnsiteSignin: false, replacingName: '',
       partnerFamilyName: '', partnerFirstName: '', partnerAitaReg: '', partnerState: '', partnerRanking: '',
       playerId: null,
     };
@@ -1071,6 +1072,16 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
                 placeholder="Replacing (player name)"
               />
             )}
+            {form.isAlternate && (
+              <label className="t-checkbox-label" style={{ marginTop: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={form.isOnsiteSignin}
+                  onChange={e => set('isOnsiteSignin', e.target.checked)}
+                />
+                Onsite / walk-in sign-in (no prior ranked registration — called in only after ranked alternates are exhausted)
+              </label>
+            )}
           </div>
 
           {limitWarning && (
@@ -1185,6 +1196,11 @@ function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove }) {
         <div className="t-entry-name-main">
           {entry.familyName}
           {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+          {entry.isOnsiteSignin && (
+            <span className="t-sc-badge" style={{ marginLeft: 6 }} title="Onsite/walk-in sign-in — no prior ranked registration">
+              ONSITE
+            </span>
+          )}
         </div>
       </td>
       <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
@@ -1266,7 +1282,11 @@ function WithdrawModal({ entry, event, drawType, matches, alternateEntries, luck
               <div className="t-withdraw-list">
                 {alternateEntries.map(alt => (
                   <div key={alt.id} className="t-withdraw-item">
-                    <span>{alt.familyName}{alt.firstName ? `, ${alt.firstName}` : ''}</span>
+                    <span>
+                      {alt.familyName}{alt.firstName ? `, ${alt.firstName}` : ''}
+                      {alt.ranking ? ` (rank ${alt.ranking})` : ''}
+                      {alt.isOnsiteSignin && <span className="t-sc-badge" style={{ marginLeft: 6 }}>ONSITE</span>}
+                    </span>
                     <button
                       className="action-btn primary"
                       disabled={saving}
@@ -1909,8 +1929,15 @@ export default function EventDetailPage() {
   const mainEntries      = entries.filter(e => e.position <= maxPos);
   // Waitlist ordered by ranking (doc §4) — lower ranking number = better,
   // unranked players fall to the back; join order (position) breaks ties.
+  // Onsite/walk-in sign-ins (no prior ranked registration) always sort after
+  // the ranked/online alternates — verified against the rule text's "alternate
+  // list, or any onsite alternate" distinction (see phase24_onsite_signin.sql).
   const alternateEntries = entries.filter(e => e.position > maxPos)
-    .sort((a, b) => (a.ranking || Infinity) - (b.ranking || Infinity) || a.position - b.position);
+    .sort((a, b) =>
+      (a.isOnsiteSignin ? 1 : 0) - (b.isOnsiteSignin ? 1 : 0)
+      || (a.ranking || Infinity) - (b.ranking || Infinity)
+      || a.position - b.position
+    );
   const sortedEntries = [...mainEntries].sort((a, b) => a.position - b.position);
   const playerCount = mainEntries.filter(e => !e.isBye).length;
   const byeCount    = mainEntries.filter(e => e.isBye).length;
