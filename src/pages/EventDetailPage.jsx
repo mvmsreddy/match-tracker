@@ -1745,8 +1745,8 @@ function BracketMatchCard({ match, entry1, entry2, isClickable, onClick }) {
 // ---------------------------------------------------------------------------
 // BracketView  — full multi-round bracket (absolute positioned)
 // ---------------------------------------------------------------------------
-const SLOT_H = 88;   // height each R1 match occupies (px)
-const CARD_H = 80;   // height of the match card itself (px)
+const SLOT_H = 116;  // height each R1 match occupies (px) — tall enough to fit a score/outcome/CTA row without overlapping the next match
+const CARD_H = 100;  // assumed card height used to vertically center a card within its slot
 const COL_W  = 236;  // column width (px)
 const COL_GAP = 40;  // gap between columns (px)
 
