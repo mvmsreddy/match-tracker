@@ -93,6 +93,36 @@ export const NO_SHOW_PENALTY_POINTS = {
 export const LATE_WITHDRAWAL_PENALTY_GRADES = new Set(['super series', 'national series', 'nationals']);
 export const LATE_WITHDRAWAL_PENALTY_POINTS = 15;
 
+// Entry lifecycle stages — verified against the source PDF's three-stage
+// withdrawal structure: "Till Withdrawal Deadline – Via AITA Login",
+// "After the Withdrawal Deadline till the Freeze Deadline – Via AITA Login",
+// "After the freeze deadline... Via Email to the Tournament Referee". Entry
+// itself closes at entryDeadline, earlier than either withdrawal stage.
+export const ENTRY_STAGE = {
+  OPEN: 'open',                       // entry + on-time withdrawal both allowed
+  ENTRY_CLOSED: 'entry_closed',       // no new entries; on-time withdrawal still allowed
+  LATE_WITHDRAWAL: 'late_withdrawal', // no new entries; withdrawal allowed but counts as late
+  FROZEN: 'frozen',                   // no self-service entry or withdrawal — referee only, by email
+};
+
+// entryDeadline/withdrawalDeadline are date-only (YYYY-MM-DD) — the rule
+// text gives no time-of-day for them, so treat the whole day as valid and
+// only close at day's end. freezeDeadline is a full timestamp (1700 Hrs
+// Thursday, per the rules) and is compared as-is.
+function endOfDay(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+
+export function getEntryStage({ entryDeadline, withdrawalDeadline, freezeDeadline }, now = new Date()) {
+  const t = now.getTime();
+  if (freezeDeadline && t >= new Date(freezeDeadline).getTime()) return ENTRY_STAGE.FROZEN;
+  if (withdrawalDeadline && t > endOfDay(withdrawalDeadline)) return ENTRY_STAGE.LATE_WITHDRAWAL;
+  if (entryDeadline && t > endOfDay(entryDeadline)) return ENTRY_STAGE.ENTRY_CLOSED;
+  return ENTRY_STAGE.OPEN;
+}
+
 // Max AITA tournaments/year per player's own (natural) age group — U18 has
 // no cap. Counts both main draw and qualifying, singles + doubles combined
 // at one tournament/age-group = 1; ITF/ATF tournaments are excluded.

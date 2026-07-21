@@ -35,7 +35,7 @@ const EMPTY_FORM = {
   numCourts: 2, dayStartTime: '09:00',
   // Phase 12 — optional factsheet fields
   grade: '',
-  entryDeadline: '', withdrawalDeadline: '',
+  entryDeadline: '', withdrawalDeadline: '', freezeDeadline: '',
   qualifyingStartDate: '', qualifyingEndDate: '',
   directorName: '', directorPhone: '', directorEmail: '',
   refereePhone: '', refereeEmail: '',
@@ -439,6 +439,10 @@ export default function TournamentsListPage() {
                     <div className="field">
                       <label>Withdrawal Deadline</label>
                       <input type="date" value={form.withdrawalDeadline} onChange={e => set('withdrawalDeadline', e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label>Freeze Deadline</label>
+                      <input type="datetime-local" value={form.freezeDeadline} onChange={e => set('freezeDeadline', e.target.value)} />
                     </div>
                   </div>
 

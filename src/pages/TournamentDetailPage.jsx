@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -54,13 +55,34 @@ function StatusBadge({ status }) {
   );
 }
 
+// Verified against the source PDF's three-stage withdrawal structure — see
+// getEntryStage() in aitaGradeRules.js.
+const ENTRY_STAGE_LABELS = {
+  [ENTRY_STAGE.OPEN]: { text: 'Entries Open', color: '#1a6b3a' },
+  [ENTRY_STAGE.ENTRY_CLOSED]: { text: 'Entry Closed', color: '#b8860b' },
+  [ENTRY_STAGE.LATE_WITHDRAWAL]: { text: 'Late Withdrawal Only', color: '#c0392b' },
+  [ENTRY_STAGE.FROZEN]: { text: 'Frozen — Referee Only', color: '#7a1f1f' },
+};
+
+function EntryStageBadge({ stage }) {
+  const info = ENTRY_STAGE_LABELS[stage];
+  if (!info) return null;
+  return (
+    <span className="t-badge" style={{ background: info.color, color: '#fff', fontWeight: 600 }}>
+      {info.text}
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // EventCard
 // ---------------------------------------------------------------------------
 
-function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithdraw, onInvitePartner }) {
-  const canEnterSingles = !event.isDoubles && !myEntry;
-  const canInviteDoubles = event.isDoubles && !myEntry;
+function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithdraw, onInvitePartner, entryStage }) {
+  const entryOpen = entryStage === ENTRY_STAGE.OPEN;
+  const withdrawOpen = entryStage !== ENTRY_STAGE.FROZEN;
+  const canEnterSingles = !event.isDoubles && !myEntry && entryOpen;
+  const canInviteDoubles = event.isDoubles && !myEntry && entryOpen;
   const isEntered = !!myEntry && myEntry.entryStatus !== 'withdrawn';
   return (
     <div className="t-event-card">
@@ -91,9 +113,10 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
       {onEnter && isEntered && (
         <button
           className="action-btn"
-          style={{ fontSize: 12, padding: '4px 10px', background: 'var(--accent,#1a6b3a)', color: '#fff' }}
-          onClick={() => onWithdraw(event.id)}
-          title="Withdraw from this event"
+          style={{ fontSize: 12, padding: '4px 10px', background: 'var(--accent,#1a6b3a)', color: '#fff', opacity: withdrawOpen ? 1 : 0.6 }}
+          onClick={withdrawOpen ? () => onWithdraw(event.id) : undefined}
+          disabled={!withdrawOpen}
+          title={withdrawOpen ? 'Withdraw from this event' : 'Freeze deadline passed — contact the tournament referee to withdraw'}
         >
           ✓ Entered
         </button>
@@ -232,6 +255,7 @@ export default function TournamentDetailPage() {
 
   const isOwner = week && user && week.createdBy === user.id;
   const isPlayer = user?.role === 'player';
+  const entryStage = week ? getEntryStage(week) : ENTRY_STAGE.OPEN;
 
   async function openEntryModal(event) {
     setEntryError('');
@@ -271,7 +295,7 @@ export default function TournamentDetailPage() {
     if (!entry) return;
     if (!window.confirm('Withdraw from this event?')) return;
     try {
-      await api.withdrawFromEvent(entry.id, 'W');
+      await api.withdrawFromEvent(entry.id);
       setMyEntries(prev => ({ ...prev, [eventId]: null }));
     } catch (err) {
       setEntryError(err.message);
@@ -389,8 +413,10 @@ export default function TournamentDetailPage() {
           {/* Always-visible summary row */}
           <div className="t-fs-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+              <EntryStageBadge stage={entryStage} />
               {week.entryDeadline && <span className="t-fs-item"><b>Entry deadline:</b> {week.entryDeadline}</span>}
               {week.withdrawalDeadline && <span className="t-fs-item"><b>Withdrawal deadline:</b> {week.withdrawalDeadline}</span>}
+              {week.freezeDeadline && <span className="t-fs-item"><b>Freeze deadline:</b> {new Date(week.freezeDeadline).toLocaleString()}</span>}
               {(week.qualifyingStartDate || week.qualifyingEndDate) && (
                 <span className="t-fs-item">
                   <b>Qualifying:</b> {week.qualifyingStartDate}
@@ -689,6 +715,7 @@ export default function TournamentDetailPage() {
                 onEnter={isPlayer ? openEntryModal : undefined}
                 onWithdraw={isPlayer ? handleWithdraw : undefined}
                 onInvitePartner={isPlayer ? (event) => { setInviteModal({ event }); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); } : undefined}
+                entryStage={entryStage}
               />
             ))}
           </div>

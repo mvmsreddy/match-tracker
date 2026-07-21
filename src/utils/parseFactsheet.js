@@ -142,6 +142,17 @@ export async function parseFactsheetPdf(file) {
   const withdrawalDeadlineRaw = between(text, 'WITHDRAWAL DEADLINE', 'DRAWS');
   const withdrawalDeadline = toIso(withdrawalDeadlineRaw);
 
+  // Freeze Deadline isn't always printed as its own labeled line on a
+  // factsheet (unlike Entry/Withdrawal Deadline) — best-effort extraction
+  // only; the organiser fills it in manually otherwise (see the AITA rule:
+  // 1700 Hrs on the Thursday before the tournament).
+  const freezeDeadlineRaw = between(text, 'FREEZE DEADLINE', 'DRAWS');
+  const freezeDeadlineDate = toIso(freezeDeadlineRaw);
+  const freezeTimeMatch = freezeDeadlineRaw.match(/(\d{1,2}):?(\d{2})?\s*(hrs|hours)?/i);
+  const freezeDeadline = freezeDeadlineDate
+    ? `${freezeDeadlineDate}T${freezeTimeMatch ? String(freezeTimeMatch[1]).padStart(2, '0') : '17'}:${freezeTimeMatch?.[2] || '00'}`
+    : '';
+
   // ── Qualifying dates (from DRAWS table) ──────────────────────────────────
   // The sign-in cell for SINGLES QUALIFYING contains e.g. "Friday 17 July 2026 from 12noon..."
   // FIRST DAY and LAST DAY follow it.
@@ -218,6 +229,7 @@ export async function parseFactsheetPdf(file) {
     grade,
     entryDeadline,
     withdrawalDeadline,
+    freezeDeadline,
     qualifyingStartDate,
     qualifyingEndDate,
     directorName,
