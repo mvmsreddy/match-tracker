@@ -1038,37 +1038,35 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-winner-btn:hover { background: var(--bg2); color: var(--text); }
 .t-winner-btn.active { background: rgba(106,175,90,0.15); border-color: rgba(106,175,90,0.5); color: var(--win-text); }
 
-/* ---- Bracket Grid (traditional elbow-line draw sheet) ---- */
+/* ---- Bracket Match Card ---- */
+.t-bmc { width: 236px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; position: absolute; transition: border-color 0.12s, box-shadow 0.12s; }
+.t-bmc-clickable { cursor: pointer; }
+.t-bmc-clickable:hover { border-color: rgba(198,226,61,0.45); box-shadow: 0 0 0 1px rgba(198,226,61,0.18); }
+.t-bmc-complete { border-color: var(--border2); }
+
+.t-bmc-player { display: flex; align-items: center; gap: 6px; padding: 9px 10px; min-height: 36px; transition: background 0.1s; }
+.t-bmc-player-won { background: rgba(106,175,90,0.1); }
+.t-bmc-player-bye { opacity: 0.45; }
+
+.t-bmc-seed   { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 16px; text-align: right; }
+.t-bmc-name   { flex: 1; font-size: 0.8rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-bmc-winner { flex-shrink: 0; font-size: 0.65rem; color: var(--win-text); }
+.t-bmc-bye    { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); letter-spacing: 0.06em; }
+.t-bmc-empty  { flex: 1; color: var(--text4); font-size: 0.72rem; font-style: italic; }
+.t-bmc-state  { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--text4); }
+
+.t-bmc-divider { height: 1px; background: var(--border); }
+
+.t-bmc-score   { padding: 4px 10px 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text2); background: var(--bg3); }
+.t-bmc-outcome { padding: 4px 10px 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg3); }
+.t-bmc-cta     { padding: 4px 10px 5px; font-size: 0.68rem; color: rgba(198,226,61,0.75); background: rgba(198,226,61,0.04); text-align: right; font-style: italic; }
+
+/* ---- Bracket Grid ---- */
 .t-bracket-wrap   { overflow-x: auto; overflow-y: auto; padding: 16px; }
-.t-bracket-labels { }
-.t-bracket-label  { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); text-align: left; }
+.t-bracket-labels { display: flex; padding-left: 0; margin-bottom: 8px; }
+.t-bracket-label  { width: 236px; flex-shrink: 0; margin-right: 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); text-align: center; }
+.t-bracket-label:last-child { margin-right: 0; }
 .t-bracket-grid   { position: relative; }
-
-/* R1 position rows — numbered line with player name, underlined like the printed sheet */
-.t-br-posrow { position: absolute; height: 34px; display: flex; align-items: flex-end; gap: 5px; padding-bottom: 4px; }
-.t-br-posrow.t-br-empty  { opacity: 0.5; }
-.t-br-posrow.t-br-bye    { opacity: 0.55; }
-.t-br-posrow.t-br-withdrawn .t-br-name { color: var(--text4); text-decoration: line-through; text-decoration-color: rgba(180,80,80,0.5); }
-
-.t-br-posnum  { flex-shrink: 0; width: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); text-align: right; }
-.t-br-seed    { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; font-weight: 700; color: var(--accent); }
-.t-br-name    { flex: 1; font-size: 0.78rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t-br-bye-text { font-family: 'JetBrains Mono', monospace; font-weight: 400; color: var(--text4); letter-spacing: 0.06em; }
-.t-br-state   { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--text4); }
-.t-br-line    { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--border); }
-
-/* Elbow bracket connector lines, drawn per match at every round */
-.t-br-vline { position: absolute; width: 1px; background: var(--border2); }
-.t-br-hline { position: absolute; height: 1px; background: var(--border2); }
-
-.t-br-clickzone { position: absolute; cursor: pointer; border-radius: 3px; transition: background 0.12s; }
-.t-br-clickzone:hover { background: rgba(198,226,61,0.1); }
-
-/* Winner name + score/outcome written at the connector, same spot the PDF export uses */
-.t-br-winner  { position: absolute; height: 16px; display: flex; align-items: flex-end; gap: 4px; font-size: 0.72rem; font-weight: 700; color: var(--win-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; pointer-events: none; }
-.t-br-score   { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text3); pointer-events: none; }
-.t-br-outcome { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); text-transform: uppercase; letter-spacing: 0.05em; pointer-events: none; }
-.t-br-champion { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; }
 
 /* ================================================
    PHASE 7 — Order of Play page

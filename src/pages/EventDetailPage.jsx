@@ -1692,149 +1692,117 @@ function ScoreModal({ match, entry1, entry2, onSave, onClose }) {
 }
 
 // ---------------------------------------------------------------------------
-// BracketView — traditional AITA draw-sheet bracket: numbered position lines
-// for Round 1 connected by elbow bracket lines through each round, with the
-// winner's name + score written at the connector. Geometry mirrors the PDF
-// export (drawPdf.js) so the on-screen view and the printed sheet match.
+// BracketMatchCard
 // ---------------------------------------------------------------------------
-const BR_ROW_H     = 34;   // vertical spacing per R1 draw position (px)
-const BR_POS_COL_W = 22;   // left column reserved for position numbers (px)
-const BR_COL_W     = 250;  // width of each round's column (px)
-const BR_BRACK_FRAC = 0.84; // fraction of column width where the vertical bracket sits
-const BR_TOP_PAD   = 22;   // top padding before the first position line (px)
+function BracketMatchCard({ match, entry1, entry2, isClickable, onClick }) {
+  const isBye1 = entry1?.isBye;
+  const isBye2 = entry2?.isBye;
 
-function bracketGeometry(totalRounds) {
-  const posY = p => BR_TOP_PAD + p * BR_ROW_H;
-  const midY = (r, s) => BR_TOP_PAD + ((2 * s - 1) * Math.pow(2, r - 1) + 0.5) * BR_ROW_H;
-  const bracketTopY = (r, s) => (r === 1 ? posY(2 * s - 1) : midY(r - 1, 2 * s - 1));
-  const bracketBotY = (r, s) => (r === 1 ? posY(2 * s)     : midY(r - 1, 2 * s));
-  const colX   = r => BR_POS_COL_W + (r - 1) * BR_COL_W;
-  const brackX = r => colX(r) + BR_COL_W * BR_BRACK_FRAC;
-  const xOut   = r => (r < totalRounds ? colX(r + 1) : colX(r) + BR_COL_W - 8);
-  return { posY, midY, bracketTopY, bracketBotY, colX, brackX, xOut };
-}
-
-function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore, drawType = 'main' }) {
-  const entryMap    = new Map(entries.map(e => [e.id, e]));
-  const entryByPos  = new Map(entries.map(e => [e.position, e]));
-  const matchByKey  = new Map(matches.map(m => [`${m.round}-${m.matchSlot}`, m]));
-
-  const { posY, midY, bracketTopY, bracketBotY, colX, brackX, xOut } = bracketGeometry(totalRounds);
-  const isQualifying = drawType === 'qualifying';
-
-  const totalH = BR_TOP_PAD + (drawSize + 1) * BR_ROW_H;
-  const totalW = colX(totalRounds) + BR_COL_W;
-
-  const positionRows = Array.from({ length: drawSize }, (_, i) => i + 1).map(pos => {
-    const entry = entryByPos.get(pos);
-    const y = posY(pos);
-    const isEmpty = !entry;
-    const isBye   = entry?.isBye;
-    return (
-      <div
-        key={`pos-${pos}`}
-        className={
-          't-br-posrow' +
-          (isBye ? ' t-br-bye' : '') +
-          (isEmpty ? ' t-br-empty' : '') +
-          (entry?.isWithdrawn ? ' t-br-withdrawn' : '')
-        }
-        style={{ top: y - BR_ROW_H, left: colX(1), width: brackX(1) - colX(1) - 6 }}
-      >
-        <span className="t-br-posnum">{pos}</span>
-        {isEmpty ? (
-          <span className="t-br-name">—</span>
-        ) : isBye ? (
-          <span className="t-br-name t-br-bye-text">BYE</span>
-        ) : (
-          <>
-            {entry.seed && <span className="t-br-seed">[{entry.seed}]</span>}
-            <span className="t-br-name">
+  function playerLine(entry, entryId, isWinner) {
+    const name = !entry
+      ? <span className="t-bmc-empty">TBD</span>
+      : entry.isBye
+        ? <span className="t-bmc-bye">BYE</span>
+        : <>{entry.seed && <span className="t-bmc-seed">[{entry.seed}]</span>}
+            <span className={`t-bmc-name${isWinner ? ' t-bmc-winner' : ''}`}>
               {entry.familyName}{entry.firstName ? ', ' + entry.firstName : ''}
             </span>
             {entry.isWithdrawn && <span className="t-wd-label"> WD</span>}
-            {entry.playerState && <span className="t-br-state">{entry.playerState}</span>}
-          </>
-        )}
-        <div className="t-br-line" />
+            {entry.playerState && <span className="t-bmc-state">{entry.playerState}</span>}
+          </>;
+    return (
+      <div className={`t-bmc-player${isWinner ? ' t-bmc-player-won' : ''}${entry?.isBye ? ' t-bmc-player-bye' : ''}`}>
+        {name}
       </div>
     );
-  });
-
-  const bracketPieces = [];
-  for (let round = 1; round <= totalRounds; round++) {
-    const matchCount = drawSize / Math.pow(2, round);
-    for (let slot = 1; slot <= matchCount; slot++) {
-      const tY = bracketTopY(round, slot);
-      const bY = bracketBotY(round, slot);
-      const mY = midY(round, slot);
-      const bx = brackX(round);
-      const ox = xOut(round);
-      const match   = matchByKey.get(`${round}-${slot}`);
-      const winner  = match?.winnerEntryId ? entryMap.get(match.winnerEntryId) : null;
-      const hasPlayers = match && (match.entry1Id || match.entry2Id);
-      const isClickable = isOwner && match && match.status !== 'complete' && !!hasPlayers;
-
-      bracketPieces.push(
-        <div key={`v-${round}-${slot}`} className="t-br-vline" style={{ left: bx, top: tY, height: bY - tY }} />,
-        <div key={`h-${round}-${slot}`} className="t-br-hline" style={{ left: bx, top: mY, width: ox - bx }} />
-      );
-
-      if (isClickable) {
-        bracketPieces.push(
-          <div
-            key={`c-${round}-${slot}`}
-            className="t-br-clickzone"
-            style={{ left: bx, top: mY - BR_ROW_H / 2, width: ox - bx + 4, height: BR_ROW_H }}
-            onClick={() => onScore(match)}
-          />
-        );
-      }
-
-      if (winner && !winner.isBye) {
-        bracketPieces.push(
-          <div key={`w-${round}-${slot}`} className="t-br-winner" style={{ left: bx + 4, top: mY - BR_ROW_H }}>
-            {winner.seed && <span className="t-br-seed">[{winner.seed}]</span>}
-            {winner.familyName}{winner.firstName ? ', ' + winner.firstName : ''}
-          </div>
-        );
-      }
-
-      if (match?.score) {
-        bracketPieces.push(
-          <div key={`s-${round}-${slot}`} className="t-br-score" style={{ left: bx + 4, top: mY + 3 }}>
-            {match.score}
-          </div>
-        );
-      } else if (match?.outcomeType && match.outcomeType !== 'score' && match.status === 'complete') {
-        bracketPieces.push(
-          <div key={`o-${round}-${slot}`} className="t-br-outcome" style={{ left: bx + 4, top: mY + 3 }}>
-            {match.outcomeType.toUpperCase()}
-          </div>
-        );
-      }
-    }
   }
 
   return (
+    <div
+      className={
+        't-bmc' +
+        (isClickable ? ' t-bmc-clickable' : '') +
+        (match.status === 'complete' ? ' t-bmc-complete' : '')
+      }
+      onClick={isClickable ? onClick : undefined}
+    >
+      {playerLine(entry1, match.entry1Id, match.winnerEntryId === match.entry1Id)}
+      <div className="t-bmc-divider" />
+      {playerLine(entry2, match.entry2Id, match.winnerEntryId === match.entry2Id)}
+      {match.score && (
+        <div className="t-bmc-score">{match.score}</div>
+      )}
+      {match.outcomeType && match.outcomeType !== 'score' && match.status === 'complete' && (
+        <div className="t-bmc-outcome">{match.outcomeType.toUpperCase()}</div>
+      )}
+      {isClickable && !match.winnerEntryId && !isBye1 && !isBye2 && (
+        <div className="t-bmc-cta">+ Score</div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BracketView  — full multi-round bracket (absolute positioned)
+// ---------------------------------------------------------------------------
+const SLOT_H = 116;  // height each R1 match occupies (px) — tall enough to fit a score/outcome/CTA row without overlapping the next match
+const CARD_H = 100;  // assumed card height used to vertically center a card within its slot
+const COL_W  = 236;  // column width (px)
+const COL_GAP = 40;  // gap between columns (px)
+
+function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore, drawType = 'main' }) {
+  const entryMap = new Map(entries.map(e => [e.id, e]));
+
+  const byRound = {};
+  for (let r = 1; r <= totalRounds; r++) {
+    byRound[r] = (matches.filter(m => m.round === r) || [])
+      .sort((a, b) => a.matchSlot - b.matchSlot);
+  }
+
+  const totalH = (drawSize / 2) * SLOT_H;
+  const totalW = totalRounds * COL_W + (totalRounds - 1) * COL_GAP;
+
+  return (
     <div className="t-bracket-wrap">
-      <div className="t-bracket-labels" style={{ width: totalW, position: 'relative', height: 18 }}>
+      {/* Round labels */}
+      <div className="t-bracket-labels" style={{ width: totalW }}>
         {Array.from({ length: totalRounds }, (_, i) => i + 1).map(r => (
           <div key={r} className="t-bracket-label"
-            style={{ position: 'absolute', left: colX(r), width: BR_COL_W }}>
+            style={{ width: COL_W, marginLeft: r === 1 ? 0 : COL_GAP }}>
             {roundLabel(r, totalRounds, drawType)}
           </div>
         ))}
       </div>
 
+      {/* Bracket grid */}
       <div className="t-bracket-grid" style={{ width: totalW, height: totalH }}>
-        {positionRows}
-        {bracketPieces}
-        {!isQualifying && (
-          <div className="t-br-champion" style={{ left: xOut(totalRounds) - 4, top: midY(totalRounds, 1) - BR_ROW_H }}>
-            CHAMPION
-          </div>
-        )}
+        {Array.from({ length: totalRounds }, (_, i) => i + 1).map(round => {
+          const slotH  = Math.pow(2, round - 1) * SLOT_H;
+          const colLeft = (round - 1) * (COL_W + COL_GAP);
+          const roundMatches = byRound[round] || [];
+
+          return roundMatches.map(match => {
+            const top    = (match.matchSlot - 1) * slotH + (slotH - CARD_H) / 2;
+            const entry1 = entryMap.get(match.entry1Id);
+            const entry2 = entryMap.get(match.entry2Id);
+
+            // Clickable if organizer, not yet complete, and has at least one real player
+            const hasPlayers = (match.entry1Id || match.entry2Id);
+            const isClickable = isOwner && match.status !== 'complete' && !!hasPlayers;
+
+            return (
+              <div key={match.id} style={{ position: 'absolute', top, left: colLeft }}>
+                <BracketMatchCard
+                  match={match}
+                  entry1={entry1}
+                  entry2={entry2}
+                  isClickable={isClickable}
+                  onClick={() => onScore(match)}
+                />
+              </div>
+            );
+          });
+        })}
       </div>
     </div>
   );
