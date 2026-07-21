@@ -109,7 +109,7 @@ create index if not exists draw_entries_tournament_idx
 create table if not exists public.tournament_matches (
   id               uuid primary key default gen_random_uuid(),
   tournament_id    uuid not null references public.tournaments(id) on delete cascade,
-  draw_type        text not null,       -- 'qualifying' | 'main'dsf
+  draw_type        text not null,       -- 'qualifying' | 'main'
   round            integer not null,    -- 1 = first round, 2 = second, …
   match_slot       integer not null,    -- slot within the round (1-based)
   entry1_id        uuid references public.draw_entries(id) on delete set null,
