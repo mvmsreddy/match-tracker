@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "vite build && npx cap sync android",
+    "android:install": "npm run android:sync && android\\gradlew.bat installDebug -p android",
+    "android:launch": "adb shell am start -n com.matchtrackerpro.app/.MainActivity",
+    "android:run": "npm run android:install && npm run android:launch"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
