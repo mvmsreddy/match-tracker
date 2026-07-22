@@ -208,3 +208,19 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
 export function computeBreakPointStats(points, cfgOpts, player) {
   return replayMatchAnalytics(points, cfgOpts).bp[player];
 }
+
+const REASON_BUCKET = { Winner: 'win', ForcedError: 'forced', UnforcedError: 'ue' };
+
+/** Per-zone Winner/Forced/Unforced counts for a player's rally-ending shots. */
+export function computeShotLocationBreakdown(points, player) {
+  const hitFrom = {}, droppedAt = {};
+  points.filter((pt) => pt.endedBy === player && pt.hitFrom && pt.droppedAt).forEach((pt) => {
+    const bucket = REASON_BUCKET[pt.reason];
+    if (!bucket) return;
+    hitFrom[pt.hitFrom] = hitFrom[pt.hitFrom] || { win: 0, forced: 0, ue: 0 };
+    hitFrom[pt.hitFrom][bucket]++;
+    droppedAt[pt.droppedAt] = droppedAt[pt.droppedAt] || { win: 0, forced: 0, ue: 0 };
+    droppedAt[pt.droppedAt][bucket]++;
+  });
+  return { hitFrom, droppedAt };
+}

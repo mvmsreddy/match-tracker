@@ -9,6 +9,7 @@ import TopNav from '../components/TopNav';
 import Scorebar from '../components/Scorebar';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
+import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 
 export default function MatchDetailPage() {
   const { matchId } = useParams();
@@ -91,6 +92,7 @@ export default function MatchDetailPage() {
       </div>
 
       <StatsPanel points={match.points} header={header} sessionType={match.sessionType} analytics={analytics} />
+      <ShotLocationHeatmap points={match.points} selfName={match.selfName} oppName={match.oppName} />
       <PointLog points={match.points} header={header} />
 
       {match.notes && (

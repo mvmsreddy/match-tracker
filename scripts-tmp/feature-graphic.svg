@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <clipPath id="ball2">
+      <circle cx="175" cy="250" r="150" />
+    </clipPath>
+  </defs>
+  <rect width="1024" height="500" fill="#14293D" />
+  <circle cx="175" cy="250" r="150" fill="#C6E23D" />
+  <g clip-path="url(#ball2)" fill="none" stroke="#14293D" stroke-width="16" stroke-linecap="round" transform="rotate(-32 175 250)">
+    <path d="M 5 250 C 79 119, 271 119, 345 250" />
+    <path d="M 5 250 C 79 381, 271 381, 345 250" />
+  </g>
+  <text x="380" y="235" font-family="'Segoe UI', Arial, sans-serif" font-size="72" font-weight="700" fill="#F4F7FA">Match Tracker Pro</text>
+  <text x="380" y="290" font-family="'Segoe UI', Arial, sans-serif" font-size="30" fill="#9FB3C4">Point-by-point tennis match tracking &amp; reports</text>
+</svg>

@@ -8,6 +8,7 @@ import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ActionButtons from '../components/ActionButtons';
 import MomentumGraph from '../components/MomentumGraph';
+import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import { computeStats, computeServeStats } from '../lib/analytics';
 
 const SURFACES = [
@@ -159,6 +160,7 @@ export default function TrackerPage() {
             points={t.points} header={t.header} sessionType={t.sessionType} analytics={t.analytics}
             section="shots"
           />
+          <ShotLocationHeatmap points={t.points} selfName={t.header.selfName || 'Self'} oppName={t.header.oppName || 'Opponent'} />
         </div>
       )}
 

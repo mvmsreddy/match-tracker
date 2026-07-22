@@ -111,6 +111,19 @@ body { margin: 0; }
 .court-marker-crosshair line { stroke: var(--forced-text); stroke-width: 2.2; }
 .court-marker-crosshair circle { fill: none; stroke: var(--forced-text); stroke-width: 2; }
 
+/* Shot Location Heatmap — read-only court(s) colored by Winner/Forced/Unforced outcome */
+.shot-heatmap-pair { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.zone-court-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1 1 0; min-width: 130px; max-width: 220px; }
+.zone-court-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text2); text-align: center; }
+.zone-cell { fill: var(--court-fill); stroke: var(--court-line); stroke-width: 1; stroke-opacity: 0.35; }
+.zone-cell.out { fill: var(--bg2); stroke-opacity: 0.2; }
+.zone-band { stroke: none; }
+.shot-heatmap-pair .court-zone-label { fill: var(--text); paint-order: stroke; stroke: rgba(0,0,0,0.55); stroke-width: 2.2px; stroke-linejoin: round; }
+.shot-heatmap-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.legend-swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.shot-heatmap-table-wrap { margin-top: 14px; overflow-x: auto; }
+
 /* wizard-grow: applied to the main content element inside each step to make it expand */
 .wizard-grow { flex: 1; min-height: 0; }
 .ball-in-play-grid.wizard-grow { align-items: stretch; }

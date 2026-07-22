@@ -4,8 +4,14 @@ import {
   computeStats, computeStrokeBreakdown, computeServeStats, computeReturnStats,
   computeFirstServeFaults, computeGroundstrokes, computeMomentumSeries,
   computeRallyBreakdown, computeErrorLocations, replayMatchAnalytics,
+  computeShotLocationBreakdown,
 } from './analytics';
+import { ZONES, COURT_VIEWBOX } from './courtZones';
 import { formatDuration } from './storage';
+
+const SHOT_LOC_ORDER = ['win', 'forced', 'ue'];
+const SHOT_LOC_COLOR = { win: [106, 175, 90], forced: [184, 146, 42], ue: [225, 72, 75] };
+const SHOT_LOC_LABEL = { win: 'Winner', forced: 'Forced Error', ue: 'Unforced Error' };
 
 function fmtRatio(r) { return r === Infinity ? 'Inf' : r.toFixed(2); }
 function fmtPct(p) { return p.toFixed(1) + '%'; }
@@ -120,6 +126,57 @@ function pdfLineChart(doc, opts, selfName, oppName) {
   doc.text('\u2190 ' + oppName, x, chartBottom + 20);
   doc.text(selfName + ' \u2192', x + width, chartBottom + 20, { align: 'right' });
   return chartBottom + 32;
+}
+
+function pdfCourtHeatmap(doc, opts) {
+  const { x, y, width, breakdown, title } = opts;
+  const scale = width / COURT_VIEWBOX.w;
+  const height = COURT_VIEWBOX.h * scale;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(70, 70, 70);
+  doc.text(title, x + width / 2, y, { align: 'center' });
+  const top = y + 8;
+  const bandGap = 0.6;
+  ZONES.forEach((z) => {
+    const zx = x + z.x * scale, zy = top + z.y * scale, zw = z.w * scale, zh = z.h * scale;
+    const counts = breakdown[z.id] || { win: 0, forced: 0, ue: 0 };
+    const total = counts.win + counts.forced + counts.ue;
+    if (total === 0) {
+      const g = z.out ? 232 : 242;
+      doc.setFillColor(g, g, g);
+      doc.rect(zx, zy, zw, zh, 'F');
+    } else {
+      const active = SHOT_LOC_ORDER.filter((k) => counts[k] > 0);
+      const usableH = zh - bandGap * (active.length - 1);
+      let cursorY = zy;
+      active.forEach((k) => {
+        const bandH = (usableH * counts[k]) / total;
+        doc.setFillColor(SHOT_LOC_COLOR[k][0], SHOT_LOC_COLOR[k][1], SHOT_LOC_COLOR[k][2]);
+        if (bandH > 0.2) doc.rect(zx, cursorY, zw, bandH, 'F');
+        cursorY += bandH + bandGap;
+      });
+    }
+    doc.setDrawColor(205, 205, 205); doc.setLineWidth(0.3);
+    doc.rect(zx, zy, zw, zh, 'S');
+  });
+  doc.setDrawColor(110, 110, 110); doc.setLineWidth(0.8);
+  doc.rect(x + 50 * scale, top + 20 * scale, 200 * scale, 600 * scale, 'S');
+  [320, 149, 451].forEach((ly) => doc.line(x + 50 * scale, top + ly * scale, x + 250 * scale, top + ly * scale));
+  doc.line(x + 150 * scale, top + 149 * scale, x + 150 * scale, top + 451 * scale);
+  return top + height;
+}
+
+function pdfShotLocLegend(doc, x, y) {
+  let lx = x;
+  doc.setFontSize(8);
+  SHOT_LOC_ORDER.forEach((k) => {
+    const col = SHOT_LOC_COLOR[k], lbl = SHOT_LOC_LABEL[k];
+    doc.setFillColor(col[0], col[1], col[2]);
+    doc.rect(lx, y - 6, 6, 6, 'F');
+    doc.setTextColor(70, 70, 70);
+    doc.text(lbl, lx + 9, y - 1);
+    lx += doc.getTextWidth(lbl) + 24;
+  });
+  return y + 12;
 }
 
 /**
@@ -373,6 +430,29 @@ export function buildMatchPdf(ctx) {
     title: 'Errors by shot and miss direction',
   });
   y += 12;
+
+  const hasShotLocationData = points.some((pt) => pt.hitFrom && pt.droppedAt);
+  if (hasShotLocationData) {
+    const locSelf = computeShotLocationBreakdown(points, 'self');
+    const locOpp = computeShotLocationBreakdown(points, 'opp');
+    const courtWidth = 150, courtGap = 40;
+
+    doc.addPage(); y = 50;
+    sectionHeading('Shot Origin - Where Rally-Ending Shots Were Hit From');
+    ensureSpace(300);
+    const originTop = y;
+    pdfCourtHeatmap(doc, { x: marginX, y: originTop, width: courtWidth, breakdown: locSelf.hitFrom, title: selfName });
+    const originBottom = pdfCourtHeatmap(doc, { x: marginX + courtWidth + courtGap, y: originTop, width: courtWidth, breakdown: locOpp.hitFrom, title: oppName });
+    y = pdfShotLocLegend(doc, marginX, originBottom + 16);
+
+    doc.addPage(); y = 50;
+    sectionHeading('Shot Placement - Where Rally-Ending Shots Landed');
+    ensureSpace(300);
+    const dropTop = y;
+    pdfCourtHeatmap(doc, { x: marginX, y: dropTop, width: courtWidth, breakdown: locSelf.droppedAt, title: selfName });
+    const dropBottom = pdfCourtHeatmap(doc, { x: marginX + courtWidth + courtGap, y: dropTop, width: courtWidth, breakdown: locOpp.droppedAt, title: oppName });
+    y = pdfShotLocLegend(doc, marginX, dropBottom + 16);
+  }
 
   doc.addPage(); y = 50;
   sectionHeading('Focus Areas for Next Session');
