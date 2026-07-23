@@ -17,6 +17,12 @@ const SURFACES = [
   'Asphalt (Hard-Court)', 'Carpet', 'Clay', 'Concrete (Hard-Court)', 'Grass', 'Other Surface',
 ];
 
+const TRACKING_MODES = [
+  { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
+  { value: 'advanced', label: 'Advanced', hint: 'Adds rally length, shot wing/type, and error location.' },
+  { value: 'expert', label: 'Expert', hint: 'Full detail — court-tap shot placement and infractions.' },
+];
+
 // Temporarily disabled — Anthropic API billing not yet set up. Flip to true to re-enable.
 const AI_REVIEW_ENABLED = false;
 
@@ -148,6 +154,7 @@ export default function TrackerPage() {
                   onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
                   selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
                   onDelete={t.resetMatch}
+                  trackingMode={t.trackingMode}
                 />
               ) : (
                 <div className="server-required-msg">Select who serves first above to begin tracking</div>
@@ -185,7 +192,7 @@ export default function TrackerPage() {
           <ActionButtons
             header={t.header} updateHeader={t.updateHeader}
             sessionType={t.sessionType} formatPreset={t.formatPreset} formatLabel={t.formatLabel}
-            pointTarget={t.pointTarget} points={t.points} engine={t.engine} analytics={t.analytics}
+            pointTarget={t.pointTarget} trackingMode={t.trackingMode} points={t.points} engine={t.engine} analytics={t.analytics}
             matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
             showStatus={t.showStatus} resetMatch={t.resetMatch}
           />
@@ -393,6 +400,25 @@ function SetupForm({ t, onStart }) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Tracking detail */}
+      <div className="setup-section">
+        <div className="setup-section-label">Tracking Detail</div>
+        <div className="server-toggle" style={{ marginBottom: 0 }}>
+          {TRACKING_MODES.map((m) => (
+            <div
+              key={m.value}
+              className={'chip' + (t.trackingMode === m.value ? ' selected' : '')}
+              onClick={() => t.setTrackingMode(m.value)}
+            >
+              {m.label}
+            </div>
+          ))}
+        </div>
+        <p className="setup-hint" style={{ marginTop: 6 }}>
+          {(TRACKING_MODES.find((m) => m.value === t.trackingMode) || TRACKING_MODES[2]).hint}
+        </p>
       </div>
 
       {/* CTA */}

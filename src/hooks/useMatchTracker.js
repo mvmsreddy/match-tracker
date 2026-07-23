@@ -24,6 +24,7 @@ function initialState() {
     formatPreset: 'bo3-full',
     formatCustom: '',
     pointTarget: 10,
+    trackingMode: 'expert', // 'basic' | 'advanced' | 'expert' — how much detail the wizard asks for per point
     points: [],
     serverChoice: 'self',
     serverExplicitlyChosen: false,
@@ -134,6 +135,10 @@ export function useMatchTracker() {
     setState((prev) => ({ ...prev, pointTarget: target }));
   }, []);
 
+  const setTrackingMode = useCallback((mode) => {
+    setState((prev) => ({ ...prev, trackingMode: mode }));
+  }, []);
+
   /**
    * Commits one finished point (built by the wizard) into the points array,
    * tagging it with its set/game index based on the CURRENT engine state.
@@ -222,6 +227,7 @@ export function useMatchTracker() {
       sessionType: prev.sessionType,
       formatPreset: prev.formatPreset,
       pointTarget: prev.pointTarget,
+      trackingMode: prev.trackingMode,
     }));
   }, [user]);
 
@@ -236,6 +242,7 @@ export function useMatchTracker() {
     formatCustom: state.formatCustom, setFormatCustom,
     formatLabel,
     pointTarget: state.pointTarget, setPointTarget,
+    trackingMode: state.trackingMode, setTrackingMode,
     points: state.points,
     matchStarted: state.matchStarted, startMatch,
     commitPoint, undoLast, resetMatch,

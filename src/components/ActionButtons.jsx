@@ -20,7 +20,7 @@ async function saveAndSharePdfNative(doc, filename) {
 }
 
 export default function ActionButtons({
-  header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget,
+  header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
   points, engine, analytics, matchStartTime, matchDurationMs, showStatus,
   resetMatch,
 }) {
@@ -49,7 +49,7 @@ export default function ActionButtons({
     try {
       await api.saveMatch(user.id, {
         selfName, oppName, tournament: header.tournament, date: header.date,
-        sessionType, formatPreset, formatLabel, pointTarget,
+        sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
         surface: header.surface, indoorOutdoor: header.indoorOutdoor,
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
         scoreSummary: scoreSummary(),

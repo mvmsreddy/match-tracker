@@ -6,28 +6,37 @@ const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot',
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
 
-function getActiveStep(pending) {
+function getActiveStep(pending, trackingMode = 'expert') {
+  // Tracking-detail tiers: which optional steps get shown, from fastest to most thorough.
+  const wantsShotDetail = trackingMode !== 'basic';      // shot wing/type + stroke capture
+  const wantsRallyCount = trackingMode !== 'basic';      // rally-length step
+  const wantsErrorLocation = trackingMode !== 'basic';   // Long/Wide/Net for unforced errors
+  const wantsCourtTap = trackingMode === 'expert';       // hit-from/dropped-at diagram
+  const wantsInfraction = trackingMode === 'expert';     // optional infraction step
+
   if (!pending.serviceChoice) return 'serviceScreen';
   if (pending.serviceChoice === 'faultPending') return 'faultLocation';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
-  if (pending.serviceChoice === 'returnError' && !pending.shotWing) return 'shotWing';
-  if (pending.serviceChoice === 'returnError' && !pending.shotDroppedAt) return 'shotLocation';
-  if (pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'UnforcedError' && !pending.location) return 'errorLocation';
-  if (pending.serviceChoice === 'ballIn' && pending.rallyCount === null) return 'rallySelect';
+  if (pending.serviceChoice === 'returnError' && wantsShotDetail && !pending.shotWing) return 'shotWing';
+  if (pending.serviceChoice === 'returnError' && wantsCourtTap && !pending.shotDroppedAt) return 'shotLocation';
+  if (pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'UnforcedError' && wantsErrorLocation && !pending.location) return 'errorLocation';
+  if (pending.serviceChoice === 'ballIn' && wantsRallyCount && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
-  const needsShot = pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn';
+  const needsShot = wantsShotDetail && (pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn');
   if (needsShot && !pending.stroke) {
     if (!pending.shotWing) return 'shotWing';
     return 'shotType';
   }
+  // Shot-detail step is either answered, or skipped entirely for this tier.
+  const shotDetailDone = !wantsShotDetail || !!pending.stroke;
   // Every rally-ending shot gets a court tap: where was it hit from, where did it drop?
-  if (needsShot && pending.stroke && !pending.shotDroppedAt) return 'shotLocation';
+  if (needsShot && shotDetailDone && wantsCourtTap && !pending.shotDroppedAt) return 'shotLocation';
   // Unforced errors get one more tap: where did it land?
-  if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && pending.stroke && !pending.location) {
+  if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && shotDetailDone && wantsErrorLocation && !pending.location) {
     return 'errorLocation';
   }
   // Optional infraction step — only for ballIn, only if not yet answered
-  if (pending.serviceChoice === 'ballIn' && pending.stroke && pending.infraction === null) return 'infractionSelect';
+  if (pending.serviceChoice === 'ballIn' && shotDetailDone && wantsInfraction && pending.infraction === null) return 'infractionSelect';
   return null;
 }
 
@@ -37,7 +46,7 @@ function shotLabel(type) {
   return type;
 }
 
-export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onDelete }) {
+export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onDelete, trackingMode }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
   const [history, setHistory] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -83,7 +92,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
     if (dx > 60 && Math.abs(dy) < 40) goBack();
   }
 
-  const activeStep = getActiveStep(pending);
+  const activeStep = getActiveStep(pending, trackingMode);
 
   useEffect(() => {
     if (activeStep !== prevActiveStep.current) {
