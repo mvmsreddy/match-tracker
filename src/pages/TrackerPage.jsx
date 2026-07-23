@@ -17,6 +17,9 @@ const SURFACES = [
   'Asphalt (Hard-Court)', 'Carpet', 'Clay', 'Concrete (Hard-Court)', 'Grass', 'Other Surface',
 ];
 
+// Temporarily disabled — Anthropic API billing not yet set up. Flip to true to re-enable.
+const AI_REVIEW_ENABLED = false;
+
 export default function TrackerPage() {
   const t = useMatchTracker();
   const [activeTab, setActiveTab] = useState('match');
@@ -84,7 +87,7 @@ export default function TrackerPage() {
       <div className="wrap" style={{ marginTop: 4 }}><div className="status-msg">{t.status}</div></div>
 
       {/* On-demand AI review — available any time there are points to review */}
-      {t.matchStarted && t.points.length > 0 && (
+      {AI_REVIEW_ENABLED && t.matchStarted && t.points.length > 0 && (
         <div className="wrap" style={{ marginTop: 4 }}>
           <button className="action-btn" onClick={() => setAiReview({ scope: 'match' })}>
             🤖 Review with AI
@@ -116,7 +119,7 @@ export default function TrackerPage() {
               onContinue={t.clearTransition}
               onUndo={() => { t.undoLast(); }}
               canUndo={t.points.length > 0}
-              onReview={() => setAiReview({ scope: t.gameTransition.type })}
+              onReview={AI_REVIEW_ENABLED ? () => setAiReview({ scope: t.gameTransition.type }) : null}
             />
           ) : t.engine.matchOver ? (
             <MatchOverBlock
@@ -509,7 +512,7 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
 
       <div className="transition-actions">
         <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo</button>
-        <button className="action-btn" onClick={onReview}>🤖 Review with AI</button>
+        {onReview && <button className="action-btn" onClick={onReview}>🤖 Review with AI</button>}
         <button className="transition-continue-btn" onClick={onContinue}>{btnLabel}</button>
       </div>
     </div>
