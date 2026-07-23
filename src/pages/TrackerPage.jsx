@@ -9,6 +9,7 @@ import PointLog from '../components/PointLog';
 import ActionButtons from '../components/ActionButtons';
 import MomentumGraph from '../components/MomentumGraph';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
+import AiReviewModal from '../components/AiReviewModal';
 import { computeStats, computeServeStats } from '../lib/analytics';
 
 const SURFACES = [
@@ -19,6 +20,7 @@ const SURFACES = [
 export default function TrackerPage() {
   const t = useMatchTracker();
   const [activeTab, setActiveTab] = useState('match');
+  const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
 
   // When match ends / resets, always return to Match tab
   useEffect(() => {
@@ -81,6 +83,15 @@ export default function TrackerPage() {
       {/* Global status message */}
       <div className="wrap" style={{ marginTop: 4 }}><div className="status-msg">{t.status}</div></div>
 
+      {/* On-demand AI review — available any time there are points to review */}
+      {t.matchStarted && t.points.length > 0 && (
+        <div className="wrap" style={{ marginTop: 4 }}>
+          <button className="action-btn" onClick={() => setAiReview({ scope: 'match' })}>
+            🤖 Review with AI
+          </button>
+        </div>
+      )}
+
       {/* ── Match tab ── */}
       {activeTab === 'match' && (
         <div className="tab-content">
@@ -105,6 +116,7 @@ export default function TrackerPage() {
               onContinue={t.clearTransition}
               onUndo={() => { t.undoLast(); }}
               canUndo={t.points.length > 0}
+              onReview={() => setAiReview({ scope: t.gameTransition.type })}
             />
           ) : t.engine.matchOver ? (
             <MatchOverBlock
@@ -175,6 +187,16 @@ export default function TrackerPage() {
             showStatus={t.showStatus} resetMatch={t.resetMatch}
           />
         </div>
+      )}
+
+      {aiReview && (
+        <AiReviewModal
+          scope={aiReview.scope}
+          points={t.points}
+          engine={t.engine}
+          header={t.header}
+          onClose={() => setAiReview(null)}
+        />
       )}
     </div>
   );
@@ -405,7 +427,7 @@ function MatchOverBlock({ sessionType, selfName, oppName, winner, onUndo, canUnd
 }
 
 // ── Game / Set / Match transition card with per-game stats ───────────────────
-function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo, canUndo }) {
+function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo, canUndo, onReview }) {
   const { type, winner, gamePoints, sets, setGames, nextServer } = transition;
   const winnerName = winner === 'self' ? selfName : oppName;
 
@@ -488,6 +510,7 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
 
       <div className="transition-actions">
         <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo</button>
+        <button className="action-btn" onClick={onReview}>🤖 Review with AI</button>
         <button className="transition-continue-btn" onClick={onContinue}>{btnLabel}</button>
       </div>
     </div>

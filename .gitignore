@@ -15,3 +15,6 @@ android/.idea/
 android/keystore.properties
 *.jks
 *.keystore
+
+# Python video-analysis service (large models/video assets, excluded for now)
+video-service/

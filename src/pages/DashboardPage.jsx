@@ -417,6 +417,9 @@ export default function DashboardPage() {
             <Link to="/track" className="dashboard-cta">
               + Track New Match
             </Link>
+            <Link to="/video-analysis-test" className="dashboard-cta" style={{ marginTop: 8 }}>
+              Video Analysis (Beta)
+            </Link>
 
             {error && <div className="history-empty">{error}</div>}
             {matches === null && !error && <div className="history-empty">Loading…</div>}

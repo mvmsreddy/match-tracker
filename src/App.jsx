@@ -14,6 +14,7 @@ import ProfilePage from './pages/ProfilePage';
 import CoachPlayersPage from './pages/CoachPlayersPage';
 import EventDetailPage from './pages/EventDetailPage';
 import OrderOfPlayPage from './pages/OrderOfPlayPage';
+import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/my-players" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
             <Route path="/my-coaches" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
+            <Route path="/video-analysis-test" element={<ProtectedRoute><VideoAnalysisTestPage /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>
