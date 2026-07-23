@@ -1,14 +1,19 @@
-export function buildReviewPayload(points, scope, engine, header) {
+export function buildReviewPayload(points, scope, header) {
   let scoped;
-  if (scope === 'game') {
-    const set = engine.sets.length + 1;
-    const game = engine.setGames.self + engine.setGames.opp + 1;
-    scoped = points.filter((p) => p.set === set && p.game === game);
-  } else if (scope === 'set') {
-    const set = engine.sets.length + 1;
-    scoped = points.filter((p) => p.set === set);
-  } else {
+  if (scope === 'match' || points.length === 0) {
     scoped = points;
+  } else {
+    // Scope off the last logged point's own set/game tags — correct both
+    // right after a transition (last point ended that game/set) and
+    // mid-game on demand (last point belongs to the in-progress game/set).
+    const last = points[points.length - 1];
+    if (scope === 'game') {
+      scoped = points.filter((p) => p.set === last.set && p.game === last.game);
+    } else if (scope === 'set') {
+      scoped = points.filter((p) => p.set === last.set);
+    } else {
+      scoped = points;
+    }
   }
 
   const compactPoints = scoped.map((p) => ({

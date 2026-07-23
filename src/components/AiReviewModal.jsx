@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAiReview } from '../api/aiReviewApi';
 import { buildReviewPayload } from '../lib/aiReviewPrep';
 
-export default function AiReviewModal({ scope, points, engine, header, onClose }) {
+export default function AiReviewModal({ scope, points, header, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [review, setReview] = useState(null);
@@ -11,7 +11,7 @@ export default function AiReviewModal({ scope, points, engine, header, onClose }
     let cancelled = false;
     setLoading(true);
     setError('');
-    getAiReview(buildReviewPayload(points, scope, engine, header))
+    getAiReview(buildReviewPayload(points, scope, header))
       .then((r) => { if (!cancelled) setReview(r); })
       .catch((e) => { if (!cancelled) setError(e.message || 'AI review failed'); })
       .finally(() => { if (!cancelled) setLoading(false); });

@@ -193,7 +193,6 @@ export default function TrackerPage() {
         <AiReviewModal
           scope={aiReview.scope}
           points={t.points}
-          engine={t.engine}
           header={t.header}
           onClose={() => setAiReview(null)}
         />
