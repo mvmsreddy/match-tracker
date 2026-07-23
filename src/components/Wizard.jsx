@@ -104,6 +104,18 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
     }
   }, [activeStep]);
 
+  // Different tracking tiers finish on different steps (a skipped step can no
+  // longer call commit itself), so completion is driven by "no more steps
+  // left" rather than any one step's handler. Individual handlers below still
+  // commit directly when they're unconditionally terminal (ace, double fault,
+  // infraction chips) — this is the catch-all for every other case.
+  useEffect(() => {
+    if (pending.serviceChoice && activeStep === null) {
+      commitAndReset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep]);
+
 
   function commitAndReset(extra) {
     const entry = buildPointEntry({ ...pending, ...extra });
@@ -176,12 +188,14 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Shot type ────────────────────────────────────────────────────────────
 
   function handleShotType(type) {
-    // Every ball-in/return-winner point still has the Shot Location court tap ahead — don't commit yet.
+    // In Expert tier, the Shot Location court tap is always next — don't commit yet.
+    // (Lower tiers skip the court tap entirely; the wizard's generic "no steps
+    // left" effect commits for those once this is the last field they need.)
     const stroke = type + ' ' + pending.shotWing;
     setPendingStep((p) => ({ ...p, shotType: type, stroke }));
   }
 
-  // ── Shot location (court tap: Hit From → Dropped At) ────────────────────
+  // ── Shot location (court tap: Hit From → Dropped At) — Expert tier only ──
 
   function handleShotLocationComplete(hitFrom, droppedAt) {
     const extra = { shotHitFrom: hitFrom, shotDroppedAt: droppedAt };
@@ -203,7 +217,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
       // Return errors have no Infraction step — this is always the last one.
       commitAndReset({ location });
     } else {
-      // Ball-in points still have the optional Infraction step ahead — don't commit yet.
+      // Ball-in points: in Expert tier the optional Infraction step is still ahead — don't
+      // commit yet. Lower tiers skip it; the generic "no steps left" effect commits instead.
       setPendingStep((p) => ({ ...p, location }));
     }
   }
