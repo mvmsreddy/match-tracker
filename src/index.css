@@ -773,7 +773,7 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .profile-actions { display: flex; align-items: center; gap: 14px; padding: 0 0 24px; }
 
 /* ---------- Profile page: header card ---------- */
-.profile-card { max-width: 680px; margin: 16px auto 0; padding: 18px 16px; display: flex; align-items: center; gap: 16px; }
+.profile-card { max-width: 680px; margin: 16px auto 0; padding: 18px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
 .profile-avatar-lg {
   flex-shrink: 0; width: 68px; height: 68px; border-radius: 50%;
   background: var(--accent); color: var(--accent-text);
