@@ -1338,6 +1338,30 @@ function rowToProfile(row) {
     bio: row.bio,
     isVerified: row.is_verified || false,
     updatedAt: row.updated_at,
+
+    phone: row.phone,
+    homeCourt: row.home_court,
+    nationality: row.nationality,
+    country: row.country,
+    city: row.city,
+    region: row.region,
+    postalCode: row.postal_code,
+    height: row.height,
+    plays: row.plays,
+    backhand: row.backhand,
+
+    racquetBrand: row.racquet_brand,
+    racquetName: row.racquet_name,
+    racquetYear: row.racquet_year,
+    stringBrand: row.string_brand,
+    stringName: row.string_name,
+    stringTension: row.string_tension,
+    shoeBrand: row.shoe_brand,
+    shoeName: row.shoe_name,
+    bagBrand: row.bag_brand,
+    bagName: row.bag_name,
+    gripBrand: row.grip_brand,
+    gripName: row.grip_name,
   };
 }
 
@@ -1367,6 +1391,30 @@ export async function upsertProfile(userId, profile) {
     ranking: profile.ranking ? Number(profile.ranking) : null,
     club_name: profile.clubName || null,
     bio: profile.bio || null,
+
+    phone: profile.phone || null,
+    home_court: profile.homeCourt || null,
+    nationality: profile.nationality || null,
+    country: profile.country || null,
+    city: profile.city || null,
+    region: profile.region || null,
+    postal_code: profile.postalCode || null,
+    height: profile.height || null,
+    plays: profile.plays || null,
+    backhand: profile.backhand || null,
+
+    racquet_brand: profile.racquetBrand || null,
+    racquet_name: profile.racquetName || null,
+    racquet_year: profile.racquetYear ? Number(profile.racquetYear) : null,
+    string_brand: profile.stringBrand || null,
+    string_name: profile.stringName || null,
+    string_tension: profile.stringTension || null,
+    shoe_brand: profile.shoeBrand || null,
+    shoe_name: profile.shoeName || null,
+    bag_brand: profile.bagBrand || null,
+    bag_name: profile.bagName || null,
+    grip_brand: profile.gripBrand || null,
+    grip_name: profile.gripName || null,
   };
   const { data, error } = await supabase
     .from('user_profiles')

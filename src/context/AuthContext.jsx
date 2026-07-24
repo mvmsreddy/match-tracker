@@ -12,16 +12,10 @@ async function loadFullUser(authUser) {
     return {
       ...authUser,
       // profile fields (fall back to auth metadata if profile not created yet)
+      ...profile,
       role: profile?.role || authUser.role || 'player',
       roleConfirmed: profile?.roleConfirmed || false,
       displayName: profile?.displayName || authUser.name,
-      aitaReg: profile?.aitaReg || null,
-      stateAbbr: profile?.stateAbbr || null,
-      dateOfBirth: profile?.dateOfBirth || null,
-      gender: profile?.gender || null,
-      ranking: profile?.ranking || null,
-      clubName: profile?.clubName || null,
-      bio: profile?.bio || null,
       isVerified: profile?.isVerified || false,
       profileComplete: !!profile,
     };

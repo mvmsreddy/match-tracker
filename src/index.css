@@ -772,6 +772,43 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .profile-verified-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 4px 10px; display: inline-block; }
 .profile-actions { display: flex; align-items: center; gap: 14px; padding: 0 0 24px; }
 
+/* ---------- Profile page: header card ---------- */
+.profile-card { max-width: 680px; margin: 16px auto 0; padding: 18px 16px; display: flex; align-items: center; gap: 16px; }
+.profile-avatar-lg {
+  flex-shrink: 0; width: 68px; height: 68px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-text);
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.5rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-card-info { flex: 1; min-width: 0; }
+.profile-name { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: 1.3rem; margin: 0 0 6px; word-break: break-word; }
+.profile-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.profile-verified-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--win-text); }
+.profile-edit-btn { flex-shrink: 0; }
+
+/* ---------- Profile page: view/read-only tabs + rows ---------- */
+.profile-tabs { max-width: 680px; margin: 4px auto 0; padding: 0 16px; display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.profile-tab-btn {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 14px; cursor: pointer;
+}
+.profile-tab-btn:hover { color: var(--text); }
+.profile-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.profile-view { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+.profile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border2); }
+.profile-row:last-child { border-bottom: none; }
+.profile-row-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); flex-shrink: 0; }
+.profile-row-value { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; }
+.profile-about-text { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
+
+@media (max-width: 480px) {
+  .profile-card { gap: 12px; }
+  .profile-avatar-lg { width: 54px; height: 54px; font-size: 1.2rem; }
+  .profile-name { font-size: 1.05rem; }
+}
+
 /* ---------- Coach / Players page ---------- */
 .cp-search-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
 .cp-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
