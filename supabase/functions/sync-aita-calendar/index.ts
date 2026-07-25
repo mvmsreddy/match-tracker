@@ -192,6 +192,12 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   return raw.replace(/\s+/g, ' ').trim();
 }
 
+// A label's value is never a full-page dump. When the end label can't be
+// found (e.g. a PDF layout quirk), between() used to silently run to the end
+// of the document — confirmed live: this once dumped an entire factsheet's
+// remaining text into venue_phone. Cap it instead.
+const MAX_VALUE_LEN = 300;
+
 function between(text: string, startLabel: string, endLabel: string, occurrence = 1): string {
   let from = 0;
   let si = -1;
@@ -201,8 +207,29 @@ function between(text: string, startLabel: string, endLabel: string, occurrence 
     from = si + startLabel.length;
   }
   const valueStart = si + startLabel.length;
-  const ei = endLabel ? text.indexOf(endLabel, valueStart) : text.length;
-  return text.slice(valueStart, ei === -1 ? undefined : ei).replace(/\s+/g, ' ').trim();
+  if (!endLabel) return text.slice(valueStart).replace(/\s+/g, ' ').trim();
+  const found = text.indexOf(endLabel, valueStart);
+  const ei = found === -1 ? Math.min(valueStart + MAX_VALUE_LEN, text.length) : found;
+  return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
+}
+
+/** Like between(), but matches whichever of several possible end labels appears first. */
+function betweenAny(text: string, startLabel: string, endLabels: string[], occurrence = 1): string {
+  let from = 0;
+  let si = -1;
+  for (let n = 0; n < occurrence; n++) {
+    si = text.indexOf(startLabel, from);
+    if (si === -1) return '';
+    from = si + startLabel.length;
+  }
+  const valueStart = si + startLabel.length;
+  let ei = -1;
+  for (const label of endLabels) {
+    const idx = text.indexOf(label, valueStart);
+    if (idx !== -1 && (ei === -1 || idx < ei)) ei = idx;
+  }
+  if (ei === -1) ei = Math.min(valueStart + MAX_VALUE_LEN, text.length);
+  return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
 }
 
 function toIso(raw: string): string {
@@ -273,7 +300,7 @@ function parseFactsheetText(text: string): FactsheetFields {
     doublesSignIn ? `Doubles sign-in: ${doublesSignIn.trim()}` : '',
   ].filter(Boolean).join('\n');
 
-  const venueAddress = between(text, 'ADDRESS OF THE VENUE', 'CITY');
+  const venueAddress = betweenAny(text, 'ADDRESS OF THE VENUE', ['CITY', 'PINCODE', 'TELEPHONE NO.', 'COURT SURFACE']);
   const venuePincode = between(text, 'PINCODE', 'TELEPHONE NO.').replace(/\D/g, '');
   // 'TELEPHONE NO.' appears twice — once for the state association, once for
   // the venue. occurrence=2 lands on the venue's (the association's is

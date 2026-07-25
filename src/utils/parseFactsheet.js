@@ -31,6 +31,12 @@ async function extractText(file) {
 // Helpers
 // ---------------------------------------------------------------------------
 
+// A label's value is never a full-page dump. When the end label can't be
+// found (e.g. a PDF layout quirk), between() used to silently run to the end
+// of the document — confirmed live: this once dumped an entire factsheet's
+// remaining text into venue_phone. Cap it instead.
+const MAX_VALUE_LEN = 300;
+
 /** Return the text that sits between two known label strings. */
 function between(text, startLabel, endLabel, occurrence = 1) {
   let from = 0;
@@ -41,11 +47,29 @@ function between(text, startLabel, endLabel, occurrence = 1) {
     from = si + startLabel.length;
   }
   const valueStart = si + startLabel.length;
-  const ei = endLabel ? text.indexOf(endLabel, valueStart) : text.length;
-  return text
-    .slice(valueStart, ei === -1 ? undefined : ei)
-    .replace(/\s+/g, ' ')
-    .trim();
+  if (!endLabel) return text.slice(valueStart).replace(/\s+/g, ' ').trim();
+  const found = text.indexOf(endLabel, valueStart);
+  const ei = found === -1 ? Math.min(valueStart + MAX_VALUE_LEN, text.length) : found;
+  return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
+}
+
+/** Like between(), but matches whichever of several possible end labels appears first. */
+function betweenAny(text, startLabel, endLabels, occurrence = 1) {
+  let from = 0;
+  let si = -1;
+  for (let n = 0; n < occurrence; n++) {
+    si = text.indexOf(startLabel, from);
+    if (si === -1) return '';
+    from = si + startLabel.length;
+  }
+  const valueStart = si + startLabel.length;
+  let ei = -1;
+  for (const label of endLabels) {
+    const idx = text.indexOf(label, valueStart);
+    if (idx !== -1 && (ei === -1 || idx < ei)) ei = idx;
+  }
+  if (ei === -1) ei = Math.min(valueStart + MAX_VALUE_LEN, text.length);
+  return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
 }
 
 /** Convert "20 July 2026" → "2026-07-20".  Returns '' on failure. */
@@ -172,7 +196,7 @@ export async function parseFactsheetPdf(file) {
 
   // ── Venue ────────────────────────────────────────────────────────────────
   const location = between(text, 'NAME OF THE VENUE', 'ADDRESS OF THE VENUE');
-  const venueAddress = between(text, 'ADDRESS OF THE VENUE', 'CITY');
+  const venueAddress = betweenAny(text, 'ADDRESS OF THE VENUE', ['CITY', 'PINCODE', 'TELEPHONE NO.', 'COURT SURFACE']);
 
   // Venue CITY might repeat — skip as we already have tournament city
   const venuePincode = between(text, 'PINCODE', 'TELEPHONE NO.').replace(/\D/g, '');
