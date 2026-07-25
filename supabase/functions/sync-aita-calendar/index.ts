@@ -21,12 +21,12 @@
 // deny writes to normal authenticated/anon roles via RLS.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// Legacy build: text extraction without DOM/canvas. Deno implements the Worker
-// API (unlike Node, which pdfjs-dist falls back to a same-thread "fake worker"
-// for), so a real worker source must be pointed at the matching npm module —
-// otherwise getDocument() throws for lack of GlobalWorkerOptions.workerSrc.
-import * as pdfjsLib from 'npm:pdfjs-dist@6.1.200/legacy/build/pdf.mjs';
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'npm:pdfjs-dist@6.1.200/legacy/build/pdf.worker.mjs';
+// pdfjs-dist (even its "legacy" build) references DOMMatrix, which doesn't
+// exist in Deno's edge runtime (`ReferenceError: DOMMatrix is not defined`,
+// confirmed against the deployed function's logs). unpdf ships a serverless
+// build of PDF.js with the worker inlined and no DOM dependency — built
+// specifically for edge runtimes (Cloudflare Workers, Deno).
+import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -39,6 +39,18 @@ const BUCKET = 'aita-factsheets';
 // Function's execution time budget. Long-past tournaments' fact sheets
 // never change; far-future ones aren't on AITA's site yet anyway.
 const PAST_WINDOW_DAYS = 30;
+
+// A single invocation still hit WORKER_RESOURCE_LIMIT even capped at 12 PDF
+// parses — the calendar can carry 100+ in-window tournaments, and doing that
+// many sequential AITA fetches + Supabase round-trips in one invocation is
+// itself enough to exceed the platform's per-invocation budget, independent
+// of PDF parsing. So both are capped: total tournaments touched per run, and
+// PDF downloads+parses (the more expensive subset) within that. Whatever's
+// left over is picked up by the next run (every 6h via cron, or another
+// manual "Sync Now") — entries are prioritized so new/stalest ones go first,
+// so repeated runs make forward progress instead of reprocessing the same set.
+const MAX_TOURNAMENTS_PER_RUN = 30;
+const MAX_PDF_PARSES_PER_RUN = 5;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,9 +149,15 @@ function parseDetailHtml(html: string): DetailFields {
   const h4s = [...afterH1.matchAll(/<h4[^>]*>([\s\S]*?)<\/h4>/g)].map((m) => m[1]);
 
   const name = h4s[0] ? stripTags(h4s[0]) : '';
-  const venue = h4s[1] ? stripTags(h4s[1]) : '';
 
-  const categoryRaw = h4s.find((h) => /Category\s*-/.test(h)) || '';
+  // Not always h4s[1] — some pages insert extra city/state h4s between the
+  // name and the venue (confirmed live: id=4970 has [name, city, state,
+  // venue, category, ...], while others have just [name, venue, category,
+  // ...]). The venue is reliably whatever comes right before "Category -".
+  const categoryIndex = h4s.findIndex((h) => /Category\s*-/.test(h));
+  const venue = categoryIndex > 0 ? stripTags(h4s[categoryIndex - 1]) : (h4s[1] ? stripTags(h4s[1]) : '');
+
+  const categoryRaw = categoryIndex >= 0 ? h4s[categoryIndex] : '';
   const category = stripTags(categoryRaw).replace(/^Category\s*-\s*/i, '').trim();
 
   const dateRaw = h4s.find((h) => /^\s*Date\s*-/i.test(stripTags(h))) || '';
@@ -160,15 +178,18 @@ function parseDetailHtml(html: string): DetailFields {
 // ---------------------------------------------------------------------------
 
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  const pdf = await pdfjsLib.getDocument({ data: bytes, isEvalSupported: false }).promise;
-  let full = '';
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    // deno-lint-ignore no-explicit-any
-    full += content.items.map((i: any) => i.str).join(' ') + '\n';
-  }
-  return full;
+  const pdf = await getDocumentProxy(bytes);
+  const { text } = await extractText(pdf, { mergePages: true });
+  const raw = Array.isArray(text) ? text.join('\n') : text;
+  // unpdf preserves the PDF's real line breaks (e.g. "COURT\nSURFACE"), but
+  // every label boundary below is a plain substring search assuming
+  // space-joined text (same assumption as the working client-side parser in
+  // src/utils/parseFactsheet.js, built against pdfjs getTextContent().join(' ')).
+  // A label straddling a line break would otherwise never match its end
+  // label, and between() would run all the way to the end of the document —
+  // confirmed live: venue_phone ended up containing the entire rest of a
+  // factsheet because "COURT SURFACE" was actually "COURT\nSURFACE".
+  return raw.replace(/\s+/g, ' ').trim();
 }
 
 function between(text: string, startLabel: string, endLabel: string, occurrence = 1): string {
@@ -254,7 +275,10 @@ function parseFactsheetText(text: string): FactsheetFields {
 
   const venueAddress = between(text, 'ADDRESS OF THE VENUE', 'CITY');
   const venuePincode = between(text, 'PINCODE', 'TELEPHONE NO.').replace(/\D/g, '');
-  const venuePhone = between(text, 'TELEPHONE NO.', 'COURT SURFACE');
+  // 'TELEPHONE NO.' appears twice — once for the state association, once for
+  // the venue. occurrence=2 lands on the venue's (the association's is
+  // occurrence 1, already consumed as venuePincode's end label above).
+  const venuePhone = between(text, 'TELEPHONE NO.', 'COURT SURFACE', 2);
   const surface = normaliseSurface(between(text, 'COURT SURFACE', 'BRAND OF BALLS'));
   const ballBrand = between(text, 'BRAND OF BALLS', 'NO. OF MATCH');
   const hasFloodlights = /yes/i.test(between(text, 'FLOODLIGHTS', 'TOURNAMENT OFFICIALS'));
@@ -278,6 +302,36 @@ function parseFactsheetText(text: string): FactsheetFields {
     venueAddress, venuePincode, venuePhone, surface, ballBrand, hasFloodlights,
     entryFeeSingles, entryFeeDoubles, dailyAllowance, signinInstructions,
   };
+}
+
+// parseFactsheetText() returns '' for anything it couldn't find (convenient
+// for string-building/hashing). But aita_tournaments has real date/integer
+// columns — sending '' for those makes Postgres reject the whole upsert
+// (confirmed via WORKER logs: upsertErr was silently ignored, so the row
+// never actually saved and the same tournaments got retried every run).
+// This maps the parsed fields onto DB-safe column values just before upsert.
+const DATE_FIELDS = ['entryDeadline', 'withdrawalDeadline', 'qualifyingStartDate', 'qualifyingEndDate'] as const;
+const INT_FIELDS = ['entryFeeSingles', 'entryFeeDoubles', 'dailyAllowance'] as const;
+
+function factsheetFieldsToRow(fields: Partial<FactsheetFields>): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (DATE_FIELDS.includes(key as typeof DATE_FIELDS[number])) {
+      row[camelToSnake(key)] = value ? value : null;
+    } else if (INT_FIELDS.includes(key as typeof INT_FIELDS[number])) {
+      const n = Number(value);
+      row[camelToSnake(key)] = value && !Number.isNaN(n) ? n : null;
+    } else if (value === '') {
+      row[camelToSnake(key)] = null;
+    } else {
+      row[camelToSnake(key)] = value;
+    }
+  }
+  return row;
+}
+
+function camelToSnake(s: string): string {
+  return s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 }
 
 async function sha256Hex(text: string): Promise<string> {
@@ -329,6 +383,38 @@ Deno.serve(async (req) => {
     triggeredBy = `manual:${userData.user.id}`;
   }
 
+  // One-off inspection route, gated by the same auth as everything else:
+  // ?debugAitaId=<id> returns the stored row as-is, no crawling.
+  const debugAitaId = new URL(req.url).searchParams.get('debugAitaId');
+  if (debugAitaId) {
+    const { data, error } = await admin
+      .from('aita_tournaments')
+      .select('*')
+      .eq('aita_id', Number(debugAitaId))
+      .maybeSingle();
+    return new Response(JSON.stringify({ data, error }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // ?forceReparse=<id> clears that row's stored filename so the normal loop
+  // below treats it as needing a fresh fetch+parse this run, regardless of
+  // priority order or the past-window filter — for testing a single
+  // tournament without waiting for AITA to publish a new file.
+  const forceReparseId = new URL(req.url).searchParams.get('forceReparse');
+  if (forceReparseId) {
+    await admin.from('aita_tournaments').update({ factsheet_filename: null }).eq('aita_id', Number(forceReparseId));
+  }
+
+  // ?resetAll=true clears every row's stored filename, so subsequent runs
+  // re-parse everyone with whatever the current parsing logic is — used
+  // once after fixing a systemic extraction bug so already-synced rows get
+  // backfilled with corrected data instead of sitting stale until AITA
+  // happens to republish their fact sheet.
+  if (new URL(req.url).searchParams.get('resetAll') === 'true') {
+    await admin.from('aita_tournaments').update({ factsheet_filename: null }).not('factsheet_filename', 'is', null);
+  }
+
   const { data: logRow } = await admin
     .from('aita_sync_log')
     .insert({ triggered_by: triggeredBy })
@@ -336,7 +422,8 @@ Deno.serve(async (req) => {
     .single();
   const logId = logRow?.id;
 
-  let found = 0, upserted = 0, changed = 0;
+  let found = 0, upserted = 0, changed = 0, pdfParses = 0;
+  const sampleErrors: string[] = [];
 
   try {
     const year = new Date().getFullYear();
@@ -350,9 +437,30 @@ Deno.serve(async (req) => {
     cutoff.setDate(cutoff.getDate() - PAST_WINDOW_DAYS);
     const cutoffIso = cutoff.toISOString().slice(0, 10);
 
-    for (const entry of entries.values()) {
-      if (entry.startDate && entry.startDate < cutoffIso) continue;
+    const inWindow = forceReparseId
+      ? [...entries.values()].filter((e) => e.aitaId === Number(forceReparseId))
+      : [...entries.values()].filter((e) => !e.startDate || e.startDate >= cutoffIso);
 
+    // One batch query instead of one per tournament — just enough to prioritize.
+    const { data: seenRows } = await admin
+      .from('aita_tournaments')
+      .select('aita_id, last_seen_at')
+      .in('aita_id', inWindow.map((e) => e.aitaId));
+    const lastSeenById = new Map((seenRows || []).map((r) => [r.aita_id, r.last_seen_at as string]));
+
+    // New tournaments (never synced) first, then oldest-synced first, so a
+    // run always makes forward progress instead of reprocessing the same slice.
+    const prioritized = [...inWindow].sort((a, b) => {
+      const aSeen = lastSeenById.get(a.aitaId);
+      const bSeen = lastSeenById.get(b.aitaId);
+      if (!aSeen && !bSeen) return 0;
+      if (!aSeen) return -1;
+      if (!bSeen) return 1;
+      return aSeen < bSeen ? -1 : aSeen > bSeen ? 1 : 0;
+    });
+    const batch = prioritized.slice(0, MAX_TOURNAMENTS_PER_RUN);
+
+    for (const entry of batch) {
       try {
         const { data: existing } = await admin
           .from('aita_tournaments')
@@ -371,9 +479,10 @@ Deno.serve(async (req) => {
         let contentHash = existing?.content_hash ?? null;
         let rowChanged = false;
 
-        if (detail.factsheetUrl) {
+        if (detail.factsheetUrl && pdfParses < MAX_PDF_PARSES_PER_RUN) {
           const newFilename = factsheetFilenameFromUrl(detail.factsheetUrl);
           if (newFilename !== existing?.factsheet_filename) {
+            pdfParses++;
             const pdfRes = await fetch(detail.factsheetUrl);
             if (pdfRes.ok) {
               const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
@@ -390,6 +499,8 @@ Deno.serve(async (req) => {
               rowChanged = newHash !== contentHash;
               contentHash = newHash;
               factsheetFilename = newFilename;
+            } else if (sampleErrors.length < 3) {
+              sampleErrors.push(`aita_id=${entry.aitaId}: pdf fetch failed, status=${pdfRes.status}`);
             }
           }
         }
@@ -414,7 +525,7 @@ Deno.serve(async (req) => {
         if (factsheetFilename) row.factsheet_filename = factsheetFilename;
         if (contentHash) row.content_hash = contentHash;
         if (rowChanged) row.last_changed_at = new Date().toISOString();
-        Object.assign(row, factsheetFields);
+        Object.assign(row, factsheetFieldsToRow(factsheetFields));
 
         const { error: upsertErr } = await admin
           .from('aita_tournaments')
@@ -422,9 +533,12 @@ Deno.serve(async (req) => {
         if (!upsertErr) {
           upserted++;
           if (rowChanged || !existing) changed++;
+        } else if (sampleErrors.length < 3) {
+          sampleErrors.push(`aita_id=${entry.aitaId}: upsert failed: ${upsertErr.message}`);
         }
       } catch (perTournamentErr) {
         console.error(`aita_id=${entry.aitaId} failed:`, perTournamentErr);
+        if (sampleErrors.length < 3) sampleErrors.push(`aita_id=${entry.aitaId}: ${String(perTournamentErr)}`);
       }
     }
 
@@ -433,7 +547,10 @@ Deno.serve(async (req) => {
       .update({ finished_at: new Date().toISOString(), tournaments_found: found, tournaments_upserted: upserted, tournaments_changed: changed })
       .eq('id', logId);
 
-    return new Response(JSON.stringify({ found, upserted, changed }), {
+    // sampleErrors surfaces up to 3 per-tournament failures directly in the
+    // response, so problems are visible from the "Sync Now" result / a plain
+    // curl call without a dashboard log round-trip.
+    return new Response(JSON.stringify({ found, upserted, changed, pdfParses, sampleErrors }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
