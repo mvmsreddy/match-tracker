@@ -117,6 +117,12 @@ export const getWeekMatches      = hasSupabaseConfig ? supabaseApi.getWeekMatche
 export const updateMatchSchedule = hasSupabaseConfig ? supabaseApi.updateMatchSchedule : async () => {};
 export const autoScheduleWeek    = hasSupabaseConfig ? supabaseApi.autoScheduleWeek    : async () => 0;
 
+// Phase 25 — AITA Calendar mirror
+export const listAitaTournaments  = hasSupabaseConfig ? supabaseApi.listAitaTournaments  : async () => [];
+export const getAitaTournament    = hasSupabaseConfig ? supabaseApi.getAitaTournament    : async () => null;
+export const getLatestAitaSyncLog = hasSupabaseConfig ? supabaseApi.getLatestAitaSyncLog : async () => null;
+export const triggerAitaSync      = hasSupabaseConfig ? supabaseApi.triggerAitaSync      : noSupabase;
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;

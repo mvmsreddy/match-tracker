@@ -2349,3 +2349,93 @@ export async function sendNotificationEmails(userIds, { subject, html }) {
     return { ok: false };
   }
 }
+
+// ---------------------------------------------------------------------------
+// AITA Calendar — mirrored tournaments + fact sheets (phase 25)
+// Read-only from the client; the sync-aita-calendar Edge Function (cron +
+// "Sync Now" button, both via triggerAitaSync) is the only writer.
+// ---------------------------------------------------------------------------
+
+const AITA_FACTSHEET_BUCKET = 'aita-factsheets';
+
+function rowToAitaTournament(row) {
+  return {
+    id: row.id,
+    aitaId: row.aita_id,
+    name: row.name,
+    grade: row.grade,
+    ageGroup: row.age_group,
+    category: row.category,
+    city: row.city,
+    venue: row.venue,
+    startDate: row.start_date,
+    sourceUrl: row.source_url,
+    entryDeadline: row.entry_deadline,
+    withdrawalDeadline: row.withdrawal_deadline,
+    qualifyingStartDate: row.qualifying_start_date,
+    qualifyingEndDate: row.qualifying_end_date,
+    directorName: row.director_name,
+    directorPhone: row.director_phone,
+    directorEmail: row.director_email,
+    refereeName: row.referee_name,
+    refereePhone: row.referee_phone,
+    refereeEmail: row.referee_email,
+    venueAddress: row.venue_address,
+    venuePincode: row.venue_pincode,
+    venuePhone: row.venue_phone,
+    surface: row.surface,
+    ballBrand: row.ball_brand,
+    hasFloodlights: row.has_floodlights,
+    entryFeeSingles: row.entry_fee_singles,
+    entryFeeDoubles: row.entry_fee_doubles,
+    dailyAllowance: row.daily_allowance,
+    signinInstructions: row.signin_instructions,
+    factsheetUrl: row.factsheet_storage_path
+      ? supabase.storage.from(AITA_FACTSHEET_BUCKET).getPublicUrl(row.factsheet_storage_path).data.publicUrl
+      : null,
+    lastSeenAt: row.last_seen_at,
+    lastChangedAt: row.last_changed_at,
+  };
+}
+
+export async function listAitaTournaments({ ageGroup, search } = {}) {
+  let query = supabase.from('aita_tournaments').select('*').order('start_date', { ascending: true });
+  if (ageGroup) query = query.eq('age_group', ageGroup);
+  if (search) query = query.ilike('name', `%${search}%`);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaTournament);
+}
+
+export async function getAitaTournament(id) {
+  const { data, error } = await supabase.from('aita_tournaments').select('*').eq('id', id).single();
+  if (error) throw new Error('Tournament not found');
+  return rowToAitaTournament(data);
+}
+
+export async function getLatestAitaSyncLog() {
+  const { data, error } = await supabase
+    .from('aita_sync_log')
+    .select('*')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    id: data.id,
+    startedAt: data.started_at,
+    finishedAt: data.finished_at,
+    tournamentsFound: data.tournaments_found,
+    tournamentsUpserted: data.tournaments_upserted,
+    tournamentsChanged: data.tournaments_changed,
+    error: data.error,
+    triggeredBy: data.triggered_by,
+  };
+}
+
+export async function triggerAitaSync() {
+  const { data, error } = await supabase.functions.invoke('sync-aita-calendar', { body: {} });
+  if (error) throw new Error(error.message);
+  return data;
+}
