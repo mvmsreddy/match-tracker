@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 import ShotLocationCourt from './ShotLocationCourt';
+import ChipButton from './tracker/ChipButton';
+import { Button } from './ui/button';
+import { cn } from '../lib/utils';
 
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
 const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
@@ -226,8 +229,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // ── Display helpers ──────────────────────────────────────────────────────
 
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
-  const colClass = (who) =>
-    'player-col-name ' + (who === 'self' ? 'self-name' : 'opp-name') + (pending.server === who ? ' player-serving' : '');
+  const colClass = (who) => cn(
+    'rounded-t-tt border-b px-1.5 py-1.5 text-center font-tt-mono text-xs font-semibold uppercase tracking-wide',
+    who === 'self' ? 'text-tt-brand' : 'text-tt-opp',
+    pending.server === who
+      ? (who === 'self' ? 'border-b-2 border-tt-brand bg-tt-brand/10' : 'border-b-2 border-tt-opp bg-tt-opp/10')
+      : 'border-tt-border'
+  );
   const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
   const receiver = pending.server === 'self' ? 'opp' : 'self';
 
@@ -247,15 +255,17 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
 
   return (
-    <div className="wizard">
+    <div className="flex flex-1 flex-col py-3">
       {/* Breadcrumb */}
       {breadcrumbs.length > 0 && (
-        <div className="wizard-breadcrumb">{breadcrumbs.join(' → ')}</div>
+        <div className="mb-2 border-b border-tt-border pb-2 font-tt-mono text-xs text-tt-muted-foreground">
+          {breadcrumbs.join(' → ')}
+        </div>
       )}
 
       {/* Active step card */}
       <div
-        className="wizard-step-card"
+        className="mb-2 flex min-h-[180px] flex-1 flex-col overflow-y-auto rounded-tt border border-tt-border border-l-[3px] border-l-tt-brand bg-tt-surface p-3.5"
         ref={stepCardRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -263,7 +273,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {(history.length > 0 || canUndo) && (
           <button
             type="button"
-            className="wizard-back-btn"
+            className="mb-1 flex-shrink-0 cursor-pointer self-start bg-transparent font-tt-mono text-xs text-tt-muted-foreground hover:text-tt-brand"
             onClick={goBack}
             title="Go back one step (or swipe right)"
           >
@@ -273,101 +283,96 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'faultLocation' && (
           <>
-            <div className="wizard-step-label">
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">
               {pending.serveAttempt === '2nd' ? 'Double Fault — Where?' : '1st Serve Fault — Where?'}
             </div>
-            <div className="chip-row">
-              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Long')}>Long</div>
-              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Wide')}>Wide</div>
-              <div className="chip chip-lg warn" onClick={() => handleFaultLocation('Net')}>Net</div>
+            <div className="flex flex-wrap gap-2">
+              <ChipButton variant="warn" onClick={() => handleFaultLocation('Long')}>Long</ChipButton>
+              <ChipButton variant="warn" onClick={() => handleFaultLocation('Wide')}>Wide</ChipButton>
+              <ChipButton variant="warn" onClick={() => handleFaultLocation('Net')}>Net</ChipButton>
             </div>
           </>
         )}
 
         {activeStep === 'serviceScreen' && (
           <>
-            <div className="wizard-step-label">{serveLabel}</div>
-            <div className="ball-in-play-grid wizard-grow">
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{serveLabel}</div>
+            <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {/* Left column: always self */}
-              <div className="player-col">
+              <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                 <div className={colClass('self')}>{playerName('self')}</div>
                 {pending.server === 'self' ? (
                   <>
-                    <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
-                    <div className="chip chip-lg warn" onClick={handleFault}>
+                    <ChipButton variant="action" className="flex-1" onClick={handleAce}>Ace</ChipButton>
+                    <ChipButton variant="warn" className="flex-1" onClick={handleFault}>
                       {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
-                    </div>
-                    <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
+                    </ChipButton>
+                    <ChipButton className="flex-1" onClick={handleBallIn}>Ball In</ChipButton>
                   </>
                 ) : (
                   <>
-                    <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
-                    <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
+                    <ChipButton variant="self" className="flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
+                    <ChipButton variant="warn" className="flex-1" onClick={handleReturnError}>Return Error</ChipButton>
                   </>
                 )}
               </div>
               {/* Right column: always opp */}
-              <div className="player-col">
+              <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                 <div className={colClass('opp')}>{playerName('opp')}</div>
                 {pending.server === 'opp' ? (
                   <>
-                    <div className="chip chip-lg chip-action" onClick={handleAce}>Ace</div>
-                    <div className="chip chip-lg warn" onClick={handleFault}>
+                    <ChipButton variant="action" className="flex-1" onClick={handleAce}>Ace</ChipButton>
+                    <ChipButton variant="warn" className="flex-1" onClick={handleFault}>
                       {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
-                    </div>
-                    <div className="chip chip-lg" onClick={handleBallIn}>Ball In</div>
+                    </ChipButton>
+                    <ChipButton className="flex-1" onClick={handleBallIn}>Ball In</ChipButton>
                   </>
                 ) : (
                   <>
-                    <div className="chip chip-lg self-pt" onClick={handleReturnWinner}>Return Winner</div>
-                    <div className="chip chip-lg warn" onClick={handleReturnError}>Return Error</div>
+                    <ChipButton variant="self" className="flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
+                    <ChipButton variant="warn" className="flex-1" onClick={handleReturnError}>Return Error</ChipButton>
                   </>
                 )}
               </div>
             </div>
-            <div className="chip-row" style={{ marginTop: 8 }}>
-              <div className="chip chip-lg chip-let chip-full" onClick={handleLet}>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <ChipButton variant="let" full onClick={handleLet}>
                 Let — Replay {pending.serveAttempt} Serve
-              </div>
+              </ChipButton>
             </div>
           </>
         )}
 
         {activeStep === 'returnErrorType' && (
           <>
-            <div className="wizard-step-label">{playerName(receiver)} — Return Error</div>
-            <div className="chip-row">
-              <div className="chip chip-lg chip-forced chip-full" onClick={() => handleReturnErrorReason('ForcedError')}>
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{playerName(receiver)} — Return Error</div>
+            <div className="flex flex-wrap gap-2">
+              <ChipButton variant="forced" full onClick={() => handleReturnErrorReason('ForcedError')}>
                 Forced Error
-              </div>
-              <div className="chip chip-lg warn chip-full" onClick={() => handleReturnErrorReason('UnforcedError')}>
+              </ChipButton>
+              <ChipButton variant="warn" full onClick={() => handleReturnErrorReason('UnforcedError')}>
                 Unforced Error
-              </div>
+              </ChipButton>
             </div>
           </>
         )}
 
         {activeStep === 'rallySelect' && (
           <>
-            <div className="wizard-step-label">Rally Length</div>
-            <div className="ball-in-play-grid" style={{ marginBottom: 8 }}>
-              <div className="player-col">
-                <div className={colClass('self')}>{playerName('self')}</div>
-              </div>
-              <div className="player-col">
-                <div className={colClass('opp')}>{playerName('opp')}</div>
-              </div>
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Rally Length</div>
+            <div className="mb-2 grid grid-cols-2 gap-2.5">
+              <div className={colClass('self')}>{playerName('self')}</div>
+              <div className={colClass('opp')}>{playerName('opp')}</div>
             </div>
-            <div className="chip-row chip-grid-rally wizard-grow">
+            <div className="flex flex-1 flex-nowrap items-stretch gap-2">
               {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <div
+                <ChipButton
                   key={n}
-                  className="chip chip-lg"
-                  style={{ textAlign: 'center' }}
+                  className="min-h-[60px] flex-1 text-base"
                   onClick={() => setPendingStep((p) => ({ ...p, rallyCount: n }))}
                 >
                   {n === 7 ? '7+' : n}
-                </div>
+                </ChipButton>
               ))}
             </div>
           </>
@@ -375,22 +380,20 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'ballInPlay' && (
           <>
-            <div className="wizard-step-label">Ball in Play</div>
-            <div className="ball-in-play-grid wizard-grow">
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Ball in Play</div>
+            <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {(['self', 'opp']).map((who) => (
-                <div key={who} className="player-col">
-                  <div className={colClass(who)}>
-                    {playerName(who)}
-                  </div>
-                  <div className="chip chip-lg self-pt" onClick={() => handleBallInOutcome(who, 'Winner')}>
+                <div key={who} className="flex min-h-0 flex-col gap-2 overflow-y-auto">
+                  <div className={colClass(who)}>{playerName(who)}</div>
+                  <ChipButton variant="self" className="flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
                     Winner
-                  </div>
-                  <div className="chip chip-lg chip-forced" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
+                  </ChipButton>
+                  <ChipButton variant="forced" className="flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
                     Forced Error
-                  </div>
-                  <div className="chip chip-lg warn" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
+                  </ChipButton>
+                  <ChipButton variant="warn" className="flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
                     Unforced Error
-                  </div>
+                  </ChipButton>
                 </div>
               ))}
             </div>
@@ -401,23 +404,23 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="wizard-step-label">Select Wing</div>
-              <div className="ball-in-play-grid wizard-grow">
-                <div className="player-col">
+              <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Select Wing</div>
+              <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
+                <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && (
                     <>
-                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
-                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Backhand')}>Backhand</div>
+                      <ChipButton full className="flex-1" onClick={() => handleShotWing('Forehand')}>Forehand</ChipButton>
+                      <ChipButton full className="flex-1" onClick={() => handleShotWing('Backhand')}>Backhand</ChipButton>
                     </>
                   )}
                 </div>
-                <div className="player-col">
+                <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('opp')}>{playerName('opp')}</div>
                   {hitter === 'opp' && (
                     <>
-                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Forehand')}>Forehand</div>
-                      <div className="chip chip-lg chip-full" onClick={() => handleShotWing('Backhand')}>Backhand</div>
+                      <ChipButton full className="flex-1" onClick={() => handleShotWing('Forehand')}>Forehand</ChipButton>
+                      <ChipButton full className="flex-1" onClick={() => handleShotWing('Backhand')}>Backhand</ChipButton>
                     </>
                   )}
                 </div>
@@ -430,22 +433,22 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="wizard-step-label">{pending.shotWing} — Select Shot</div>
-              <div className="ball-in-play-grid wizard-grow">
-                <div className="player-col">
+              <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{pending.shotWing} — Select Shot</div>
+              <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
+                <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
                   {hitter === 'self' && SHOT_TYPES.map((type) => (
-                    <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
+                    <ChipButton key={type} full className="flex-1" onClick={() => handleShotType(type)}>
                       {shotLabel(type)}
-                    </div>
+                    </ChipButton>
                   ))}
                 </div>
-                <div className="player-col">
+                <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('opp')}>{playerName('opp')}</div>
                   {hitter === 'opp' && SHOT_TYPES.map((type) => (
-                    <div key={type} className="chip chip-lg chip-full" onClick={() => handleShotType(type)}>
+                    <ChipButton key={type} full className="flex-1" onClick={() => handleShotType(type)}>
                       {shotLabel(type)}
-                    </div>
+                    </ChipButton>
                   ))}
                 </div>
               </div>
@@ -459,27 +462,27 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'errorLocation' && (
           <>
-            <div className="wizard-step-label">Unforced Error — Where did it go?</div>
-            <div className="chip-row">
-              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Long')}>Long</div>
-              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Wide')}>Wide</div>
-              <div className="chip chip-lg warn" onClick={() => handleErrorLocation('Net')}>Net</div>
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Unforced Error — Where did it go?</div>
+            <div className="flex flex-wrap gap-2">
+              <ChipButton variant="warn" onClick={() => handleErrorLocation('Long')}>Long</ChipButton>
+              <ChipButton variant="warn" onClick={() => handleErrorLocation('Wide')}>Wide</ChipButton>
+              <ChipButton variant="warn" onClick={() => handleErrorLocation('Net')}>Net</ChipButton>
             </div>
           </>
         )}
 
         {activeStep === 'infractionSelect' && (
           <>
-            <div className="wizard-step-label">Infraction? (Optional)</div>
-            <div className="chip-row chip-grid-2">
+            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Infraction? (Optional)</div>
+            <div className="flex flex-wrap gap-2">
               {OTHER_SUB_TYPES.map((sub) => (
-                <div key={sub} className="chip chip-lg" onClick={() => commitAndReset({ infraction: sub })}>
+                <ChipButton key={sub} className="flex-[1_1_calc(50%-4px)]" onClick={() => commitAndReset({ infraction: sub })}>
                   {sub}
-                </div>
+                </ChipButton>
               ))}
-              <div className="chip chip-lg chip-full chip-let" onClick={() => commitAndReset({ infraction: 'none' })}>
+              <ChipButton variant="let" full onClick={() => commitAndReset({ infraction: 'none' })}>
                 Skip — No Infraction
-              </div>
+              </ChipButton>
             </div>
           </>
         )}
@@ -487,15 +490,15 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
       </div>
 
-      <div className="undo-bar">
-        <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</button>
+      <div className="flex flex-shrink-0 items-center justify-between gap-2">
+        <Button variant="outline" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</Button>
         {confirmDelete ? (
-          <>
-            <button className="action-btn danger confirming" onClick={onDelete}>Yes, Delete</button>
-            <button className="undo-btn" onClick={() => setConfirmDelete(false)}>Cancel</button>
-          </>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="destructive-solid" size="sm" onClick={onDelete}>Yes, Delete</Button>
+            <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          </div>
         ) : (
-          <button className="delete-match-btn" onClick={() => setConfirmDelete(true)}>✕ Delete</button>
+          <Button variant="destructive" size="sm" className="ml-auto" onClick={() => setConfirmDelete(true)}>✕ Delete</Button>
         )}
       </div>
     </div>

@@ -11,6 +11,14 @@ import MomentumGraph from '../components/MomentumGraph';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import AiReviewModal from '../components/AiReviewModal';
 import { computeStats, computeServeStats } from '../lib/analytics';
+import { cn } from '../lib/utils';
+import '../styles/tracker-tailwind.css';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Select } from '../components/ui/select';
+import { Table, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
 
 const SURFACES = [
   'Acrylic (Hard-Court)', 'Artificial Clay', 'Artificial Grass',
@@ -42,8 +50,8 @@ export default function TrackerPage() {
   }
 
   return (
-    <div className="root">
-      <TopNav />
+    <div className="tracker-shell root flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
+      <TopNav variant="tracker" />
 
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
@@ -55,55 +63,38 @@ export default function TrackerPage() {
       )}
 
       {/* Tab bar — always visible */}
-      <div className="tab-bar">
-        <button
-          className={'tab-btn' + (activeTab === 'match' ? ' active' : '')}
-          onClick={() => setActiveTab('match')}
-        >
-          Match
-        </button>
-        <button
-          className={'tab-btn' + (activeTab === 'track' ? ' active' : '')}
-          onClick={() => setActiveTab('track')}
-          disabled={!t.matchStarted}
-        >
-          ● Live Track
-        </button>
-        <button
-          className={'tab-btn' + (activeTab === 'stats' ? ' active' : '')}
-          onClick={() => setActiveTab('stats')}
-          disabled={!t.matchStarted}
-        >
-          Stats
-        </button>
-        <button
-          className={'tab-btn' + (activeTab === 'close' ? ' active' : '')}
-          onClick={() => setActiveTab('close')}
-          disabled={!t.matchStarted}
-          style={{
-            color: !t.matchStarted ? undefined : (activeTab === 'close' ? '#C6E23D' : '#E37B6B'),
-            borderBottomColor: activeTab === 'close' ? '#C6E23D' : 'transparent',
-          }}
-        >
-          Close
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mx-auto w-full max-w-3xl px-4">
+          <TabsTrigger value="match">Match</TabsTrigger>
+          <TabsTrigger value="track" disabled={!t.matchStarted}>● Live Track</TabsTrigger>
+          <TabsTrigger value="stats" disabled={!t.matchStarted}>Stats</TabsTrigger>
+          <TabsTrigger
+            value="close"
+            disabled={!t.matchStarted}
+            className={cn(t.matchStarted && activeTab !== 'close' && 'text-tt-opp')}
+          >
+            Close
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Global status message */}
-      <div className="wrap" style={{ marginTop: 4 }}><div className="status-msg">{t.status}</div></div>
+      <div className="mx-auto mt-1 w-full max-w-3xl px-4">
+        <div className="py-1 text-xs text-tt-muted-foreground">{t.status}</div>
+      </div>
 
       {/* On-demand AI review — available any time there are points to review */}
       {AI_REVIEW_ENABLED && t.matchStarted && t.points.length > 0 && (
-        <div className="wrap" style={{ marginTop: 4 }}>
-          <button className="action-btn" onClick={() => setAiReview({ scope: 'match' })}>
+        <div className="mx-auto mt-1 w-full max-w-3xl px-4">
+          <Button type="button" variant="outline" size="sm" onClick={() => setAiReview({ scope: 'match' })}>
             🤖 Review with AI
-          </button>
+          </Button>
         </div>
       )}
 
       {/* ── Match tab ── */}
       {activeTab === 'match' && (
-        <div className="tab-content">
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
           {t.matchStarted ? (
             /* Match running — show editable details + prompt to Track */
             <MatchRunningView t={t} onGoTrack={() => setActiveTab('track')} />
@@ -116,7 +107,7 @@ export default function TrackerPage() {
 
       {/* ── Track tab ── */}
       {activeTab === 'track' && t.matchStarted && (
-        <div className="tab-content">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-6">
           {t.gameTransition ? (
             <GameTransitionCard
               transition={t.gameTransition}
@@ -157,7 +148,7 @@ export default function TrackerPage() {
                   trackingMode={t.trackingMode}
                 />
               ) : (
-                <div className="server-required-msg">Select who serves first above to begin tracking</div>
+                <div className="py-8 text-center text-sm text-tt-muted-foreground">Select who serves first above to begin tracking</div>
               )}
             </>
           )}
@@ -166,7 +157,7 @@ export default function TrackerPage() {
 
       {/* ── Stats tab ── */}
       {activeTab === 'stats' && t.matchStarted && (
-        <div className="tab-content">
+        <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 overflow-y-auto px-4 pb-6">
           <MomentumGraph
             points={t.points}
             selfName={t.header.selfName || 'Self'}
@@ -188,7 +179,7 @@ export default function TrackerPage() {
 
       {/* ── Close Match tab ── */}
       {activeTab === 'close' && t.matchStarted && (
-        <div className="tab-content">
+        <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 overflow-y-auto px-4 pb-6">
           <ActionButtons
             header={t.header} updateHeader={t.updateHeader}
             sessionType={t.sessionType} formatPreset={t.formatPreset} formatLabel={t.formatLabel}
@@ -211,35 +202,49 @@ export default function TrackerPage() {
   );
 }
 
+// ── Small shared field/label helpers ──────────────────────────────────────
+function SectionLabel({ children }) {
+  return (
+    <div className="mb-2 font-tt-mono text-[0.65rem] font-bold uppercase tracking-widest text-tt-muted-foreground">
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children, className }) {
+  return (
+    <div className={cn('flex flex-col gap-1', className)}>
+      <label className="font-tt-mono text-[0.58rem] uppercase tracking-widest text-tt-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 // ── Match tab when a match IS running ────────────────────────────────────────
 function MatchRunningView({ t, onGoTrack }) {
   return (
-    <div className="setup-card">
-      <div className="setup-section" style={{ marginBottom: 0 }}>
-        <div className="setup-section-label" style={{ color: '#C6E23D' }}>Match in Progress</div>
-        <div style={{ fontFamily: 'Inter', fontSize: '0.9rem', marginBottom: 12 }}>
-          <span style={{ color: '#C6E23D', fontWeight: 600 }}>{t.header.selfName || 'You'}</span>
-          {' vs '}
-          <span style={{ color: '#E37B6B', fontWeight: 600 }}>{t.header.oppName || 'Opponent'}</span>
-          {t.header.tournament ? <span style={{ color: '#7FA0B5' }}> · {t.header.tournament}</span> : null}
+    <Card className="mx-auto my-4 max-w-lg">
+      <CardContent className="space-y-4 pt-4">
+        <div>
+          <div className="mb-2 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Match in Progress</div>
+          <div className="mb-3 text-sm">
+            <span className="font-semibold text-tt-brand">{t.header.selfName || 'You'}</span>
+            {' vs '}
+            <span className="font-semibold text-tt-opp">{t.header.oppName || 'Opponent'}</span>
+            {t.header.tournament ? <span className="text-tt-muted-foreground"> · {t.header.tournament}</span> : null}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {t.header.surface && (
+              <Field label="Surface"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.surface}</div></Field>
+            )}
+            {t.header.indoorOutdoor && (
+              <Field label="Indoor / Outdoor"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.indoorOutdoor}</div></Field>
+            )}
+          </div>
         </div>
-        <div className="setup-grid-2">
-          {t.header.surface && (
-            <div className="field"><label>Surface</label>
-              <div style={{ color: '#F3F1E6', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', padding: '7px 0' }}>{t.header.surface}</div>
-            </div>
-          )}
-          {t.header.indoorOutdoor && (
-            <div className="field"><label>Indoor / Outdoor</label>
-              <div style={{ color: '#F3F1E6', fontFamily: 'JetBrains Mono', fontSize: '0.8rem', padding: '7px 0' }}>{t.header.indoorOutdoor}</div>
-            </div>
-          )}
-        </div>
-      </div>
-      <button className="setup-start-btn" style={{ marginTop: 16 }} onClick={onGoTrack}>
-        ● Go to Track
-      </button>
-    </div>
+        <Button className="w-full" size="lg" onClick={onGoTrack}>● Go to Track</Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -263,170 +268,167 @@ function SetupForm({ t, onStart }) {
   }
 
   return (
-    <div className="setup-card">
-      <div className="setup-header">
-        <h1 className="setup-title">Match Tracker Pro</h1>
-        <p className="setup-subtitle">Enter details below to begin tracking</p>
-      </div>
-
-      {/* Players */}
-      <div className="setup-section">
-        <div className="setup-section-label">Players</div>
-        <div className="setup-grid-2">
-          <div className="field">
-            <label>Your name *</label>
-            <input
-              placeholder="Your name"
-              value={t.header.selfName}
-              onChange={(e) => t.updateHeader({ selfName: e.target.value })}
-              autoFocus
-            />
-          </div>
-          <div className="field">
-            <label>Opponent</label>
-            <input
-              placeholder="Opponent name"
-              value={t.header.oppName}
-              onChange={(e) => t.updateHeader({ oppName: e.target.value })}
-            />
-          </div>
+    <Card className="mx-auto my-4 max-w-lg">
+      <CardContent className="space-y-6 pt-4">
+        <div>
+          <h1 className="font-tt-display text-2xl font-bold uppercase tracking-tight text-tt-foreground">Match Tracker Pro</h1>
+          <p className="mt-1 text-xs text-tt-muted-foreground">Enter details below to begin tracking</p>
         </div>
-      </div>
 
-      {/* Match details */}
-      <div className="setup-section">
-        <div className="setup-section-label">Match Details</div>
-        <div className="setup-grid-2">
-          <div className="field">
-            <label>Tournament / Location</label>
-            <input
-              placeholder="e.g. Club Championship"
-              value={t.header.tournament}
-              onChange={(e) => t.updateHeader({ tournament: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label>Date</label>
-            <input
-              type="date"
-              value={t.header.date}
-              onChange={(e) => t.updateHeader({ date: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label>Surface</label>
-            <select value={t.header.surface} onChange={(e) => t.updateHeader({ surface: e.target.value })}>
-              <option value="">Not specified</option>
-              {SURFACES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label>Indoor / Outdoor</label>
-            <select value={t.header.indoorOutdoor} onChange={(e) => t.updateHeader({ indoorOutdoor: e.target.value })}>
-              <option value="">Not specified</option>
-              <option value="Indoor">Indoor</option>
-              <option value="Outdoor">Outdoor</option>
-            </select>
-          </div>
-          <div className="field">
-            <label>Opponent Handedness</label>
-            <select value={t.header.oppHandedness} onChange={(e) => t.updateHeader({ oppHandedness: e.target.value })}>
-              <option value="">Not specified</option>
-              <option value="Right-Handed">Right-Handed</option>
-              <option value="Left-Handed">Left-Handed</option>
-            </select>
-          </div>
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label>Weather</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                style={{ flex: 1 }}
-                placeholder="e.g. 24°C, Sunny, Wind 10 km/h"
-                value={t.header.weather}
-                onChange={(e) => t.updateHeader({ weather: e.target.value })}
+        {/* Players */}
+        <section>
+          <SectionLabel>Players</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Your name *">
+              <Input
+                placeholder="Your name"
+                value={t.header.selfName}
+                onChange={(e) => t.updateHeader({ selfName: e.target.value })}
+                autoFocus
               />
-              <button
-                type="button"
-                className="action-btn"
-                style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}
-                disabled={weatherLoading}
-                onClick={handleGetWeather}
-              >
-                {weatherLoading ? 'Locating…' : 'Get Weather'}
-              </button>
-            </div>
+            </Field>
+            <Field label="Opponent">
+              <Input
+                placeholder="Opponent name"
+                value={t.header.oppName}
+                onChange={(e) => t.updateHeader({ oppName: e.target.value })}
+              />
+            </Field>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Session type */}
-      <div className="setup-section">
-        <div className="setup-section-label">Session Type</div>
-        <div className="server-toggle" style={{ marginBottom: 0 }}>
-          <div className={'chip' + (t.sessionType === 'match' ? ' selected' : '')} onClick={() => t.setSessionType('match')}>
-            Match
-          </div>
-          <div className={'chip' + (t.sessionType === 'practice' ? ' selected' : '')} onClick={() => t.setSessionType('practice')}>
-            Practice
-          </div>
-        </div>
-
-        {t.sessionType === 'match' && (
-          <div className="field" style={{ marginTop: 12 }}>
-            <label>Match Format</label>
-            <select value={t.formatPreset} onChange={(e) => t.setFormatPreset(e.target.value)}>
-              <option value="bo3-full">Best of 3 sets (full 3rd set)</option>
-              <option value="bo3-mtb10">Best of 3 sets (Match Tiebreak-10 decider)</option>
-              <option value="bo5-full">Best of 5 sets</option>
-              <option value="proset8">Pro-set (first to 8 games)</option>
-              <option value="shortsets4">Short Sets (best of 3, first to 4 games)</option>
-            </select>
-          </div>
-        )}
-
-        {t.sessionType === 'practice' && (
-          <div className="field" style={{ marginTop: 12 }}>
-            <label>Points Target</label>
-            <div className="chip-row" style={{ marginBottom: 0 }}>
-              {[10, 15, 21].map((n) => (
-                <div
-                  key={n}
-                  className={'chip' + (t.pointTarget === n ? ' selected' : '')}
-                  onClick={() => t.setPointTarget(n)}
+        {/* Match details */}
+        <section>
+          <SectionLabel>Match Details</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tournament / Location">
+              <Input
+                placeholder="e.g. Club Championship"
+                value={t.header.tournament}
+                onChange={(e) => t.updateHeader({ tournament: e.target.value })}
+              />
+            </Field>
+            <Field label="Date">
+              <Input
+                type="date"
+                value={t.header.date}
+                onChange={(e) => t.updateHeader({ date: e.target.value })}
+              />
+            </Field>
+            <Field label="Surface">
+              <Select value={t.header.surface} onChange={(e) => t.updateHeader({ surface: e.target.value })}>
+                <option value="">Not specified</option>
+                {SURFACES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </Select>
+            </Field>
+            <Field label="Indoor / Outdoor">
+              <Select value={t.header.indoorOutdoor} onChange={(e) => t.updateHeader({ indoorOutdoor: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Indoor">Indoor</option>
+                <option value="Outdoor">Outdoor</option>
+              </Select>
+            </Field>
+            <Field label="Opponent Handedness">
+              <Select value={t.header.oppHandedness} onChange={(e) => t.updateHeader({ oppHandedness: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Right-Handed">Right-Handed</option>
+                <option value="Left-Handed">Left-Handed</option>
+              </Select>
+            </Field>
+            <Field label="Weather" className="col-span-2">
+              <div className="flex gap-1.5">
+                <Input
+                  className="flex-1"
+                  placeholder="e.g. 24°C, Sunny, Wind 10 km/h"
+                  value={t.header.weather}
+                  onChange={(e) => t.updateHeader({ weather: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="whitespace-nowrap"
+                  disabled={weatherLoading}
+                  onClick={handleGetWeather}
                 >
-                  {n} pts
-                </div>
-              ))}
-            </div>
+                  {weatherLoading ? 'Locating…' : 'Get Weather'}
+                </Button>
+              </div>
+            </Field>
           </div>
-        )}
-      </div>
+        </section>
 
-      {/* Tracking detail */}
-      <div className="setup-section">
-        <div className="setup-section-label">Tracking Detail</div>
-        <div className="server-toggle" style={{ marginBottom: 0 }}>
-          {TRACKING_MODES.map((m) => (
-            <div
-              key={m.value}
-              className={'chip' + (t.trackingMode === m.value ? ' selected' : '')}
-              onClick={() => t.setTrackingMode(m.value)}
-            >
-              {m.label}
-            </div>
-          ))}
-        </div>
-        <p className="setup-hint" style={{ marginTop: 6 }}>
-          {(TRACKING_MODES.find((m) => m.value === t.trackingMode) || TRACKING_MODES[2]).hint}
-        </p>
-      </div>
+        {/* Session type */}
+        <section>
+          <SectionLabel>Session Type</SectionLabel>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant={t.sessionType === 'match' ? 'default' : 'outline'} onClick={() => t.setSessionType('match')}>
+              Match
+            </Button>
+            <Button type="button" size="sm" variant={t.sessionType === 'practice' ? 'default' : 'outline'} onClick={() => t.setSessionType('practice')}>
+              Practice
+            </Button>
+          </div>
 
-      {/* CTA */}
-      <button className="setup-start-btn" disabled={!canStart} onClick={onStart}>
-        {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
-      </button>
-      {!canStart && <p className="setup-hint">Enter your name to continue</p>}
-    </div>
+          {t.sessionType === 'match' && (
+            <Field label="Match Format" className="mt-3">
+              <Select value={t.formatPreset} onChange={(e) => t.setFormatPreset(e.target.value)}>
+                <option value="bo3-full">Best of 3 sets (full 3rd set)</option>
+                <option value="bo3-mtb10">Best of 3 sets (Match Tiebreak-10 decider)</option>
+                <option value="bo5-full">Best of 5 sets</option>
+                <option value="proset8">Pro-set (first to 8 games)</option>
+                <option value="shortsets4">Short Sets (best of 3, first to 4 games)</option>
+              </Select>
+            </Field>
+          )}
+
+          {t.sessionType === 'practice' && (
+            <Field label="Points Target" className="mt-3">
+              <div className="flex gap-2">
+                {[10, 15, 21].map((n) => (
+                  <Button
+                    key={n}
+                    type="button"
+                    size="sm"
+                    variant={t.pointTarget === n ? 'default' : 'outline'}
+                    onClick={() => t.setPointTarget(n)}
+                  >
+                    {n} pts
+                  </Button>
+                ))}
+              </div>
+            </Field>
+          )}
+        </section>
+
+        {/* Tracking detail */}
+        <section>
+          <SectionLabel>Tracking Detail</SectionLabel>
+          <div className="flex gap-2">
+            {TRACKING_MODES.map((m) => (
+              <Button
+                key={m.value}
+                type="button"
+                size="sm"
+                variant={t.trackingMode === m.value ? 'default' : 'outline'}
+                onClick={() => t.setTrackingMode(m.value)}
+              >
+                {m.label}
+              </Button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-tt-muted-foreground">
+            {(TRACKING_MODES.find((m) => m.value === t.trackingMode) || TRACKING_MODES[2]).hint}
+          </p>
+        </section>
+
+        {/* CTA */}
+        <Button className="w-full" size="lg" disabled={!canStart} onClick={onStart}>
+          {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
+        </Button>
+        {!canStart && <p className="text-xs text-tt-muted-foreground">Enter your name to continue</p>}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -435,22 +437,22 @@ function MatchOverBlock({ sessionType, selfName, oppName, winner, onUndo, canUnd
   const isPractice = sessionType === 'practice';
   const winnerName = winner === 'self' ? selfName : oppName;
   return (
-    <div className="match-over-block">
-      <div className="match-over-block-title">
-        {isPractice ? 'Session complete' : 'Match complete'}
-      </div>
-      <div className="match-over-block-winner">
-        <span className={winner === 'self' ? 'self-name' : 'opp-name'}>{winnerName}</span>
-        {isPractice ? ' wins the session' : ' wins'}
-      </div>
-      <div className="match-over-block-actions">
-        <button className="action-btn" onClick={onGoStats}>View Stats</button>
-        {!isPractice && <button className="action-btn" onClick={onGoClose}>Close Match</button>}
-      </div>
-      <button className="undo-btn" style={{ marginTop: 8 }} disabled={!canUndo} onClick={onUndo}>
-        ↩ Undo last point
-      </button>
-    </div>
+    <Card className="mx-auto my-4 max-w-lg text-center">
+      <CardContent className="space-y-4 pt-6">
+        <div className="font-tt-mono text-xs uppercase tracking-widest text-tt-muted-foreground">
+          {isPractice ? 'Session complete' : 'Match complete'}
+        </div>
+        <div className="font-tt-display text-xl font-bold uppercase tracking-tight">
+          <span className={winner === 'self' ? 'text-tt-brand' : 'text-tt-opp'}>{winnerName}</span>
+          {isPractice ? ' wins the session' : ' wins'}
+        </div>
+        <div className="flex justify-center gap-2">
+          <Button variant="outline" onClick={onGoStats}>View Stats</Button>
+          {!isPractice && <Button variant="outline" onClick={onGoClose}>Close Match</Button>}
+        </div>
+        <Button variant="ghost" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -486,86 +488,116 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
   const hasServeData = ss.totalServicePts > 0 || so.totalServicePts > 0;
 
   return (
-    <div className="transition-card">
-      <div className="transition-header">
-        <div className={`transition-headline ${winner === 'self' ? 'self-name' : 'opp-name'}`}>
-          {headline}
-        </div>
-        <div className="transition-subline">{subline}</div>
-        {type !== 'match' && nextServer && (
-          <div className="transition-next-server">
-            Serves next:&nbsp;
-            <span className={nextServer === 'self' ? 'self-name' : 'opp-name'}>
-              {nextServer === 'self' ? selfName : oppName}
-            </span>
+    <Card className="mx-auto my-4 max-w-lg">
+      <CardContent className="space-y-4 pt-6">
+        <div className="text-center">
+          <div className={cn('font-tt-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-tt-brand' : 'text-tt-opp')}>
+            {headline}
           </div>
-        )}
-      </div>
+          <div className="mt-1 font-tt-mono text-sm text-tt-muted-foreground">{subline}</div>
+          {type !== 'match' && nextServer && (
+            <div className="mt-2 text-xs text-tt-muted-foreground">
+              Serves next:&nbsp;
+              <span className={nextServer === 'self' ? 'font-semibold text-tt-brand' : 'font-semibold text-tt-opp'}>
+                {nextServer === 'self' ? selfName : oppName}
+              </span>
+            </div>
+          )}
+        </div>
 
-      <div className="transition-stats">
-        <div className="transition-stats-title">This Game</div>
-        <table className="stat-table">
-          <tbody>
-            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
-            <tr><td>Points Won</td><td className="self-col">{stats.self.pointCount}</td><td className="opp-col">{stats.opp.pointCount}</td></tr>
-            <tr><td>Winners / FE</td><td className="self-col">{stats.self.wfe}</td><td className="opp-col">{stats.opp.wfe}</td></tr>
-            <tr><td>Unforced Errors</td><td className="self-col">{stats.self.ue}</td><td className="opp-col">{stats.opp.ue}</td></tr>
-            {hasServeData && (
-              <>
-                <tr><td>1st Serve %</td>
-                  <td className="self-col">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</td>
-                  <td className="opp-col">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</td>
-                </tr>
-                <tr><td>Won on 1st</td>
-                  <td className="self-col">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</td>
-                  <td className="opp-col">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</td>
-                </tr>
-                <tr><td>Won on 2nd</td>
-                  <td className="self-col">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</td>
-                  <td className="opp-col">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</td>
-                </tr>
-                {(ss.aces > 0 || so.aces > 0 || ss.dfs > 0 || so.dfs > 0) && (
-                  <tr><td>Aces / DFs</td>
-                    <td className="self-col">{ss.aces} / {ss.dfs}</td>
-                    <td className="opp-col">{so.aces} / {so.dfs}</td>
-                  </tr>
-                )}
-              </>
-            )}
-          </tbody>
-        </table>
-      </div>
+        <div>
+          <div className="mb-1 font-tt-mono text-[10px] font-bold uppercase tracking-widest text-tt-muted-foreground">This Game</div>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableHead>Metric</TableHead>
+                <TableHead className="text-tt-brand">{selfName}</TableHead>
+                <TableHead className="text-tt-opp">{oppName}</TableHead>
+              </TableRow>
+              <TableRow>
+                <TableCell>Points Won</TableCell>
+                <TableCell className="text-tt-brand">{stats.self.pointCount}</TableCell>
+                <TableCell className="text-tt-opp">{stats.opp.pointCount}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Winners / FE</TableCell>
+                <TableCell className="text-tt-brand">{stats.self.wfe}</TableCell>
+                <TableCell className="text-tt-opp">{stats.opp.wfe}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Unforced Errors</TableCell>
+                <TableCell className="text-tt-brand">{stats.self.ue}</TableCell>
+                <TableCell className="text-tt-opp">{stats.opp.ue}</TableCell>
+              </TableRow>
+              {hasServeData && (
+                <>
+                  <TableRow>
+                    <TableCell>1st Serve %</TableCell>
+                    <TableCell className="text-tt-brand">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</TableCell>
+                    <TableCell className="text-tt-opp">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Won on 1st</TableCell>
+                    <TableCell className="text-tt-brand">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</TableCell>
+                    <TableCell className="text-tt-opp">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Won on 2nd</TableCell>
+                    <TableCell className="text-tt-brand">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</TableCell>
+                    <TableCell className="text-tt-opp">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</TableCell>
+                  </TableRow>
+                  {(ss.aces > 0 || so.aces > 0 || ss.dfs > 0 || so.dfs > 0) && (
+                    <TableRow>
+                      <TableCell>Aces / DFs</TableCell>
+                      <TableCell className="text-tt-brand">{ss.aces} / {ss.dfs}</TableCell>
+                      <TableCell className="text-tt-opp">{so.aces} / {so.dfs}</TableCell>
+                    </TableRow>
+                  )}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      <div className="transition-actions">
-        <button className="undo-btn" disabled={!canUndo} onClick={onUndo}>↩ Undo</button>
-        {onReview && <button className="action-btn" onClick={onReview}>🤖 Review with AI</button>}
-        <button className="transition-continue-btn" onClick={onContinue}>{btnLabel}</button>
-      </div>
-    </div>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <Button variant="ghost" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo</Button>
+          {onReview && <Button variant="outline" size="sm" onClick={onReview}>🤖 Review with AI</Button>}
+          <Button size="lg" onClick={onContinue}>{btnLabel}</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 // ── Live Track top bar: server picker + delete ────────────────────────────────
 function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverExplicitlyChosen, hasPoints }) {
   return (
-    <div className="live-track-bar">
-      <div className={'live-track-server' + (!serverExplicitlyChosen ? ' live-track-server-required' : '')}>
-        <span className={'live-track-label' + (!serverExplicitlyChosen ? ' live-track-label-required' : '')}>Serves first</span>
-        <div className="server-toggle" style={{ marginBottom: 0, flex: 1 }}>
-          <div
-            className={'chip server-chip' + (nextServer === 'self' ? ' selected' : '') + (hasPoints ? ' disabled-chip' : '')}
+    <Card className={cn('my-4', !serverExplicitlyChosen && 'border-tt-brand')}>
+      <CardContent className="flex flex-col items-center gap-3 pt-4 sm:flex-row">
+        <span className={cn('font-tt-mono text-xs uppercase tracking-widest', !serverExplicitlyChosen ? 'font-bold text-tt-brand' : 'text-tt-muted-foreground')}>
+          Serves first
+        </span>
+        <div className="flex flex-1 gap-2">
+          <Button
+            type="button"
+            className="flex-1"
+            variant={nextServer === 'self' ? 'default' : 'outline'}
+            disabled={hasPoints}
             onClick={() => !hasPoints && setServerChoice('self')}
           >
             {selfName}
-          </div>
-          <div
-            className={'chip server-chip' + (nextServer === 'opp' ? ' selected' : '') + (hasPoints ? ' disabled-chip' : '')}
+          </Button>
+          <Button
+            type="button"
+            className="flex-1"
+            variant={nextServer === 'opp' ? 'default' : 'outline'}
+            disabled={hasPoints}
             onClick={() => !hasPoints && setServerChoice('opp')}
           >
             {oppName}
-          </div>
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

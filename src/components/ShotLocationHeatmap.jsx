@@ -1,8 +1,10 @@
 import { ZONES, SHORT_LABEL, center } from '../lib/courtZones';
 import { computeShotLocationBreakdown } from '../lib/analytics';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Table, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 
 const ORDER = ['win', 'forced', 'ue'];
-const COLOR_VAR = { win: 'var(--win)', forced: 'var(--forced)', ue: 'var(--danger)' };
+const COLOR_VAR = { win: 'var(--color-tt-win)', forced: 'var(--color-tt-forced)', ue: 'var(--color-tt-destructive)' };
 const LABEL = { win: 'Winner', forced: 'Forced Error', ue: 'Unforced Error' };
 const BAND_GAP = 1.5;
 
@@ -27,9 +29,9 @@ function zoneTooltip(zoneId, counts) {
 
 function ZoneCourt({ breakdown, label }) {
   return (
-    <div className="zone-court-wrap">
-      <div className="zone-court-label">{label}</div>
-      <div className="court-svg-wrap">
+    <div className="flex flex-1 flex-col items-center gap-1.5">
+      <div className="font-tt-mono text-[10px] uppercase tracking-wider text-tt-muted-foreground">{label}</div>
+      <div className="court-svg-wrap w-full max-w-[150px]">
         <svg viewBox="0 0 300 640" role="img" aria-label={label + ' shot location heatmap'}>
           {ZONES.map((z) => {
             const counts = breakdown[z.id] || { win: 0, forced: 0, ue: 0 };
@@ -61,10 +63,10 @@ function ZoneCourt({ breakdown, label }) {
 
 function Legend() {
   return (
-    <div className="shot-heatmap-legend">
+    <div className="mb-2 flex flex-wrap gap-3">
       {ORDER.map((k) => (
-        <span className="legend-item" key={k}>
-          <span className="legend-swatch" style={{ background: COLOR_VAR[k] }} />
+        <span className="flex items-center gap-1.5 font-tt-mono text-[10px] uppercase tracking-wider text-tt-muted-foreground" key={k}>
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLOR_VAR[k] }} />
           {LABEL[k]}
         </span>
       ))}
@@ -93,21 +95,23 @@ function ZoneTable({ selfBreakdown, oppBreakdown, selfName, oppName }) {
   const fmt = (c) => (c ? c.win + '/' + c.forced + '/' + c.ue : '0/0/0');
 
   return (
-    <div className="shot-heatmap-table-wrap">
-      <table className="stat-table">
-        <thead>
-          <tr><th>Zone</th><th>{selfName} (W/F/UE)</th><th>{oppName} (W/F/UE)</th></tr>
-        </thead>
-        <tbody>
+    <div className="mt-3">
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableHead>Zone</TableHead>
+            <TableHead className="text-tt-brand">{selfName} (W/F/UE)</TableHead>
+            <TableHead className="text-tt-opp">{oppName} (W/F/UE)</TableHead>
+          </TableRow>
           {zoneIds.map((id) => (
-            <tr key={id}>
-              <td>{id}</td>
-              <td className="self-col">{fmt(selfBreakdown[id])}</td>
-              <td className="opp-col">{fmt(oppBreakdown[id])}</td>
-            </tr>
+            <TableRow key={id}>
+              <TableCell>{id}</TableCell>
+              <TableCell className="text-tt-brand">{fmt(selfBreakdown[id])}</TableCell>
+              <TableCell className="text-tt-opp">{fmt(oppBreakdown[id])}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -121,25 +125,29 @@ export default function ShotLocationHeatmap({ points, selfName, oppName }) {
 
   return (
     <>
-      <div className="panel">
-        <h2 className="panel-title">Shot Origin &middot; Hit From</h2>
-        <Legend />
-        <div className="shot-heatmap-pair">
-          <ZoneCourt breakdown={selfBd.hitFrom} label={selfName} />
-          <ZoneCourt breakdown={oppBd.hitFrom} label={oppName} />
-        </div>
-        <ZoneTable selfBreakdown={selfBd.hitFrom} oppBreakdown={oppBd.hitFrom} selfName={selfName} oppName={oppName} />
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Shot Origin · Hit From</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Legend />
+          <div className="flex gap-4">
+            <ZoneCourt breakdown={selfBd.hitFrom} label={selfName} />
+            <ZoneCourt breakdown={oppBd.hitFrom} label={oppName} />
+          </div>
+          <ZoneTable selfBreakdown={selfBd.hitFrom} oppBreakdown={oppBd.hitFrom} selfName={selfName} oppName={oppName} />
+        </CardContent>
+      </Card>
 
-      <div className="panel">
-        <h2 className="panel-title">Shot Placement &middot; Dropped At</h2>
-        <Legend />
-        <div className="shot-heatmap-pair">
-          <ZoneCourt breakdown={selfBd.droppedAt} label={selfName} />
-          <ZoneCourt breakdown={oppBd.droppedAt} label={oppName} />
-        </div>
-        <ZoneTable selfBreakdown={selfBd.droppedAt} oppBreakdown={oppBd.droppedAt} selfName={selfName} oppName={oppName} />
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Shot Placement · Dropped At</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Legend />
+          <div className="flex gap-4">
+            <ZoneCourt breakdown={selfBd.droppedAt} label={selfName} />
+            <ZoneCourt breakdown={oppBd.droppedAt} label={oppName} />
+          </div>
+          <ZoneTable selfBreakdown={selfBd.droppedAt} oppBreakdown={oppBd.droppedAt} selfName={selfName} oppName={oppName} />
+        </CardContent>
+      </Card>
     </>
   );
 }

@@ -1,0 +1,77 @@
+/* Tailwind utilities scoped to the Match Tracker feature only.
+   Deliberately imports only the theme/utilities layers (not "tailwindcss" itself),
+   which skips Tailwind's preflight reset — the rest of the app (~15 other pages)
+   shares one global index.css with zero scoping, so a document-wide reset would
+   regress them. All new tokens use a unique "tt-" prefix so landing at :root
+   cannot collide with the existing --bg/--accent/--border theme variables. */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@theme {
+  --font-tt-display: 'Oswald', sans-serif;
+  --font-tt-mono: 'JetBrains Mono', monospace;
+  --font-tt-body: 'Inter', sans-serif;
+
+  --radius-tt: 0.25rem;
+
+  --color-tt-brand: oklch(0.897 0.164 116.4);
+  --color-tt-brand-dark: oklch(0.503 0.144 121.5);
+  --color-tt-background: oklch(0.145 0 0);
+  --color-tt-surface: oklch(0.205 0 0);
+  --color-tt-surface-2: oklch(0.175 0 0);
+  --color-tt-foreground: oklch(0.985 0 0);
+  --color-tt-border: oklch(0.269 0 0);
+  --color-tt-muted-foreground: oklch(0.708 0 0);
+  --color-tt-destructive: oklch(0.637 0.237 25.331);
+  --color-tt-destructive-bg: oklch(0.637 0.237 25.331 / 0.12);
+  --color-tt-opp: oklch(0.637 0.237 25.331);
+  --color-tt-win: oklch(0.72 0.19 145);
+  --color-tt-win-bg: oklch(0.72 0.19 145 / 0.12);
+  --color-tt-forced: oklch(0.75 0.15 80);
+  --color-tt-forced-bg: oklch(0.75 0.15 80 / 0.12);
+}
+
+.tracker-shell {
+  font-family: var(--font-tt-body);
+  background: var(--color-tt-background);
+  color: var(--color-tt-foreground);
+}
+
+/* ShotLocationCourt.jsx / ShotLocationHeatmap.jsx court diagrams — tracker-exclusive
+   selectors, safe to retheme here without touching index.css's --court-fill/--court-line. */
+.tracker-shell .court-zone,
+.tracker-shell .zone-cell {
+  fill: var(--color-tt-surface);
+  stroke: var(--color-tt-border);
+  cursor: pointer;
+}
+.tracker-shell .court-zone.out,
+.tracker-shell .zone-cell.out {
+  fill: var(--color-tt-surface-2);
+}
+.tracker-shell .court-zone:hover {
+  fill: var(--color-tt-surface-2);
+}
+.tracker-shell .court-line-main {
+  stroke: var(--color-tt-muted-foreground);
+  fill: none;
+}
+.tracker-shell .court-zone-label {
+  fill: var(--color-tt-muted-foreground);
+  font-size: 9px;
+  font-family: var(--font-tt-mono);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.tracker-shell .court-marker-crosshair line,
+.tracker-shell .court-marker-crosshair circle {
+  stroke: var(--color-tt-brand);
+  fill: none;
+  stroke-width: 2;
+}
+
+/* ShotLocationCourt.jsx wrapper text — index.css's --accent tracks whichever
+   [data-theme] is active app-wide; the tracker always wants tt-brand regardless. */
+.tracker-shell .shot-location-hint {
+  color: var(--color-tt-brand);
+}

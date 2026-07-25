@@ -1,8 +1,10 @@
 import {
   computeStats, computeGroundstrokes, computeServeStats, computeReturnStats,
 } from '../lib/analytics';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Table, TableBody, TableRow, TableHead, TableCell } from './ui/table';
 
-function fmtRatio(r) { return r === Infinity ? '\u221e' : r.toFixed(2); }
+function fmtRatio(r) { return r === Infinity ? '∞' : r.toFixed(2); }
 function fmtPct(p) { return p.toFixed(1) + '%'; }
 
 export default function StatsPanel({ points, header, sessionType, analytics, section }) {
@@ -21,90 +23,106 @@ export default function StatsPanel({ points, header, sessionType, analytics, sec
 
   if (section === 'shots') {
     return (
-      <div className="panel">
-        <h2 className="panel-title">Shot Stats &middot; Self</h2>
-        <div className="bar-chart">
+      <Card>
+        <CardHeader><CardTitle>Shot Stats · Self</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
           {gsSelf.map((r) => (
-            <div className="bar-group" key={r.stroke}>
-              <div className="bar-label">{r.stroke}</div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: Math.max(6, r.wfe / maxVal * 100) + '%', background: '#7FBF3F' }}>{r.wfe} W/FE</div>
+            <div key={r.stroke}>
+              <div className="mb-1 font-tt-mono text-xs text-tt-muted-foreground">{r.stroke}</div>
+              <div className="h-4 rounded-tt bg-tt-surface-2">
+                <div
+                  className="flex h-full items-center rounded-tt bg-tt-brand px-1.5 font-tt-mono text-[10px] font-semibold text-tt-background"
+                  style={{ width: Math.max(6, r.wfe / maxVal * 100) + '%' }}
+                >
+                  {r.wfe} W/FE
+                </div>
               </div>
-              <div className="bar-track" style={{ marginTop: 3 }}>
-                <div className="bar-fill" style={{ width: Math.max(6, r.ue / maxVal * 100) + '%', background: '#E1484B' }}>{r.ue} UE</div>
+              <div className="mt-0.5 h-4 rounded-tt bg-tt-surface-2">
+                <div
+                  className="flex h-full items-center rounded-tt bg-tt-destructive px-1.5 font-tt-mono text-[10px] font-semibold text-tt-foreground"
+                  style={{ width: Math.max(6, r.ue / maxVal * 100) + '%' }}
+                >
+                  {r.ue} UE
+                </div>
               </div>
             </div>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <>
-      <div className="panel">
-        <h2 className="panel-title">Match Totals</h2>
-        <table className="stat-table">
-          <tbody>
-            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
-            <tr><td>Winners/Forced Errors</td><td className="self-col">{totals.self.wfe}</td><td className="opp-col">{totals.opp.wfe}</td></tr>
-            <tr><td>Unforced Errors</td><td className="self-col">{totals.self.ue}</td><td className="opp-col">{totals.opp.ue}</td></tr>
-            <tr><td>Ratio</td><td className="self-col">{fmtRatio(totals.self.ratio)}</td><td className="opp-col">{fmtRatio(totals.opp.ratio)}</td></tr>
-            <tr><td>Points Won</td><td className="self-col">{totals.self.pointCount}</td><td className="opp-col">{totals.opp.pointCount}</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Match Totals</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Table>
+            <TableBody>
+              <TableRow><TableHead>Metric</TableHead><TableHead className="text-tt-brand">{selfName}</TableHead><TableHead className="text-tt-opp">{oppName}</TableHead></TableRow>
+              <TableRow><TableCell>Winners/Forced Errors</TableCell><TableCell className="text-tt-brand">{totals.self.wfe}</TableCell><TableCell className="text-tt-opp">{totals.opp.wfe}</TableCell></TableRow>
+              <TableRow><TableCell>Unforced Errors</TableCell><TableCell className="text-tt-brand">{totals.self.ue}</TableCell><TableCell className="text-tt-opp">{totals.opp.ue}</TableCell></TableRow>
+              <TableRow><TableCell>Ratio</TableCell><TableCell className="text-tt-brand">{fmtRatio(totals.self.ratio)}</TableCell><TableCell className="text-tt-opp">{fmtRatio(totals.opp.ratio)}</TableCell></TableRow>
+              <TableRow><TableCell>Points Won</TableCell><TableCell className="text-tt-brand">{totals.self.pointCount}</TableCell><TableCell className="text-tt-opp">{totals.opp.pointCount}</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <div className="panel">
-        <h2 className="panel-title">Serving Statistics</h2>
-        <table className="stat-table">
-          <tbody>
-            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
-            {isMatch ? (
-              <tr><td>Service Games</td><td className="self-col">{ss.gamesPlayed}</td><td className="opp-col">{so.gamesPlayed}</td></tr>
-            ) : (
-              <tr><td>Service Points</td><td className="self-col">{ss.totalServicePts}</td><td className="opp-col">{so.totalServicePts}</td></tr>
-            )}
-            {isMatch && (
-              <>
-                <tr><td>Service Games Won</td><td className="self-col">{fmtPct(ss.gamesPlayed > 0 ? analytics.svcGamesWon.self / ss.gamesPlayed * 100 : 0)}</td><td className="opp-col">{fmtPct(so.gamesPlayed > 0 ? analytics.svcGamesWon.opp / so.gamesPlayed * 100 : 0)}</td></tr>
-                <tr><td>Break Points Saved</td><td className="self-col">{analytics.bp.self.savedServing}/{analytics.bp.self.facedServing}</td><td className="opp-col">{analytics.bp.opp.savedServing}/{analytics.bp.opp.facedServing}</td></tr>
-              </>
-            )}
-            <tr><td>Aces</td><td className="self-col">{ss.aces}</td><td className="opp-col">{so.aces}</td></tr>
-            <tr><td>Double Faults</td><td className="self-col">{ss.dfs}</td><td className="opp-col">{so.dfs}</td></tr>
-            <tr><td>1st Serve %</td><td className="self-col">{fmtPct(ss.firstPct)}</td><td className="opp-col">{fmtPct(so.firstPct)}</td></tr>
-            <tr><td>Won on 1st Serve</td><td className="self-col">{ss.wonOn1st}/{ss.firstIn}</td><td className="opp-col">{so.wonOn1st}/{so.firstIn}</td></tr>
-            <tr><td>2nd Serve %</td><td className="self-col">{fmtPct(ss.secondPct)}</td><td className="opp-col">{fmtPct(so.secondPct)}</td></tr>
-            <tr><td>Won on 2nd Serve</td><td className="self-col">{ss.wonOn2nd}/{ss.secondIn}</td><td className="opp-col">{so.wonOn2nd}/{so.secondIn}</td></tr>
-            <tr><td>Ace/DF Ratio</td><td className="self-col">{fmtRatio(ss.ratio)}</td><td className="opp-col">{fmtRatio(so.ratio)}</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Serving Statistics</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Table>
+            <TableBody>
+              <TableRow><TableHead>Metric</TableHead><TableHead className="text-tt-brand">{selfName}</TableHead><TableHead className="text-tt-opp">{oppName}</TableHead></TableRow>
+              {isMatch ? (
+                <TableRow><TableCell>Service Games</TableCell><TableCell className="text-tt-brand">{ss.gamesPlayed}</TableCell><TableCell className="text-tt-opp">{so.gamesPlayed}</TableCell></TableRow>
+              ) : (
+                <TableRow><TableCell>Service Points</TableCell><TableCell className="text-tt-brand">{ss.totalServicePts}</TableCell><TableCell className="text-tt-opp">{so.totalServicePts}</TableCell></TableRow>
+              )}
+              {isMatch && (
+                <>
+                  <TableRow><TableCell>Service Games Won</TableCell><TableCell className="text-tt-brand">{fmtPct(ss.gamesPlayed > 0 ? analytics.svcGamesWon.self / ss.gamesPlayed * 100 : 0)}</TableCell><TableCell className="text-tt-opp">{fmtPct(so.gamesPlayed > 0 ? analytics.svcGamesWon.opp / so.gamesPlayed * 100 : 0)}</TableCell></TableRow>
+                  <TableRow><TableCell>Break Points Saved</TableCell><TableCell className="text-tt-brand">{analytics.bp.self.savedServing}/{analytics.bp.self.facedServing}</TableCell><TableCell className="text-tt-opp">{analytics.bp.opp.savedServing}/{analytics.bp.opp.facedServing}</TableCell></TableRow>
+                </>
+              )}
+              <TableRow><TableCell>Aces</TableCell><TableCell className="text-tt-brand">{ss.aces}</TableCell><TableCell className="text-tt-opp">{so.aces}</TableCell></TableRow>
+              <TableRow><TableCell>Double Faults</TableCell><TableCell className="text-tt-brand">{ss.dfs}</TableCell><TableCell className="text-tt-opp">{so.dfs}</TableCell></TableRow>
+              <TableRow><TableCell>1st Serve %</TableCell><TableCell className="text-tt-brand">{fmtPct(ss.firstPct)}</TableCell><TableCell className="text-tt-opp">{fmtPct(so.firstPct)}</TableCell></TableRow>
+              <TableRow><TableCell>Won on 1st Serve</TableCell><TableCell className="text-tt-brand">{ss.wonOn1st}/{ss.firstIn}</TableCell><TableCell className="text-tt-opp">{so.wonOn1st}/{so.firstIn}</TableCell></TableRow>
+              <TableRow><TableCell>2nd Serve %</TableCell><TableCell className="text-tt-brand">{fmtPct(ss.secondPct)}</TableCell><TableCell className="text-tt-opp">{fmtPct(so.secondPct)}</TableCell></TableRow>
+              <TableRow><TableCell>Won on 2nd Serve</TableCell><TableCell className="text-tt-brand">{ss.wonOn2nd}/{ss.secondIn}</TableCell><TableCell className="text-tt-opp">{so.wonOn2nd}/{so.secondIn}</TableCell></TableRow>
+              <TableRow><TableCell>Ace/DF Ratio</TableCell><TableCell className="text-tt-brand">{fmtRatio(ss.ratio)}</TableCell><TableCell className="text-tt-opp">{fmtRatio(so.ratio)}</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <div className="panel">
-        <h2 className="panel-title">Return Statistics</h2>
-        <table className="stat-table">
-          <tbody>
-            <tr><th>Metric</th><th className="self-col">{selfName}</th><th className="opp-col">{oppName}</th></tr>
-            {isMatch ? (
-              <tr><td>Return Games</td><td className="self-col">{rs.gamesPlayed}</td><td className="opp-col">{ro.gamesPlayed}</td></tr>
-            ) : (
-              <tr><td>Return Points</td><td className="self-col">{rs.totalReturnPts}</td><td className="opp-col">{ro.totalReturnPts}</td></tr>
-            )}
-            {isMatch && (
-              <>
-                <tr><td>Return Games Won</td><td className="self-col">{fmtPct(rs.gamesPlayed > 0 ? (rs.gamesPlayed - analytics.svcGamesWon.opp) / rs.gamesPlayed * 100 : 0)}</td><td className="opp-col">{fmtPct(ro.gamesPlayed > 0 ? (ro.gamesPlayed - analytics.svcGamesWon.self) / ro.gamesPlayed * 100 : 0)}</td></tr>
-                <tr><td>Break Points Won</td><td className="self-col">{analytics.bp.self.wonReturning}/{analytics.bp.self.facedReturning}</td><td className="opp-col">{analytics.bp.opp.wonReturning}/{analytics.bp.opp.facedReturning}</td></tr>
-              </>
-            )}
-            <tr><td>Won Returning 1st</td><td className="self-col">{rs.won1st}/{rs.total1st}</td><td className="opp-col">{ro.won1st}/{ro.total1st}</td></tr>
-            <tr><td>Won Returning 2nd</td><td className="self-col">{rs.won2nd}/{rs.total2nd}</td><td className="opp-col">{ro.won2nd}/{ro.total2nd}</td></tr>
-            <tr><td>Return Winners/Forced</td><td className="self-col">{rs.retWinnersForced}</td><td className="opp-col">{ro.retWinnersForced}</td></tr>
-            <tr><td>Return Unforced Errors</td><td className="self-col">{rs.retUE}</td><td className="opp-col">{ro.retUE}</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Return Statistics</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Table>
+            <TableBody>
+              <TableRow><TableHead>Metric</TableHead><TableHead className="text-tt-brand">{selfName}</TableHead><TableHead className="text-tt-opp">{oppName}</TableHead></TableRow>
+              {isMatch ? (
+                <TableRow><TableCell>Return Games</TableCell><TableCell className="text-tt-brand">{rs.gamesPlayed}</TableCell><TableCell className="text-tt-opp">{ro.gamesPlayed}</TableCell></TableRow>
+              ) : (
+                <TableRow><TableCell>Return Points</TableCell><TableCell className="text-tt-brand">{rs.totalReturnPts}</TableCell><TableCell className="text-tt-opp">{ro.totalReturnPts}</TableCell></TableRow>
+              )}
+              {isMatch && (
+                <>
+                  <TableRow><TableCell>Return Games Won</TableCell><TableCell className="text-tt-brand">{fmtPct(rs.gamesPlayed > 0 ? (rs.gamesPlayed - analytics.svcGamesWon.opp) / rs.gamesPlayed * 100 : 0)}</TableCell><TableCell className="text-tt-opp">{fmtPct(ro.gamesPlayed > 0 ? (ro.gamesPlayed - analytics.svcGamesWon.self) / ro.gamesPlayed * 100 : 0)}</TableCell></TableRow>
+                  <TableRow><TableCell>Break Points Won</TableCell><TableCell className="text-tt-brand">{analytics.bp.self.wonReturning}/{analytics.bp.self.facedReturning}</TableCell><TableCell className="text-tt-opp">{analytics.bp.opp.wonReturning}/{analytics.bp.opp.facedReturning}</TableCell></TableRow>
+                </>
+              )}
+              <TableRow><TableCell>Won Returning 1st</TableCell><TableCell className="text-tt-brand">{rs.won1st}/{rs.total1st}</TableCell><TableCell className="text-tt-opp">{ro.won1st}/{ro.total1st}</TableCell></TableRow>
+              <TableRow><TableCell>Won Returning 2nd</TableCell><TableCell className="text-tt-brand">{rs.won2nd}/{rs.total2nd}</TableCell><TableCell className="text-tt-opp">{ro.won2nd}/{ro.total2nd}</TableCell></TableRow>
+              <TableRow><TableCell>Return Winners/Forced</TableCell><TableCell className="text-tt-brand">{rs.retWinnersForced}</TableCell><TableCell className="text-tt-opp">{ro.retWinnersForced}</TableCell></TableRow>
+              <TableRow><TableCell>Return Unforced Errors</TableCell><TableCell className="text-tt-brand">{rs.retUE}</TableCell><TableCell className="text-tt-opp">{ro.retUE}</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </>
   );
 }

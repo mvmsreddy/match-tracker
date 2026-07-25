@@ -7,6 +7,9 @@ import * as api from '../api';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { computeStats } from '../lib/analytics';
 import { formatDuration } from '../lib/storage';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Textarea } from './ui/textarea';
+import { Button } from './ui/button';
 
 async function saveAndSharePdfNative(doc, filename) {
   const dataUri = doc.output('datauristring');
@@ -132,35 +135,40 @@ export default function ActionButtons({
 
   return (
     <>
-      <div className="panel notes">
-        <h2 className="panel-title">Match Notes</h2>
-        <textarea
-          placeholder="Coaching notes, focus areas, things to work on..."
-          value={header.notes}
-          onChange={(e) => updateHeader({ notes: e.target.value })}
-        />
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Match Notes</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <Textarea
+            placeholder="Coaching notes, focus areas, things to work on..."
+            value={header.notes}
+            onChange={(e) => updateHeader({ notes: e.target.value })}
+          />
+        </CardContent>
+      </Card>
 
-      <div className="action-bar">
-        <button
-          className="action-btn primary"
+      <div className="flex flex-wrap gap-2">
+        <Button
           disabled={saving || points.length === 0}
           onClick={handleCompleteAndSave}
         >
           {saving ? 'Saving...' : 'Complete & Save Match'}
-        </button>
-        <button
-          className="action-btn"
+        </Button>
+        <Button
+          variant="outline"
           disabled={generating || points.length === 0}
           onClick={handleGeneratePdf}
           title={points.length === 0 ? 'Log at least one point first' : ''}
         >
           {generating ? 'Generating...' : 'Generate PDF'}
-        </button>
-        <button className="action-btn" onClick={handleCopySummary}>Copy summary</button>
-        <button className={'action-btn danger' + (confirmingReset ? ' confirming' : '')} onClick={handleResetClick}>
+        </Button>
+        <Button variant="outline" onClick={handleCopySummary}>Copy summary</Button>
+        <Button
+          variant={confirmingReset ? 'destructive-solid' : 'destructive'}
+          className="ml-auto"
+          onClick={handleResetClick}
+        >
           {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
-        </button>
+        </Button>
       </div>
     </>
   );

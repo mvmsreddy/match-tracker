@@ -1,10 +1,14 @@
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+
 export default function MomentumGraph({ points, selfName, oppName, analytics }) {
   if (points.length < 3) {
     return (
-      <div className="panel">
-        <h2 className="panel-title">Live Momentum</h2>
-        <div className="momentum-empty">Log a few more points to see momentum</div>
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Live Momentum</CardTitle></CardHeader>
+        <CardContent className="py-6 text-center text-xs text-tt-muted-foreground">
+          Log a few more points to see momentum
+        </CardContent>
+      </Card>
     );
   }
 
@@ -30,7 +34,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
   const areaPts = `${gx(0).toFixed(1)},${midY} ${linePts} ${gx(data.length - 1).toFixed(1)},${midY}`;
 
   const lastVal = data[data.length - 1];
-  const lineColor = lastVal >= 0 ? '#C6E23D' : '#E37B6B';
+  const lineColor = lastVal >= 0 ? 'var(--color-tt-brand)' : 'var(--color-tt-opp)';
   const lastX = gx(data.length - 1).toFixed(1);
   const lastY = gy(lastVal).toFixed(1);
 
@@ -40,104 +44,105 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
   const oppRecent = recent.length - selfRecent;
 
   return (
-    <div className="panel">
-      <h2 className="panel-title">Live Momentum</h2>
+    <Card>
+      <CardHeader><CardTitle>Live Momentum</CardTitle></CardHeader>
+      <CardContent className="pt-0">
+        {/* Streak summary */}
+        <div className="mb-2 flex items-center justify-center gap-2 font-tt-mono text-xs">
+          <span className="text-tt-brand">{selfName}: {selfRecent}/{recent.length} recent</span>
+          <span className="text-tt-muted-foreground">|</span>
+          <span className="text-tt-opp">{oppName}: {oppRecent}/{recent.length} recent</span>
+        </div>
 
-      {/* Streak summary */}
-      <div className="momentum-streak">
-        <span className="self-col">{selfName}: {selfRecent}/{recent.length} recent</span>
-        <span style={{ color: '#4A6478' }}>|</span>
-        <span className="opp-col">{oppName}: {oppRecent}/{recent.length} recent</span>
-      </div>
+        <div>
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-[120px] w-full">
+            <defs>
+              <clipPath id="clip-above">
+                <rect x="0" y="0" width={W} height={midY} />
+              </clipPath>
+              <clipPath id="clip-below">
+                <rect x="0" y={midY} width={W} height={midY} />
+              </clipPath>
+            </defs>
 
-      <div className="momentum-graph">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="momentum-svg">
-          <defs>
-            <clipPath id="clip-above">
-              <rect x="0" y="0" width={W} height={midY} />
-            </clipPath>
-            <clipPath id="clip-below">
-              <rect x="0" y={midY} width={W} height={midY} />
-            </clipPath>
-          </defs>
+            {/* Player zone labels */}
+            <text x={PX} y={PY - 4} fill="var(--color-tt-brand)" fontSize="9" fontFamily="monospace" opacity="0.8">
+              {selfName.slice(0, 14)}
+            </text>
+            <text x={PX} y={H - 3} fill="var(--color-tt-opp)" fontSize="9" fontFamily="monospace" opacity="0.8">
+              {oppName.slice(0, 14)}
+            </text>
 
-          {/* Player zone labels */}
-          <text x={PX} y={PY - 4} fill="#C6E23D" fontSize="9" fontFamily="monospace" opacity="0.8">
-            {selfName.slice(0, 14)}
-          </text>
-          <text x={PX} y={H - 3} fill="#E37B6B" fontSize="9" fontFamily="monospace" opacity="0.8">
-            {oppName.slice(0, 14)}
-          </text>
+            {/* Zero / neutral line */}
+            <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="var(--color-tt-border)" strokeWidth="1.5" strokeDasharray="4,4" />
 
-          {/* Zero / neutral line */}
-          <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="#2C4C68" strokeWidth="1.5" strokeDasharray="4,4" />
-
-          {/* Game boundary markers */}
-          {gameBoundaries.map((gb) => {
-            const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
-            return (
-              <g key={gb.index}>
-                <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="#2C4C68" strokeWidth="0.75" opacity="0.6" />
-                <text x={px} y={PY - 4} fill="#7C93A6" fontSize="7" fontFamily="monospace" textAnchor="middle">
-                  {gb.label}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Green fill: self is ahead */}
-          <polygon points={areaPts} fill="#C6E23D" opacity="0.18" clipPath="url(#clip-above)" />
-          {/* Red fill: opp is ahead */}
-          <polygon points={areaPts} fill="#E37B6B" opacity="0.18" clipPath="url(#clip-below)" />
-
-          {/* Momentum line */}
-          <polyline
-            points={linePts}
-            fill="none"
-            stroke={lineColor}
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-
-          {/* Point-level markers: small tick + score label (e.g. 0-15, 15-30) at every point */}
-          {data.map((v, i) => {
-            const px = gx(i).toFixed(1);
-            const py = gy(v);
-            const tickTop = (py - 4).toFixed(1);
-            const tickBottom = (py + 4).toFixed(1);
-            const label = i === 0 ? null : points[i - 1].scoreAfter;
-            return (
-              <g key={i}>
-                <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="#7C93A6" strokeWidth="0.6" opacity="0.6" />
-                <circle cx={px} cy={py.toFixed(1)} r="1.2" fill={lineColor} opacity="0.9" />
-                {label && (
-                  <text
-                    x={px}
-                    y={tickTop}
-                    transform={`rotate(-90 ${px} ${tickTop})`}
-                    fontSize="4.5"
-                    fill="#9FB2C2"
-                    fontFamily="monospace"
-                    textAnchor="start"
-                  >
-                    {label}
+            {/* Game boundary markers */}
+            {gameBoundaries.map((gb) => {
+              const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
+              return (
+                <g key={gb.index}>
+                  <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="var(--color-tt-border)" strokeWidth="0.75" opacity="0.6" />
+                  <text x={px} y={PY - 4} fill="var(--color-tt-muted-foreground)" fontSize="7" fontFamily="monospace" textAnchor="middle">
+                    {gb.label}
                   </text>
-                )}
-              </g>
-            );
-          })}
+                </g>
+              );
+            })}
 
-          {/* Current position dot */}
-          <circle cx={lastX} cy={lastY} r="4" fill={lineColor} />
-        </svg>
-      </div>
+            {/* Brand fill: self is ahead */}
+            <polygon points={areaPts} fill="var(--color-tt-brand)" opacity="0.18" clipPath="url(#clip-above)" />
+            {/* Opp fill: opp is ahead */}
+            <polygon points={areaPts} fill="var(--color-tt-opp)" opacity="0.18" clipPath="url(#clip-below)" />
 
-      <div className="momentum-footer">
-        <span className="self-col">▲ {selfName} winning</span>
-        <span className="momentum-label">point #1 → #{points.length}</span>
-        <span className="opp-col">▼ {oppName} winning</span>
-      </div>
-    </div>
+            {/* Momentum line */}
+            <polyline
+              points={linePts}
+              fill="none"
+              stroke={lineColor}
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+
+            {/* Point-level markers: small tick + score label (e.g. 0-15, 15-30) at every point */}
+            {data.map((v, i) => {
+              const px = gx(i).toFixed(1);
+              const py = gy(v);
+              const tickTop = (py - 4).toFixed(1);
+              const tickBottom = (py + 4).toFixed(1);
+              const label = i === 0 ? null : points[i - 1].scoreAfter;
+              return (
+                <g key={i}>
+                  <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="var(--color-tt-muted-foreground)" strokeWidth="0.6" opacity="0.6" />
+                  <circle cx={px} cy={py.toFixed(1)} r="1.2" fill={lineColor} opacity="0.9" />
+                  {label && (
+                    <text
+                      x={px}
+                      y={tickTop}
+                      transform={`rotate(-90 ${px} ${tickTop})`}
+                      fontSize="4.5"
+                      fill="var(--color-tt-muted-foreground)"
+                      fontFamily="monospace"
+                      textAnchor="start"
+                    >
+                      {label}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Current position dot */}
+            <circle cx={lastX} cy={lastY} r="4" fill={lineColor} />
+          </svg>
+        </div>
+
+        <div className="mt-1 flex items-center justify-between font-tt-mono text-[10px] text-tt-muted-foreground">
+          <span className="text-tt-brand">▲ {selfName} winning</span>
+          <span>point #1 → #{points.length}</span>
+          <span className="text-tt-opp">▼ {oppName} winning</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
