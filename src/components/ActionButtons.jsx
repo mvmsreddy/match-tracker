@@ -56,6 +56,7 @@ export default function ActionButtons({
         surface: header.surface, indoorOutdoor: header.indoorOutdoor,
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
         governingBody: header.governingBody, circuit: header.circuit,
+        city: header.city, ageGroup: header.ageGroup,
         scoreSummary: scoreSummary(),
         winner: engine.matchWinner === 'self' ? 'self' : (engine.matchWinner === 'opp' ? 'opp' : null),
         pointCount: points.length,
@@ -83,6 +84,7 @@ export default function ActionButtons({
         selfName, oppName, tournament: header.tournament, date: header.date, surface: header.surface,
         indoorOutdoor: header.indoorOutdoor, oppHandedness: header.oppHandedness, weather: header.weather,
         governingBody: header.governingBody, circuit: header.circuit,
+        city: header.city, ageGroup: header.ageGroup,
         notes: header.notes, matchStartTime, matchDurationMs,
       });
       const filename = pdfFilename(selfName, oppName, sessionType);
@@ -105,6 +107,8 @@ export default function ActionButtons({
     const formatLine = isPractice ? 'Practice session - race to ' + pointTarget + ' points' : ('Format: ' + formatLabel);
     const contextBits = [];
     if (header.governingBody) contextBits.push(header.governingBody + (header.circuit ? ' - ' + header.circuit : ''));
+    if (header.ageGroup) contextBits.push(header.ageGroup);
+    if (header.city) contextBits.push(header.city);
     if (header.surface) contextBits.push(header.surface);
     if (header.indoorOutdoor) contextBits.push(header.indoorOutdoor);
     if (header.oppHandedness) contextBits.push('Opponent: ' + header.oppHandedness);

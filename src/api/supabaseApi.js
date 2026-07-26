@@ -132,6 +132,8 @@ function rowToMatch(row) {
     oppHandedness: row.opp_handedness,
     governingBody: row.governing_body,
     circuit: row.circuit,
+    city: row.city,
+    ageGroup: row.age_group,
     weather: row.weather,
     notes: row.notes,
     scoreSummary: row.score_summary,
@@ -169,6 +171,8 @@ export async function saveMatch(userId, record) {
     opp_handedness: record.oppHandedness || null,
     governing_body: record.governingBody || null,
     circuit: record.circuit || null,
+    city: record.city || null,
+    age_group: record.ageGroup || null,
     weather: record.weather || null,
     notes: record.notes || null,
     score_summary: record.scoreSummary || null,
@@ -2402,9 +2406,10 @@ function rowToAitaTournament(row) {
   };
 }
 
-export async function listAitaTournaments({ ageGroup, search } = {}) {
+export async function listAitaTournaments({ ageGroup, city, search } = {}) {
   let query = supabase.from('aita_tournaments').select('*').order('start_date', { ascending: true });
   if (ageGroup) query = query.eq('age_group', ageGroup);
+  if (city) query = query.ilike('city', `%${city}%`);
   if (search) query = query.ilike('name', `%${search}%`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);

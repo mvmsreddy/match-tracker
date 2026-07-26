@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMatchTracker } from '../hooks/useMatchTracker';
 import { getWeatherString } from '../lib/weather';
+import * as api from '../api';
 import TopNav from '../components/TopNav';
 import Scorebar from '../components/Scorebar';
 import Wizard from '../components/Wizard';
@@ -28,7 +29,8 @@ const SURFACES = [
 // Governing body → circuits, used to tag which organisation/circuit a match belongs to.
 const GOVERNING_BODIES = {
   AITA: [
-    'Talent Series', 'Super Series', 'National Series', 'National Championships',
+    'Talent Series', 'Championship Series (CS3)', 'Championship Series (CS7)',
+    'Super Series', 'National Series', 'National Championships',
     'Davis Cup (Men)', 'Billie Jean King Cup (Women)',
   ],
   ITF: [
@@ -47,6 +49,19 @@ const GOVERNING_BODIES = {
   ],
 };
 const GOVERNING_BODY_NAMES = Object.keys(GOVERNING_BODIES);
+
+const AGE_GROUPS = ['Under 10', 'Under 12', 'Under 14', 'Under 16', 'Under 18', 'Men', 'Women', 'Senior'];
+
+// AITA calendar "grade" codes → our Circuit dropdown labels, for auto-fill from a suggested tournament.
+const AITA_GRADE_TO_CIRCUIT = {
+  ts: 'Talent Series',
+  cs3: 'Championship Series (CS3)',
+  cs7: 'Championship Series (CS7)',
+  ss: 'Super Series',
+  ns: 'National Series',
+  nat: 'National Championships',
+  nationals: 'National Championships',
+};
 
 const TRACKING_MODES = [
   { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
@@ -269,6 +284,12 @@ function MatchRunningView({ t, onGoTrack }) {
             {t.header.circuit && (
               <Field label="Circuit"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.circuit}</div></Field>
             )}
+            {t.header.city && (
+              <Field label="City"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.city}</div></Field>
+            )}
+            {t.header.ageGroup && (
+              <Field label="Age Group"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.ageGroup}</div></Field>
+            )}
           </div>
         </div>
         <Button className="w-full" size="lg" onClick={onGoTrack}>● Go to Track</Button>
@@ -383,6 +404,19 @@ function SetupForm({ t, onStart }) {
                 {(GOVERNING_BODIES[t.header.governingBody] || []).map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
             </Field>
+            <Field label="City">
+              <Input
+                placeholder="e.g. Pune"
+                value={t.header.city}
+                onChange={(e) => t.updateHeader({ city: e.target.value })}
+              />
+            </Field>
+            <Field label="Age Group">
+              <Select value={t.header.ageGroup} onChange={(e) => t.updateHeader({ ageGroup: e.target.value })}>
+                <option value="">Not specified</option>
+                {AGE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </Select>
+            </Field>
             <Field label="Weather" className="col-span-2">
               <div className="flex gap-1.5">
                 <Input
@@ -405,6 +439,10 @@ function SetupForm({ t, onStart }) {
             </Field>
           </div>
         </section>
+
+        {t.header.governingBody === 'AITA' && (t.header.city.trim() || t.header.ageGroup) && (
+          <AitaTournamentSuggestions header={t.header} updateHeader={t.updateHeader} />
+        )}
 
         {/* Session type */}
         <section>
@@ -475,6 +513,66 @@ function SetupForm({ t, onStart }) {
           {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
         </Button>
         {!canStart && <p className="text-xs text-tt-muted-foreground">Enter your name to continue</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Suggested AITA tournaments, from the mirrored calendar, filtered by City + Age Group ──
+function AitaTournamentSuggestions({ header, updateHeader }) {
+  const [tournaments, setTournaments] = useState(null); // null = loading, [] = no matches
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setTournaments(null);
+    setError('');
+    const timer = setTimeout(() => {
+      api.listAitaTournaments({ ageGroup: header.ageGroup || undefined, city: header.city.trim() || undefined })
+        .then((list) => { if (!cancelled) setTournaments(list); })
+        .catch((e) => { if (!cancelled) setError(e.message || 'Could not load AITA tournaments'); });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [header.city, header.ageGroup]);
+
+  function pickTournament(tour) {
+    const patch = { tournament: tour.name };
+    if (tour.city) patch.city = tour.city;
+    if (tour.startDate) patch.date = tour.startDate.slice(0, 10);
+    const mappedCircuit = tour.grade && AITA_GRADE_TO_CIRCUIT[tour.grade.trim().toLowerCase()];
+    if (mappedCircuit) patch.circuit = mappedCircuit;
+    updateHeader(patch);
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-2 pt-4">
+        <SectionLabel>Suggested AITA Tournaments</SectionLabel>
+        {error && <p className="text-xs text-tt-opp">{error}</p>}
+        {!error && tournaments === null && (
+          <p className="text-xs text-tt-muted-foreground">Searching the AITA calendar…</p>
+        )}
+        {!error && tournaments && tournaments.length === 0 && (
+          <p className="text-xs text-tt-muted-foreground">No matching AITA tournaments found.</p>
+        )}
+        {!error && tournaments && tournaments.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {tournaments.map((tour) => (
+              <button
+                key={tour.id}
+                type="button"
+                onClick={() => pickTournament(tour)}
+                className="flex flex-col items-start gap-0.5 rounded-tt border border-tt-border px-3 py-2 text-left hover:border-tt-brand"
+              >
+                <span className="text-sm font-semibold text-tt-foreground">{tour.name}</span>
+                <span className="font-tt-mono text-[0.65rem] uppercase tracking-widest text-tt-muted-foreground">
+                  {[tour.grade, tour.ageGroup, [tour.city, tour.venue].filter(Boolean).join(' · '), tour.startDate]
+                    .filter(Boolean).join('  ·  ')}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

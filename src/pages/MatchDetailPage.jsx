@@ -50,6 +50,7 @@ export default function MatchDetailPage() {
     selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
     surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
     governingBody: match.governingBody, circuit: match.circuit,
+    city: match.city, ageGroup: match.ageGroup,
     weather: match.weather, notes: match.notes,
   };
 
@@ -62,6 +63,7 @@ export default function MatchDetailPage() {
       selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
       surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
       governingBody: match.governingBody, circuit: match.circuit,
+      city: match.city, ageGroup: match.ageGroup,
       weather: match.weather, notes: match.notes,
       matchStartTime: match.matchDurationMs ? 1 : null, matchDurationMs: match.matchDurationMs,
     });

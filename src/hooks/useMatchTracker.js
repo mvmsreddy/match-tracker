@@ -17,6 +17,8 @@ const DEFAULT_HEADER = {
   notes: '',
   governingBody: '',
   circuit: '',
+  city: '',
+  ageGroup: '',
 };
 
 function initialState() {
