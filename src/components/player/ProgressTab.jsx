@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend,
+  ResponsiveContainer, ComposedChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
@@ -78,49 +78,57 @@ export default function ProgressTab({ circuit }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {behindPace && (
-        <div className="perf-chart-card" style={{ borderLeft: '3px solid var(--opp)', margin: 0, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--opp)', flex: 'none' }} />
-          <div style={{ fontWeight: 700, fontSize: 14 }}>
+        <div className="pcd-pace-banner">
+          <div className="pcd-pace-dot" />
+          <div style={{ flex: 1, minWidth: 220, font: "700 15px/1.4 'Archivo', sans-serif" }}>
             You're currently behind the pace needed to hit your {circuit.category} {circuit.subcategory} goal by {activeGoal.targetDate ? formatDate(activeGoal.targetDate) : 'its target date'}.
           </div>
         </div>
       )}
 
-      <div className="perf-chart-card">
-        <div className="perf-chart-title">Actual vs projected points</div>
-        <div className="perf-chart-subtitle">{activeGoal ? 'Straight-line projection to your goal' : 'Set a goal in Overview to see a projection line'}</div>
+      <div className="pcd-card">
+        <div className="pcd-card-head">
+          <div>
+            <div className="pcd-card-title">Actual vs projected points</div>
+            <div className="pcd-card-sub">{activeGoal ? 'Straight-line projection to your goal' : 'Set a goal in Overview to see a projection line'}</div>
+          </div>
+          <div className="pcd-legend">
+            <div className="pcd-legend-item"><span className="pcd-legend-swatch" style={{ background: 'var(--accent)' }} />ACTUAL</div>
+            {activeGoal && <div className="pcd-legend-item"><span className="pcd-legend-swatch" style={{ background: 'var(--opp)' }} />NEEDED</div>}
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="var(--border2)" vertical={false} />
             <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} minTickGap={40} />
             <YAxis stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
             <Tooltip labelFormatter={formatDate} contentStyle={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6 }} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--accent)" strokeWidth={2} dot={false} />
-            {activeGoal && <Line type="monotone" dataKey="needed" name="Needed" stroke="var(--opp)" strokeWidth={2} strokeDasharray="4 4" dot={false} />}
-          </LineChart>
+            <Area type="monotone" dataKey="actual" stroke="none" fill="var(--accent)" fillOpacity={0.12} legendType="none" />
+            <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--accent)" strokeWidth={2.5} dot={false} activeDot={{ r: 5, stroke: 'var(--bg2)', strokeWidth: 2, fill: 'var(--accent)' }} />
+            {activeGoal && <Line type="monotone" dataKey="needed" name="Needed" stroke="var(--opp)" strokeWidth={2} strokeDasharray="5 4" dot={false} />}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="perf-chart-card">
-        <div className="perf-chart-title">Monthly breakdown</div>
+      <div className="pcd-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '22px 22px 0' }}><div className="pcd-card-title">Monthly breakdown</div></div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 10 }}>
+          <table className="pcd-progress-table">
             <thead>
-              <tr style={{ textAlign: 'right', color: 'var(--text3)', fontSize: 11, textTransform: 'uppercase' }}>
-                <th style={{ textAlign: 'left', padding: '6px 8px' }}>Month</th>
-                <th style={{ padding: '6px 8px' }}>Rank</th>
-                <th style={{ padding: '6px 8px' }}>Points</th>
-                <th style={{ padding: '6px 8px' }}>Training sessions</th>
+              <tr>
+                <th>Month</th>
+                <th>Rank</th>
+                <th>Points</th>
+                <th>Training sessions</th>
               </tr>
             </thead>
             <tbody>
               {monthlyRows.map(r => (
-                <tr key={r.month} style={{ borderTop: '1px solid var(--border2)' }}>
-                  <td style={{ padding: '10px 8px', fontWeight: 600 }}>{r.month}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right' }}>{r.rank ?? '—'}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right' }}>{r.points ?? '—'}</td>
-                  <td style={{ padding: '10px 8px', textAlign: 'right' }}>{r.training}</td>
+                <tr key={r.month}>
+                  <td>{r.month}</td>
+                  <td>{r.rank ?? '—'}</td>
+                  <td>{r.points ?? '—'}</td>
+                  <td>{r.training}</td>
                 </tr>
               ))}
             </tbody>

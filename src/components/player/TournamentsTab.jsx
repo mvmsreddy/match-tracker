@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
+import { roundToken } from '../../utils/aitaGradeRules';
 import LogMatchButton from '../tournaments/LogMatchButton';
+import MatchDetailModal from './MatchDetailModal';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -17,10 +20,12 @@ function entryName(entry) {
 }
 
 // Expandable per-tournament match list — matches by round, each with a
-// "Track this match" button (Phase 4). Kept separate from the entries list
-// above so opponent resolution (a second fetch, getDrawEntries) only happens
-// for a tournament the player actually opens, not for every entry up front.
-function TournamentMatches({ entry, circuit }) {
+// "Track this match" button (Phase 4) for untracked rounds, or opens
+// MatchDetailModal (real per-match analytics) for completed rounds. Kept
+// separate from the entries list above so opponent resolution (a second
+// fetch, getDrawEntries) only happens for a tournament the player actually
+// opens, not for every entry up front.
+function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch }) {
   const [matches, setMatches] = useState(null);
   const [entryMap, setEntryMap] = useState(null);
 
@@ -41,28 +46,49 @@ function TournamentMatches({ entry, circuit }) {
   if (matches.length === 0) return <div className="history-empty">No matches recorded yet for this entry.</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0' }}>
+    <div style={{ padding: '10px 0' }}>
       {matches.map(m => {
         const opp = entryMap.get(m.entry1Id === entry.id ? m.entry2Id : m.entry1Id);
-        const won = m.winnerEntryId === entry.id;
-        return (
-          <div key={m.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--bg3)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', width: 80 }}>{m.round}</div>
-            <div style={{ flex: 1, minWidth: 160, fontWeight: 600 }}>{entryName(opp)}</div>
-            {m.score && <div style={{ fontFamily: 'monospace', fontSize: 13, color: won ? 'var(--win-text)' : 'var(--opp)' }}>{m.score}</div>}
-            {m.status !== 'complete' && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{m.status || 'scheduled'}</div>}
+        const won = m.status === 'complete' && m.winnerEntryId === entry.id;
+        const complete = m.status === 'complete';
+        const round = roundToken(m.round, entry.event.drawSize, won) || `R${m.round}`;
+        const tracked = trackedByEventMatch.get(m.id) || null;
+        const opponentName = entryName(opp);
+
+        const row = complete ? (
+          <button
+            key={m.id}
+            className="pcd-match-row"
+            onClick={() => onOpenMatch({
+              opponentName, tournamentName: entry.event.week?.name, round, grade: entry.event.week?.grade,
+              date: entry.event.week?.startDate, score: m.score, won, tracked: !!tracked, trackedMatch: tracked,
+            })}
+          >
+            <div className="pcd-match-round">{round}</div>
+            <div className={`pcd-match-wl ${won ? 'win' : 'loss'}`}>{won ? 'W' : 'L'}</div>
+            <div className="pcd-match-opp">{opponentName}</div>
+            <div style={{ font: "600 13px/1 'IBM Plex Mono', monospace", color: won ? 'var(--accent)' : 'var(--opp)', whiteSpace: 'nowrap' }}>{m.score || '—'}</div>
+            <div className="pcd-match-date">{formatDate(entry.event.week?.startDate)}</div>
+            <span className={`pcd-badge sm pcd-match-tag ${tracked ? 'win' : ''}`}>{tracked ? 'FULL STATS' : 'SCORE ONLY'}</span>
+          </button>
+        ) : (
+          <div key={m.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--bg4)' }}>
+            <div style={{ fontSize: 11, color: 'var(--text3)', width: 80 }}>{round}</div>
+            <div style={{ flex: 1, minWidth: 160, fontWeight: 600 }}>{opponentName}</div>
+            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{m.status || 'scheduled'}</div>
             <LogMatchButton
               match={m}
-              opponentName={entryName(opp)}
+              opponentName={opponentName}
               tournamentName={entry.event?.week?.name}
               date={entry.event?.week?.startDate}
-              round={m.round}
+              round={round}
               category={circuit.category}
               subcategory={circuit.subcategory}
-              className="action-btn"
+              className="pcd-btn-secondary"
             />
           </div>
         );
+        return row;
       })}
     </div>
   );
@@ -73,9 +99,12 @@ function TournamentMatches({ entry, circuit }) {
 // front — the entries list itself is the fast path, matching this design's
 // intent of scanning a season at a glance before drilling into one event.
 export default function TournamentsTab({ circuit }) {
+  const { user } = useAuth();
   const [entries, setEntries] = useState(null);
+  const [trackedMatches, setTrackedMatches] = useState(null);
   const [error, setError] = useState('');
   const [openId, setOpenId] = useState(null);
+  const [modalMatch, setModalMatch] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +114,18 @@ export default function TournamentsTab({ circuit }) {
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load tournament entries'); setEntries([]); } });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getMatchesForSegment(user.id, circuit.category, circuit.subcategory)
+      .then(data => { if (!cancelled) setTrackedMatches(data); })
+      .catch(() => { if (!cancelled) setTrackedMatches([]); });
+    return () => { cancelled = true; };
+  }, [user.id, circuit.category, circuit.subcategory]);
+
+  const trackedByEventMatch = useMemo(() => new Map(
+    (trackedMatches || []).filter(m => m.eventMatchId && m.points?.length > 0).map(m => [m.eventMatchId, m])
+  ), [trackedMatches]);
 
   const segmentEntries = useMemo(() => {
     if (!entries) return [];
@@ -108,34 +149,32 @@ export default function TournamentsTab({ circuit }) {
       )}
 
       {segmentEntries.map(e => (
-        <div key={e.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        <div key={e.id} className={`pcd-accordion${openId === e.id ? ' open' : ''}`}>
           <button
             onClick={() => setOpenId(openId === e.id ? null : e.id)}
-            style={{ width: '100%', border: 0, cursor: 'pointer', background: 'transparent', textAlign: 'left', padding: '20px 22px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, color: 'inherit' }}
+            className="pcd-accordion-head"
           >
-            <div style={{ flex: 'none', width: 18, color: 'var(--text3)' }}>{openId === e.id ? '▾' : '▸'}</div>
+            <div className="pcd-accordion-caret">{openId === e.id ? '▾' : '▸'}</div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{e.event.week?.name || 'Unnamed tournament'}</div>
+              <div style={{ font: "700 16px/1.2 'Archivo', sans-serif" }}>{e.event.week?.name || 'Unnamed tournament'}</div>
               <div style={{ color: 'var(--text2)', fontSize: 12, marginTop: 6 }}>
                 {formatDate(e.event.week?.startDate)} · {e.event.week?.city}, {e.event.week?.stateAbbr} · {e.event.week?.grade}
               </div>
             </div>
-            {e.seed && (
-              <div style={{ fontSize: 11, fontWeight: 600, padding: '7px 10px', borderRadius: 7, background: 'rgba(79,195,232,.14)', color: 'var(--info)' }}>
-                SEED {e.seed}
-              </div>
-            )}
+            {e.seed && <span className="pcd-badge info">SEED {e.seed}</span>}
             <div style={{ fontSize: 11, color: 'var(--text3)' }}>{e.drawType === 'doubles' ? 'Doubles' : 'Singles'}</div>
           </button>
           {openId === e.id && (
-            <div style={{ borderTop: '1px solid var(--border)', padding: '4px 22px' }}>
-              <TournamentMatches entry={e} circuit={circuit} />
+            <div className="pcd-accordion-body">
+              <TournamentMatches entry={e} circuit={circuit} trackedByEventMatch={trackedByEventMatch} onOpenMatch={setModalMatch} />
             </div>
           )}
         </div>
       ))}
 
       <Link to="/tournaments" className="dashboard-view-all">Browse the full tournament calendar →</Link>
+
+      {modalMatch && <MatchDetailModal match={modalMatch} selfName={user.displayName || 'You'} onClose={() => setModalMatch(null)} />}
     </div>
   );
 }

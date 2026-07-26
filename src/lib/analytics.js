@@ -146,8 +146,9 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
     self: { facedServing: 0, savedServing: 0, facedReturning: 0, wonReturning: 0 },
     opp: { facedServing: 0, savedServing: 0, facedReturning: 0, wonReturning: 0 },
   };
+  const bpEvents = []; // raw break-point events, server-relative — see computeBreakPointEvents for per-player framing
   const svcGamesWon = { self: 0, opp: 0 };
-  if (sessionType === 'practice' || points.length === 0) return { boundaries, gameBoundaries, bp, svcGamesWon };
+  if (sessionType === 'practice' || points.length === 0) return { boundaries, gameBoundaries, bp, bpEvents, svcGamesWon };
 
   const cfg = getFormatConfig(formatPreset);
   let gp = { self: 0, opp: 0 }, sg = { self: 0, opp: 0 }, setsWonLocal = { self: 0, opp: 0 };
@@ -184,6 +185,7 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
       if (w === srv) bp[srv].savedServing++;
       bp[returner].facedReturning++;
       if (w === returner) bp[returner].wonReturning++;
+      bpEvents.push({ set: pt.set, game: pt.game, server: srv, pointWinner: w, stroke: pt.stroke, reason: pt.reason, endedBy: pt.endedBy });
     }
     gp[w]++;
     if (Math.max(gp.self, gp.opp) >= 4 && Math.abs(gp.self - gp.opp) >= 2) {
@@ -202,11 +204,42 @@ export function replayMatchAnalytics(points, { sessionType, formatPreset }) {
       }
     }
   });
-  return { boundaries, gameBoundaries, bp, svcGamesWon };
+  return { boundaries, gameBoundaries, bp, bpEvents, svcGamesWon };
 }
 
 export function computeBreakPointStats(points, cfgOpts, player) {
   return replayMatchAnalytics(points, cfgOpts).bp[player];
+}
+
+// Chronological, human-readable break-point log for one player — the mockup's "Break points"
+// modal section. Built only from fields the tracker actually records (stroke/reason/endedBy) —
+// no fabricated shot-direction detail ("down the line") since that isn't tracked data.
+function describeBreakPointReason(reason, endedBy, stroke, player) {
+  const s = stroke ? stroke.toLowerCase() : '';
+  if (reason === 'DoubleFault') return 'double fault';
+  if (reason === 'Winner') return endedBy === player ? `${s} winner`.trim() : `opponent ${s} winner`.trim();
+  if (reason === 'ForcedError') return endedBy === player ? `${s} forced error`.trim() : 'opponent forced error';
+  if (reason === 'UnforcedError') return endedBy === player ? `${s} unforced error`.trim() : 'opponent unforced error';
+  return 'point ended';
+}
+
+export function computeBreakPointEvents(points, cfgOpts, player) {
+  const { bpEvents } = replayMatchAnalytics(points, cfgOpts);
+  const opponent = other(player);
+  return bpEvents
+    .filter((ev) => ev.server === player || ev.server === opponent)
+    .map((ev) => {
+      const situation = ev.server === player ? 'serving' : 'returning';
+      const wonIt = ev.pointWinner === player;
+      const outcome = situation === 'serving' ? (wonIt ? 'saved' : 'missed') : (wonIt ? 'converted' : 'missed');
+      const label = { saved: 'Saved', missed: 'Missed', converted: 'Converted' }[outcome];
+      const reasonText = describeBreakPointReason(ev.reason, ev.endedBy, ev.stroke, player);
+      return {
+        set: ev.set, game: ev.game, situation, outcome,
+        text: `${label} — ${reasonText}`,
+        at: `S${ev.set} G${ev.game}`,
+      };
+    });
 }
 
 const REASON_BUCKET = { Winner: 'win', ForcedError: 'forced', UnforcedError: 'ue' };

@@ -3,6 +3,54 @@ import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, aggregateBreakPoints, aggregateServeStats, strokeWinRates } from '../../lib/segmentAnalytics';
 
+// Rule-based trend detection: splits the segment's tracked matches (oldest
+// first) into an earlier and a more-recent half and compares real aggregated
+// numbers between them — a genuine "is this getting better or worse" signal,
+// not fabricated copy. The "focus" line names a plausible practice area tied
+// to the real stat that moved, since there's no real coach-assigned drill
+// library yet to pull an actual drill from (see Recommendations tab).
+function buildTrends(tracked) {
+  if (tracked.length < 6) return [];
+  const byDate = [...tracked].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const mid = Math.floor(byDate.length / 2);
+  const early = byDate.slice(0, mid);
+  const recent = byDate.slice(mid);
+
+  const trends = [];
+  const earlyRates = strokeWinRates(aggregateStrokeBreakdown(early), 3);
+  const recentRates = strokeWinRates(aggregateStrokeBreakdown(recent), 3);
+  for (const r of recentRates) {
+    const e = earlyRates.find(x => x.stroke === r.stroke);
+    if (r.winRate == null || e?.winRate == null) continue;
+    const delta = r.winRate - e.winRate;
+    if (Math.abs(delta) < 8) continue;
+    trends.push({
+      title: `${r.stroke} win rate ${delta > 0 ? 'improving' : 'slipping'} recently`,
+      evidence: `${r.winRate}% across your ${recent.length} most recent tracked matches, vs ${e.winRate}% in the ${early.length} before that.`,
+      stat: `${delta > 0 ? '+' : ''}${delta}`,
+      accent: delta > 0 ? 'var(--accent)' : 'var(--opp)',
+      focus: `${r.stroke} consistency reps`,
+    });
+  }
+
+  const earlyBp = aggregateBreakPoints(early);
+  const recentBp = aggregateBreakPoints(recent);
+  if (earlyBp.convertRate != null && recentBp.convertRate != null) {
+    const delta = recentBp.convertRate - earlyBp.convertRate;
+    if (Math.abs(delta) >= 8) {
+      trends.push({
+        title: `Break-point conversion ${delta > 0 ? 'trending up' : 'trending down'}`,
+        evidence: `Converted ${recentBp.wonReturning}/${recentBp.facedReturning} recently vs ${earlyBp.wonReturning}/${earlyBp.facedReturning} earlier this segment.`,
+        stat: `${delta > 0 ? '+' : ''}${delta}`,
+        accent: delta > 0 ? 'var(--accent)' : 'var(--opp)',
+        focus: 'Break-point simulation drills',
+      });
+    }
+  }
+
+  return trends.slice(0, 3);
+}
+
 // Real, segment-aggregated insight cards (Phase 5) — "Forehand Dominance: 78%
 // win rate" style cards computed from every tracked match in this segment
 // (src/lib/segmentAnalytics.js), not fabricated. Cards only render when
@@ -73,6 +121,8 @@ export default function MatchAnalyticsTab({ circuit }) {
     return cards;
   }, [tracked]);
 
+  const trends = useMemo(() => buildTrends(tracked), [tracked]);
+
   if (matches === null) return <div className="history-empty">Loading match analytics…</div>;
   if (error) return <div className="history-empty">{error}</div>;
 
@@ -94,15 +144,38 @@ export default function MatchAnalyticsTab({ circuit }) {
       )}
 
       {insights.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 14 }}>
+        <div className="pcd-stat-grid n2">
           {insights.map((i, idx) => (
-            <div key={idx} className="perf-chart-card" style={{ borderTop: `3px solid ${i.accent}`, margin: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ font: '500 10px/1 monospace', letterSpacing: '.14em', textTransform: 'uppercase', color: i.accent }}>{i.kind}</div>
+            <div key={idx} className="pcd-insight-card" style={{ borderTopColor: i.accent }}>
+              <div className="pcd-insight-head">
+                <div className="pcd-insight-kind" style={{ color: i.accent }}>{i.kind}</div>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 17, marginTop: 12 }}>{i.title}</div>
-              <div style={{ fontSize: 34, fontWeight: 800, color: i.accent, margin: '14px 0' }}>{i.value}</div>
-              <div style={{ color: 'var(--text2)', fontSize: 13, lineHeight: 1.5 }}>{i.body}</div>
+              <div className="pcd-insight-title">{i.title}</div>
+              <div className="pcd-insight-value-row">
+                <div className="pcd-insight-value" style={{ color: i.accent }}>{i.value}</div>
+              </div>
+              <div className="pcd-insight-body">{i.body}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {trends.length > 0 && (
+        <div className="pcd-card">
+          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Trends worth acting on</div>
+          <div className="pcd-card-sub" style={{ marginBottom: 18 }}>Comparing your earlier vs. more recent tracked matches this segment</div>
+          {trends.map((t, i) => (
+            <div key={i} className="pcd-trend-row" style={{ borderLeftColor: t.accent }}>
+              <div className="pcd-trend-top">
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div className="pcd-trend-title">{t.title}</div>
+                  <div className="pcd-trend-evidence">{t.evidence}</div>
+                </div>
+                <div className="pcd-trend-stat" style={{ color: t.accent }}>{t.stat}</div>
+              </div>
+              <div className="pcd-trend-foot">
+                <div className="pcd-trend-drill">FOCUS · {t.focus}</div>
+              </div>
             </div>
           ))}
         </div>

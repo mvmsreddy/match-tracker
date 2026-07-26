@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
+import { computeRankProgress } from '../../lib/segments';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -66,18 +67,18 @@ export default function GoalsPanel({ circuit }) {
 
   if (!activeGoal && !editing) {
     return (
-      <div style={{ background: 'var(--bg2)', border: '1px dashed var(--border)', borderRadius: 16, padding: 22, textAlign: 'center' }}>
+      <div className="pcd-card" style={{ borderStyle: 'dashed', textAlign: 'center' }}>
         <div style={{ fontWeight: 700, fontSize: 15 }}>No ranking goal set for {circuit.category} {circuit.subcategory} yet</div>
         {error && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 8 }}>{error}</div>}
-        <button className="action-btn primary" style={{ marginTop: 14 }} onClick={() => setEditing(true)}>Set a goal</button>
+        <button className="pcd-btn-primary" style={{ marginTop: 14 }} onClick={() => setEditing(true)}>Set a goal</button>
       </div>
     );
   }
 
   if (editing) {
     return (
-      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="perf-chart-title">New goal for {circuit.category} {circuit.subcategory}</div>
+      <div className="pcd-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="pcd-card-title">New goal for {circuit.category} {circuit.subcategory}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
             Target rank
@@ -97,52 +98,79 @@ export default function GoalsPanel({ circuit }) {
         </div>
         {error && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="action-btn primary" disabled={saving} onClick={handleSave}>{saving ? 'Saving…' : 'Save goal'}</button>
-          <button className="action-btn" onClick={() => setEditing(false)}>Cancel</button>
+          <button className="pcd-btn-primary" disabled={saving} onClick={handleSave}>{saving ? 'Saving…' : 'Save goal'}</button>
+          <button className="pcd-btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
         </div>
       </div>
     );
   }
 
   const { latest } = circuit;
-  // Progress = how far current rank has moved from the FIRST recorded rank
-  // toward the target, not an arbitrary baseline — clamped since a player can
-  // start already better than their own target, or move the wrong direction.
   const startRank = circuit.points[0]?.rank;
-  const rankProgress = activeGoal.targetRank && startRank && startRank !== activeGoal.targetRank
-    ? Math.max(0, Math.min(100, Math.round(((startRank - latest.rank) / (startRank - activeGoal.targetRank)) * 100)))
+  const rankProgress = activeGoal.targetRank ? computeRankProgress(startRank, latest.rank, activeGoal.targetRank) : null;
+
+  let paceMarkPct = null, paceNote = null;
+  if (rankProgress != null && activeGoal.targetDate) {
+    const startMs = new Date(circuit.points[0].date).getTime();
+    const endMs = new Date(activeGoal.targetDate).getTime();
+    if (endMs > startMs) {
+      paceMarkPct = Math.max(0, Math.min(100, Math.round(((Date.now() - startMs) / (endMs - startMs)) * 100)));
+      const gap = paceMarkPct - rankProgress;
+      paceNote = gap > 3
+        ? `PACE MARKER AT ${paceMarkPct}% — ${gap} POINTS BEHIND`
+        : (gap < -3 ? `AHEAD OF PACE BY ${Math.abs(gap)} POINTS` : 'ON PACE');
+    }
+  }
+
+  const monthsLeft = activeGoal.targetDate
+    ? Math.max(0, Math.round((new Date(activeGoal.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)))
     : null;
+  const pointsNeeded = activeGoal.targetPoints ? Math.max(0, activeGoal.targetPoints - latest.totalPoints) : null;
 
   return (
-    <div style={{ background: 'linear-gradient(135deg,var(--win-hover) 0%,var(--bg2) 62%)', border: '1px solid var(--border)', borderRadius: 18, padding: 26 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ font: '500 11px/1 monospace', letterSpacing: '.14em', color: 'var(--accent)', textTransform: 'uppercase' }}>Ranking goal</div>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 10 }}>
+    <div className="pcd-hero">
+      <div className="pcd-hero-top">
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <div className="pcd-hero-label">Ranking goal</div>
+          <div className="pcd-hero-title">
             {activeGoal.targetRank ? `Top ${activeGoal.targetRank}` : `${activeGoal.targetPoints} points`}
             {activeGoal.targetDate ? ` by ${formatDate(activeGoal.targetDate)}` : ''}
           </div>
+          {paceNote && <div className="pcd-hero-body">{paceNote.charAt(0) + paceNote.slice(1).toLowerCase()}.</div>}
+          <button className="pcd-btn-secondary" style={{ marginTop: 14 }} onClick={() => handleAbandon(activeGoal.id)}>Abandon goal</button>
         </div>
-        <button className="action-btn" onClick={() => handleAbandon(activeGoal.id)}>Abandon goal</button>
-      </div>
-      <div style={{ display: 'flex', gap: 24, marginTop: 18, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontSize: 10, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Current rank</div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginTop: 6 }}>{latest.rank}</div>
-        </div>
-        {activeGoal.targetRank && (
+        <div className="pcd-hero-stats">
           <div>
-            <div style={{ fontSize: 10, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Target rank</div>
-            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 6, color: 'var(--accent)' }}>{activeGoal.targetRank}</div>
+            <div className="pcd-hero-stat-label">Current rank</div>
+            <div className="pcd-hero-stat-value">{latest.rank}</div>
           </div>
-        )}
+          {activeGoal.targetRank && (
+            <div>
+              <div className="pcd-hero-stat-label">Target rank</div>
+              <div className="pcd-hero-stat-value" style={{ color: 'var(--accent)' }}>{activeGoal.targetRank}</div>
+            </div>
+          )}
+          {pointsNeeded != null && (
+            <div>
+              <div className="pcd-hero-stat-label">Points needed</div>
+              <div className="pcd-hero-stat-value">{pointsNeeded}</div>
+            </div>
+          )}
+          {monthsLeft != null && (
+            <div>
+              <div className="pcd-hero-stat-label">Months left</div>
+              <div className="pcd-hero-stat-value" style={{ color: 'var(--opp)' }}>{monthsLeft}</div>
+            </div>
+          )}
+        </div>
       </div>
       {rankProgress !== null && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ height: 10, background: 'rgba(0,0,0,.3)', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{ width: `${rankProgress}%`, height: '100%', background: 'var(--accent)' }} />
+        <div style={{ marginTop: 24 }}>
+          <div className="pcd-progress-track lg">
+            <div className="pcd-progress-fill" style={{ width: `${rankProgress}%` }} />
+            {paceMarkPct != null && <div className="pcd-progress-mark" style={{ left: `${paceMarkPct}%` }} />}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8 }}>{rankProgress}% of the way from your first-seen rank to the goal</div>
+          {paceNote && <div className="pcd-progress-note" style={{ color: paceNote.includes('BEHIND') ? 'var(--opp)' : 'var(--text2)' }}>{paceNote}</div>}
         </div>
       )}
     </div>

@@ -35,6 +35,15 @@ export function buildCircuits(history) {
   return circuits;
 }
 
+// Progress = how far current rank has moved from the FIRST recorded rank
+// toward the target, clamped since a player can start already better than
+// their own target, or move the wrong direction. Shared by GoalsPanel
+// (Overview tab) and PlayerDashboardShell (topbar goal bar) so both agree.
+export function computeRankProgress(startRank, currentRank, targetRank) {
+  if (!startRank || !targetRank || startRank === targetRank) return null;
+  return Math.max(0, Math.min(100, Math.round(((startRank - currentRank) / (startRank - targetRank)) * 100)));
+}
+
 // PLACEHOLDER: any future *verified* cross-category point relationship would
 // hook in here (e.g. a function describing how a result in one circuit
 // affects another). Not implemented — an earlier spec draft assumed AITA

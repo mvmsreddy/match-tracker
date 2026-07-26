@@ -83,36 +83,48 @@ export default function TrainingLogTab({ circuit }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div className="perf-body-row">
+      <div className="pcd-pill-row" style={{ width: 'fit-content' }}>
         {PERIODS.map(p => (
-          <button key={p.id} className={`perf-body-pill${period === p.id ? ' active' : ''}`} onClick={() => setPeriod(p.id)}>{p.label}</button>
+          <button key={p.id} className={`pcd-pill${period === p.id ? ' active' : ''}`} onClick={() => setPeriod(p.id)}>{p.label}</button>
         ))}
       </div>
 
       {error && <div className="history-empty">{error}</div>}
 
-      <div className="perf-chart-card">
-        <div className="perf-chart-title">Log a session</div>
+      <div className="pcd-stat-grid n4">
+        <div className="pcd-stat-card">
+          <div className="pcd-stat-card-label">Sessions</div>
+          <div className="pcd-stat-card-value">{inPeriod.length}</div>
+          <div className="pcd-stat-card-trend neutral">{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
+        </div>
+        <div className="pcd-stat-card">
+          <div className="pcd-stat-card-label">Focus areas logged</div>
+          <div className="pcd-stat-card-value">{volumeByFocus.length}</div>
+        </div>
+      </div>
+
+      <div className="pcd-card">
+        <div className="pcd-card-title">Log a session</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
             Date
             <input type="date" value={form.sessionDate} onChange={e => setForm(f => ({ ...f, sessionDate: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'inherit' }} />
+              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
             Duration (min)
             <input type="number" value={form.durationMinutes} onChange={e => setForm(f => ({ ...f, durationMinutes: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'inherit', width: 100 }} />
+              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', width: 100 }} />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', flex: 1, minWidth: 180 }}>
             Focus areas (comma-separated)
             <input type="text" placeholder="forehand, serve" value={form.focusAreas} onChange={e => setForm(f => ({ ...f, focusAreas: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'inherit' }} />
+              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
             Intensity
             <select value={form.intensity} onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'inherit' }}>
+              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}>
               <option value="light">Light</option>
               <option value="moderate">Moderate</option>
               <option value="high">High</option>
@@ -122,52 +134,48 @@ export default function TrainingLogTab({ circuit }) {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', marginTop: 12 }}>
           Notes
           <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'inherit', resize: 'vertical' }} />
+            style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', resize: 'vertical' }} />
         </label>
-        <button className="action-btn primary" style={{ marginTop: 14 }} disabled={saving} onClick={handleLog}>{saving ? 'Saving…' : 'Log session'}</button>
+        <button className="pcd-btn-primary" style={{ marginTop: 14 }} disabled={saving} onClick={handleLog}>{saving ? 'Saving…' : 'Log session'}</button>
       </div>
 
-      <div className="perf-chart-card">
-        <div className="perf-chart-title">Volume by focus area</div>
-        <div className="perf-chart-subtitle">{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
-        {volumeByFocus.length === 0 && <div className="history-empty">No sessions logged with focus areas in this period.</div>}
-        {volumeByFocus.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '10px 6px' }}>
-            {volumeByFocus.map(v => (
-              <div key={v.name}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600 }}>{v.name}</span>
-                  <span style={{ color: v.color, fontWeight: 600 }}>{v.count}</span>
-                </div>
-                <div style={{ height: 10, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
-                  <div style={{ width: `${v.pct}%`, height: '100%', background: v.color }} />
-                </div>
+      <div className="pcd-stat-grid n2">
+        <div className="pcd-card">
+          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Volume by focus area</div>
+          <div className="pcd-card-sub" style={{ marginBottom: 22 }}>{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
+          {volumeByFocus.length === 0 && <div className="history-empty">No sessions logged with focus areas in this period.</div>}
+          {volumeByFocus.map(v => (
+            <div key={v.name} className="pcd-bar-row">
+              <div className="pcd-bar-head">
+                <span className="pcd-bar-name">{v.name}</span>
+                <span className="pcd-bar-value" style={{ color: v.color }}>{v.count}</span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="pcd-bar-track"><div className="pcd-bar-fill" style={{ width: `${v.pct}%`, background: v.color }} /></div>
+            </div>
+          ))}
+        </div>
 
-      <div className="perf-chart-card">
-        <div className="perf-chart-title">Session log</div>
-        <div className="perf-chart-subtitle">Most recent first</div>
-        {inPeriod.length === 0 && <div className="history-empty">No sessions in this period.</div>}
-        {inPeriod.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '10px 6px' }}>
-            {inPeriod.map(s => (
-              <div key={s.id} style={{ display: 'flex', gap: 14, paddingBottom: 18 }}>
-                <div style={{ flex: 'none', width: 52, textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600, fontSize: 12 }}>{formatDate(s.sessionDate)}</div>
-                  {s.durationMinutes && <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>{s.durationMinutes} min</div>}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{(s.focusAreas || []).join(', ') || 'General session'}</div>
-                  {s.notes && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 6 }}>{s.notes}</div>}
-                </div>
+        <div className="pcd-card">
+          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Session log</div>
+          <div className="pcd-card-sub" style={{ marginBottom: 20 }}>Most recent first</div>
+          {inPeriod.length === 0 && <div className="history-empty">No sessions in this period.</div>}
+          {inPeriod.map(s => (
+            <div key={s.id} className="pcd-timeline-row">
+              <div className="pcd-timeline-date-col">
+                <div className="pcd-timeline-date">{formatDate(s.sessionDate)}</div>
+                {s.durationMinutes && <div className="pcd-timeline-dur">{s.durationMinutes} min</div>}
               </div>
-            ))}
-          </div>
-        )}
+              <div className="pcd-timeline-rail">
+                <div className="pcd-timeline-dot" style={{ background: 'var(--accent)' }} />
+                <div className="pcd-timeline-line" />
+              </div>
+              <div className="pcd-timeline-body">
+                <div className="pcd-timeline-title">{(s.focusAreas || []).join(', ') || 'General session'}</div>
+                {s.notes && <div className="pcd-timeline-note">{s.notes}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
