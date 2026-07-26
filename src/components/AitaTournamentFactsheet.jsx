@@ -57,15 +57,24 @@ function findLeakedBlob(t) {
   return candidates.find(c => c && LEAK_SIGNATURE_RE.test(c)) || '';
 }
 
+// Same "cap it instead" fix as sync-aita-calendar/index.ts's MAX_VALUE_LEN —
+// when none of the given end labels are found (a field that's absent on
+// this particular tournament's template, e.g. no LOCATION line), this used
+// to fall through to text.length and swallow everything after the start
+// label. Confirmed live: EMAIL ID did exactly that when a venue had no
+// LOCATION link to stop at.
+const MAX_EXTRACT_LEN = 400;
+
 function between(text, startLabel, endLabels) {
   const si = text.indexOf(startLabel);
   if (si === -1) return '';
   const valueStart = si + startLabel.length;
-  let ei = text.length;
+  let ei = -1;
   for (const label of endLabels) {
     const idx = text.indexOf(label, valueStart);
-    if (idx !== -1 && idx < ei) ei = idx;
+    if (idx !== -1 && (ei === -1 || idx < ei)) ei = idx;
   }
+  if (ei === -1) ei = Math.min(valueStart + MAX_EXTRACT_LEN, text.length);
   return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
 }
 
@@ -111,12 +120,36 @@ function parseLeakedDetails(raw) {
     venueName = between(segment, 'NAME OF THE VENUE', ['ADDRESS OF THE VENUE']);
     venueAddress = between(segment, 'ADDRESS OF THE VENUE', ['PINCODE', 'CITY', 'TELEPHONE NO.']).replace(/,\s*$/, '');
     pincode = between(segment, 'PINCODE', ['TELEPHONE NO.']);
-    phone = between(segment, 'TELEPHONE NO.', ['EMAIL ID', 'LOCATION']);
-    email = between(segment, 'EMAIL ID', ['LOCATION']);
+    phone = between(segment, 'TELEPHONE NO.', ['EMAIL ID', 'LOCATION', 'COURT SURFACE']);
+    email = between(segment, 'EMAIL ID', ['LOCATION', 'COURT SURFACE', 'TOURNAMENT OFFICIALS']);
   }
 
-  const hasAny = week || dateRange || draws.length > 0 || venueName || venueAddress || pincode || phone || email || mapUrl || entryUrl;
-  return hasAny ? { week, dateRange, entryUrl, mapUrl, draws, venueName, venueAddress, pincode, phone, email } : null;
+  const hotels = parseLeakedHotels(raw);
+
+  const hasAny = week || dateRange || draws.length > 0 || venueName || venueAddress || pincode || phone || email || mapUrl || entryUrl || hotels.length > 0;
+  return hasAny ? { week, dateRange, entryUrl, mapUrl, draws, venueName, venueAddress, pincode, phone, email, hotels } : null;
+}
+
+// Hotel/accommodation info has no DB column at all — this is pure upside
+// when a leaked field happens to carry it. Two template variants seen so
+// far ("SINGLE/DOUBLE ROOM RATE (₹)" vs "Non Ac Room"/"Ac Room" rows), so
+// rates+breakfast+distance are kept as one free-text tail per hotel rather
+// than split into precise cells that would only be right for one variant.
+function parseLeakedHotels(raw) {
+  const marks = [...raw.matchAll(/HOTEL\s*\d*\s*INFORMATION/gi)];
+  if (marks.length === 0) return [];
+  const stopIdx = raw.search(/ENTRY FEES|AGE ELIGIBILITY|AITA Registration Card/i);
+  return marks.map((m, i) => {
+    const start = m.index + m[0].length;
+    const end = i + 1 < marks.length ? marks[i + 1].index : (stopIdx !== -1 ? stopIdx : raw.length);
+    const chunk = raw.slice(start, end);
+    const name = between(chunk, 'NAME OF HOTEL', ['ADDRESS', 'CONTACT PERSON']);
+    const address = between(chunk, 'ADDRESS', ['PHONE NO.', 'CONTACT PERSON']);
+    const phone = between(chunk, 'PHONE NO.', ['E-MAIL', 'CONTACT PERSON']);
+    const contactPerson = between(chunk, 'CONTACT PERSON FOR RESERVATION', ['CONTACT PERSON PHONE', 'SINGLE ROOM', 'Non Ac', 'Rs ']);
+    const notes = between(chunk, 'CONTACT PERSON PHONE NO.', []);
+    return { name, address, phone, contactPerson, notes };
+  }).filter(h => h.name);
 }
 
 function Banner({ children }) {
@@ -330,6 +363,21 @@ export default function AitaTournamentFactsheet({ t }) {
               t.entryFeeDoubles ? `₹${t.entryFeeDoubles}` : '—',
             ]]}
           />
+        </div>
+      )}
+
+      {leaked?.hotels?.length > 0 && (
+        <div className="t-fs-section">
+          <Banner>Accommodation</Banner>
+          {leaked.hotels.map((h, i) => (
+            <div className="t-fs-table" style={{ marginBottom: i < leaked.hotels.length - 1 ? 10 : 0 }} key={h.name || i}>
+              <TableRow label="Hotel" value={h.name} />
+              <TableRow label="Address" value={h.address} />
+              <TableRow label="Phone" value={h.phone} href={h.phone ? `tel:${h.phone.split(/[,/]/)[0].replace(/[^\d+]/g, '')}` : undefined} />
+              <TableRow label="Contact Person" value={h.contactPerson} />
+              <TableRow label="Rates & Notes" value={h.notes} />
+            </div>
+          ))}
         </div>
       )}
 
