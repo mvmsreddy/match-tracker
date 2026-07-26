@@ -63,9 +63,46 @@ export async function extractPdfText(pdfUrl) {
 // section 4, format A). Other category types (Open/Seniors/Wheelchair) use
 // different column layouts and need their own parser — not needed until
 // Phase 3/4/5.
-// ---------------------------------------------------------------------
+//
+// AITA's own column count is NOT fixed at 5 numeric columns. Confirmed by
+// fetching real PDFs across each combo's full history (2026-07-26): some
+// categories/date-ranges insert an extra "bonus points" column (e.g. "Asian
+// U-14", "Asian U-16", "25% PTS.") between LATE WL and the real Final total,
+// and Boys/Girls U-18 use a 7-numeric-column layout with yet another order
+// (X 2 / MENS / WOMEN'S columns, LATE WL moved near the end). A regex
+// hardcoded to exactly 5 trailing numbers silently grabbed the wrong (bonus)
+// column as total_points and dropped the real Final value entirely — this
+// was wrong for Boys/Girls U-14 and Boys/Girls U-18 since their very first
+// backfilled date, and for Boys/Girls U-16 from 2022-09-19 onward (both
+// switched on the exact same date, confirming a real AITA site change).
+//
+// Fix: the ONE invariant that holds across every format seen is that the
+// real Final/TTL total is always the LAST numeric column before the next
+// row starts. So instead of a fixed count, lazily consume numeric columns
+// one at a time until a lookahead confirms the next row's rank+name is
+// starting (or end of text) — whatever was captured, the last number is
+// total_points, no matter how many columns preceded it.
+const JUNIOR_ROW_RE = /(\d+)\|\s*\|([A-Z][A-Z .'-]*?)\|\s*\|(\d+)\|\s*\|(\d{1,2}-[A-Za-z]{3}-\d{2})\|\s*\|\(([A-Z]{2})\)\|\s*\|((?:[\d.]+\|(?:\s*\|)?)+?)(?=\d+\|\s*\|[A-Z]|$)/g;
 
-const JUNIOR_ROW_RE = /(\d+)\|\s*\|([A-Z][A-Z .'-]*?)\|\s*\|(\d+)\|\s*\|(\d{1,2}-[A-Za-z]{3}-\d{2})\|\s*\|\(([A-Z]{2})\)\|\s*\|([\d.]+)\|\s*\|([\d.]+)\|\s*\|([\d.]+)\|\s*\|([\d.]+)\|\s*\|([\d.]+)\|/g;
+// Maps the numeric columns preceding the real total (already excluded) onto
+// named fields when the layout is one we recognize, so the existing
+// rankings-table UI (Singles/Doubles/25% Best Dbls columns) keeps working.
+// Anything else (currently: Boys/Girls U-18's 6-preceding-column layout,
+// which reorders LATE WL and adds differently-named bonus columns) is kept
+// positionally rather than mislabeled under the wrong name.
+function buildPointsBreakdown(nums) {
+  if (nums.length === 4) {
+    const [singlesPts, doublesPts, best25DoublesPts, cutPts] = nums;
+    return { singlesPts, doublesPts, best25DoublesPts, cutPts };
+  }
+  if (nums.length === 5) {
+    const [singlesPts, doublesPts, best25DoublesPts, cutPts, bonusPts] = nums;
+    return { singlesPts, doublesPts, best25DoublesPts, cutPts, bonusPts };
+  }
+  const breakdown = {};
+  nums.forEach((v, i) => { breakdown[`col${i + 1}`] = v; });
+  return breakdown;
+}
 
 // DOB is printed as DD-Mon-YY (2-digit year) — junior/open players are all
 // born in the 2000s+, so YY <= (current 2-digit year + 1) means 20YY, else
@@ -87,7 +124,10 @@ export function parseJuniorRankingPdfText(fullText) {
   const rows = [];
   let rowOrder = 0;
   for (const m of fullText.matchAll(JUNIOR_ROW_RE)) {
+    const nums = m[6].split('|').map(s => s.trim()).filter(Boolean).map(Number);
+    if (nums.length < 2) continue; // sanity guard — every known format has at least cut+final
     rowOrder++;
+    const totalPoints = nums[nums.length - 1];
     rows.push({
       rowOrder,
       rank: parseInt(m[1], 10),
@@ -95,13 +135,8 @@ export function parseJuniorRankingPdfText(fullText) {
       regNo: m[3],
       dob: parseDob(m[4]),
       state: m[5],
-      pointsBreakdown: {
-        singlesPts: parseFloat(m[6]),
-        doublesPts: parseFloat(m[7]),
-        best25DoublesPts: parseFloat(m[8]),
-        cutPts: parseFloat(m[9]),
-      },
-      totalPoints: parseFloat(m[10]),
+      pointsBreakdown: buildPointsBreakdown(nums.slice(0, -1)),
+      totalPoints,
     });
   }
   return rows;
