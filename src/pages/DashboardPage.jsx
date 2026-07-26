@@ -465,7 +465,10 @@ export default function DashboardPage() {
         {/* Player: official ranking performance across governing bodies/circuits */}
         {role === 'player' && (
           <>
-            <div className="dashboard-section-title" style={{ marginTop: 20 }}>Performance</div>
+            <div className="dashboard-section-title" style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span>Performance</span>
+              <Link to="/player-dashboard" style={{ fontSize: 12 }}>Full multi-segment dashboard →</Link>
+            </div>
             <PerformanceTab aitaReg={user.aitaReg} />
           </>
         )}

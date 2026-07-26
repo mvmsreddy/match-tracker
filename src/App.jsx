@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import PlayerDashboardPage from './pages/PlayerDashboardPage';
 import TrackerPage from './pages/TrackerPage';
 import MatchHistoryPage from './pages/MatchHistoryPage';
 import MatchDetailPage from './pages/MatchDetailPage';
@@ -29,6 +30,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/player-dashboard" element={<ProtectedRoute><PlayerDashboardPage /></ProtectedRoute>} />
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><MatchHistoryPage /></ProtectedRoute>} />
               <Route path="/history/:matchId" element={<ProtectedRoute><MatchDetailPage /></ProtectedRoute>} />
