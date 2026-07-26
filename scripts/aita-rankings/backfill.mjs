@@ -38,13 +38,23 @@ if (!supabaseUrl || !serviceKey) {
 const supabase = createClient(supabaseUrl, serviceKey);
 
 async function alreadySyncedDates() {
-  const { data, error } = await supabase
-    .from('aita_rankings')
-    .select('ranking_date')
-    .eq('category', category)
-    .eq('subcategory', subcategory);
-  if (error) throw new Error(`Checking existing dates failed: ${error.message}`);
-  return new Set((data || []).map(r => r.ranking_date));
+  // Supabase/PostgREST caps each response at 1000 rows, and a fully-backfilled
+  // combo can have hundreds of thousands of rows — must paginate or this only
+  // "sees" the first ~1000 rows' worth of dates and wrongly re-fetches the rest.
+  const PAGE = 1000;
+  const dates = new Set();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('aita_rankings')
+      .select('ranking_date')
+      .eq('category', category)
+      .eq('subcategory', subcategory)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Checking existing dates failed: ${error.message}`);
+    for (const r of data) dates.add(r.ranking_date);
+    if (!data || data.length < PAGE) break;
+  }
+  return dates;
 }
 
 function toDbRow(row, pdfUrl, sourceUrl) {

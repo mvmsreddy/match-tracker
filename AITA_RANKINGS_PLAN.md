@@ -1,6 +1,6 @@
 # AITA Player Rankings — Research & Implementation Plan
 
-> **Status:** Phase 1 in progress — Girls U-12 (full pipeline build-out)
+> **Status:** Phase 2 complete — all Juniors (Boys/Girls U-12/14/16/18) backfilled
 > **Last Updated:** 2026-07-26
 > **Source:** https://aitatennis.com/playerranking/
 
@@ -144,13 +144,24 @@ create index idx_aita_rankings_regno on aita_rankings (reg_no);
   - [x] Rate-limited backfill script (`scripts/aita-rankings/backfill.mjs`)
   - [x] Backfill run: **249/249 dates, 133,859 rows, 0 errors**
   - [x] Data-quality check: date range matches exactly (2021-01-11 to 2026-07-13), row_order gapless per date, 0 null player_name, tie-handling verified correct
-  - [ ] Decide + build a minimal way to view it (frontend page scope TBD — not started)
-- [ ] **Phase 2** — remaining Juniors: Boys U-12/14/16/18, Girls U-14/16/18 (format A, same parser)
+  - [x] Frontend view built: `PerformanceTab.jsx` on the player dashboard (auto-discovers circuits per reg no.)
+- [x] **Phase 2 — remaining Juniors: Boys U-12/14/16/18, Girls U-14/16/18 (format A, same parser):** ✅ complete 2026-07-26
+  - [x] Verified via full pagination (not just row counts, which are misleading under Supabase's 1000-row response cap) that every combo now has full date coverage matching AITA's published catalog: Boys U-12/14/16/18 and Girls U-12/14/16 at 249/249 dates, Girls U-18 at 248/248 (AITA published one fewer date for this combo)
+  - [x] Filled gaps found: Boys U-14 (1 date), Boys U-16 (1 date), Girls U-16 (2 dates), Girls U-18 (142 dates — this combo previously only had 2024-04-08 onward, now backfilled to 2021-01-11)
+  - [x] Fixed a real bug in `alreadySyncedDates()` in `scripts/aita-rankings/backfill.mjs` — it queried existing dates without pagination, so on a combo with >1000 rows it only "saw" a handful of already-synced dates and would've needlessly re-fetched/re-parsed the rest on any re-run (harmless due to upsert, but wasteful, and would've affected Phase 6's incremental sync too)
+  - [x] Data-quality spot check: 0 null `player_name` across all 7 combos
+  - [x] **Resolved data anomaly**: Girls U-14 had 1,031 rows under a bogus `ranking_date` of `"20214-05-13"`. Root cause confirmed via investigation, not assumption: AITA's own `ranking2.php` date list (still live as of 2026-07-26) lists the same 13-May-2024 ranking PDF twice, once correctly and once with a typo (`2024` → `20214`, confirmed by the "As on 13th May, 2024" text printed inside the actual PDF). A correctly-dated `2024-05-13` entry already existed with the identical row count (1,031) — an exact duplicate, not a missing/wrong date. This duplicate had been silently inflating the distinct-date count to look complete (249/249), masking a real gap at `2021-03-08`. Fixed by deleting the 1,031 duplicate rows and backfilling the real gap (903 rows) — see `scripts/aita-rankings/backfill-one-date.mjs`, a targeted single-date backfill tool (bypasses `listDatesFor`, needed whenever AITA's site relists the same PDF under two date values, since the normal `backfill.mjs` would just re-fetch the bogus one again). No other combo had this issue — checked live against all 7 other Junior combos.
 - [ ] **Phase 3** — Open Men/Women Singles/Doubles (format B, new parser branch)
 - [ ] **Phase 4** — Wheelchair (format D, new parser branch)
 - [ ] **Phase 5 (low priority)** — Seniors/Senior Women (format C) — only ~38 PDFs total across all 22 combos since AITA abandoned this in 2021; low value, do last or skip
-- [ ] **Phase 6** — incremental sync (weekly cron Edge Function, mirrors `sync-aita-calendar`) — only once Phases 1-4 are backfilled, to keep data current going forward
-- [ ] **Phase 7** — frontend browse/search UI across the full dataset
+- [ ] **Phase 6 — incremental sync** (weekly cron Edge Function, mirrors `sync-aita-calendar`): code complete 2026-07-26, **not yet deployed**. Scoped to the 8 Junior combos only (Phases 1-2, format A) — doesn't wait on Phase 3/4/5, since those need their own PDF parsers first. Extending coverage later just means adding the new combos + parser branch to `sync-aita-rankings`.
+  - [x] `unpdf`'s `getDocumentProxy` verified to expose the same low-level `getPage()`/`getTextContent()` API as `pdfjs-dist`, so the existing per-item pipe-joined text extraction (and therefore `JUNIOR_ROW_RE` itself) ports to Deno unchanged — the risk here was that `unpdf`'s higher-level `extractText()` helper (what `sync-aita-calendar` uses) returns space/newline-joined merged text, which would NOT match the existing regex.
+  - [x] `aita_rankings_sync_state` + `aita_rankings_skip_dates` tables (`supabase/phase28_aita_rankings_sync.sql`) — tracks a per-combo high-water-mark date so sync doesn't have to re-page the whole table every run, plus a skip-list guard for the recurring Girls U-14 duplicate
+  - [x] `supabase/functions/sync-aita-rankings/index.ts` Edge Function — checks all 8 combos every run (cheap), caps the expensive PDF fetch+parse to `MAX_PDF_PARSES_PER_RUN = 8` per invocation
+  - [x] `triggerAitaRankingsSync()` in `supabaseApi.js` (+ `src/api/index.js` re-export) + organizer-gated "Sync Now" button on `AitaRankingsPage.jsx`, same pattern as `AitaCalendarPage.jsx`
+  - [x] `npm run build` verified clean after all frontend changes
+  - [ ] **Deploy — needs to be done by the user**: no Supabase CLI available in the dev sandbox this was built in. Run `supabase/phase28_aita_rankings_sync.sql` in the SQL Editor, then `supabase functions deploy sync-aita-rankings`, then fill in the real project URL/secret/service-role values in that SQL file's `cron.schedule` block and run just that block.
+- [x] **Phase 7 — frontend browse/search UI**: already built and live, contrary to this doc's prior status — `AitaRankingsPage.jsx` at `/aita-rankings`, wired into `MTNavChrome`, `SideDrawer`, and linked from `PerformanceTab.jsx`'s "View full rankings table →". Backed by `listAitaRankingFacets` / `listAitaRankingDates` / `listAitaRankings` in `supabaseApi.js`. This doc just hadn't been updated to reflect it — found while scoping Phase 6.
 
 ---
 

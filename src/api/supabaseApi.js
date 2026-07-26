@@ -2503,10 +2503,17 @@ export async function triggerAitaSync() {
 
 // ---------------------------------------------------------------------------
 // AITA Player Rankings — mirrored from https://aitatennis.com/playerranking/
-// Read-only from the client. Currently populated by local backfill scripts
-// (scripts/aita-rankings/backfill.mjs), not a deployed sync function — see
-// AITA_RANKINGS_PLAN.md at the repo root for the phased rollout.
+// Read-only from the client. Historical data came from local backfill
+// scripts (scripts/aita-rankings/backfill.mjs); ongoing freshness is
+// sync-aita-rankings (Phase 6 — weekly cron + this manual trigger), scoped
+// to the 8 Junior combos backfilled in Phases 1-2. See AITA_RANKINGS_PLAN.md.
 // ---------------------------------------------------------------------------
+
+export async function triggerAitaRankingsSync() {
+  const { data, error } = await supabase.functions.invoke('sync-aita-rankings', { body: {} });
+  if (error) throw new Error(error.message);
+  return data;
+}
 
 function rowToAitaRanking(row) {
   return {

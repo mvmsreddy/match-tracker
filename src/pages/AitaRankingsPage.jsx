@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
@@ -13,7 +14,11 @@ function formatDob(iso) {
 }
 
 export default function AitaRankingsPage() {
+  const { user } = useAuth();
   const { theme } = useTheme();
+  const isOrganizer = user?.role === 'organizer';
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
   const [facets, setFacets] = useState(null);
   const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState('');
@@ -81,6 +86,28 @@ export default function AitaRankingsPage() {
   const subcategoryOptions = facets ? [...new Set(facets.filter(f => f.category === category).map(f => f.subcategory))] : [];
   const totalPages = result ? Math.max(1, Math.ceil(result.totalCount / PAGE_SIZE)) : 1;
 
+  async function handleSyncNow() {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const result = await api.triggerAitaRankingsSync();
+      const rows = (result?.summary || []).reduce((sum, s) => sum + (s.rowsUpserted || 0), 0);
+      const newDatesCount = (result?.summary || []).reduce((sum, s) => sum + (s.datesUpserted || 0), 0);
+      setSyncMessage(newDatesCount > 0 ? `Synced — ${newDatesCount} new date(s), ${rows} rows.` : 'Synced — no new rankings published since last check.');
+      if (category && subcategory) {
+        api.listAitaRankingDates(category, subcategory).then(list => {
+          setDates(list);
+          if (list.length > 0 && !list.includes(date)) setDate(list[0]);
+        });
+      }
+    } catch (e) {
+      setSyncMessage(e.message || 'Sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div className="root">
       {theme === 'navy' ? <MTNavChrome active="rankings" /> : <TopNav />}
@@ -91,8 +118,15 @@ export default function AitaRankingsPage() {
             <h1 className="title">AITA Rankings</h1>
             <div className="subtitle">MIRRORED FROM AITATENNIS.COM</div>
           </div>
+          {isOrganizer && (
+            <button className="action-btn primary" onClick={handleSyncNow} disabled={syncing}>
+              {syncing ? 'Syncing…' : '⟳ Sync Now'}
+            </button>
+          )}
         </div>
       </div>
+
+      {syncMessage && <div className="history-empty" style={{ padding: '8px 16px' }}>{syncMessage}</div>}
 
       {error && <div className="history-empty">{error}</div>}
 

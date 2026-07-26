@@ -128,6 +128,7 @@ export const triggerAitaSync      = hasSupabaseConfig ? supabaseApi.triggerAitaS
 export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRankingFacets : async () => [];
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
+export const triggerAitaRankingsSync = hasSupabaseConfig ? supabaseApi.triggerAitaRankingsSync : noSupabase;
 
 // Player Performance tab — auto-discovers every circuit a reg_no is ranked in
 export const getPlayerAitaRankingHistory = hasSupabaseConfig ? supabaseApi.getPlayerAitaRankingHistory : async () => [];
