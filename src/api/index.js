@@ -132,6 +132,9 @@ export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRan
 // Player Performance tab — auto-discovers every circuit a reg_no is ranked in
 export const getPlayerAitaRankingHistory = hasSupabaseConfig ? supabaseApi.getPlayerAitaRankingHistory : async () => [];
 
+// "Navy" design system — Profile annual entry allowance
+export const getMyTournamentEntryCountThisYear = hasSupabaseConfig ? supabaseApi.getMyTournamentEntryCountThisYear : async () => 0;
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;

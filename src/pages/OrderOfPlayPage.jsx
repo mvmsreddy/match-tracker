@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import { generateOOPPdf } from '../utils/oopPdf';
 
 // ---------------------------------------------------------------------------
@@ -235,6 +237,7 @@ const FILTERS = ['All', 'Unscheduled', 'Scheduled', 'Complete'];
 export default function OrderOfPlayPage() {
   const { id: weekId } = useParams();
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [week,       setWeek]       = useState(null);
   const [matches,    setMatches]    = useState([]);
@@ -337,7 +340,7 @@ export default function OrderOfPlayPage() {
   if (loading) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
         <div className="page-scroll">
           <div className="history-empty">Loading…</div>
         </div>
@@ -348,7 +351,7 @@ export default function OrderOfPlayPage() {
   if (error && !week) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
         <div className="page-scroll">
           <div className="history-empty">{error}</div>
         </div>
@@ -358,7 +361,7 @@ export default function OrderOfPlayPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
 
       {/* Header */}
       <div className="header">

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import { computeStats, computeServeStats, computeReturnStats, replayMatchAnalytics } from '../lib/analytics';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 
 function fmtRatio(r) { return r === Infinity ? '\u221e' : r.toFixed(2); }
 function fmtPct(p) { return p.toFixed(1) + '%'; }
 
 export default function ComparePage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [list, setList] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [details, setDetails] = useState({});
@@ -47,7 +50,7 @@ export default function ComparePage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
       <div className="header">
         <h1 className="title">Compare Matches</h1>
         <div className="subtitle">SELECT TWO OR MORE SAVED MATCHES TO COMPARE &middot; {user.name}</div>

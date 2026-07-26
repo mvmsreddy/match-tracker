@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import { uploadVideoForAnalysis, getAnalysisJob, getAnalysisVideoUrl } from '../api/videoAnalysisApi';
 
 const POLL_INTERVAL_MS = 5000;
 const STORAGE_KEY = 'videoAnalysisTest.jobId';
 
 export default function VideoAnalysisTestPage() {
+  const { theme } = useTheme();
   const [file, setFile] = useState(null);
   const [jobId, setJobId] = useState(() => localStorage.getItem(STORAGE_KEY));
   const [job, setJob] = useState(null);
@@ -63,7 +66,7 @@ export default function VideoAnalysisTestPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav />}
       <div className="header">
         <div className="title-row">
           <div>

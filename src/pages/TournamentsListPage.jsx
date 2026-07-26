@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
 import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
 
@@ -57,6 +59,7 @@ function formatDateRange(start, end) {
 
 export default function TournamentsListPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [weeks, setWeeks] = useState(null);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -230,7 +233,7 @@ export default function TournamentsListPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
 
       <div className="header">
         <div className="title-row">

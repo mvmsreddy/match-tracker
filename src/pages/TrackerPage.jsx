@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useMatchTracker } from '../hooks/useMatchTracker';
 import { getWeatherString } from '../lib/weather';
 import * as api from '../api';
+import { useTheme } from '../context/ThemeContext';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import Scorebar from '../components/Scorebar';
 import Wizard from '../components/Wizard';
+import QuickMode from '../components/tracker/QuickMode';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ActionButtons from '../components/ActionButtons';
@@ -85,6 +88,7 @@ function mapAitaGradeToCircuit(rawGrade) {
 }
 
 const TRACKING_MODES = [
+  { value: 'quick', label: 'Quick', hint: 'Two big buttons + tap-to-tag chips — fastest possible entry, courtside.' },
   { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
   { value: 'advanced', label: 'Advanced', hint: 'Adds rally length, shot wing/type, and error location.' },
   { value: 'expert', label: 'Expert', hint: 'Full detail — court-tap shot placement and infractions.' },
@@ -95,6 +99,7 @@ const AI_REVIEW_ENABLED = false;
 
 export default function TrackerPage() {
   const t = useMatchTracker();
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
 
@@ -110,7 +115,7 @@ export default function TrackerPage() {
 
   return (
     <div className="tracker-shell root flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
-      <TopNav variant="tracker" />
+      {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav variant="tracker" />}
 
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
@@ -199,13 +204,22 @@ export default function TrackerPage() {
                 />
               )}
               {t.serverExplicitlyChosen ? (
-                <Wizard
-                  nextServer={t.nextServer}
-                  onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
-                  selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-                  onDelete={t.resetMatch}
-                  trackingMode={t.trackingMode}
-                />
+                t.trackingMode === 'quick' ? (
+                  <QuickMode
+                    nextServer={t.nextServer}
+                    onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                    selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                    onEndMatch={t.resetMatch}
+                  />
+                ) : (
+                  <Wizard
+                    nextServer={t.nextServer}
+                    onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                    selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                    onDelete={t.resetMatch}
+                    trackingMode={t.trackingMode}
+                  />
+                )
               ) : (
                 <div className="py-8 text-center text-sm text-tt-muted-foreground">Select who serves first above to begin tracking</div>
               )}

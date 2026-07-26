@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
+import { minEligibleAgeGroup } from '../utils/eligibility';
+
+// AITA Rules KB — Annual Tournament Limits (junior circuit only; count is
+// combined across all age groups a player enters, per §2). Adult ("Open")
+// entries aren't capped.
+const ANNUAL_ENTRY_CAP = { U10: 18, U12: 18, U14: 25, U16: 30, U18: null, Open: null };
 
 const STATES = [
   'AP','AR','AS','BR','CG','GA','GJ','HR','HP','JH','KA','KL',
@@ -50,6 +58,7 @@ function Row({ label, value }) {
 
 export default function ProfilePage() {
   const { user, refreshProfile } = useAuth();
+  const { theme } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState('bio');
@@ -162,6 +171,19 @@ export default function ProfilePage() {
   const isOrganizer = form.role === 'organizer';
   const age = getAge(form.dateOfBirth);
 
+  // "Navy" design system — annual entry allowance (real count, not decorative)
+  const [entryCount, setEntryCount] = useState(null);
+  useEffect(() => {
+    if (!isPlayer || !user.aitaReg) return;
+    let cancelled = false;
+    api.getMyTournamentEntryCountThisYear(user.aitaReg)
+      .then(count => { if (!cancelled) setEntryCount(count); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isPlayer, user.aitaReg]);
+  const ageGroup = form.dateOfBirth ? minEligibleAgeGroup(form.dateOfBirth, new Date().getFullYear()) : null;
+  const entryCap = ageGroup ? ANNUAL_ENTRY_CAP[ageGroup] : null;
+
   // Profile completeness for players
   const missingPlayerFields = isPlayer
     ? [
@@ -174,7 +196,7 @@ export default function ProfilePage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="profile" /> : <TopNav />}
 
       <div className="page-scroll">
         <div className="profile-card">
@@ -209,6 +231,26 @@ export default function ProfilePage() {
               Complete your profile to enter tournaments.
               Missing: <strong>{missingPlayerFields.join(', ')}</strong>.
             </span>
+          </div>
+        )}
+
+        {!editing && isPlayer && ageGroup && entryCap != null && entryCount !== null && (
+          <div className="entry-allowance-card">
+            <div className="dashboard-section-title">Annual Entry Allowance</div>
+            <div className="entry-allowance-figure">
+              <div className="entry-allowance-value">{entryCount}</div>
+              <div className="entry-allowance-sub">of {entryCap} {ageGroup} tournaments used this year</div>
+            </div>
+            <div className="entry-allowance-track">
+              <div
+                className="entry-allowance-fill"
+                style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }}
+              />
+            </div>
+            <div className="entry-allowance-note">
+              {Math.max(0, entryCap - entryCount)} entr{entryCap - entryCount === 1 ? 'y' : 'ies'} remain. Two age groups at
+              one venue count as two tournaments — this is advisory and doesn't block entry.
+            </div>
           </div>
         )}
 

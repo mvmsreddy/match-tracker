@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 
 export default function MatchHistoryPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
 
@@ -25,7 +28,7 @@ export default function MatchHistoryPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
       <div className="header">
         <h1 className="title">Match History</h1>
         <div className="subtitle">SAVED MATCHES &amp; PRACTICE SESSIONS &middot; {user.name}</div>

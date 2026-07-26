@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import * as api from '../api';
+import { useTheme } from '../context/ThemeContext';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import AitaTournamentFactsheet from '../components/AitaTournamentFactsheet';
 
 function timeAgo(iso) {
@@ -18,6 +20,7 @@ function timeAgo(iso) {
 
 export default function AitaTournamentFactsheetPage() {
   const { id } = useParams();
+  const { theme } = useTheme();
   const [t, setT] = useState(null);
   const [error, setError] = useState('');
 
@@ -32,7 +35,7 @@ export default function AitaTournamentFactsheetPage() {
   if (error) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
         <div className="history-empty">{error}</div>
       </div>
     );
@@ -41,7 +44,7 @@ export default function AitaTournamentFactsheetPage() {
   if (!t) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
         <div className="history-empty">Loading fact sheet…</div>
       </div>
     );
@@ -49,7 +52,7 @@ export default function AitaTournamentFactsheetPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
 
       <div className="header">
         <div className="title-row">

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
 import { replayMatchAnalytics } from '../lib/analytics';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import Scorebar from '../components/Scorebar';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
@@ -14,6 +16,7 @@ import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 export default function MatchDetailPage() {
   const { matchId } = useParams();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [match, setMatch] = useState(null);
   const [error, setError] = useState('');
 
@@ -28,7 +31,7 @@ export default function MatchDetailPage() {
   if (error) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
         <div className="history-empty">{error} — <Link to="/history" style={{ color: '#C6E23D' }}>back to history</Link></div>
       </div>
     );
@@ -37,7 +40,7 @@ export default function MatchDetailPage() {
   if (!match) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
         <div className="history-empty">Loading match...</div>
       </div>
     );
@@ -74,7 +77,7 @@ export default function MatchDetailPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
       <div className="header">
         <div className="title-row">
           <h1 className="title">{match.selfName} vs {match.oppName}</h1>

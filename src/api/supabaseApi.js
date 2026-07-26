@@ -1044,6 +1044,30 @@ export async function getMyEntries() {
   }));
 }
 
+// "Navy" design system — Profile annual entry allowance. Counts distinct
+// (tournament_week, age_group) pairs entered this calendar year — matches
+// the AITA rule that singles+doubles at the same event count once, while
+// two age groups at one venue count as two (Rules KB §Annual Tournament
+// Limits). Looks at aita_reg on either side (own entry or doubles partner).
+export async function getMyTournamentEntryCountThisYear(aitaReg) {
+  if (!aitaReg) return 0;
+  const year = new Date().getFullYear();
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year}-12-31`;
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .select('event:events(age_group, tournament_week:tournament_weeks(id, start_date))')
+    .or(`aita_reg.eq.${aitaReg},partner_aita_reg.eq.${aitaReg}`);
+  if (error) throw new Error(error.message);
+  const seen = new Set();
+  for (const row of data || []) {
+    const week = row.event?.tournament_week;
+    if (!week?.start_date || week.start_date < yearStart || week.start_date > yearEnd) continue;
+    seen.add(`${week.id}|${row.event.age_group}`);
+  }
+  return seen.size;
+}
+
 // ---------------------------------------------------------------------------
 // Phase 19 — Doubles invitations
 // ---------------------------------------------------------------------------

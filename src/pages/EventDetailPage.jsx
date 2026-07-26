@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
+import { useTheme } from '../context/ThemeContext';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
 import { checkAgeEligibility, minEligibleAgeGroup } from '../utils/eligibility';
@@ -1814,6 +1816,7 @@ function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore
 export default function EventDetailPage() {
   const { id: weekId, eventId } = useParams();
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [week,    setWeek]    = useState(null);
   const [event,   setEvent]   = useState(null);
@@ -2313,20 +2316,20 @@ export default function EventDetailPage() {
 
   // ---- RENDER --------------------------------------------------------------
   if (loading) return (
-    <div className="root"><TopNav />
+    <div className="root">{theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
       <div className="page-scroll"><div className="history-empty">Loading…</div></div>
     </div>
   );
 
   if (error && !event) return (
-    <div className="root"><TopNav />
+    <div className="root">{theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
       <div className="page-scroll"><div className="history-empty">{error}</div></div>
     </div>
   );
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
 
       {/* Header */}
       <div className="header">

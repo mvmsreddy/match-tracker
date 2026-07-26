@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import AitaTournamentFactsheet from '../components/AitaTournamentFactsheet';
 
 const AGE_GROUPS = ['Under 10', 'Under 12', 'Under 14', 'Under 16', 'Under 18', 'Men', 'Women', 'Senior'];
@@ -55,6 +57,7 @@ function entryUrgency(entryDeadline) {
 
 export default function AitaCalendarPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const isOrganizer = user?.role === 'organizer';
 
   const [tournaments, setTournaments] = useState(null);
@@ -145,7 +148,7 @@ export default function AitaCalendarPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
 
       <div className="header">
         <div className="title-row">

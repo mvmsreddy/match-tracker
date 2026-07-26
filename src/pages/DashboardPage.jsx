@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import PerformanceTab from '../components/PerformanceTab';
 
 // ---------------------------------------------------------------------------
@@ -69,6 +71,50 @@ function PlayerBanner({ user, links }) {
           View Requests →
         </Link>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Navy" design system additions — on-court banner + recent-form sparkline
+// ---------------------------------------------------------------------------
+
+function PlayerLiveBanner({ todayMatches }) {
+  if (!todayMatches || todayMatches.length === 0) return null;
+  const next = todayMatches[0];
+  return (
+    <div className="db-live-banner">
+      <div className="db-live-banner-text">
+        <div className="db-live-pulse-row"><span className="db-live-dot" />ON COURT TODAY</div>
+        <div className="db-live-title">vs {opponentName(next)}</div>
+        <div className="db-live-sub">
+          {next.eventAgeGroup} {next.eventCategory} · R{next.round}
+          {next.courtNumber != null && ` · Court ${next.courtNumber}`}
+          {next.matchOrder != null && ` · #${next.matchOrder}`}
+        </div>
+      </div>
+      <Link to="/track" className="db-live-cta">Start tracking</Link>
+    </div>
+  );
+}
+
+function FormBars({ matches }) {
+  const last10 = matches.slice(0, 10).reverse();
+  if (last10.length === 0) return null;
+  const wins = last10.filter(m => m.winner === 'self').length;
+  return (
+    <div className="db-form-card">
+      <div className="dashboard-section-title">Form · Last {last10.length}</div>
+      <div className="db-form-meta">{wins}W · {last10.length - wins}L</div>
+      <div className="db-form-bars">
+        {last10.map((m, i) => (
+          <div
+            key={m.id || i}
+            className={`db-form-bar ${m.winner === 'self' ? 'win' : 'loss'}`}
+            title={`${m.selfName} vs ${m.oppName} · ${m.winner === 'self' ? 'Won' : 'Lost'}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -231,6 +277,7 @@ function CoachTournamentSections({ loading, error, todayMatches, recentResults, 
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const role = user?.role || 'player';
 
   const [matches, setMatches]   = useState(null);
@@ -285,7 +332,7 @@ export default function DashboardPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="dashboard" /> : <TopNav />}
 
       <div className="dashboard-body">
         {/* Role banner */}
@@ -304,6 +351,10 @@ export default function DashboardPage() {
               : 'Your performance overview'}
           </div>
         </div>
+
+        {/* Player: on-court-today banner + recent form (Navy design system) */}
+        {role === 'player' && <PlayerLiveBanner todayMatches={activity.todayMatches} />}
+        {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
 
         {/* Organizer: quick actions only */}
         {role === 'organizer' && (

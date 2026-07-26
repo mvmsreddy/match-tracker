@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
 
 // ---------------------------------------------------------------------------
@@ -157,6 +159,7 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
 export default function TournamentDetailPage() {
   const { id: weekId } = useParams();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const [week, setWeek] = useState(null);
@@ -334,7 +337,7 @@ export default function TournamentDetailPage() {
   if (error) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
         <div className="page-scroll">
           <div className="history-empty">{error}</div>
         </div>
@@ -345,7 +348,7 @@ export default function TournamentDetailPage() {
   if (!week) {
     return (
       <div className="root">
-        <TopNav />
+        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
         <div className="page-scroll">
           <div className="history-empty">Loading…</div>
         </div>
@@ -355,7 +358,7 @@ export default function TournamentDetailPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
 
       <div className="header">
         <div className="title-row">

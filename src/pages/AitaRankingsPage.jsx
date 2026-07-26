@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 
 const PAGE_SIZE = 50;
 
@@ -11,6 +13,7 @@ function formatDob(iso) {
 }
 
 export default function AitaRankingsPage() {
+  const { theme } = useTheme();
   const [facets, setFacets] = useState(null);
   const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState('');
@@ -80,7 +83,7 @@ export default function AitaRankingsPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="rankings" /> : <TopNav />}
 
       <div className="header">
         <div className="title-row">

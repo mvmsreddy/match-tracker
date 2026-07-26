@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import TopNav from '../components/TopNav';
+import MTNavChrome from '../components/nav/MTNavChrome';
 
 export default function CoachPlayersPage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const isCoach = user.role === 'coach';
 
   const [links, setLinks]           = useState(null);
@@ -87,7 +90,7 @@ export default function CoachPlayersPage() {
 
   return (
     <div className="root">
-      <TopNav />
+      {theme === 'navy' ? <MTNavChrome active="roster" /> : <TopNav />}
 
       <div className="header">
         <h1 className="title">{isCoach ? 'My Players' : 'My Coaches'}</h1>
