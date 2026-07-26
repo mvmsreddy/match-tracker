@@ -114,7 +114,7 @@ function parseLeakedDetails(raw) {
   const draws = parseLeakedDraws(raw);
 
   const venueIdx = raw.indexOf('VENUE DETAILS');
-  let venueName = '', venueAddress = '', pincode = '', phone = '', email = '';
+  let venueName = '', venueAddress = '', pincode = '', phone = '', email = '', matchCourts = '';
   if (venueIdx !== -1) {
     const segment = raw.slice(venueIdx);
     venueName = between(segment, 'NAME OF THE VENUE', ['ADDRESS OF THE VENUE']);
@@ -122,12 +122,20 @@ function parseLeakedDetails(raw) {
     pincode = between(segment, 'PINCODE', ['TELEPHONE NO.']);
     phone = between(segment, 'TELEPHONE NO.', ['EMAIL ID', 'LOCATION', 'COURT SURFACE']);
     email = between(segment, 'EMAIL ID', ['LOCATION', 'COURT SURFACE', 'TOURNAMENT OFFICIALS']);
+    matchCourts = between(segment, 'NO. OF MATCH COURTS', ['FLOODLIGHTS', 'TOURNAMENT OFFICIALS']);
   }
 
   const hotels = parseLeakedHotels(raw);
 
-  const hasAny = week || dateRange || draws.length > 0 || venueName || venueAddress || pincode || phone || email || mapUrl || entryUrl || hotels.length > 0;
-  return hasAny ? { week, dateRange, entryUrl, mapUrl, draws, venueName, venueAddress, pincode, phone, email, hotels } : null;
+  // "AGE ELIGIBILITY CATEGORY ELIGIBLE DOB UNDER 18 1/1/2008 – 31/12/2013" —
+  // read straight off the template, never computed, since AITA's age-cutoff
+  // rules are exactly the kind of thing that shouldn't be guessed at when
+  // real entry eligibility rides on it.
+  const ageEligMatch = raw.match(/AGE ELIGIBILITY\s*CATEGORY\s*ELIGIBLE\s*DOB\s+([A-Z0-9 &-]+?)\s+(\d{1,2}\/\d{1,2}\/\d{4}\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{4})/i);
+  const ageEligibility = ageEligMatch ? { category: ageEligMatch[1].trim(), dob: ageEligMatch[2].replace(/\s+/g, ' ').trim() } : null;
+
+  const hasAny = week || dateRange || draws.length > 0 || venueName || venueAddress || pincode || phone || email || matchCourts || mapUrl || entryUrl || hotels.length > 0 || ageEligibility;
+  return hasAny ? { week, dateRange, entryUrl, mapUrl, draws, venueName, venueAddress, pincode, phone, email, matchCourts, hotels, ageEligibility } : null;
 }
 
 // Hotel/accommodation info has no DB column at all — this is pure upside
@@ -349,6 +357,7 @@ export default function AitaTournamentFactsheet({ t }) {
           { label: 'Court Surface', value: t.surface },
           { label: 'Brand of Balls', value: t.ballBrand },
         ]} />
+        <TableRow label="No. of Match Courts" value={leaked?.matchCourts} />
         <TableRow label="Floodlights" value={t.hasFloodlights ? 'Yes' : ''} />
       </TableSection>
 
@@ -400,6 +409,17 @@ export default function AitaTournamentFactsheet({ t }) {
               <TableRow label="Rates & Notes" value={h.notes} />
             </div>
           ))}
+        </div>
+      )}
+
+      {leaked?.ageEligibility && (
+        <div className="t-fs-section">
+          <Banner>Age Eligibility</Banner>
+          <GridTable
+            columns="1.5fr 1fr"
+            headers={['Category', 'Eligible DOB']}
+            rows={[[leaked.ageEligibility.category, leaked.ageEligibility.dob]]}
+          />
         </div>
       )}
 
