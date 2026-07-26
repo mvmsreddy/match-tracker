@@ -138,12 +138,13 @@ create index idx_aita_rankings_regno on aita_rankings (reg_no);
 ## 6. Implementation Phases
 
 - [x] **Research** — mechanics, full catalog, PDF format variants (this doc)
-- [ ] **Phase 1 (current) — Girls U-12, full pipeline, end to end:**
-  - [ ] `aita_rankings` migration
-  - [ ] Junior-format PDF parser (format A above)
-  - [ ] Rate-limited backfill script (~249 PDFs for this one combo)
-  - [ ] Data-quality check against a few known dates
-  - [ ] Decide + build a minimal way to view it (frontend page scope TBD once data's in)
+- [x] **Phase 1 — Girls U-12, full pipeline, end to end:** ✅ complete 2026-07-26
+  - [x] `aita_rankings` migration (`supabase/phase27_aita_rankings.sql`)
+  - [x] Junior-format PDF parser (`scripts/aita-rankings/lib.mjs`)
+  - [x] Rate-limited backfill script (`scripts/aita-rankings/backfill.mjs`)
+  - [x] Backfill run: **249/249 dates, 133,859 rows, 0 errors**
+  - [x] Data-quality check: date range matches exactly (2021-01-11 to 2026-07-13), row_order gapless per date, 0 null player_name, tie-handling verified correct
+  - [ ] Decide + build a minimal way to view it (frontend page scope TBD — not started)
 - [ ] **Phase 2** — remaining Juniors: Boys U-12/14/16/18, Girls U-14/16/18 (format A, same parser)
 - [ ] **Phase 3** — Open Men/Women Singles/Doubles (format B, new parser branch)
 - [ ] **Phase 4** — Wheelchair (format D, new parser branch)

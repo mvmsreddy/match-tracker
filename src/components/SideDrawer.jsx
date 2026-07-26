@@ -67,6 +67,11 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
           <NavLink to="/aita-calendar" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
             AITA Calendar
           </NavLink>
+
+          {/* All roles: AITA rankings mirror */}
+          <NavLink to="/aita-rankings" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
+            AITA Rankings
+          </NavLink>
         </nav>
 
         <div className="drawer-divider" />

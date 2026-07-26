@@ -12,6 +12,7 @@ import TournamentsListPage from './pages/TournamentsListPage';
 import TournamentDetailPage from './pages/TournamentDetailPage';
 import AitaCalendarPage from './pages/AitaCalendarPage';
 import AitaTournamentFactsheetPage from './pages/AitaTournamentFactsheetPage';
+import AitaRankingsPage from './pages/AitaRankingsPage';
 import ProfilePage from './pages/ProfilePage';
 import CoachPlayersPage from './pages/CoachPlayersPage';
 import EventDetailPage from './pages/EventDetailPage';
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/tournaments/:id/oop" element={<ProtectedRoute><OrderOfPlayPage /></ProtectedRoute>} />
             <Route path="/aita-calendar" element={<ProtectedRoute><AitaCalendarPage /></ProtectedRoute>} />
             <Route path="/aita-calendar/:id" element={<ProtectedRoute><AitaTournamentFactsheetPage /></ProtectedRoute>} />
+            <Route path="/aita-rankings" element={<ProtectedRoute><AitaRankingsPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/my-players" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
             <Route path="/my-coaches" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />

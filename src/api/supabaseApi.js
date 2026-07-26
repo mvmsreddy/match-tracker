@@ -2476,3 +2476,75 @@ export async function triggerAitaSync() {
   if (error) throw new Error(error.message);
   return data;
 }
+
+// ---------------------------------------------------------------------------
+// AITA Player Rankings — mirrored from https://aitatennis.com/playerranking/
+// Read-only from the client. Currently populated by local backfill scripts
+// (scripts/aita-rankings/backfill.mjs), not a deployed sync function — see
+// AITA_RANKINGS_PLAN.md at the repo root for the phased rollout.
+// ---------------------------------------------------------------------------
+
+function rowToAitaRanking(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    subcategory: row.subcategory,
+    rankingDate: row.ranking_date,
+    rowOrder: row.row_order,
+    rank: row.rank,
+    playerName: row.player_name,
+    regNo: row.reg_no,
+    dob: row.dob,
+    state: row.state,
+    totalPoints: row.total_points,
+    pointsBreakdown: row.points_breakdown,
+  };
+}
+
+// Which Category/SubCategory combos actually have data loaded — sourced from
+// the (small) sync log rather than scanning the full rankings table, since
+// only a handful of the 38 possible combos are backfilled at any given time.
+export async function listAitaRankingFacets() {
+  const { data, error } = await supabase
+    .from('aita_rankings_sync_log')
+    .select('category, subcategory')
+    .gt('rows_upserted', 0);
+  if (error) throw new Error(error.message);
+  const seen = new Map();
+  for (const row of data) {
+    const key = `${row.category}|${row.subcategory}`;
+    if (!seen.has(key)) seen.set(key, { category: row.category, subcategory: row.subcategory });
+  }
+  return [...seen.values()].sort((a, b) =>
+    a.category.localeCompare(b.category) || a.subcategory.localeCompare(b.subcategory)
+  );
+}
+
+// Distinct published dates for one combo. Filtering on row_order = 1 (every
+// snapshot has exactly one) instead of a real SELECT DISTINCT, which
+// PostgREST/supabase-js has no query-builder support for.
+export async function listAitaRankingDates(category, subcategory) {
+  const { data, error } = await supabase
+    .from('aita_rankings')
+    .select('ranking_date')
+    .eq('category', category)
+    .eq('subcategory', subcategory)
+    .eq('row_order', 1)
+    .order('ranking_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(r => r.ranking_date);
+}
+
+export async function listAitaRankings({ category, subcategory, date, search, page = 0, pageSize = 50 }) {
+  let query = supabase
+    .from('aita_rankings')
+    .select('*', { count: 'exact' })
+    .eq('category', category)
+    .eq('subcategory', subcategory)
+    .eq('ranking_date', date);
+  if (search) query = query.ilike('player_name', `%${search}%`);
+  query = query.order('row_order', { ascending: true }).range(page * pageSize, page * pageSize + pageSize - 1);
+  const { data, error, count } = await query;
+  if (error) throw new Error(error.message);
+  return { rows: data.map(rowToAitaRanking), totalCount: count };
+}

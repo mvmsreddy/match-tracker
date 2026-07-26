@@ -124,6 +124,11 @@ export const getAitaTournament    = hasSupabaseConfig ? supabaseApi.getAitaTourn
 export const getLatestAitaSyncLog = hasSupabaseConfig ? supabaseApi.getLatestAitaSyncLog : async () => null;
 export const triggerAitaSync      = hasSupabaseConfig ? supabaseApi.triggerAitaSync      : noSupabase;
 
+// Phase 27 — AITA Player Rankings mirror
+export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRankingFacets : async () => [];
+export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];
+export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;
