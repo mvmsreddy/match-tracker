@@ -152,6 +152,15 @@ function parseLeakedHotels(raw) {
   }).filter(h => h.name);
 }
 
+function findDrawEvent(events, matcher) {
+  return events.find(e => matcher(e.event.toLowerCase())) || null;
+}
+
+function formatDateRange(first, last) {
+  if (first && last) return first === last ? first : `${first} – ${last}`;
+  return first || last || '';
+}
+
 function Banner({ children }) {
   return <div className="t-fs-banner">{children}</div>;
 }
@@ -264,10 +273,15 @@ export default function AitaTournamentFactsheet({ t }) {
   const venueEmail = leaked?.email || '';
   const venuePhoneHref = venuePhone && venuePhone.length < 40 ? `tel:${venuePhone.split('/')[0].replace(/[^\d+]/g, '')}` : undefined;
 
-  const hasTourInfo = t.grade || t.ageGroup || t.entryDeadline || t.withdrawalDeadline || t.qualifyingStartDate || leaked?.week || leaked?.dateRange;
   const combinedDraws = parseDrawEvents(t.drawSize, t.signinInstructions);
   const drawEvents = leaked?.draws?.length ? leaked.draws : combinedDraws;
   const drawsHaveDayCols = drawEvents.some(e => e.firstDay || e.lastDay);
+  const qualifyingDraw = findDrawEvent(drawEvents, e => e.includes('qualifying'));
+  const mainSinglesDraw = findDrawEvent(drawEvents, e => e.includes('main') && !e.includes('doubles'));
+  const mainDoublesDraw = findDrawEvent(drawEvents, e => e.includes('doubles'));
+
+  const hasTourInfo = t.grade || t.ageGroup || t.entryDeadline || t.withdrawalDeadline || t.qualifyingStartDate
+    || leaked?.week || leaked?.dateRange || qualifyingDraw || mainSinglesDraw || mainDoublesDraw;
   const hasVenue = venueName || venueAddress || t.city || venuePincode || venuePhone || venueEmail || t.surface || t.ballBrand || t.hasFloodlights || leaked?.mapUrl;
   const hasDirector = t.directorName || t.directorPhone || t.directorEmail;
   const hasReferee = t.refereeName || t.refereePhone || t.refereeEmail;
@@ -291,16 +305,24 @@ export default function AitaTournamentFactsheet({ t }) {
         <TableRow label="Tournament Dates" value={leaked?.dateRange} />
         <TableRow label="Entry Deadline" value={t.entryDeadline} danger />
         <TableRow label="Withdrawal Deadline" value={t.withdrawalDeadline} danger />
-        {(t.qualifyingStartDate || t.qualifyingEndDate) && (
-          <TableRow
-            label="Qualifying"
-            value={
-              t.qualifyingEndDate && t.qualifyingEndDate !== t.qualifyingStartDate
+        <TableRow
+          label="Qualifying Dates"
+          value={
+            (t.qualifyingStartDate || t.qualifyingEndDate)
+              ? (t.qualifyingEndDate && t.qualifyingEndDate !== t.qualifyingStartDate
                 ? `${t.qualifyingStartDate} – ${t.qualifyingEndDate}`
-                : t.qualifyingStartDate
-            }
-          />
-        )}
+                : t.qualifyingStartDate)
+              : formatDateRange(qualifyingDraw?.firstDay, qualifyingDraw?.lastDay)
+          }
+        />
+        <TableRow label="Qualifying Sign-in" value={qualifyingDraw?.signIn && qualifyingDraw.signIn !== 'NA' ? qualifyingDraw.signIn : ''} />
+        <TableRow label="Qualifying Draw Size" value={qualifyingDraw?.size} />
+        <TableRow label="Main Draw (Singles) Dates" value={formatDateRange(mainSinglesDraw?.firstDay, mainSinglesDraw?.lastDay)} />
+        <TableRow label="Main Draw (Singles) Sign-in" value={mainSinglesDraw?.signIn && mainSinglesDraw.signIn !== 'NA' ? mainSinglesDraw.signIn : ''} />
+        <TableRow label="Main Draw (Singles) Draw Size" value={mainSinglesDraw?.size} />
+        <TableRow label="Main Draw (Doubles) Dates" value={formatDateRange(mainDoublesDraw?.firstDay, mainDoublesDraw?.lastDay)} />
+        <TableRow label="Main Draw (Doubles) Sign-in" value={mainDoublesDraw?.signIn && mainDoublesDraw.signIn !== 'NA' ? mainDoublesDraw.signIn : ''} />
+        <TableRow label="Main Draw (Doubles) Draw Size" value={mainDoublesDraw?.size} />
         <TableRow label="Online Entry" value={leaked?.entryUrl ? 'Enter online at aitatennis.com' : ''} href={leaked?.entryUrl} />
       </TableSection>
 
