@@ -2413,14 +2413,35 @@ function rowToAitaTournament(row) {
   };
 }
 
-export async function listAitaTournaments({ ageGroup, city, search } = {}) {
+export async function listAitaTournaments({ ageGroup, city, grade, dateFrom, dateTo, search } = {}) {
   let query = supabase.from('aita_tournaments').select('*').order('start_date', { ascending: true });
   if (ageGroup) query = query.eq('age_group', ageGroup);
   if (city) query = query.ilike('city', `%${city}%`);
+  if (grade) query = query.eq('grade', grade);
+  if (dateFrom) query = query.gte('start_date', dateFrom);
+  if (dateTo) query = query.lte('start_date', dateTo);
   if (search) query = query.ilike('name', `%${search}%`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data.map(rowToAitaTournament);
+}
+
+// Distinct city/grade values across the whole calendar, for populating filter
+// dropdowns — deliberately unfiltered by the caller's current selections so
+// the option lists don't shrink as filters are applied.
+export async function listAitaFilterFacets() {
+  const { data, error } = await supabase.from('aita_tournaments').select('city, grade');
+  if (error) throw new Error(error.message);
+  const cities = new Set();
+  const grades = new Set();
+  for (const row of data) {
+    if (row.city) cities.add(row.city);
+    if (row.grade) grades.add(row.grade);
+  }
+  return {
+    cities: [...cities].sort(),
+    grades: [...grades].sort(),
+  };
 }
 
 export async function getAitaTournament(id) {
