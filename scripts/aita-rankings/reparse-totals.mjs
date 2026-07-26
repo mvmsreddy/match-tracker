@@ -62,9 +62,16 @@ async function main() {
         total_points: r.totalPoints, points_breakdown: r.pointsBreakdown,
         pdf_url, source_url,
       }));
-      const { error: upsertErr } = await supabase
-        .from('aita_rankings')
-        .upsert(dbRows, { onConflict: 'category,subcategory,ranking_date,row_order' });
+      // Retry transient DB contention (statement timeouts) a few times before
+      // giving up on a date — cheap since upsert is idempotent either way.
+      let upsertErr = null;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        ({ error: upsertErr } = await supabase
+          .from('aita_rankings')
+          .upsert(dbRows, { onConflict: 'category,subcategory,ranking_date,row_order' }));
+        if (!upsertErr) break;
+        if (attempt < 4) await sleep(attempt * 3000);
+      }
       if (upsertErr) throw new Error(upsertErr.message);
       ok++;
       rowsUpdated += dbRows.length;
