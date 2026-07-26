@@ -2,11 +2,15 @@ import { useState } from 'react';
 
 // Scraped factsheet fields can balloon into a dump of the entire remaining
 // PDF text when the sync parser's end-label match fails on a given PDF
-// (seen live in both venueAddress and venuePhone — see sync-aita-calendar
-// /index.ts's MAX_VALUE_LEN, added there for exactly this). Every value
-// rendered below goes through this cap as a client-side backstop, since any
-// field can in principle be the one a given row's sync run mis-parsed.
+// (seen live in venueAddress, then venuePhone on a different row — see
+// sync-aita-calendar/index.ts's MAX_VALUE_LEN, added there for exactly
+// this). Every value rendered below goes through this cap as a client-side
+// backstop, since any field can in principle be the one a given row's sync
+// run mis-parsed.
 const TRUNCATE_AT = 220;
+
+const URL_RE = /https?:\/\/\S+/g;
+const MAPS_URL_RE = /maps\.(app\.)?goo\.gl|google\.[a-z.]+\/maps/i;
 
 // The sync parser only stores drawSize/signinInstructions as combined strings
 // ("Qualifying 48B/32G · Main 64B/48G · Doubles 16" / "Qualifying sign-in:
@@ -37,29 +41,120 @@ function parseDrawEvents(drawSize, signinInstructions) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// "Leaked blob" salvage — when a sync run's between()/betweenAny() end-label
+// search fails, the field it was extracting doesn't just get too long, it
+// gets the rest of the official factsheet's text dumped into it verbatim
+// (section headers and all). Rather than only truncating that mess, pull the
+// real facts back out of it — this recovers info (draw first/last days,
+// tournament week, a venue map link) that no column in the DB even has a
+// place for otherwise.
+// ---------------------------------------------------------------------------
+const LEAK_SIGNATURE_RE = /TOUR INFO|VENUE DETAILS|DRAWS\s*&?\s*SIGN[- ]?IN|TOURNAMENT OFFICIALS/i;
+
+function findLeakedBlob(t) {
+  const candidates = [t.venueAddress, t.venuePhone, t.ballBrand, t.directorName, t.refereeName, t.signinInstructions, t.venue];
+  return candidates.find(c => c && LEAK_SIGNATURE_RE.test(c)) || '';
+}
+
+function between(text, startLabel, endLabels) {
+  const si = text.indexOf(startLabel);
+  if (si === -1) return '';
+  const valueStart = si + startLabel.length;
+  let ei = text.length;
+  for (const label of endLabels) {
+    const idx = text.indexOf(label, valueStart);
+    if (idx !== -1 && idx < ei) ei = idx;
+  }
+  return text.slice(valueStart, ei).replace(/\s+/g, ' ').trim();
+}
+
+function parseLeakedDraws(raw) {
+  const startIdx = raw.search(/DRAWS\s*&?\s*SIGN[- ]?IN/i);
+  if (startIdx === -1) return [];
+  const venueIdx = raw.indexOf('VENUE DETAILS');
+  const segment = raw.slice(startIdx, venueIdx !== -1 ? venueIdx : undefined);
+  const eventRe = /(SINGLES QUALIFYING|SINGLES MAIN DRAW|DOUBLES MAIN DRAW)/gi;
+  const marks = [...segment.matchAll(eventRe)];
+  return marks.map((m, i) => {
+    const start = m.index + m[0].length;
+    const end = i + 1 < marks.length ? marks[i + 1].index : segment.length;
+    const chunk = segment.slice(start, end).replace(/\s+/g, ' ').trim();
+    const dateHits = chunk.match(/\d{2}-\d{2}-\d{4}/g) || [];
+    const lastDay = dateHits[dateHits.length - 1] || '';
+    const firstDay = dateHits.length > 1 ? dateHits[dateHits.length - 2] : '';
+    const sizeMatch = chunk.match(/^(OPEN|\d+)/i);
+    const size = sizeMatch ? sizeMatch[1] : '';
+    let signIn = size ? chunk.slice(size.length) : chunk;
+    if (lastDay) signIn = signIn.slice(0, signIn.lastIndexOf(lastDay));
+    if (firstDay) signIn = signIn.slice(0, signIn.lastIndexOf(firstDay));
+    return { event: m[1].replace(/\s+/g, ' '), size, signIn: signIn.trim(), firstDay, lastDay };
+  });
+}
+
+function parseLeakedDetails(raw) {
+  if (!raw || !LEAK_SIGNATURE_RE.test(raw)) return null;
+
+  const week = between(raw, 'TOURNAMENT WEEK', ['TOURNAMENT DATES']);
+  const dateRange = between(raw, 'TOURNAMENT DATES', ['TOURNAMENT CITY']);
+
+  const urls = raw.match(URL_RE) || [];
+  const entryUrl = urls.find(u => /aitatennis\.com/i.test(u)) || '';
+  const mapUrl = urls.find(u => MAPS_URL_RE.test(u)) || urls.find(u => u !== entryUrl) || '';
+
+  const draws = parseLeakedDraws(raw);
+
+  const venueIdx = raw.indexOf('VENUE DETAILS');
+  let venueName = '', venueAddress = '', pincode = '', phone = '', email = '';
+  if (venueIdx !== -1) {
+    const segment = raw.slice(venueIdx);
+    venueName = between(segment, 'NAME OF THE VENUE', ['ADDRESS OF THE VENUE']);
+    venueAddress = between(segment, 'ADDRESS OF THE VENUE', ['PINCODE', 'CITY', 'TELEPHONE NO.']).replace(/,\s*$/, '');
+    pincode = between(segment, 'PINCODE', ['TELEPHONE NO.']);
+    phone = between(segment, 'TELEPHONE NO.', ['EMAIL ID', 'LOCATION']);
+    email = between(segment, 'EMAIL ID', ['LOCATION']);
+  }
+
+  const hasAny = week || dateRange || draws.length > 0 || venueName || venueAddress || pincode || phone || email || mapUrl || entryUrl;
+  return hasAny ? { week, dateRange, entryUrl, mapUrl, draws, venueName, venueAddress, pincode, phone, email } : null;
+}
+
 function Banner({ children }) {
   return <div className="t-fs-banner">{children}</div>;
 }
 
-// Any scraped field can in principle be the one that ballooned (the sync
-// parser's between()/betweenAny() label search can fail on any label, not
-// just address/phone — those are just the two seen live so far). So every
-// value cell goes through this, not just a hand-picked subset of fields —
-// and a value long enough to need truncating is also long enough to not be
-// a real phone/email anymore, so it drops the tel:/mailto: link too.
+// Any scraped field can in principle be the one that ballooned, so every
+// value cell goes through this — not just a hand-picked subset of fields.
+// A value long enough to need truncating is also long enough to no longer
+// be a real phone/email, so it drops the tel:/mailto: link in that case.
+// URLs found inside a value (e.g. a venue's Google Maps link) are always
+// pulled out and shown as their own clickable line, never left buried
+// inside truncated or expanded text.
 function FieldValue({ value, href }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = value.length > TRUNCATE_AT;
-  if (href && !isLong) return <a className="t-field-link" href={href}>{value}</a>;
-  const shown = !isLong || expanded ? value : `${value.slice(0, TRUNCATE_AT).trimEnd()}…`;
+  const urls = value.match(URL_RE) || [];
+  const textOnly = urls.length ? value.replace(URL_RE, ' ').replace(/\s+/g, ' ').trim() : value;
+  const isLong = textOnly.length > TRUNCATE_AT;
+  const linkable = href && !isLong;
+  const shown = !isLong || expanded ? textOnly : `${textOnly.slice(0, TRUNCATE_AT).trimEnd()}…`;
   return (
     <span style={{ whiteSpace: 'pre-wrap' }}>
-      {shown}{' '}
+      {linkable ? <a className="t-field-link" href={href}>{shown}</a> : shown}
       {isLong && (
-        <button type="button" className="t-field-toggle" onClick={() => setExpanded(e => !e)}>
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
+        <>
+          {' '}
+          <button type="button" className="t-field-toggle" onClick={() => setExpanded(e => !e)}>
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+        </>
       )}
+      {urls.map(u => (
+        <div key={u} style={{ marginTop: 4 }}>
+          <a className="t-field-link" href={u} target="_blank" rel="noopener noreferrer">
+            {MAPS_URL_RE.test(u) ? '📍 Open in Google Maps ↗' : `${u.length > 46 ? `${u.slice(0, 46)}…` : u} ↗`}
+          </a>
+        </div>
+      ))}
     </span>
   );
 }
@@ -120,11 +215,27 @@ function GridTable({ columns, headers, rows }) {
 // the quick-view modal opened from tile clicks on AitaCalendarPage. Mirrors
 // the section layout of the official AITA "Tournament Factsheet" PDF (Tour
 // Info / Draws & Sign-in / Venue Details / Tournament Officials / Entry Fees
-// / Daily Allowance) using only the fields the sync actually captures.
+// / Daily Allowance), filled from the sync's normal columns and topped up
+// with whatever parseLeakedDetails() can recover when one of those columns
+// turns out to hold a mis-parsed dump instead of its real value.
 export default function AitaTournamentFactsheet({ t }) {
-  const hasTourInfo = t.grade || t.ageGroup || t.entryDeadline || t.withdrawalDeadline || t.qualifyingStartDate;
-  const drawEvents = parseDrawEvents(t.drawSize, t.signinInstructions);
-  const hasVenue = t.venue || t.venueAddress || t.city || t.venuePincode || t.venuePhone || t.surface || t.ballBrand || t.hasFloodlights;
+  const leakedBlob = findLeakedBlob(t);
+  const leaked = parseLeakedDetails(leakedBlob);
+
+  // If a specific column's raw value IS the leaked blob, show the cleanly
+  // recovered sub-value there instead of the whole dump.
+  const venueName = t.venue || leaked?.venueName || '';
+  const venueAddress = (t.venueAddress === leakedBlob && leaked?.venueAddress) ? leaked.venueAddress : t.venueAddress;
+  const venuePincode = t.venuePincode || leaked?.pincode || '';
+  const venuePhone = (t.venuePhone === leakedBlob && leaked?.phone) ? leaked.phone : t.venuePhone;
+  const venueEmail = leaked?.email || '';
+  const venuePhoneHref = venuePhone && venuePhone.length < 40 ? `tel:${venuePhone.split('/')[0].replace(/[^\d+]/g, '')}` : undefined;
+
+  const hasTourInfo = t.grade || t.ageGroup || t.entryDeadline || t.withdrawalDeadline || t.qualifyingStartDate || leaked?.week || leaked?.dateRange;
+  const combinedDraws = parseDrawEvents(t.drawSize, t.signinInstructions);
+  const drawEvents = leaked?.draws?.length ? leaked.draws : combinedDraws;
+  const drawsHaveDayCols = drawEvents.some(e => e.firstDay || e.lastDay);
+  const hasVenue = venueName || venueAddress || t.city || venuePincode || venuePhone || venueEmail || t.surface || t.ballBrand || t.hasFloodlights || leaked?.mapUrl;
   const hasDirector = t.directorName || t.directorPhone || t.directorEmail;
   const hasReferee = t.refereeName || t.refereePhone || t.refereeEmail;
   const hasFees = t.entryFeeSingles || t.entryFeeDoubles;
@@ -143,6 +254,8 @@ export default function AitaTournamentFactsheet({ t }) {
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
         <TableRow label="Tournament Category" value={t.grade} />
         <TableRow label="Age Group" value={t.ageGroup} />
+        <TableRow label="Tournament Week" value={leaked?.week} />
+        <TableRow label="Tournament Dates" value={leaked?.dateRange} />
         <TableRow label="Entry Deadline" value={t.entryDeadline} danger />
         <TableRow label="Withdrawal Deadline" value={t.withdrawalDeadline} danger />
         {(t.qualifyingStartDate || t.qualifyingEndDate) && (
@@ -155,25 +268,28 @@ export default function AitaTournamentFactsheet({ t }) {
             }
           />
         )}
+        <TableRow label="Online Entry" value={leaked?.entryUrl ? 'Enter online at aitatennis.com' : ''} href={leaked?.entryUrl} />
       </TableSection>
 
       {drawEvents.length > 0 && (
         <div className="t-fs-section">
           <Banner>Draws &amp; Sign-in Details</Banner>
           <GridTable
-            columns="1.3fr 0.9fr 1.6fr"
-            headers={['Event', 'Draw Size', 'Sign-in']}
-            rows={drawEvents.map(e => [e.event, e.size, e.signIn])}
+            columns={drawsHaveDayCols ? '1.1fr 0.7fr 1.3fr 0.8fr 0.8fr' : '1.3fr 0.9fr 1.6fr'}
+            headers={drawsHaveDayCols ? ['Event', 'Draw Size', 'Sign-in', 'First Day', 'Last Day'] : ['Event', 'Draw Size', 'Sign-in']}
+            rows={drawEvents.map(e => drawsHaveDayCols ? [e.event, e.size, e.signIn, e.firstDay, e.lastDay] : [e.event, e.size, e.signIn])}
           />
         </div>
       )}
 
       <TableSection title="Venue Details" hasContent={hasVenue}>
-        <TableRow label="Name of the Venue" value={t.venue} />
-        <TableRow label="Address" value={t.venueAddress} />
+        <TableRow label="Name of the Venue" value={venueName} />
+        <TableRow label="Address" value={venueAddress} />
         <TableRow label="City" value={t.city} />
-        <TableRow label="Pincode" value={t.venuePincode} />
-        <TableRow label="Telephone No." value={t.venuePhone} href={t.venuePhone ? `tel:${t.venuePhone}` : undefined} />
+        <TableRow label="Pincode" value={venuePincode} />
+        <TableRow label="Telephone No." value={venuePhone} href={venuePhoneHref} />
+        <TableRow label="Email ID" value={venueEmail} href={venueEmail ? `mailto:${venueEmail}` : undefined} />
+        <TableRow label="Location" value={leaked?.mapUrl ? 'Open in Google Maps' : ''} href={leaked?.mapUrl} />
         <TableRowSplit pairs={[
           { label: 'Court Surface', value: t.surface },
           { label: 'Brand of Balls', value: t.ballBrand },
@@ -237,7 +353,13 @@ export default function AitaTournamentFactsheet({ t }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '16px 0 0' }}>
+      {leaked && (
+        <div className="history-empty" style={{ padding: '0', textAlign: 'left', fontSize: '0.6rem' }}>
+          Some fields above were recovered from a mis-synced field — cross-check against the official PDF if anything looks off.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '4px 0 0' }}>
         {t.factsheetUrl && (
           <a className="action-btn primary" href={t.factsheetUrl} target="_blank" rel="noopener noreferrer">
             ⬇ Download Fact Sheet (PDF)
