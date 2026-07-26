@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import TopNav from '../components/TopNav';
+import PerformanceTab from '../components/PerformanceTab';
 
 // ---------------------------------------------------------------------------
 // Role-specific banners shown at the top of the dashboard
@@ -408,6 +409,14 @@ export default function DashboardPage() {
             recentResults={activity.recentResults}
             activeLinks={activeLinks}
           />
+        )}
+
+        {/* Player: official ranking performance across governing bodies/circuits */}
+        {role === 'player' && (
+          <>
+            <div className="dashboard-section-title" style={{ marginTop: 20 }}>Performance</div>
+            <PerformanceTab aitaReg={user.aitaReg} />
+          </>
         )}
 
         {/* Player + Coach: personal tracker */}

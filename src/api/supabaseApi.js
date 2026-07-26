@@ -2548,3 +2548,30 @@ export async function listAitaRankings({ category, subcategory, date, search, pa
   if (error) throw new Error(error.message);
   return { rows: data.map(rowToAitaRanking), totalCount: count };
 }
+
+// Every ranking snapshot a given AITA reg number appears in, across every
+// category/subcategory — not just the one the caller thinks they're in.
+// Because "playing up" is allowed with no approval (see AITA rules KB), one
+// reg_no can be live in several age groups/circuits at once; this is what
+// lets the Performance tab auto-discover a player's circuits instead of
+// making them pick a category by hand. reg_no already has a dedicated index
+// (aita_rankings_regno), so this stays cheap even at full backfill.
+export async function getPlayerAitaRankingHistory(regNo) {
+  if (!regNo) return [];
+  const { data, error } = await supabase
+    .from('aita_rankings')
+    .select('category, subcategory, ranking_date, rank, total_points')
+    .eq('reg_no', regNo)
+    .order('category', { ascending: true })
+    .order('subcategory', { ascending: true })
+    .order('ranking_date', { ascending: true })
+    .range(0, 4999);
+  if (error) throw new Error(error.message);
+  return data.map(r => ({
+    category: r.category,
+    subcategory: r.subcategory,
+    date: r.ranking_date,
+    rank: r.rank,
+    totalPoints: r.total_points,
+  }));
+}

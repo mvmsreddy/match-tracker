@@ -129,6 +129,9 @@ export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRan
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
 
+// Player Performance tab — auto-discovers every circuit a reg_no is ranked in
+export const getPlayerAitaRankingHistory = hasSupabaseConfig ? supabaseApi.getPlayerAitaRankingHistory : async () => [];
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;
