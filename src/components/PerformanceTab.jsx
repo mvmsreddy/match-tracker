@@ -6,41 +6,12 @@ import {
 } from 'recharts';
 import * as api from '../api';
 import { GOVERNING_BODIES, findGoverningBody, circuitKey } from '../lib/governingBodies';
+import { buildCircuits } from '../lib/segments';
 
 function formatDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-// Groups the flat reg_no history (every category/subcategory it appears in —
-// "playing up" means a single reg_no can be live in several at once) into one
-// sorted time series per circuit, plus the summary stats the circuit card needs.
-function buildCircuits(history) {
-  const map = new Map();
-  for (const row of history) {
-    const key = circuitKey(row.category, row.subcategory);
-    if (!map.has(key)) map.set(key, { category: row.category, subcategory: row.subcategory, points: [] });
-    map.get(key).points.push(row);
-  }
-  const circuits = [];
-  for (const c of map.values()) {
-    c.points.sort((a, b) => a.date.localeCompare(b.date));
-    const latest = c.points[c.points.length - 1];
-    const previous = c.points.length > 1 ? c.points[c.points.length - 2] : null;
-    circuits.push({
-      ...c,
-      key: circuitKey(c.category, c.subcategory),
-      latest,
-      previous,
-      bestRank: Math.min(...c.points.map(p => p.rank)),
-      bestPoints: Math.max(...c.points.map(p => p.totalPoints)),
-      firstSeen: c.points[0].date,
-      snapshotCount: c.points.length,
-    });
-  }
-  circuits.sort((a, b) => (a.latest.date < b.latest.date ? 1 : -1));
-  return circuits;
 }
 
 function ChartTooltip({ active, payload, label, valueLabel }) {
