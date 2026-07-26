@@ -187,7 +187,7 @@ function pdfShotLocLegend(doc, x, y) {
  *   points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
  *   setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
  *   selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
- *   weather, notes, matchStartTime, matchDurationMs,
+ *   governingBody, circuit, weather, notes, matchStartTime, matchDurationMs,
  * }
  * Returns a jsPDF instance (caller decides how to output/save it).
  */
@@ -196,7 +196,7 @@ export function buildMatchPdf(ctx) {
     points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
     setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
     selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
-    weather, notes, matchStartTime, matchDurationMs,
+    governingBody, circuit, weather, notes, matchStartTime, matchDurationMs,
   } = ctx;
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -224,6 +224,7 @@ export function buildMatchPdf(ctx) {
   doc.text((tournament ? tournament + ' | ' : '') + (date || ''), marginX, y); y += 16;
 
   const contextBits = [];
+  if (governingBody) contextBits.push(governingBody + (circuit ? ' - ' + circuit : ''));
   if (surface) contextBits.push(surface);
   if (indoorOutdoor) contextBits.push(indoorOutdoor);
   if (oppHandedness) contextBits.push('Opponent: ' + oppHandedness);

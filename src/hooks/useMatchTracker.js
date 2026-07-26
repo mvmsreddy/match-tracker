@@ -15,6 +15,8 @@ const DEFAULT_HEADER = {
   oppHandedness: '',
   weather: '',
   notes: '',
+  governingBody: '',
+  circuit: '',
 };
 
 function initialState() {

@@ -25,6 +25,29 @@ const SURFACES = [
   'Asphalt (Hard-Court)', 'Carpet', 'Clay', 'Concrete (Hard-Court)', 'Grass', 'Other Surface',
 ];
 
+// Governing body → circuits, used to tag which organisation/circuit a match belongs to.
+const GOVERNING_BODIES = {
+  AITA: [
+    'Talent Series', 'Super Series', 'National Series', 'National Championships',
+    'Davis Cup (Men)', 'Billie Jean King Cup (Women)',
+  ],
+  ITF: [
+    'ITF World Tennis Tour', 'ITF Junior Circuit', 'ITF Seniors Circuit',
+    'ITF Wheelchair Tennis Tour', 'ITF Beach Tennis Tour',
+    'Davis Cup', 'Billie Jean King Cup', 'Olympic & Paralympic Tennis',
+  ],
+  WTA: ['WTA 1000', 'WTA 500', 'WTA 250', 'WTA Finals', 'WTA Elite Trophy'],
+  ATF: [
+    'Asian Junior Circuit (U-14)', 'Asian Junior Circuit (U-16)', 'Asian Junior Circuit (U-18)',
+    'Asian Ranking Tournaments', 'Development Programs', 'Regional Championships',
+  ],
+  ATP: [
+    'ATP Masters 1000', 'ATP 500', 'ATP 250', 'ATP Challenger Tour',
+    "ITF Men's World Tennis Tour", 'ATP Finals', 'Next Gen ATP Finals',
+  ],
+};
+const GOVERNING_BODY_NAMES = Object.keys(GOVERNING_BODIES);
+
 const TRACKING_MODES = [
   { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
   { value: 'advanced', label: 'Advanced', hint: 'Adds rally length, shot wing/type, and error location.' },
@@ -240,6 +263,12 @@ function MatchRunningView({ t, onGoTrack }) {
             {t.header.indoorOutdoor && (
               <Field label="Indoor / Outdoor"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.indoorOutdoor}</div></Field>
             )}
+            {t.header.governingBody && (
+              <Field label="Governing Body"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.governingBody}</div></Field>
+            )}
+            {t.header.circuit && (
+              <Field label="Circuit"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.circuit}</div></Field>
+            )}
           </div>
         </div>
         <Button className="w-full" size="lg" onClick={onGoTrack}>● Go to Track</Button>
@@ -333,6 +362,25 @@ function SetupForm({ t, onStart }) {
                 <option value="">Not specified</option>
                 <option value="Right-Handed">Right-Handed</option>
                 <option value="Left-Handed">Left-Handed</option>
+              </Select>
+            </Field>
+            <Field label="Governing Body">
+              <Select
+                value={t.header.governingBody}
+                onChange={(e) => t.updateHeader({ governingBody: e.target.value, circuit: '' })}
+              >
+                <option value="">Not specified</option>
+                {GOVERNING_BODY_NAMES.map((b) => <option key={b} value={b}>{b}</option>)}
+              </Select>
+            </Field>
+            <Field label="Circuit">
+              <Select
+                value={t.header.circuit}
+                disabled={!t.header.governingBody}
+                onChange={(e) => t.updateHeader({ circuit: e.target.value })}
+              >
+                <option value="">{t.header.governingBody ? 'Not specified' : 'Select governing body first'}</option>
+                {(GOVERNING_BODIES[t.header.governingBody] || []).map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
             </Field>
             <Field label="Weather" className="col-span-2">

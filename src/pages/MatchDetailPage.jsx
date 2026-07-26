@@ -49,6 +49,7 @@ export default function MatchDetailPage() {
   const header = {
     selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
     surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
+    governingBody: match.governingBody, circuit: match.circuit,
     weather: match.weather, notes: match.notes,
   };
 
@@ -60,6 +61,7 @@ export default function MatchDetailPage() {
       pointTarget: match.pointTarget, formatPreset: match.formatPreset, formatLabel: match.formatLabel,
       selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
       surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
+      governingBody: match.governingBody, circuit: match.circuit,
       weather: match.weather, notes: match.notes,
       matchStartTime: match.matchDurationMs ? 1 : null, matchDurationMs: match.matchDurationMs,
     });

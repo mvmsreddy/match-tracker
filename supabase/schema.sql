@@ -18,6 +18,8 @@ create table if not exists public.matches (
   surface text,
   indoor_outdoor text,
   opp_handedness text,
+  governing_body text,                 -- e.g. 'AITA', 'ITF', 'WTA', 'ATF', 'ATP'
+  circuit text,                        -- e.g. 'Talent Series', 'ATP Challenger Tour'
   weather text,
   notes text,
 
@@ -49,3 +51,7 @@ create policy "Users can delete their own matches"
 
 create index if not exists matches_user_id_created_at_idx
   on public.matches (user_id, created_at desc);
+
+-- Migration for existing tables created before governing_body/circuit were added.
+alter table public.matches add column if not exists governing_body text;
+alter table public.matches add column if not exists circuit text;
