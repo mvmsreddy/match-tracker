@@ -22,6 +22,12 @@ const DEFAULT_HEADER = {
   circuit: '',
   city: '',
   ageGroup: '',
+  // Multi-segment dashboard, Phase 4 — set only when launched via
+  // LogMatchButton from a real tournament match; null for a self-logged
+  // practice session (segment-independent, per src/lib/segments.js).
+  eventMatchId: null,
+  normalizedCategory: '',
+  normalizedSubcategory: '',
 };
 
 function initialState() {

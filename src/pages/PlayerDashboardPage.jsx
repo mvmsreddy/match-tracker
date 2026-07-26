@@ -8,6 +8,7 @@ import MTNavChrome from '../components/nav/MTNavChrome';
 import SegmentPicker from '../components/player/SegmentPicker';
 import OverviewTab from '../components/player/OverviewTab';
 import TournamentsTab from '../components/player/TournamentsTab';
+import TrainingLogTab from '../components/player/TrainingLogTab';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -18,11 +19,12 @@ const TABS = [
   { id: 'progress', label: 'Progress' },
 ];
 
-// Player Coaching Dashboard — Phase 2 of the multi-segment plan. Every tab
-// below is scoped to whichever segment (AITA category/subcategory circuit)
-// is selected via SegmentContext; segments are fully independent, never
-// merged (see src/lib/segments.js). Training/Match Analytics/Recommendations/
-// Progress are Phase 3-5 — placeholder-empty here until their data exists.
+// Player Coaching Dashboard — multi-segment plan. Every tab below is scoped
+// to whichever segment (AITA category/subcategory circuit) is selected via
+// SegmentContext; segments are fully independent, never merged (see
+// src/lib/segments.js). Overview/Tournaments (Phase 2), Goals/Training
+// (Phase 3) are real; Match Analytics/Recommendations/Progress are Phase 5 —
+// placeholder-empty here until their data exists.
 export default function PlayerDashboardPage() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -94,9 +96,7 @@ export default function PlayerDashboardPage() {
               <div className="page-scroll">
                 {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} />}
                 {activeTab === 'tournaments' && <TournamentsTab circuit={selectedCircuit} />}
-                {activeTab === 'training' && (
-                  <div className="history-empty">Training log is coming soon (Phase 3).</div>
-                )}
+                {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} />}
                 {activeTab === 'analytics' && (
                   <div className="history-empty">Match Analytics is coming soon (Phase 5).</div>
                 )}

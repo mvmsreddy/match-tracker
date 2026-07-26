@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMatchTracker } from '../hooks/useMatchTracker';
 import { getWeatherString } from '../lib/weather';
 import * as api from '../api';
@@ -100,6 +101,8 @@ const AI_REVIEW_ENABLED = false;
 export default function TrackerPage() {
   const t = useMatchTracker();
   const { theme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
 
@@ -107,6 +110,18 @@ export default function TrackerPage() {
   useEffect(() => {
     if (!t.matchStarted) setActiveTab('match');
   }, [t.matchStarted]);
+
+  // Multi-segment dashboard, Phase 4 — "Track this match" (LogMatchButton)
+  // navigates here with prefill in location.state. Applied once, then the
+  // state is cleared via replace so refreshing /track doesn't re-prefill.
+  useEffect(() => {
+    const prefill = location.state?.trackerPrefill;
+    if (prefill) {
+      t.updateHeader(prefill);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleStartMatch() {
     t.startMatch();

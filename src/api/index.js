@@ -136,6 +136,18 @@ export const getPlayerAitaRankingHistory = hasSupabaseConfig ? supabaseApi.getPl
 // "Navy" design system — Profile annual entry allowance
 export const getMyTournamentEntryCountThisYear = hasSupabaseConfig ? supabaseApi.getMyTournamentEntryCountThisYear : async () => 0;
 
+// Phase 29 — multi-segment dashboard: ranking goals + training sessions
+export const getRankingGoals      = hasSupabaseConfig ? supabaseApi.getRankingGoals      : async () => [];
+export const createRankingGoal    = hasSupabaseConfig ? supabaseApi.createRankingGoal    : noSupabase;
+export const updateRankingGoal    = hasSupabaseConfig ? supabaseApi.updateRankingGoal    : noSupabase;
+export const deleteRankingGoal    = hasSupabaseConfig ? supabaseApi.deleteRankingGoal    : noSupabase;
+export const getTrainingSessions  = hasSupabaseConfig ? supabaseApi.getTrainingSessions  : async () => [];
+export const logTrainingSession   = hasSupabaseConfig ? supabaseApi.logTrainingSession   : noSupabase;
+export const deleteTrainingSession = hasSupabaseConfig ? supabaseApi.deleteTrainingSession : noSupabase;
+
+// Phase 30 — tracker/tournament linking
+export const getMatchesForSegment = hasSupabaseConfig ? supabaseApi.getMatchesForSegment : async () => [];
+
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;
 export const usingMock = !hasSupabaseConfig;

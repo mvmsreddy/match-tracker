@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
+import GoalsPanel from './GoalsPanel';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -32,14 +33,13 @@ function Stat({ label, value }) {
   );
 }
 
-// Overview tab — real ranking-snapshot data (rank/points growth) plus
-// segment-filtered upcoming tournament entries. Goal-progress (target rank,
-// pace) isn't shown yet since ranking_goals doesn't exist until Phase 3 —
-// showing a CTA placeholder here rather than fabricating fake target/pace
-// numbers. Per-match "recent results"/"upcoming matches" (as opposed to
-// tournament-level entries) needs resolving event_matches against this
-// player's own entry id per event, which the Tournaments tab (with a link
-// into the existing EventDetailPage) already covers — not duplicated here.
+// Overview tab — real ranking-snapshot data (rank/points growth), real
+// ranking-goal progress (GoalsPanel, Phase 3), plus segment-filtered
+// upcoming tournament entries. Per-match "recent results"/"upcoming matches"
+// (as opposed to tournament-level entries) needs resolving event_matches
+// against this player's own entry id per event, which the Tournaments tab
+// (with a link into the existing EventDetailPage) already covers — not
+// duplicated here.
 export default function OverviewTab({ circuit }) {
   const [entries, setEntries] = useState(null);
   const [error, setError] = useState('');
@@ -113,10 +113,7 @@ export default function OverviewTab({ circuit }) {
         </ResponsiveContainer>
       </div>
 
-      <div style={{ background: 'var(--bg2)', border: '1px dashed var(--border)', borderRadius: 16, padding: 22, textAlign: 'center' }}>
-        <div style={{ font: '700 15px/1.3 var(--font-sans, inherit)' }}>No ranking goal set for {circuit.category} {circuit.subcategory} yet</div>
-        <div style={{ color: 'var(--text2)', fontSize: 13, marginTop: 8 }}>Goal-setting is coming soon — you'll be able to target a rank and track pace here.</div>
-      </div>
+      <GoalsPanel circuit={circuit} />
 
       <div className="perf-chart-card">
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>

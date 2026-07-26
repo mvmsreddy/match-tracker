@@ -57,6 +57,8 @@ export default function ActionButtons({
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
         governingBody: header.governingBody, circuit: header.circuit,
         city: header.city, ageGroup: header.ageGroup,
+        eventMatchId: header.eventMatchId,
+        normalizedCategory: header.normalizedCategory, normalizedSubcategory: header.normalizedSubcategory,
         playingStyle: header.playingStyle, rankSeed: header.rankSeed,
         scoreSummary: scoreSummary(),
         winner: engine.matchWinner === 'self' ? 'self' : (engine.matchWinner === 'opp' ? 'opp' : null),

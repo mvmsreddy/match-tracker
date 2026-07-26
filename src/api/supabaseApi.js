@@ -145,6 +145,9 @@ function rowToMatch(row) {
     matchDurationMs: row.match_duration_ms,
     points: row.points,
     sets: row.sets,
+    eventMatchId: row.event_match_id,
+    normalizedCategory: row.normalized_category,
+    normalizedSubcategory: row.normalized_subcategory,
   };
 }
 
@@ -187,6 +190,9 @@ export async function saveMatch(userId, record) {
     match_duration_ms: record.matchDurationMs || null,
     points: record.points || [],
     sets: record.sets || [],
+    event_match_id: record.eventMatchId || null,
+    normalized_category: record.normalizedCategory || null,
+    normalized_subcategory: record.normalizedSubcategory || null,
   };
   const { data, error } = await supabase.from('matches').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -208,6 +214,22 @@ export async function deleteMatch(userId, matchId) {
   const { error } = await supabase.from('matches').delete().eq('id', matchId).eq('user_id', userId);
   if (error) throw new Error(error.message);
   return { ok: true };
+}
+
+// Multi-segment dashboard, Phase 4 — tracker sessions for one segment, keyed
+// off both normalized_category + normalized_subcategory (see
+// governingBodies.js's normalize* helpers + supabase/phase30_matches_event_link.sql).
+// Feeds Phase 5's Match Analytics aggregation.
+export async function getMatchesForSegment(userId, category, subcategory) {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('normalized_category', category)
+    .eq('normalized_subcategory', subcategory)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToMatch);
 }
 
 // ---------------------------------------------------------------------------
@@ -2605,4 +2627,118 @@ export async function getPlayerAitaRankingHistory(regNo) {
     rank: r.rank,
     totalPoints: r.total_points,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Multi-segment dashboard, Phase 3 — ranking_goals + training_sessions
+// (supabase/phase29_ranking_goals_training.sql). Both are segment-scoped
+// (category/subcategory/circuit_key) and fully independent per segment — no
+// cross-segment roll-up here, see the plan doc's Context section for why.
+// ---------------------------------------------------------------------------
+
+function rowToRankingGoal(row) {
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    category: row.category,
+    subcategory: row.subcategory,
+    circuitKey: row.circuit_key,
+    targetRank: row.target_rank,
+    targetPoints: row.target_points,
+    targetDate: row.target_date,
+    status: row.status,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getRankingGoals(playerId, category, subcategory) {
+  let query = supabase.from('ranking_goals').select('*').eq('player_id', playerId);
+  if (category) query = query.eq('category', category).eq('subcategory', subcategory);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToRankingGoal);
+}
+
+export async function createRankingGoal(playerId, { category, subcategory, targetRank, targetPoints, targetDate, notes }) {
+  const { data, error } = await supabase
+    .from('ranking_goals')
+    .insert({
+      player_id: playerId, category, subcategory,
+      circuit_key: circuitKeyFor(category, subcategory),
+      target_rank: targetRank || null, target_points: targetPoints || null,
+      target_date: targetDate || null, notes: notes || null,
+    })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return rowToRankingGoal(data);
+}
+
+export async function updateRankingGoal(goalId, patch) {
+  const row = {};
+  if ('targetRank' in patch) row.target_rank = patch.targetRank;
+  if ('targetPoints' in patch) row.target_points = patch.targetPoints;
+  if ('targetDate' in patch) row.target_date = patch.targetDate;
+  if ('status' in patch) row.status = patch.status;
+  if ('notes' in patch) row.notes = patch.notes;
+  row.updated_at = new Date().toISOString();
+  const { data, error } = await supabase.from('ranking_goals').update(row).eq('id', goalId).select().single();
+  if (error) throw new Error(error.message);
+  return rowToRankingGoal(data);
+}
+
+export async function deleteRankingGoal(goalId) {
+  const { error } = await supabase.from('ranking_goals').delete().eq('id', goalId);
+  if (error) throw new Error(error.message);
+}
+
+function circuitKeyFor(category, subcategory) {
+  return `${category}|${subcategory}`;
+}
+
+function rowToTrainingSession(row) {
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    loggedBy: row.logged_by,
+    category: row.category,
+    subcategory: row.subcategory,
+    circuitKey: row.circuit_key,
+    sessionDate: row.session_date,
+    durationMinutes: row.duration_minutes,
+    focusAreas: row.focus_areas || [],
+    drillIds: row.drill_ids || [],
+    intensity: row.intensity,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getTrainingSessions(playerId, category, subcategory) {
+  let query = supabase.from('training_sessions').select('*').eq('player_id', playerId);
+  if (category) query = query.eq('category', category).eq('subcategory', subcategory);
+  const { data, error } = await query.order('session_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToTrainingSession);
+}
+
+export async function logTrainingSession(playerId, { category, subcategory, sessionDate, durationMinutes, focusAreas, intensity, notes, drillIds }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .insert({
+      player_id: playerId, logged_by: user.id, category, subcategory,
+      circuit_key: circuitKeyFor(category, subcategory),
+      session_date: sessionDate, duration_minutes: durationMinutes || null,
+      focus_areas: focusAreas || [], drill_ids: drillIds || null,
+      intensity: intensity || null, notes: notes || null,
+    })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return rowToTrainingSession(data);
+}
+
+export async function deleteTrainingSession(sessionId) {
+  const { error } = await supabase.from('training_sessions').delete().eq('id', sessionId);
+  if (error) throw new Error(error.message);
 }
