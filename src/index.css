@@ -905,6 +905,20 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-fs-item { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
 .t-fs-item b { color: var(--text2); font-weight: 600; }
 
+/* ---- AITA factsheet — sectioned layout (tile/modal detail view) ---- */
+.t-factsheet-body { display: flex; flex-direction: column; gap: 14px; }
+.t-fs-section { display: flex; flex-direction: column; gap: 6px; }
+.t-fs-grid-2 { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 480px) { .t-fs-grid-2 { grid-template-columns: 1fr 1fr; } }
+.t-fs-card { background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+.t-field-row { padding: 5px 0; border-bottom: 1px solid var(--border2); display: flex; flex-direction: column; gap: 1px; }
+.t-field-row:last-child { border-bottom: none; }
+.t-field-label { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); }
+.t-field-value { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text2); word-break: break-word; }
+a.t-field-link { color: var(--accent); text-decoration: none; }
+a.t-field-link:hover { text-decoration: underline; }
+.t-field-toggle { align-self: flex-start; margin-top: 2px; background: none; border: none; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; padding: 0; }
+
 /* Week card extras */
 .t-card-courts { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 3px; }
 
