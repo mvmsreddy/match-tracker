@@ -440,7 +440,7 @@ function SetupForm({ t, onStart }) {
           </div>
         </section>
 
-        {t.header.governingBody === 'AITA' && (t.header.city.trim() || t.header.ageGroup) && (
+        {t.header.governingBody === 'AITA' && ((t.header.city || '').trim() || t.header.ageGroup) && (
           <AitaTournamentSuggestions header={t.header} updateHeader={t.updateHeader} />
         )}
 
@@ -528,7 +528,7 @@ function AitaTournamentSuggestions({ header, updateHeader }) {
     setTournaments(null);
     setError('');
     const timer = setTimeout(() => {
-      api.listAitaTournaments({ ageGroup: header.ageGroup || undefined, city: header.city.trim() || undefined })
+      api.listAitaTournaments({ ageGroup: header.ageGroup || undefined, city: (header.city || '').trim() || undefined })
         .then((list) => { if (!cancelled) setTournaments(list); })
         .catch((e) => { if (!cancelled) setError(e.message || 'Could not load AITA tournaments'); });
     }, 400);

@@ -54,7 +54,7 @@ export function useMatchTracker() {
     if (!user) return;
     const saved = loadSession(user.id);
     if (saved) {
-      setState((prev) => ({ ...prev, ...saved }));
+      setState((prev) => ({ ...prev, ...saved, header: { ...DEFAULT_HEADER, ...saved.header } }));
       restoredRef.current = true;
       if (saved.points && saved.points.length > 0) showStatus('Restored your previous session');
     }
