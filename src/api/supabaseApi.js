@@ -6,6 +6,7 @@ const NATIVE_OAUTH_REDIRECT = 'com.matchtrackerpro.app://login-callback';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
 import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
+import { buildCircuits } from '../lib/segments';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -2741,4 +2742,76 @@ export async function logTrainingSession(playerId, { category, subcategory, sess
 export async function deleteTrainingSession(sessionId) {
   const { error } = await supabase.from('training_sessions').delete().eq('id', sessionId);
   if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-segment dashboard, Phase 6 — coach-side: drill library + roster
+// segment-awareness. Skill groups are NOT a table — computed at read time in
+// src/lib/coachAnalytics.js from real linked-player data, see phase31 SQL
+// comment for why.
+// ---------------------------------------------------------------------------
+
+function rowToDrill(row) {
+  return {
+    id: row.id,
+    createdBy: row.created_by,
+    title: row.title,
+    description: row.description,
+    focusStroke: row.focus_stroke,
+    difficulty: row.difficulty,
+    videoUrl: row.video_url,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getDrillLibrary() {
+  const { data, error } = await supabase.from('drill_library').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToDrill);
+}
+
+export async function createDrill({ title, description, focusStroke, difficulty, videoUrl }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('drill_library')
+    .insert({ created_by: user.id, title, description: description || null, focus_stroke: focusStroke || null, difficulty: difficulty || null, video_url: videoUrl || null })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return rowToDrill(data);
+}
+
+export async function deleteDrill(drillId) {
+  const { error } = await supabase.from('drill_library').delete().eq('id', drillId);
+  if (error) throw new Error(error.message);
+}
+
+// One linked player's roster row: profile + every segment they have ranking
+// history in (via aita_rankings, same source PerformanceTab/SegmentContext
+// use) — lets the coach roster show segment-aware standing without a
+// separate per-segment query per player.
+export async function getRosterWithSegments(coachId) {
+  const { data: links, error: linkErr } = await supabase
+    .from('coach_player_links')
+    .select('player_id, status, player:user_profiles!coach_player_links_player_id_fkey(id, display_name, aita_reg, state_abbr, ranking, club_name)')
+    .eq('coach_id', coachId)
+    .eq('status', 'active');
+  if (linkErr) throw new Error(linkErr.message);
+
+  const players = (links || []).map(l => l.player).filter(Boolean);
+  const results = await Promise.all(players.map(async (p) => {
+    if (!p.aita_reg) return { ...rowToPlayerSummary(p), segments: [] };
+    const { data: rows } = await supabase
+      .from('aita_rankings')
+      .select('category, subcategory, ranking_date, rank, total_points')
+      .eq('reg_no', p.aita_reg)
+      .order('ranking_date', { ascending: true })
+      .range(0, 4999);
+    const history = (rows || []).map(r => ({ category: r.category, subcategory: r.subcategory, date: r.ranking_date, rank: r.rank, totalPoints: r.total_points }));
+    return { ...rowToPlayerSummary(p), segments: buildCircuits(history) };
+  }));
+  return results;
+}
+
+function rowToPlayerSummary(p) {
+  return { id: p.id, displayName: p.display_name, aitaReg: p.aita_reg, stateAbbr: p.state_abbr, ranking: p.ranking, clubName: p.club_name };
 }

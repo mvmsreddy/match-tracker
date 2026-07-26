@@ -9,6 +9,9 @@ import SegmentPicker from '../components/player/SegmentPicker';
 import OverviewTab from '../components/player/OverviewTab';
 import TournamentsTab from '../components/player/TournamentsTab';
 import TrainingLogTab from '../components/player/TrainingLogTab';
+import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
+import RecommendationsTab from '../components/player/RecommendationsTab';
+import ProgressTab from '../components/player/ProgressTab';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -19,12 +22,13 @@ const TABS = [
   { id: 'progress', label: 'Progress' },
 ];
 
-// Player Coaching Dashboard — multi-segment plan. Every tab below is scoped
-// to whichever segment (AITA category/subcategory circuit) is selected via
-// SegmentContext; segments are fully independent, never merged (see
-// src/lib/segments.js). Overview/Tournaments (Phase 2), Goals/Training
-// (Phase 3) are real; Match Analytics/Recommendations/Progress are Phase 5 —
-// placeholder-empty here until their data exists.
+// Player Coaching Dashboard — multi-segment plan (all 6 player-side tabs
+// implemented: Overview/Tournaments Phase 2, Goals/Training Phase 3,
+// tracker-tournament linking Phase 4, Match Analytics/Recommendations/
+// Progress Phase 5). Every tab below is scoped to whichever segment (AITA
+// category/subcategory circuit) is selected via SegmentContext; segments are
+// fully independent, never merged (see src/lib/segments.js) — no cascading
+// points logic anywhere in this feature, see the plan doc's Context section.
 export default function PlayerDashboardPage() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -97,15 +101,9 @@ export default function PlayerDashboardPage() {
                 {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} />}
                 {activeTab === 'tournaments' && <TournamentsTab circuit={selectedCircuit} />}
                 {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} />}
-                {activeTab === 'analytics' && (
-                  <div className="history-empty">Match Analytics is coming soon (Phase 5).</div>
-                )}
-                {activeTab === 'recommendations' && (
-                  <div className="history-empty">Recommendations are coming soon (Phase 5).</div>
-                )}
-                {activeTab === 'progress' && (
-                  <div className="history-empty">Progress tracking is coming soon (Phase 5).</div>
-                )}
+                {activeTab === 'analytics' && <MatchAnalyticsTab circuit={selectedCircuit} />}
+                {activeTab === 'recommendations' && <RecommendationsTab circuit={selectedCircuit} />}
+                {activeTab === 'progress' && <ProgressTab circuit={selectedCircuit} />}
               </div>
             </>
           )}

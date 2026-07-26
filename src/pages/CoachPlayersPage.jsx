@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
@@ -11,6 +12,7 @@ export default function CoachPlayersPage() {
   const isCoach = user.role === 'coach';
 
   const [links, setLinks]           = useState(null);
+  const [roster, setRoster]         = useState(null); // coach-only: segment-aware roster (Phase 6)
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching]   = useState(false);
@@ -25,6 +27,17 @@ export default function CoachPlayersPage() {
       .catch(e => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
   }, [user.id]);
+
+  // Segment-aware roster (Phase 6) — coach-only, drives the segment chips below
+  useEffect(() => {
+    if (!isCoach) return;
+    let cancelled = false;
+    api.getRosterWithSegments(user.id)
+      .then(data => { if (!cancelled) setRoster(data); })
+      .catch(() => { if (!cancelled) setRoster([]); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id, isCoach]);
 
   const myLinks = links || [];
   const activeLinks  = myLinks.filter(l => l.status === 'active');
@@ -93,11 +106,21 @@ export default function CoachPlayersPage() {
       {theme === 'navy' ? <MTNavChrome active="roster" /> : <TopNav />}
 
       <div className="header">
-        <h1 className="title">{isCoach ? 'My Players' : 'My Coaches'}</h1>
-        <div className="subtitle">
-          {isCoach
-            ? 'Players linked to your coaching profile'
-            : 'Coaches connected to your player profile'}
+        <div className="title-row">
+          <div>
+            <h1 className="title">{isCoach ? 'My Players' : 'My Coaches'}</h1>
+            <div className="subtitle">
+              {isCoach
+                ? 'Players linked to your coaching profile'
+                : 'Coaches connected to your player profile'}
+            </div>
+          </div>
+          {isCoach && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link to="/coach/skill-groups" className="action-btn">Skill Groups</Link>
+              <Link to="/coach/drills" className="action-btn">Drill Library</Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -236,16 +259,28 @@ export default function CoachPlayersPage() {
             </div>
             {activeLinks.map(link => {
               const other = getOtherParty(link);
+              const rosterEntry = isCoach ? roster?.find(r => r.id === other?.id) : null;
               return (
                 <div key={link.id} className="cp-link-card">
                   <div className="cp-link-info">
-                    <div className="cp-link-name">{other?.displayName || '—'}</div>
+                    <div className="cp-link-name">
+                      {isCoach
+                        ? <Link to={`/coach/players/${other?.id}`}>{other?.displayName || '—'}</Link>
+                        : (other?.displayName || '—')}
+                    </div>
                     <div className="cp-link-meta">
                       {other?.aitaReg && <span>AITA {other.aitaReg}</span>}
                       {other?.stateAbbr && <span> · {other.stateAbbr}</span>}
                       {other?.ranking && <span> · Rank {other.ranking}</span>}
                       {other?.clubName && <span> · {other.clubName}</span>}
                     </div>
+                    {rosterEntry && rosterEntry.segments.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {rosterEntry.segments.map(s => (
+                          <span key={s.key} className="t-badge">{s.category} {s.subcategory} · #{s.latest.rank}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button
                     className="t-delete-btn"

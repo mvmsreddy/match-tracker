@@ -17,6 +17,9 @@ import AitaTournamentFactsheetPage from './pages/AitaTournamentFactsheetPage';
 import AitaRankingsPage from './pages/AitaRankingsPage';
 import ProfilePage from './pages/ProfilePage';
 import CoachPlayersPage from './pages/CoachPlayersPage';
+import CoachPlayerDetailPage from './pages/CoachPlayerDetailPage';
+import CoachSkillGroupsPage from './pages/CoachSkillGroupsPage';
+import CoachDrillLibraryPage from './pages/CoachDrillLibraryPage';
 import EventDetailPage from './pages/EventDetailPage';
 import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
@@ -45,6 +48,9 @@ export default function App() {
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/my-players" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
               <Route path="/my-coaches" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
+              <Route path="/coach/players/:playerId" element={<ProtectedRoute><CoachPlayerDetailPage /></ProtectedRoute>} />
+              <Route path="/coach/skill-groups" element={<ProtectedRoute><CoachSkillGroupsPage /></ProtectedRoute>} />
+              <Route path="/coach/drills" element={<ProtectedRoute><CoachDrillLibraryPage /></ProtectedRoute>} />
               <Route path="/video-analysis-test" element={<ProtectedRoute><VideoAnalysisTestPage /></ProtectedRoute>} />
             </Routes>
           </SegmentProvider>
