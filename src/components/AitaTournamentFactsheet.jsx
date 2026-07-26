@@ -1,10 +1,11 @@
 import { useState } from 'react';
 
-// Some scraped factsheet fields (venueAddress, signinInstructions) have been
-// known to balloon into a dump of the entire remaining PDF text when the
-// sync parser's end-label match fails (see sync-aita-calendar/index.ts —
-// MAX_VALUE_LEN was added there for exactly this). This is a client-side
-// backstop for any such rows still sitting in the DB from before that fix.
+// Scraped factsheet fields can balloon into a dump of the entire remaining
+// PDF text when the sync parser's end-label match fails on a given PDF
+// (seen live in both venueAddress and venuePhone — see sync-aita-calendar
+// /index.ts's MAX_VALUE_LEN, added there for exactly this). Every value
+// rendered below goes through this cap as a client-side backstop, since any
+// field can in principle be the one a given row's sync run mis-parsed.
 const TRUNCATE_AT = 220;
 
 // The sync parser only stores drawSize/signinInstructions as combined strings
@@ -40,14 +41,35 @@ function Banner({ children }) {
   return <div className="t-fs-banner">{children}</div>;
 }
 
+// Any scraped field can in principle be the one that ballooned (the sync
+// parser's between()/betweenAny() label search can fail on any label, not
+// just address/phone — those are just the two seen live so far). So every
+// value cell goes through this, not just a hand-picked subset of fields —
+// and a value long enough to need truncating is also long enough to not be
+// a real phone/email anymore, so it drops the tel:/mailto: link too.
+function FieldValue({ value, href }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = value.length > TRUNCATE_AT;
+  if (href && !isLong) return <a className="t-field-link" href={href}>{value}</a>;
+  const shown = !isLong || expanded ? value : `${value.slice(0, TRUNCATE_AT).trimEnd()}…`;
+  return (
+    <span style={{ whiteSpace: 'pre-wrap' }}>
+      {shown}{' '}
+      {isLong && (
+        <button type="button" className="t-field-toggle" onClick={() => setExpanded(e => !e)}>
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </span>
+  );
+}
+
 function TableRow({ label, value, href, danger }) {
   if (!value) return null;
   return (
     <div className={`t-fs-tr${danger ? ' t-fs-tr-danger' : ''}`}>
       <div className="t-fs-td-label">{label}</div>
-      <div className="t-fs-td-value">
-        {href ? <a className="t-field-link" href={href}>{value}</a> : value}
-      </div>
+      <div className="t-fs-td-value"><FieldValue value={value} href={href} /></div>
     </div>
   );
 }
@@ -60,31 +82,9 @@ function TableRowSplit({ pairs }) {
       {visible.map((p) => (
         <div className="t-fs-half" key={p.label}>
           <div className="t-fs-td-label">{p.label}</div>
-          <div className="t-fs-td-value">
-            {p.href ? <a className="t-field-link" href={p.href}>{p.value}</a> : p.value}
-          </div>
+          <div className="t-fs-td-value"><FieldValue value={p.value} href={p.href} /></div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function TruncatableRow({ label, value }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!value) return null;
-  const isLong = value.length > TRUNCATE_AT;
-  const shown = !isLong || expanded ? value : `${value.slice(0, TRUNCATE_AT).trimEnd()}…`;
-  return (
-    <div className="t-fs-tr">
-      <div className="t-fs-td-label">{label}</div>
-      <div className="t-fs-td-value" style={{ whiteSpace: 'pre-wrap' }}>
-        {shown}{' '}
-        {isLong && (
-          <button type="button" className="t-field-toggle" onClick={() => setExpanded(e => !e)}>
-            {expanded ? 'Show less' : 'Show more'}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -170,7 +170,7 @@ export default function AitaTournamentFactsheet({ t }) {
 
       <TableSection title="Venue Details" hasContent={hasVenue}>
         <TableRow label="Name of the Venue" value={t.venue} />
-        <TruncatableRow label="Address" value={t.venueAddress} />
+        <TableRow label="Address" value={t.venueAddress} />
         <TableRow label="City" value={t.city} />
         <TableRow label="Pincode" value={t.venuePincode} />
         <TableRow label="Telephone No." value={t.venuePhone} href={t.venuePhone ? `tel:${t.venuePhone}` : undefined} />
@@ -232,7 +232,7 @@ export default function AitaTournamentFactsheet({ t }) {
         <div className="t-fs-section">
           <Banner>Sign-in</Banner>
           <div className="t-fs-table">
-            <TruncatableRow label="Instructions" value={leftoverSignin} />
+            <TableRow label="Instructions" value={leftoverSignin} />
           </div>
         </div>
       )}
