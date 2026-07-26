@@ -6,6 +6,7 @@ import * as api from '../api';
 import { computeSkillGroups } from '../lib/coachAnalytics';
 import TopNav from '../components/TopNav';
 import MTNavChrome from '../components/nav/MTNavChrome';
+import CoachingSuggestionsPanel from '../components/coach/CoachingSuggestionsPanel';
 
 // Skill groups — computed fresh from every linked player's real tracked
 // matches (src/lib/coachAnalytics.js), never a stored roll-up table. A
@@ -42,6 +43,7 @@ export default function CoachSkillGroupsPage() {
       </div>
 
       <div className="page-scroll">
+        <CoachingSuggestionsPanel />
         {error && <div className="history-empty">{error}</div>}
         {groups === null && !error && <div className="history-empty">Computing skill groups from tracked matches…</div>}
         {groups !== null && groups.length === 0 && (

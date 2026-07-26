@@ -25,3 +25,22 @@ alter table public.matches
 
 create index if not exists matches_user_normalized_segment_idx
   on public.matches (user_id, normalized_category, normalized_subcategory);
+
+-- The base schema (supabase/schema.sql) only lets a match's own owner
+-- select it. Phase 6/7 coach features (CoachPlayerDetailPage, skill groups,
+-- cross-segment suggestions) need a linked, active coach to read a player's
+-- matches too — same cross-user access pattern coach_player_links already
+-- establishes elsewhere (ranking_goals, training_sessions). Postgres ORs
+-- multiple permissive select policies together, so this is additive and
+-- doesn't touch the existing owner-only policy.
+drop policy if exists "Linked coaches can view a player's matches" on public.matches;
+create policy "Linked coaches can view a player's matches"
+  on public.matches for select
+  using (
+    exists (
+      select 1 from public.coach_player_links l
+      where l.player_id = matches.user_id
+        and l.coach_id = auth.uid()
+        and l.status = 'active'
+    )
+  );
