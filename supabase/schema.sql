@@ -11,6 +11,7 @@ create table if not exists public.matches (
   opp_name text not null,
   tournament text,
   match_date date,
+  round text,                          -- e.g. 'Quarterfinal', 'Round of 32'
   session_type text not null,          -- 'match' | 'practice'
   format_preset text,
   format_label text,
@@ -41,14 +42,19 @@ create table if not exists public.matches (
 -- Row Level Security: each user can only ever see/modify their own matches.
 alter table public.matches enable row level security;
 
+-- drop-then-create so this file stays safe to re-run in full as it evolves
+-- (Postgres has no "create policy if not exists").
+drop policy if exists "Users can view their own matches" on public.matches;
 create policy "Users can view their own matches"
   on public.matches for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own matches" on public.matches;
 create policy "Users can insert their own matches"
   on public.matches for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own matches" on public.matches;
 create policy "Users can delete their own matches"
   on public.matches for delete
   using (auth.uid() = user_id);
@@ -63,3 +69,4 @@ alter table public.matches add column if not exists city text;
 alter table public.matches add column if not exists age_group text;
 alter table public.matches add column if not exists playing_style text;
 alter table public.matches add column if not exists rank_seed text;
+alter table public.matches add column if not exists round text;

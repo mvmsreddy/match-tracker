@@ -51,7 +51,7 @@ export default function ActionButtons({
     setSaving(true);
     try {
       await api.saveMatch(user.id, {
-        selfName, oppName, tournament: header.tournament, date: header.date,
+        selfName, oppName, tournament: header.tournament, date: header.date, round: header.round,
         sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
         surface: header.surface, indoorOutdoor: header.indoorOutdoor,
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
@@ -82,7 +82,7 @@ export default function ActionButtons({
         points, sets: engine.sets, matchOver: engine.matchOver, matchWinner: engine.matchWinner,
         matchTiebreakActive: engine.matchTiebreakActive, matchTiebreakPts: engine.matchTiebreakPts,
         setGames: engine.setGames, gamePts: engine.gamePts, sessionType, pointTarget, formatPreset, formatLabel,
-        selfName, oppName, tournament: header.tournament, date: header.date, surface: header.surface,
+        selfName, oppName, tournament: header.tournament, date: header.date, round: header.round, surface: header.surface,
         indoorOutdoor: header.indoorOutdoor, oppHandedness: header.oppHandedness, weather: header.weather,
         governingBody: header.governingBody, circuit: header.circuit,
         city: header.city, ageGroup: header.ageGroup,
@@ -109,6 +109,7 @@ export default function ActionButtons({
     const formatLine = isPractice ? 'Practice session - race to ' + pointTarget + ' points' : ('Format: ' + formatLabel);
     const contextBits = [];
     if (header.governingBody) contextBits.push(header.governingBody + (header.circuit ? ' - ' + header.circuit : ''));
+    if (header.round) contextBits.push(header.round);
     if (header.ageGroup) contextBits.push(header.ageGroup);
     if (header.city) contextBits.push(header.city);
     if (header.surface) contextBits.push(header.surface);

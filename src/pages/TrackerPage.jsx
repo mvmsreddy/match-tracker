@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMatchTracker } from '../hooks/useMatchTracker';
 import { getWeatherString } from '../lib/weather';
 import * as api from '../api';
@@ -53,6 +53,12 @@ const GOVERNING_BODY_NAMES = Object.keys(GOVERNING_BODIES);
 const AGE_GROUPS = ['Under 10', 'Under 12', 'Under 14', 'Under 16', 'Under 18', 'Men', 'Women', 'Senior'];
 
 const PLAYING_STYLES = ['Baseliner', 'Aggressive Baseliner', 'Serve & Volley', 'All-Court'];
+
+const ROUNDS = [
+  'Qualifying Round 1', 'Qualifying Round 2', 'Qualifying Final',
+  'Round of 64', 'Round of 32', 'Round of 16',
+  'Quarterfinal', 'Semifinal', 'Final',
+];
 
 // AITA calendar "grade" text → our Circuit dropdown labels. The synced `grade`
 // column is inconsistent by nature of where it came from: once a tournament's
@@ -287,6 +293,9 @@ function MatchRunningView({ t, onGoTrack }) {
             {t.header.tournament ? <span className="text-tt-muted-foreground"> · {t.header.tournament}</span> : null}
           </div>
           <div className="grid grid-cols-2 gap-3">
+            {t.header.round && (
+              <Field label="Round"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.round}</div></Field>
+            )}
             {t.header.surface && (
               <Field label="Surface"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.surface}</div></Field>
             )}
@@ -324,6 +333,8 @@ function SetupForm({ t, onStart }) {
   const selfName = t.header.selfName || '';
   const canStart = selfName.trim().length > 0;
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const resetTimer = useRef(null);
 
   async function handleGetWeather() {
     setWeatherLoading(true);
@@ -338,12 +349,35 @@ function SetupForm({ t, onStart }) {
     }
   }
 
+  function handleResetClick() {
+    if (confirmingReset) {
+      t.resetSetupForm();
+      setConfirmingReset(false);
+      clearTimeout(resetTimer.current);
+      t.showStatus('Form reset');
+    } else {
+      setConfirmingReset(true);
+      resetTimer.current = setTimeout(() => setConfirmingReset(false), 3000);
+    }
+  }
+
   return (
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-6 pt-4">
-        <div>
-          <h1 className="font-tt-display text-2xl font-bold uppercase tracking-tight text-tt-foreground">Match Tracker Pro</h1>
-          <p className="mt-1 text-xs text-tt-muted-foreground">Enter details below to begin tracking</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-tt-display text-2xl font-bold uppercase tracking-tight text-tt-foreground">Match Tracker Pro</h1>
+            <p className="mt-1 text-xs text-tt-muted-foreground">Enter details below to begin tracking</p>
+          </div>
+          <Button
+            type="button"
+            variant={confirmingReset ? 'destructive-solid' : 'ghost'}
+            size="sm"
+            className="whitespace-nowrap"
+            onClick={handleResetClick}
+          >
+            {confirmingReset ? 'Tap again to confirm' : 'Reset form'}
+          </Button>
         </div>
 
         {/* Players */}
@@ -426,6 +460,14 @@ function SetupForm({ t, onStart }) {
                 onChange={(e) => t.updateHeader({ date: e.target.value })}
               />
             </Field>
+            {t.sessionType === 'match' && (
+              <Field label="Round">
+                <Select value={t.header.round} onChange={(e) => t.updateHeader({ round: e.target.value })}>
+                  <option value="">Not specified</option>
+                  {ROUNDS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </Select>
+              </Field>
+            )}
             <Field label="Surface">
               <Select value={t.header.surface} onChange={(e) => t.updateHeader({ surface: e.target.value })}>
                 <option value="">Not specified</option>

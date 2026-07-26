@@ -10,6 +10,7 @@ const DEFAULT_HEADER = {
   oppName: '',
   tournament: '',
   date: '',
+  round: '',
   surface: '',
   indoorOutdoor: '',
   oppHandedness: '',
@@ -237,6 +238,23 @@ export function useMatchTracker() {
     }));
   }, [user]);
 
+  // Clears the setup form itself (header + session/format/tracking choices)
+  // back to defaults — for starting a fresh match from scratch, as opposed to
+  // resetMatch() which deliberately keeps the header so a coach can log
+  // another match against the same opponent/tournament without retyping it.
+  const resetSetupForm = useCallback(() => {
+    if (user) { sessionClearedRef.current = true; clearSession(user.id); }
+    setState((prev) => ({
+      ...prev,
+      header: { ...DEFAULT_HEADER },
+      sessionType: 'match',
+      formatPreset: 'bo3-full',
+      formatCustom: '',
+      pointTarget: 10,
+      trackingMode: 'expert',
+    }));
+  }, [user]);
+
   const formatLabel = state.formatPreset === 'custom'
     ? (state.formatCustom || 'Custom format')
     : getFormatConfig(state.formatPreset).label;
@@ -251,7 +269,7 @@ export function useMatchTracker() {
     trackingMode: state.trackingMode, setTrackingMode,
     points: state.points,
     matchStarted: state.matchStarted, startMatch,
-    commitPoint, undoLast, resetMatch,
+    commitPoint, undoLast, resetMatch, resetSetupForm,
     nextServer, setServerChoice, serverExplicitlyChosen: state.serverExplicitlyChosen,
     engine, analytics,
     matchStartTime: state.matchStartTime, matchDurationMs,

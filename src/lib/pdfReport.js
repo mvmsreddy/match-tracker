@@ -186,7 +186,7 @@ function pdfShotLocLegend(doc, x, y) {
  * ctx = {
  *   points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
  *   setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
- *   selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
+ *   selfName, oppName, tournament, date, round, surface, indoorOutdoor, oppHandedness,
  *   governingBody, circuit, city, ageGroup, playingStyle, rankSeed,
  *   weather, notes, matchStartTime, matchDurationMs,
  * }
@@ -196,7 +196,7 @@ export function buildMatchPdf(ctx) {
   const {
     points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
     setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
-    selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
+    selfName, oppName, tournament, date, round, surface, indoorOutdoor, oppHandedness,
     governingBody, circuit, city, ageGroup, playingStyle, rankSeed,
     weather, notes, matchStartTime, matchDurationMs,
   } = ctx;
@@ -227,6 +227,7 @@ export function buildMatchPdf(ctx) {
 
   const contextBits = [];
   if (governingBody) contextBits.push(governingBody + (circuit ? ' - ' + circuit : ''));
+  if (round) contextBits.push(round);
   if (ageGroup) contextBits.push(ageGroup);
   if (city) contextBits.push(city);
   if (surface) contextBits.push(surface);

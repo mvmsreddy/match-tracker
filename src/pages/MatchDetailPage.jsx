@@ -47,7 +47,7 @@ export default function MatchDetailPage() {
   const engine = computeEngineState(match.points, cfgOpts, match.points[0]?.server || 'self');
   const analytics = replayMatchAnalytics(match.points, cfgOpts);
   const header = {
-    selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
+    selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date, round: match.round,
     surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
     governingBody: match.governingBody, circuit: match.circuit,
     city: match.city, ageGroup: match.ageGroup,
@@ -61,7 +61,7 @@ export default function MatchDetailPage() {
       matchTiebreakActive: engine.matchTiebreakActive, matchTiebreakPts: engine.matchTiebreakPts,
       setGames: engine.setGames, gamePts: engine.gamePts, sessionType: match.sessionType,
       pointTarget: match.pointTarget, formatPreset: match.formatPreset, formatLabel: match.formatLabel,
-      selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date,
+      selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date, round: match.round,
       surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
       governingBody: match.governingBody, circuit: match.circuit,
       city: match.city, ageGroup: match.ageGroup,
