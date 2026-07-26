@@ -280,6 +280,7 @@ interface FactsheetFields {
   entryFeeDoubles: string;
   dailyAllowance: string;
   signinInstructions: string;
+  drawSize: string;
 }
 
 function parseFactsheetText(text: string): FactsheetFields {
@@ -293,12 +294,28 @@ function parseFactsheetText(text: string): FactsheetFields {
   const qualifyingStartDate = allDatesInQual[1] ? toIso(allDatesInQual[1]) : '';
   const qualifyingEndDate = allDatesInQual[2] ? toIso(allDatesInQual[2]) : '';
 
-  const singlesQualSignIn = between(text, 'SINGLES QUALIFYING', 'SINGLES MAIN').match(/[\w\s,]+(?:from|till)\s[\d\w\s:]+(?:at\s\w+)?/i)?.[0] || '';
-  const doublesSignIn = between(text, 'DOUBLES MAIN DRAW', 'VENUE DETAILS').match(/[\w\s,]+(?:from|till)\s[\d\w\s:]+(?:at\s\w+)?/i)?.[0] || '';
+  const singlesQualSignIn = qualBlock.match(/[\w\s,]+(?:from|till)\s[\d\w\s:]+(?:at\s\w+)?/i)?.[0] || '';
+  const doublesBlock = between(text, 'DOUBLES MAIN DRAW', 'VENUE DETAILS');
+  const doublesSignIn = doublesBlock.match(/[\w\s,]+(?:from|till)\s[\d\w\s:]+(?:at\s\w+)?/i)?.[0] || '';
   const signinInstructions = [
     singlesQualSignIn ? `Qualifying sign-in: ${singlesQualSignIn.trim()}` : '',
     doublesSignIn ? `Doubles sign-in: ${doublesSignIn.trim()}` : '',
   ].filter(Boolean).join('\n');
+
+  // The "DRAWS & SIGN IN DETAILS" table lists each event's draw size as the
+  // very first thing in its row, right after the EVENT label — e.g.
+  // "SINGLES QUALIFYING 48 Boys 32 Girls Friday 17 July...". Confirmed
+  // against a real factsheet PDF (2026 National Series sample).
+  const mainBlock = between(text, 'SINGLES MAIN DRAW', 'DOUBLES MAIN DRAW');
+  const boysGirls = (block: string) => block.match(/^\s*(\d+)\s*Boys\s*(\d+)\s*Girls/i);
+  const qualDraw = boysGirls(qualBlock);
+  const mainDraw = boysGirls(mainBlock);
+  const doublesDraw = doublesBlock.match(/^\s*(\d+)\b/);
+  const drawSize = [
+    qualDraw ? `Qualifying ${qualDraw[1]}B/${qualDraw[2]}G` : '',
+    mainDraw ? `Main ${mainDraw[1]}B/${mainDraw[2]}G` : '',
+    doublesDraw ? `Doubles ${doublesDraw[1]}` : '',
+  ].filter(Boolean).join(' · ');
 
   const venueAddress = betweenAny(text, 'ADDRESS OF THE VENUE', ['CITY', 'PINCODE', 'TELEPHONE NO.', 'COURT SURFACE']);
   const venuePincode = between(text, 'PINCODE', 'TELEPHONE NO.').replace(/\D/g, '');
@@ -327,7 +344,7 @@ function parseFactsheetText(text: string): FactsheetFields {
     grade, entryDeadline, withdrawalDeadline, qualifyingStartDate, qualifyingEndDate,
     directorName, directorPhone, directorEmail, refereeName, refereePhone, refereeEmail,
     venueAddress, venuePincode, venuePhone, surface, ballBrand, hasFloodlights,
-    entryFeeSingles, entryFeeDoubles, dailyAllowance, signinInstructions,
+    entryFeeSingles, entryFeeDoubles, dailyAllowance, signinInstructions, drawSize,
   };
 }
 

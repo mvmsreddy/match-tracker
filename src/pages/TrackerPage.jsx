@@ -52,16 +52,31 @@ const GOVERNING_BODY_NAMES = Object.keys(GOVERNING_BODIES);
 
 const AGE_GROUPS = ['Under 10', 'Under 12', 'Under 14', 'Under 16', 'Under 18', 'Men', 'Women', 'Senior'];
 
-// AITA calendar "grade" codes → our Circuit dropdown labels, for auto-fill from a suggested tournament.
-const AITA_GRADE_TO_CIRCUIT = {
-  ts: 'Talent Series',
-  cs3: 'Championship Series (CS3)',
-  cs7: 'Championship Series (CS7)',
-  ss: 'Super Series',
-  ns: 'National Series',
-  nat: 'National Championships',
-  nationals: 'National Championships',
-};
+const PLAYING_STYLES = ['Baseliner', 'Aggressive Baseliner', 'Serve & Volley', 'All-Court'];
+
+// AITA calendar "grade" text → our Circuit dropdown labels. The synced `grade`
+// column is inconsistent by nature of where it came from: once a tournament's
+// factsheet PDF has been parsed it's the full descriptive category, e.g.
+// "National Series"; before that, it's a short code lifted from the calendar
+// listing name, e.g. "AITA NS Under 14". Checked in this order so the more
+// specific descriptive phrases win before falling back to code-word matches.
+function mapAitaGradeToCircuit(rawGrade) {
+  if (!rawGrade) return null;
+  const g = rawGrade.toLowerCase();
+  if (g.includes('national championship')) return 'National Championships';
+  if (g.includes('national series')) return 'National Series';
+  if (g.includes('super series')) return 'Super Series';
+  if (g.includes('talent series')) return 'Talent Series';
+  if (g.includes('championship series') || /\bcs\s*-?\s*[37]\b/.test(g)) {
+    if (/\bcs\s*-?\s*3\b/.test(g) || g.includes('3 star')) return 'Championship Series (CS3)';
+    if (/\bcs\s*-?\s*7\b/.test(g) || g.includes('7 star')) return 'Championship Series (CS7)';
+  }
+  if (/\bnat\b/i.test(rawGrade)) return 'National Championships';
+  if (/\bns\b/i.test(rawGrade)) return 'National Series';
+  if (/\bss\b/i.test(rawGrade)) return 'Super Series';
+  if (/\bts\b/i.test(rawGrade)) return 'Talent Series';
+  return null;
+}
 
 const TRACKING_MODES = [
   { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
@@ -290,6 +305,12 @@ function MatchRunningView({ t, onGoTrack }) {
             {t.header.ageGroup && (
               <Field label="Age Group"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.ageGroup}</div></Field>
             )}
+            {t.header.playingStyle && (
+              <Field label="Opponent Style"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.playingStyle}</div></Field>
+            )}
+            {t.header.rankSeed && (
+              <Field label="Opponent Rank/Seed"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.rankSeed}</div></Field>
+            )}
           </div>
         </div>
         <Button className="w-full" size="lg" onClick={onGoTrack}>● Go to Track</Button>
@@ -347,44 +368,11 @@ function SetupForm({ t, onStart }) {
           </div>
         </section>
 
-        {/* Match details */}
+        {/* Match details — Governing Body / Circuit / City first, since picking
+            those (for AITA) drives the tournament auto-suggestions below. */}
         <section>
           <SectionLabel>Match Details</SectionLabel>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Tournament / Location">
-              <Input
-                placeholder="e.g. Club Championship"
-                value={t.header.tournament}
-                onChange={(e) => t.updateHeader({ tournament: e.target.value })}
-              />
-            </Field>
-            <Field label="Date">
-              <Input
-                type="date"
-                value={t.header.date}
-                onChange={(e) => t.updateHeader({ date: e.target.value })}
-              />
-            </Field>
-            <Field label="Surface">
-              <Select value={t.header.surface} onChange={(e) => t.updateHeader({ surface: e.target.value })}>
-                <option value="">Not specified</option>
-                {SURFACES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </Select>
-            </Field>
-            <Field label="Indoor / Outdoor">
-              <Select value={t.header.indoorOutdoor} onChange={(e) => t.updateHeader({ indoorOutdoor: e.target.value })}>
-                <option value="">Not specified</option>
-                <option value="Indoor">Indoor</option>
-                <option value="Outdoor">Outdoor</option>
-              </Select>
-            </Field>
-            <Field label="Opponent Handedness">
-              <Select value={t.header.oppHandedness} onChange={(e) => t.updateHeader({ oppHandedness: e.target.value })}>
-                <option value="">Not specified</option>
-                <option value="Right-Handed">Right-Handed</option>
-                <option value="Left-Handed">Left-Handed</option>
-              </Select>
-            </Field>
             <Field label="Governing Body">
               <Select
                 value={t.header.governingBody}
@@ -417,32 +405,92 @@ function SetupForm({ t, onStart }) {
                 {AGE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
               </Select>
             </Field>
-            <Field label="Weather" className="col-span-2">
-              <div className="flex gap-1.5">
-                <Input
-                  className="flex-1"
-                  placeholder="e.g. 24°C, Sunny, Wind 10 km/h"
-                  value={t.header.weather}
-                  onChange={(e) => t.updateHeader({ weather: e.target.value })}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="whitespace-nowrap"
-                  disabled={weatherLoading}
-                  onClick={handleGetWeather}
-                >
-                  {weatherLoading ? 'Locating…' : 'Get Weather'}
-                </Button>
-              </div>
+          </div>
+
+          {t.header.governingBody === 'AITA' && t.header.circuit && (
+            <AitaTournamentSuggestions header={t.header} updateHeader={t.updateHeader} />
+          )}
+
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Tournament / Location">
+              <Input
+                placeholder="e.g. Club Championship"
+                value={t.header.tournament}
+                onChange={(e) => t.updateHeader({ tournament: e.target.value })}
+              />
+            </Field>
+            <Field label="Date">
+              <Input
+                type="date"
+                value={t.header.date}
+                onChange={(e) => t.updateHeader({ date: e.target.value })}
+              />
+            </Field>
+            <Field label="Surface">
+              <Select value={t.header.surface} onChange={(e) => t.updateHeader({ surface: e.target.value })}>
+                <option value="">Not specified</option>
+                {SURFACES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </Select>
+            </Field>
+            <Field label="Indoor / Outdoor">
+              <Select value={t.header.indoorOutdoor} onChange={(e) => t.updateHeader({ indoorOutdoor: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Indoor">Indoor</option>
+                <option value="Outdoor">Outdoor</option>
+              </Select>
             </Field>
           </div>
         </section>
 
-        {t.header.governingBody === 'AITA' && ((t.header.city || '').trim() || t.header.ageGroup) && (
-          <AitaTournamentSuggestions header={t.header} updateHeader={t.updateHeader} />
-        )}
+        {/* Opponent details */}
+        <section>
+          <SectionLabel>Opponent Details</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Handedness">
+              <Select value={t.header.oppHandedness} onChange={(e) => t.updateHeader({ oppHandedness: e.target.value })}>
+                <option value="">Not specified</option>
+                <option value="Right-Handed">Right-Handed</option>
+                <option value="Left-Handed">Left-Handed</option>
+              </Select>
+            </Field>
+            <Field label="Playing Style">
+              <Select value={t.header.playingStyle} onChange={(e) => t.updateHeader({ playingStyle: e.target.value })}>
+                <option value="">Not specified</option>
+                {PLAYING_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </Select>
+            </Field>
+            <Field label="Rank / Seed" className="col-span-2">
+              <Input
+                placeholder="e.g. State Rank 12, Seed 4"
+                value={t.header.rankSeed}
+                onChange={(e) => t.updateHeader({ rankSeed: e.target.value })}
+              />
+            </Field>
+          </div>
+        </section>
+
+        {/* Weather */}
+        <section>
+          <SectionLabel>Weather</SectionLabel>
+          <div className="flex gap-1.5">
+            <Input
+              className="flex-1"
+              placeholder="e.g. 24°C, Sunny, Wind 10 km/h"
+              value={t.header.weather}
+              onChange={(e) => t.updateHeader({ weather: e.target.value })}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap"
+              disabled={weatherLoading}
+              onClick={handleGetWeather}
+            >
+              {weatherLoading ? 'Locating…' : 'Get Weather'}
+            </Button>
+          </div>
+        </section>
 
         {/* Session type */}
         <section>
@@ -518,63 +566,166 @@ function SetupForm({ t, onStart }) {
   );
 }
 
-// ── Suggested AITA tournaments, from the mirrored calendar, filtered by City + Age Group ──
+function dedupeByName(rows) {
+  const seen = new Map();
+  for (const r of rows) if (!seen.has(r.name)) seen.set(r.name, r);
+  return [...seen.values()];
+}
+
+function mapAitaSurfaceToOurs(raw) {
+  if (!raw) return null;
+  if (SURFACES.includes(raw)) return raw;
+  if (raw === 'Hard') return 'Acrylic (Hard-Court)';
+  return null;
+}
+
+// ── Suggested AITA tournaments for the chosen Circuit (+ City, if typed), drilling
+// down Tournament name → Age Group → a read-only Tournament Facts panel, pulled
+// straight from the already-synced fact sheet data. ─────────────────────────────
 function AitaTournamentSuggestions({ header, updateHeader }) {
   const [tournaments, setTournaments] = useState(null); // null = loading, [] = no matches
   const [error, setError] = useState('');
+  const [selectedName, setSelectedName] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     setTournaments(null);
     setError('');
+    setSelectedName(null);
     const timer = setTimeout(() => {
-      api.listAitaTournaments({ ageGroup: header.ageGroup || undefined, city: (header.city || '').trim() || undefined })
+      api.listAitaTournaments({ city: (header.city || '').trim() || undefined })
         .then((list) => { if (!cancelled) setTournaments(list); })
         .catch((e) => { if (!cancelled) setError(e.message || 'Could not load AITA tournaments'); });
     }, 400);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [header.city, header.ageGroup]);
+  }, [header.city, header.circuit]);
 
-  function pickTournament(tour) {
-    const patch = { tournament: tour.name };
-    if (tour.city) patch.city = tour.city;
-    if (tour.startDate) patch.date = tour.startDate.slice(0, 10);
-    const mappedCircuit = tour.grade && AITA_GRADE_TO_CIRCUIT[tour.grade.trim().toLowerCase()];
-    if (mappedCircuit) patch.circuit = mappedCircuit;
+  const circuitMatches = tournaments ? tournaments.filter((t) => mapAitaGradeToCircuit(t.grade) === header.circuit) : null;
+  const rowsForName = selectedName && circuitMatches ? circuitMatches.filter((t) => t.name === selectedName) : [];
+  const resolvedRow = selectedName
+    ? (rowsForName.length === 1 ? rowsForName[0] : rowsForName.find((r) => r.ageGroup === header.ageGroup) || null)
+    : null;
+
+  function pickTournament(row) {
+    const patch = { tournament: row.name, ageGroup: row.ageGroup || header.ageGroup };
+    if (row.city) patch.city = row.city;
+    if (row.startDate) patch.date = row.startDate.slice(0, 10);
+    const mappedSurface = mapAitaSurfaceToOurs(row.surface);
+    if (mappedSurface) patch.surface = mappedSurface;
     updateHeader(patch);
   }
 
+  function handlePickName(name) {
+    setSelectedName(name);
+    const rows = circuitMatches.filter((t) => t.name === name);
+    if (rows.length === 1) pickTournament(rows[0]);
+  }
+
   return (
-    <Card>
+    <Card className="mt-3">
       <CardContent className="space-y-2 pt-4">
         <SectionLabel>Suggested AITA Tournaments</SectionLabel>
         {error && <p className="text-xs text-tt-opp">{error}</p>}
         {!error && tournaments === null && (
           <p className="text-xs text-tt-muted-foreground">Searching the AITA calendar…</p>
         )}
-        {!error && tournaments && tournaments.length === 0 && (
-          <p className="text-xs text-tt-muted-foreground">No matching AITA tournaments found.</p>
+        {!error && circuitMatches && circuitMatches.length === 0 && (
+          <p className="text-xs text-tt-muted-foreground">No matching AITA tournaments found{header.city ? ` for "${header.city}"` : ''}.</p>
         )}
-        {!error && tournaments && tournaments.length > 0 && (
+
+        {/* Stage 1 — pick the event (a name can host several age-group draws) */}
+        {!error && circuitMatches && circuitMatches.length > 0 && !selectedName && (
           <div className="flex flex-col gap-1.5">
-            {tournaments.map((tour) => (
+            {dedupeByName(circuitMatches).map((tour) => (
               <button
-                key={tour.id}
+                key={tour.name}
                 type="button"
-                onClick={() => pickTournament(tour)}
-                className="flex flex-col items-start gap-0.5 rounded-tt border border-tt-border px-3 py-2 text-left hover:border-tt-brand"
+                onClick={() => handlePickName(tour.name)}
+                className="flex flex-col items-start gap-0.5 rounded-tt border border-tt-border bg-transparent px-3 py-2 text-left hover:border-tt-brand"
               >
                 <span className="text-sm font-semibold text-tt-foreground">{tour.name}</span>
                 <span className="font-tt-mono text-[0.65rem] uppercase tracking-widest text-tt-muted-foreground">
-                  {[tour.grade, tour.ageGroup, [tour.city, tour.venue].filter(Boolean).join(' · '), tour.startDate]
-                    .filter(Boolean).join('  ·  ')}
+                  {[[tour.city, tour.venue].filter(Boolean).join(' · '), tour.startDate].filter(Boolean).join('  ·  ')}
                 </span>
               </button>
             ))}
           </div>
         )}
+
+        {/* Stage 2 — this event has multiple age-group draws, pick one */}
+        {selectedName && !resolvedRow && rowsForName.length > 1 && (
+          <div className="space-y-2">
+            <button type="button" className="bg-transparent text-xs text-tt-muted-foreground underline" onClick={() => setSelectedName(null)}>
+              ← Choose a different tournament
+            </button>
+            <p className="text-xs text-tt-muted-foreground">{selectedName} — which age group?</p>
+            <div className="flex flex-wrap gap-1.5">
+              {rowsForName.map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() => pickTournament(row)}
+                  className="rounded-tt border border-tt-border bg-transparent px-2.5 py-1 text-xs text-tt-foreground hover:border-tt-brand"
+                >
+                  {row.ageGroup || 'Unspecified'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stage 3 — resolved to one exact tournament row: show its facts */}
+        {resolvedRow && (
+          <div className="space-y-2">
+            <button type="button" className="bg-transparent text-xs text-tt-muted-foreground underline" onClick={() => setSelectedName(null)}>
+              ← Choose a different tournament
+            </button>
+            <TournamentFactsPanel tour={resolvedRow} />
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function Fact({ label, value }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-tt-mono text-[0.6rem] uppercase tracking-widest text-tt-muted-foreground">{label}</span>
+      <span className="text-xs text-tt-foreground">{value}</span>
+    </div>
+  );
+}
+
+// ── Read-only facts pulled from the resolved aita_tournaments row ────────────
+function TournamentFactsPanel({ tour }) {
+  const director = [tour.directorName, tour.directorPhone, tour.directorEmail].filter(Boolean).join(' · ');
+  const referee = [tour.refereeName, tour.refereePhone, tour.refereeEmail].filter(Boolean).join(' · ');
+  return (
+    <div className="space-y-3 rounded-tt border border-tt-border p-3">
+      <div className="text-sm font-semibold text-tt-brand">{tour.name} — {tour.ageGroup}</div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Fact label="Court Type" value={tour.surface} />
+        <Fact label="Draw Size" value={tour.drawSize} />
+        <Fact label="Ball Brand" value={tour.ballBrand} />
+        <Fact label="Floodlights" value={tour.hasFloodlights == null ? '' : (tour.hasFloodlights ? 'Yes' : 'No')} />
+        <Fact label="Entry Fee (Singles)" value={tour.entryFeeSingles ? `₹${tour.entryFeeSingles}` : ''} />
+        <Fact label="Entry Fee (Doubles)" value={tour.entryFeeDoubles ? `₹${tour.entryFeeDoubles}` : ''} />
+        <Fact label="Daily Allowance" value={tour.dailyAllowance ? `₹${tour.dailyAllowance}` : ''} />
+        <Fact label="Entry Deadline" value={tour.entryDeadline} />
+        <Fact label="Withdrawal Deadline" value={tour.withdrawalDeadline} />
+        <Fact label="Venue" value={[tour.venue, tour.venueAddress].filter(Boolean).join(', ')} />
+      </div>
+      <Fact label="Sign-in" value={tour.signinInstructions} />
+      <Fact label="Tournament Director" value={director} />
+      <Fact label="Tournament Referee" value={referee} />
+      {tour.factsheetUrl && (
+        <a href={tour.factsheetUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-tt-brand underline">
+          View full fact sheet PDF ↗
+        </a>
+      )}
+    </div>
   );
 }
 

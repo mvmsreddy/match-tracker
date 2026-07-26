@@ -187,7 +187,8 @@ function pdfShotLocLegend(doc, x, y) {
  *   points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
  *   setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
  *   selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
- *   governingBody, circuit, city, ageGroup, weather, notes, matchStartTime, matchDurationMs,
+ *   governingBody, circuit, city, ageGroup, playingStyle, rankSeed,
+ *   weather, notes, matchStartTime, matchDurationMs,
  * }
  * Returns a jsPDF instance (caller decides how to output/save it).
  */
@@ -196,7 +197,8 @@ export function buildMatchPdf(ctx) {
     points, sets, matchOver, matchWinner, matchTiebreakActive, matchTiebreakPts,
     setGames, gamePts, sessionType, pointTarget, formatPreset, formatLabel,
     selfName, oppName, tournament, date, surface, indoorOutdoor, oppHandedness,
-    governingBody, circuit, city, ageGroup, weather, notes, matchStartTime, matchDurationMs,
+    governingBody, circuit, city, ageGroup, playingStyle, rankSeed,
+    weather, notes, matchStartTime, matchDurationMs,
   } = ctx;
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -230,6 +232,8 @@ export function buildMatchPdf(ctx) {
   if (surface) contextBits.push(surface);
   if (indoorOutdoor) contextBits.push(indoorOutdoor);
   if (oppHandedness) contextBits.push('Opponent: ' + oppHandedness);
+  if (playingStyle) contextBits.push('Opponent style: ' + playingStyle);
+  if (rankSeed) contextBits.push('Opponent rank/seed: ' + rankSeed);
   if (weather) contextBits.push('Weather: ' + weather);
   if (contextBits.length > 0) {
     const ctxLines = doc.splitTextToSize(contextBits.join(' | '), 515);

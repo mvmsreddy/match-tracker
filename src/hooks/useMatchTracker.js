@@ -13,6 +13,8 @@ const DEFAULT_HEADER = {
   surface: '',
   indoorOutdoor: '',
   oppHandedness: '',
+  playingStyle: '',
+  rankSeed: '',
   weather: '',
   notes: '',
   governingBody: '',

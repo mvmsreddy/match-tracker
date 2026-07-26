@@ -51,6 +51,7 @@ export default function MatchDetailPage() {
     surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
     governingBody: match.governingBody, circuit: match.circuit,
     city: match.city, ageGroup: match.ageGroup,
+    playingStyle: match.playingStyle, rankSeed: match.rankSeed,
     weather: match.weather, notes: match.notes,
   };
 
@@ -64,6 +65,7 @@ export default function MatchDetailPage() {
       surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
       governingBody: match.governingBody, circuit: match.circuit,
       city: match.city, ageGroup: match.ageGroup,
+      playingStyle: match.playingStyle, rankSeed: match.rankSeed,
       weather: match.weather, notes: match.notes,
       matchStartTime: match.matchDurationMs ? 1 : null, matchDurationMs: match.matchDurationMs,
     });

@@ -130,6 +130,8 @@ function rowToMatch(row) {
     surface: row.surface,
     indoorOutdoor: row.indoor_outdoor,
     oppHandedness: row.opp_handedness,
+    playingStyle: row.playing_style,
+    rankSeed: row.rank_seed,
     governingBody: row.governing_body,
     circuit: row.circuit,
     city: row.city,
@@ -169,6 +171,8 @@ export async function saveMatch(userId, record) {
     surface: record.surface || null,
     indoor_outdoor: record.indoorOutdoor || null,
     opp_handedness: record.oppHandedness || null,
+    playing_style: record.playingStyle || null,
+    rank_seed: record.rankSeed || null,
     governing_body: record.governingBody || null,
     circuit: record.circuit || null,
     city: record.city || null,
@@ -2398,6 +2402,7 @@ function rowToAitaTournament(row) {
     entryFeeDoubles: row.entry_fee_doubles,
     dailyAllowance: row.daily_allowance,
     signinInstructions: row.signin_instructions,
+    drawSize: row.draw_size,
     factsheetUrl: row.factsheet_storage_path
       ? supabase.storage.from(AITA_FACTSHEET_BUCKET).getPublicUrl(row.factsheet_storage_path).data.publicUrl
       : null,

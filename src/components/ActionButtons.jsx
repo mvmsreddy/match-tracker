@@ -57,6 +57,7 @@ export default function ActionButtons({
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
         governingBody: header.governingBody, circuit: header.circuit,
         city: header.city, ageGroup: header.ageGroup,
+        playingStyle: header.playingStyle, rankSeed: header.rankSeed,
         scoreSummary: scoreSummary(),
         winner: engine.matchWinner === 'self' ? 'self' : (engine.matchWinner === 'opp' ? 'opp' : null),
         pointCount: points.length,
@@ -85,6 +86,7 @@ export default function ActionButtons({
         indoorOutdoor: header.indoorOutdoor, oppHandedness: header.oppHandedness, weather: header.weather,
         governingBody: header.governingBody, circuit: header.circuit,
         city: header.city, ageGroup: header.ageGroup,
+        playingStyle: header.playingStyle, rankSeed: header.rankSeed,
         notes: header.notes, matchStartTime, matchDurationMs,
       });
       const filename = pdfFilename(selfName, oppName, sessionType);
@@ -112,6 +114,8 @@ export default function ActionButtons({
     if (header.surface) contextBits.push(header.surface);
     if (header.indoorOutdoor) contextBits.push(header.indoorOutdoor);
     if (header.oppHandedness) contextBits.push('Opponent: ' + header.oppHandedness);
+    if (header.playingStyle) contextBits.push('Opponent style: ' + header.playingStyle);
+    if (header.rankSeed) contextBits.push('Opponent rank/seed: ' + header.rankSeed);
     if (header.weather) contextBits.push('Weather: ' + header.weather);
     if (matchStartTime) contextBits.push('Time on court: ' + formatDuration(matchDurationMs));
     const text = (isPractice ? 'TENNIS PRACTICE SUMMARY\n' : 'TENNIS MATCH SUMMARY\n') + selfName + ' vs ' + oppName + '\n' +

@@ -18,6 +18,8 @@ create table if not exists public.matches (
   surface text,
   indoor_outdoor text,
   opp_handedness text,
+  playing_style text,                  -- e.g. 'Baseliner', 'Serve & Volley'
+  rank_seed text,                      -- freeform, e.g. 'State Rank 12, Seed 4'
   governing_body text,                 -- e.g. 'AITA', 'ITF', 'WTA', 'ATF', 'ATP'
   circuit text,                        -- e.g. 'Talent Series', 'ATP Challenger Tour'
   city text,
@@ -54,8 +56,10 @@ create policy "Users can delete their own matches"
 create index if not exists matches_user_id_created_at_idx
   on public.matches (user_id, created_at desc);
 
--- Migration for existing tables created before governing_body/circuit/city/age_group were added.
+-- Migration for existing tables created before these columns were added.
 alter table public.matches add column if not exists governing_body text;
 alter table public.matches add column if not exists circuit text;
 alter table public.matches add column if not exists city text;
 alter table public.matches add column if not exists age_group text;
+alter table public.matches add column if not exists playing_style text;
+alter table public.matches add column if not exists rank_seed text;
