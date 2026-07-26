@@ -905,19 +905,33 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .t-fs-item { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
 .t-fs-item b { color: var(--text2); font-weight: 600; }
 
-/* ---- AITA factsheet — sectioned layout (tile/modal detail view) ---- */
+/* ---- AITA factsheet — mirrors the official PDF's banner-table layout ---- */
 .t-factsheet-body { display: flex; flex-direction: column; gap: 14px; }
-.t-fs-section { display: flex; flex-direction: column; gap: 6px; }
-.t-fs-grid-2 { display: grid; grid-template-columns: 1fr; gap: 10px; }
-@media (min-width: 480px) { .t-fs-grid-2 { grid-template-columns: 1fr 1fr; } }
-.t-fs-card { background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
-.t-field-row { padding: 5px 0; border-bottom: 1px solid var(--border2); display: flex; flex-direction: column; gap: 1px; }
-.t-field-row:last-child { border-bottom: none; }
-.t-field-label { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); }
-.t-field-value { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text2); word-break: break-word; }
+.t-fs-section { display: flex; flex-direction: column; }
+
+.t-fs-banner { background: #f5c842; color: #241a00; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 7px 10px; border-radius: 6px 6px 0 0; }
+
+.t-fs-table { border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; overflow: hidden; }
+.t-fs-tr { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; border-top: 1px solid var(--border); }
+.t-fs-tr:first-child { border-top: none; }
+.t-fs-td-label { padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text3); background: rgba(255,255,255,0.02); border-right: 1px solid var(--border); }
+.t-fs-td-value { padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text); word-break: break-word; }
+.t-fs-tr-danger .t-fs-td-label, .t-fs-tr-danger .t-fs-td-value { color: var(--danger); }
+.t-fs-tr-split { display: flex; flex-wrap: wrap; border-top: 1px solid var(--border); }
+.t-fs-tr-split:first-child { border-top: none; }
+.t-fs-half { flex: 1 1 180px; display: grid; grid-template-columns: minmax(90px, 45%) 1fr; }
+.t-fs-half + .t-fs-half { border-left: 1px solid var(--border); }
+
+.t-fs-gridtable { border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; overflow-x: auto; }
+.t-fs-gridtable-head, .t-fs-gridtable-row { display: grid; }
+.t-fs-gridtable-head { background: rgba(255,255,255,0.03); font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); }
+.t-fs-gridtable-head > div, .t-fs-gridtable-row > div { padding: 7px 9px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text2); border-top: 1px solid var(--border); word-break: break-word; }
+.t-fs-gridtable-head > div { border-top: none; }
+.t-fs-gridtable-head > div + div, .t-fs-gridtable-row > div + div { border-left: 1px solid var(--border); }
+
 a.t-field-link { color: var(--accent); text-decoration: none; }
 a.t-field-link:hover { text-decoration: underline; }
-.t-field-toggle { align-self: flex-start; margin-top: 2px; background: none; border: none; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; padding: 0; }
+.t-field-toggle { background: none; border: none; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; padding: 0; }
 
 /* Week card extras */
 .t-card-courts { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 3px; }
