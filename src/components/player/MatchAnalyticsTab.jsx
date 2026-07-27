@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, aggregateBreakPoints, aggregateServeStats, strokeWinRates } from '../../lib/segmentAnalytics';
 
@@ -57,19 +56,18 @@ function buildTrends(tracked) {
 // there's enough sample size (see strokeWinRates' minSample) to say
 // something meaningful — an empty/low-data segment shows the empty state
 // instead of a misleadingly confident-looking 0%/100% card.
-export default function MatchAnalyticsTab({ circuit }) {
-  const { user } = useAuth();
+export default function MatchAnalyticsTab({ circuit, playerId }) {
   const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     setMatches(null);
-    api.getMatchesForSegment(user.id, circuit.category, circuit.subcategory)
+    api.getMatchesForSegment(playerId, circuit.category, circuit.subcategory)
       .then(data => { if (!cancelled) setMatches(data); })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load match analytics'); setMatches([]); } });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const tracked = useMemo(() => (matches || []).filter(m => m.points?.length > 0), [matches]);
 

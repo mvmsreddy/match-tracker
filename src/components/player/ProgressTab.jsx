@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ResponsiveContainer, ComposedChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 
 function formatDate(iso) {
@@ -22,8 +21,7 @@ function monthKey(iso) {
 // fabricated pace marker. Monthly breakdown counts real training sessions
 // logged per month (Phase 3) alongside the ranking snapshots recorded that
 // month.
-export default function ProgressTab({ circuit }) {
-  const { user } = useAuth();
+export default function ProgressTab({ circuit, playerId }) {
   const [goals, setGoals] = useState(null);
   const [sessions, setSessions] = useState(null);
   const [error, setError] = useState('');
@@ -31,12 +29,12 @@ export default function ProgressTab({ circuit }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      api.getRankingGoals(user.id, circuit.category, circuit.subcategory),
-      api.getTrainingSessions(user.id, circuit.category, circuit.subcategory),
+      api.getRankingGoals(playerId, circuit.category, circuit.subcategory),
+      api.getTrainingSessions(playerId, circuit.category, circuit.subcategory),
     ]).then(([g, s]) => { if (!cancelled) { setGoals(g); setSessions(s); } })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load progress'); setGoals([]); setSessions([]); } });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const activeGoal = (goals || []).find(g => g.status === 'active');
 

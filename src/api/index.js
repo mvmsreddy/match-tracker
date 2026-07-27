@@ -144,6 +144,7 @@ export const deleteRankingGoal    = hasSupabaseConfig ? supabaseApi.deleteRankin
 export const getTrainingSessions  = hasSupabaseConfig ? supabaseApi.getTrainingSessions  : async () => [];
 export const logTrainingSession   = hasSupabaseConfig ? supabaseApi.logTrainingSession   : noSupabase;
 export const deleteTrainingSession = hasSupabaseConfig ? supabaseApi.deleteTrainingSession : noSupabase;
+export const getTrainingSessionsLoggedByCoach = hasSupabaseConfig ? supabaseApi.getTrainingSessionsLoggedByCoach : async () => [];
 
 // Phase 30 — tracker/tournament linking
 export const getMatchesForSegment = hasSupabaseConfig ? supabaseApi.getMatchesForSegment : async () => [];
@@ -153,6 +154,11 @@ export const getDrillLibrary      = hasSupabaseConfig ? supabaseApi.getDrillLibr
 export const createDrill          = hasSupabaseConfig ? supabaseApi.createDrill          : noSupabase;
 export const deleteDrill          = hasSupabaseConfig ? supabaseApi.deleteDrill          : noSupabase;
 export const getRosterWithSegments = hasSupabaseConfig ? supabaseApi.getRosterWithSegments : async () => [];
+
+// Phase 32 — Coach Intelligence System: drill assignments
+export const getDrillAssignments    = hasSupabaseConfig ? supabaseApi.getDrillAssignments    : async () => [];
+export const createDrillAssignment  = hasSupabaseConfig ? supabaseApi.createDrillAssignment  : noSupabase;
+export const updateDrillAssignment  = hasSupabaseConfig ? supabaseApi.updateDrillAssignment  : noSupabase;
 
 // Only meaningful in mock mode — LoginPage only shows these when useMock is true.
 export const DEMO_CREDENTIALS = mockApi.DEMO_CREDENTIALS;

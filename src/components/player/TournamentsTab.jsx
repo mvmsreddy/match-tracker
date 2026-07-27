@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { roundToken } from '../../utils/aitaGradeRules';
@@ -25,7 +24,7 @@ function entryName(entry) {
 // separate from the entries list above so opponent resolution (a second
 // fetch, getDrawEntries) only happens for a tournament the player actually
 // opens, not for every entry up front.
-function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch }) {
+function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, isOwnDashboard }) {
   const [matches, setMatches] = useState(null);
   const [entryMap, setEntryMap] = useState(null);
 
@@ -76,16 +75,18 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch })
             <div style={{ fontSize: 11, color: 'var(--text3)', width: 80 }}>{round}</div>
             <div style={{ flex: 1, minWidth: 160, fontWeight: 600 }}>{opponentName}</div>
             <div style={{ fontSize: 11, color: 'var(--text3)' }}>{m.status || 'scheduled'}</div>
-            <LogMatchButton
-              match={m}
-              opponentName={opponentName}
-              tournamentName={entry.event?.week?.name}
-              date={entry.event?.week?.startDate}
-              round={round}
-              category={circuit.category}
-              subcategory={circuit.subcategory}
-              className="pcd-btn-secondary"
-            />
+            {isOwnDashboard && (
+              <LogMatchButton
+                match={m}
+                opponentName={opponentName}
+                tournamentName={entry.event?.week?.name}
+                date={entry.event?.week?.startDate}
+                round={round}
+                category={circuit.category}
+                subcategory={circuit.subcategory}
+                className="pcd-btn-secondary"
+              />
+            )}
           </div>
         );
         return row;
@@ -98,8 +99,7 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch })
 // (fetched on demand) rather than eagerly loading every entry's matches up
 // front — the entries list itself is the fast path, matching this design's
 // intent of scanning a season at a glance before drilling into one event.
-export default function TournamentsTab({ circuit }) {
-  const { user } = useAuth();
+export default function TournamentsTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You' }) {
   const [entries, setEntries] = useState(null);
   const [trackedMatches, setTrackedMatches] = useState(null);
   const [error, setError] = useState('');
@@ -109,19 +109,19 @@ export default function TournamentsTab({ circuit }) {
   useEffect(() => {
     let cancelled = false;
     setEntries(null);
-    api.getMyEntries()
+    api.getMyEntries(playerId)
       .then(data => { if (!cancelled) setEntries(data); })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load tournament entries'); setEntries([]); } });
     return () => { cancelled = true; };
-  }, []);
+  }, [playerId]);
 
   useEffect(() => {
     let cancelled = false;
-    api.getMatchesForSegment(user.id, circuit.category, circuit.subcategory)
+    api.getMatchesForSegment(playerId, circuit.category, circuit.subcategory)
       .then(data => { if (!cancelled) setTrackedMatches(data); })
       .catch(() => { if (!cancelled) setTrackedMatches([]); });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const trackedByEventMatch = useMemo(() => new Map(
     (trackedMatches || []).filter(m => m.eventMatchId && m.points?.length > 0).map(m => [m.eventMatchId, m])
@@ -166,7 +166,7 @@ export default function TournamentsTab({ circuit }) {
           </button>
           {openId === e.id && (
             <div className="pcd-accordion-body">
-              <TournamentMatches entry={e} circuit={circuit} trackedByEventMatch={trackedByEventMatch} onOpenMatch={setModalMatch} />
+              <TournamentMatches entry={e} circuit={circuit} trackedByEventMatch={trackedByEventMatch} onOpenMatch={setModalMatch} isOwnDashboard={isOwnDashboard} />
             </div>
           )}
         </div>
@@ -174,7 +174,7 @@ export default function TournamentsTab({ circuit }) {
 
       <Link to="/tournaments" className="dashboard-view-all">Browse the full tournament calendar →</Link>
 
-      {modalMatch && <MatchDetailModal match={modalMatch} selfName={user.displayName || 'You'} onClose={() => setModalMatch(null)} />}
+      {modalMatch && <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />}
     </div>
   );
 }

@@ -17,14 +17,21 @@ const SegmentContext = createContext(null);
 //
 // Segments here are fully independent circuits (see src/lib/segments.js) —
 // this context does not merge or roll up points across segments.
-export function SegmentProvider({ children }) {
+// `overrideAitaReg` lets a caller scope this provider to a DIFFERENT
+// player's ranking history than the logged-in user's own — the Coach
+// Intelligence System's "Dashboard →" link nests a second SegmentProvider
+// instance with this set (to the linked player being viewed) around the
+// real PlayerDashboardPage, rather than the app-wide provider that always
+// reads the authenticated user. `useSegment()` inside every tab picks up
+// whichever provider is nearest, so no prop drilling is needed for circuits.
+export function SegmentProvider({ children, overrideAitaReg = null }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [bodyId, setBodyId] = useState('AITA');
   const [history, setHistory] = useState(null); // null = loading
   const [error, setError] = useState('');
 
-  const aitaReg = user?.aitaReg;
+  const aitaReg = overrideAitaReg || user?.aitaReg;
 
   useEffect(() => {
     if (!aitaReg) { setHistory([]); return; }

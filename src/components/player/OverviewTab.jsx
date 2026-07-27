@@ -5,7 +5,6 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import * as api from '../../api';
-import { useAuth } from '../../context/AuthContext';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
 import GoalsPanel from './GoalsPanel';
@@ -40,31 +39,30 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 // the tracker via matches.event_match_id, Phase 4) instead of tournament-
 // level entries. Clicking a recent-result / upcoming row opens
 // MatchDetailModal with real per-match analytics when tracked.
-export default function OverviewTab({ circuit }) {
-  const { user } = useAuth();
+export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You' }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState(null);
   const [segMatches, setSegMatches] = useState(null);
   const [error, setError] = useState('');
   const [modalMatch, setModalMatch] = useState(null);
-  const schedule = useSegmentMatchSchedule(user.id, circuit);
+  const schedule = useSegmentMatchSchedule(playerId, circuit);
 
   useEffect(() => {
     let cancelled = false;
     setEntries(null);
-    api.getMyEntries()
+    api.getMyEntries(playerId)
       .then(data => { if (!cancelled) setEntries(data); })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load tournament entries'); setEntries([]); } });
     return () => { cancelled = true; };
-  }, []);
+  }, [playerId]);
 
   useEffect(() => {
     let cancelled = false;
-    api.getMatchesForSegment(user.id, circuit.category, circuit.subcategory)
+    api.getMatchesForSegment(playerId, circuit.category, circuit.subcategory)
       .then(data => { if (!cancelled) setSegMatches(data); })
       .catch(() => { if (!cancelled) setSegMatches([]); });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const upcomingEntries = useMemo(() => {
     if (!entries) return [];
@@ -99,7 +97,7 @@ export default function OverviewTab({ circuit }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <GoalsPanel circuit={circuit} />
+      <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
       <div className="pcd-stat-grid n2">
         <div className="pcd-stat-card">
@@ -194,15 +192,17 @@ export default function OverviewTab({ circuit }) {
                     <div className="pcd-row-meta">{m.tournamentName}{m.grade ? ` · ${m.grade}` : ''}</div>
                   </div>
                   <div className="pcd-badge info">{m.h2h || 'FIRST MEETING'}</div>
-                  <button
-                    className="pcd-btn-primary"
-                    onClick={() => navigate('/track', { state: { trackerPrefill: {
-                      oppName: m.opponentName, tournament: m.tournamentName, round: m.round || '', date: m.date || '',
-                      governingBody: 'AITA', eventMatchId: m.id, normalizedCategory: circuit.category, normalizedSubcategory: circuit.subcategory,
-                    } } })}
-                  >
-                    {isToday ? 'Launch tracker' : 'Prepare'}
-                  </button>
+                  {isOwnDashboard && (
+                    <button
+                      className="pcd-btn-primary"
+                      onClick={() => navigate('/track', { state: { trackerPrefill: {
+                        oppName: m.opponentName, tournament: m.tournamentName, round: m.round || '', date: m.date || '',
+                        governingBody: 'AITA', eventMatchId: m.id, normalizedCategory: circuit.category, normalizedSubcategory: circuit.subcategory,
+                      } } })}
+                    >
+                      {isToday ? 'Launch tracker' : 'Prepare'}
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -241,7 +241,7 @@ export default function OverviewTab({ circuit }) {
       {error && <div className="history-empty">{error}</div>}
 
       {modalMatch && (
-        <MatchDetailModal match={modalMatch} selfName={user.displayName || 'You'} onClose={() => setModalMatch(null)} />
+        <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />
       )}
     </div>
   );

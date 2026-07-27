@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { computeRankProgress } from '../../lib/segments';
 
@@ -15,8 +14,7 @@ function formatDate(iso) {
 // fabricated pace numbers. A player can have at most one *active* goal per
 // segment shown here; older achieved/abandoned goals aren't surfaced yet
 // (no history view built for that in this phase).
-export default function GoalsPanel({ circuit }) {
-  const { user } = useAuth();
+export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true }) {
   const [goals, setGoals] = useState(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
@@ -26,18 +24,18 @@ export default function GoalsPanel({ circuit }) {
   useEffect(() => {
     let cancelled = false;
     setGoals(null);
-    api.getRankingGoals(user.id, circuit.category, circuit.subcategory)
+    api.getRankingGoals(playerId, circuit.category, circuit.subcategory)
       .then(data => { if (!cancelled) setGoals(data); })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load goals'); setGoals([]); } });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const activeGoal = (goals || []).find(g => g.status === 'active');
 
   async function handleSave() {
     setSaving(true);
     try {
-      const created = await api.createRankingGoal(user.id, {
+      const created = await api.createRankingGoal(playerId, {
         category: circuit.category,
         subcategory: circuit.subcategory,
         targetRank: form.targetRank ? Number(form.targetRank) : null,
@@ -70,12 +68,12 @@ export default function GoalsPanel({ circuit }) {
       <div className="pcd-card" style={{ borderStyle: 'dashed', textAlign: 'center' }}>
         <div style={{ fontWeight: 700, fontSize: 15 }}>No ranking goal set for {circuit.category} {circuit.subcategory} yet</div>
         {error && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 8 }}>{error}</div>}
-        <button className="pcd-btn-primary" style={{ marginTop: 14 }} onClick={() => setEditing(true)}>Set a goal</button>
+        {isOwnDashboard && <button className="pcd-btn-primary" style={{ marginTop: 14 }} onClick={() => setEditing(true)}>Set a goal</button>}
       </div>
     );
   }
 
-  if (editing) {
+  if (editing && isOwnDashboard) {
     return (
       <div className="pcd-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div className="pcd-card-title">New goal for {circuit.category} {circuit.subcategory}</div>
@@ -137,7 +135,7 @@ export default function GoalsPanel({ circuit }) {
             {activeGoal.targetDate ? ` by ${formatDate(activeGoal.targetDate)}` : ''}
           </div>
           {paceNote && <div className="pcd-hero-body">{paceNote.charAt(0) + paceNote.slice(1).toLowerCase()}.</div>}
-          <button className="pcd-btn-secondary" style={{ marginTop: 14 }} onClick={() => handleAbandon(activeGoal.id)}>Abandon goal</button>
+          {isOwnDashboard && <button className="pcd-btn-secondary" style={{ marginTop: 14 }} onClick={() => handleAbandon(activeGoal.id)}>Abandon goal</button>}
         </div>
         <div className="pcd-hero-stats">
           <div>

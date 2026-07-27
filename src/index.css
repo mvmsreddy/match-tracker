@@ -1673,3 +1673,43 @@ a.t-field-link:hover { text-decoration: underline; }
 
 @keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .oop-conflict-badge { margin-top: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--forced-text); }
+
+/* ================================================
+   COACH INTELLIGENCE SYSTEM — additions to the pcd-* system above.
+   Reuses .pcd-sidebar/.pcd-topbar/.pcd-card/.pcd-stat-grid/.pcd-row/
+   .pcd-badge/.pcd-pill/.pcd-bar-track/.pcd-accordion/.pcd-btn-* as-is; the
+   classes below are only for shapes that system doesn't already cover.
+   ================================================ */
+.pcd-sidebar-week { margin-top: auto; padding: 14px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border2); display: none; }
+@media (min-width: 900px) { .pcd-sidebar-week { display: block; } }
+.pcd-sidebar-week-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; }
+.pcd-sidebar-week-value { font: 800 24px/1 'Archivo', sans-serif; letter-spacing: -0.03em; margin-top: 11px; }
+.pcd-sidebar-week-value .unit { font: 400 13px/1 'IBM Plex Mono', monospace; color: var(--text2); }
+.pcd-sidebar-week-sub { font: 400 11px/1.4 'IBM Plex Mono', monospace; color: var(--text3); margin-top: 8px; }
+
+.pcd-fresh-chip { display: flex; align-items: center; gap: 7px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--text2); white-space: nowrap; }
+.pcd-fresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: block; }
+
+.pcd-group-player-row { display: grid; grid-template-columns: 1fr 44px 52px; column-gap: 12px; align-items: center; padding: 11px 12px; border-radius: 10px; background: var(--bg4); }
+.pcd-group-player-row + .pcd-group-player-row { margin-top: 2px; }
+.pcd-group-player-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.pcd-group-player-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+.pcd-hscroll-table { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow-x: auto; overflow-y: hidden; }
+.pcd-grid-head-row { display: grid; column-gap: 14px; padding: 14px 20px; background: var(--bg3); font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
+.pcd-grid-body-row { display: grid; column-gap: 14px; padding: 15px 20px; border-top: 1px solid var(--border2); align-items: center; }
+
+.pcd-fav-btn { flex: none; cursor: pointer; width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border); background: transparent; color: var(--text3); font: 600 15px/1 'Archivo', sans-serif; }
+.pcd-fav-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(198,226,61,0.14); }
+
+.pcd-chip-toggle { cursor: pointer; white-space: nowrap; border: 1px solid var(--border); background: transparent; color: var(--text2); font: 600 13px/1 'Archivo', sans-serif; padding: 12px 14px; border-radius: 10px; min-height: 44px; }
+.pcd-chip-toggle.active { border-color: var(--accent); background: rgba(198,226,61,0.12); color: var(--accent); }
+
+.pcd-check-row { cursor: pointer; text-align: left; display: grid; grid-template-columns: 20px minmax(0,1fr) 96px; column-gap: 14px; align-items: center; border: 1px solid var(--border); background: var(--bg4); padding: 15px; border-radius: 11px; min-height: 56px; width: 100%; color: inherit; font-family: inherit; }
+.pcd-check-row.active { border-color: var(--accent); background: rgba(198,226,61,0.07); }
+.pcd-check-box { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font: 700 11px/1 'IBM Plex Mono', monospace; color: var(--accent-text); }
+.pcd-check-box.active { background: var(--accent); border-color: var(--accent); }
+
+.pcd-empty-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 40px 24px; text-align: center; }
+.pcd-empty-card-title { font: 700 17px/1.3 'Archivo', sans-serif; }
+.pcd-empty-card-body { font: 400 13px/1.55 'Archivo', sans-serif; color: var(--text2); margin: 12px auto 0; max-width: 52ch; }

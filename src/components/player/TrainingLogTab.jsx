@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 
 function formatDate(iso) {
@@ -21,8 +20,7 @@ const BAR_COLORS = ['var(--accent)', 'var(--info)', 'var(--win)', 'var(--forced)
 // focus_areas string within the selected period; there's no fixed shot-type
 // taxonomy until drill_library (Phase 6) exists, so this counts whatever tags
 // the player/coach actually logged rather than assuming a fixed stroke list.
-export default function TrainingLogTab({ circuit }) {
-  const { user } = useAuth();
+export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = true }) {
   const [sessions, setSessions] = useState(null);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('1m');
@@ -32,11 +30,11 @@ export default function TrainingLogTab({ circuit }) {
   useEffect(() => {
     let cancelled = false;
     setSessions(null);
-    api.getTrainingSessions(user.id, circuit.category, circuit.subcategory)
+    api.getTrainingSessions(playerId, circuit.category, circuit.subcategory)
       .then(data => { if (!cancelled) setSessions(data); })
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load training sessions'); setSessions([]); } });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const periodDays = PERIODS.find(p => p.id === period).days;
   const cutoff = useMemo(() => {
@@ -61,7 +59,7 @@ export default function TrainingLogTab({ circuit }) {
   async function handleLog() {
     setSaving(true);
     try {
-      const created = await api.logTrainingSession(user.id, {
+      const created = await api.logTrainingSession(playerId, {
         category: circuit.category,
         subcategory: circuit.subcategory,
         sessionDate: form.sessionDate,

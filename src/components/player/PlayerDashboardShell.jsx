@@ -36,7 +36,7 @@ function syncedAgo(iso) {
 // theme already uses, opened from the hamburger next to the brand chip,
 // rather than dropped in favor of the mockup's app (which has no other pages
 // to link to).
-export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, circuits, selectedKey, onSelectKey, children }) {
+export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, circuits, selectedKey, onSelectKey, viewPlayerId, isOwnDashboard = true, viewPlayerName, children }) {
   const { user, logout } = useAuth();
   const { theme, setTheme, THEMES } = useTheme();
   const navigate = useNavigate();
@@ -45,16 +45,19 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
   const [coachLink, setCoachLink] = useState(null);
 
   useEffect(() => {
-    if (!user || !circuit) return;
+    if (!viewPlayerId || !circuit) return;
     let cancelled = false;
-    api.getRankingGoals(user.id, circuit.category, circuit.subcategory)
+    api.getRankingGoals(viewPlayerId, circuit.category, circuit.subcategory)
       .then(goals => { if (!cancelled) setActiveGoal((goals || []).find(g => g.status === 'active') || null); })
       .catch(() => { if (!cancelled) setActiveGoal(null); });
     return () => { cancelled = true; };
-  }, [user, circuit?.key]);
+  }, [viewPlayerId, circuit?.key]);
 
+  // The "linked coach" footer card only makes sense on a player's own view
+  // of their own dashboard — irrelevant (and potentially confusing) when a
+  // coach is browsing a player's dashboard from the Coach Intelligence System.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isOwnDashboard) return;
     let cancelled = false;
     api.getCoachLinks(user.id)
       .then(links => {
@@ -64,7 +67,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
       })
       .catch(() => { if (!cancelled) setCoachLink(null); });
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, isOwnDashboard]);
 
   const rankProgress = circuit && activeGoal?.targetRank
     ? computeRankProgress(circuit.points[0]?.rank, circuit.latest.rank, activeGoal.targetRank)
@@ -104,7 +107,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
           </button>
         ))}
 
-        {coachLink && (
+        {isOwnDashboard && coachLink && (
           <div className="pcd-sidebar-coach">
             <div className="pcd-coach-label">Coach</div>
             <div className="pcd-coach-row">
@@ -121,9 +124,12 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
       <div className="pcd-main">
         <div className="pcd-topbar">
           <div className="pcd-topbar-id">
-            <span className="pcd-id-chip">{initials(user?.displayName)}</span>
+            <span className="pcd-id-chip">{initials(isOwnDashboard ? user?.displayName : viewPlayerName)}</span>
             <div style={{ minWidth: 0 }}>
-              <div className="pcd-id-name">{user?.displayName || 'Player'}</div>
+              <div className="pcd-id-name">
+                {isOwnDashboard ? (user?.displayName || 'Player') : (viewPlayerName || 'Player')}
+                {!isOwnDashboard && <span className="pcd-badge info sm" style={{ marginLeft: 10, verticalAlign: 'middle' }}>COACH VIEW</span>}
+              </div>
               <div className="pcd-id-meta">
                 {circuit && <span>RANKED <span className="v">{circuit.latest.rank}</span></span>}
                 {circuit && activeGoal?.targetRank && (
@@ -156,7 +162,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               <div className="pcd-progress-track">
                 <div className="pcd-progress-fill" style={{ width: `${rankProgress}%` }} />
               </div>
-              {behindPace && <div className="pcd-progress-note">BEHIND PACE FOR YOUR TARGET DATE</div>}
+              {behindPace && <div className="pcd-progress-note">{isOwnDashboard ? 'BEHIND PACE FOR YOUR TARGET DATE' : 'BEHIND PACE FOR TARGET DATE'}</div>}
             </div>
           )}
 
@@ -168,7 +174,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               </svg>
               {behindPace && <span className="pcd-icon-btn-dot" />}
             </button>
-            <button className="pcd-btn-primary" onClick={() => navigate('/track')}>Launch tracker</button>
+            {isOwnDashboard && <button className="pcd-btn-primary" onClick={() => navigate('/track')}>Launch tracker</button>}
           </div>
         </div>
 

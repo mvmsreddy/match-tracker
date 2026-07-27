@@ -117,8 +117,7 @@ export default function CoachPlayersPage() {
           </div>
           {isCoach && (
             <div style={{ display: 'flex', gap: 10 }}>
-              <Link to="/coach/skill-groups" className="action-btn">Skill Groups</Link>
-              <Link to="/coach/drills" className="action-btn">Drill Library</Link>
+              <Link to="/my-players" className="action-btn">Coach Intelligence →</Link>
             </div>
           )}
         </div>

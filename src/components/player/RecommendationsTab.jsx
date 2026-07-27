@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, strokeWinRates } from '../../lib/segmentAnalytics';
 import { normalizeEventSegment } from '../../lib/governingBodies';
@@ -51,32 +50,31 @@ function placeholderDrills(stroke) {
 // round table (src/utils/aitaGradeRules.js POINTS_BY_ROUND, transcribed from
 // the AITA rules PDF) priced at this player's own historically-typical
 // furthest round reached in this segment — not a guessed number.
-export default function RecommendationsTab({ circuit }) {
-  const { user } = useAuth();
+export default function RecommendationsTab({ circuit, playerId }) {
   const [goals, setGoals] = useState(null);
   const [matches, setMatches] = useState(null);
   const [entries, setEntries] = useState(null);
   const [calendar, setCalendar] = useState(null);
   const [coachLink, setCoachLink] = useState(null);
   const [error, setError] = useState('');
-  const schedule = useSegmentMatchSchedule(user.id, circuit);
+  const schedule = useSegmentMatchSchedule(playerId, circuit);
 
   useEffect(() => {
     let cancelled = false;
     const today = new Date().toISOString().slice(0, 10);
     Promise.all([
-      api.getRankingGoals(user.id, circuit.category, circuit.subcategory),
-      api.getMatchesForSegment(user.id, circuit.category, circuit.subcategory),
-      api.getMyEntries(),
+      api.getRankingGoals(playerId, circuit.category, circuit.subcategory),
+      api.getMatchesForSegment(playerId, circuit.category, circuit.subcategory),
+      api.getMyEntries(playerId),
       api.listAitaTournaments({ ageGroup: circuit.subcategory.replace('-', ''), dateFrom: today }),
-      api.getCoachLinks(user.id),
+      api.getCoachLinks(playerId),
     ]).then(([g, m, e, cal, links]) => {
       if (cancelled) return;
       setGoals(g); setMatches(m); setEntries(e); setCalendar(cal);
-      setCoachLink((links || []).find(l => l.status === 'active' && l.playerId === user.id) || null);
+      setCoachLink((links || []).find(l => l.status === 'active' && l.playerId === playerId) || null);
     }).catch(err => { if (!cancelled) { setError(err.message || 'Could not load recommendations'); setGoals([]); setMatches([]); setEntries([]); setCalendar([]); } });
     return () => { cancelled = true; };
-  }, [user.id, circuit.category, circuit.subcategory]);
+  }, [playerId, circuit.category, circuit.subcategory]);
 
   const activeGoal = (goals || []).find(g => g.status === 'active');
   const tracked = useMemo(() => (matches || []).filter(m => m.points?.length > 0), [matches]);

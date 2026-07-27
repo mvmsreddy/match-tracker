@@ -1051,14 +1051,24 @@ export async function withdrawFromEvent(entryId) {
   return rowToEntry(data);
 }
 
-// Get all draw entries where the current user has entered themselves (all tournaments)
-export async function getMyEntries() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+// Get all draw entries where the given player has entered themselves (all
+// tournaments). `playerId` defaults to the current authenticated user — the
+// Coach Intelligence System's read-only view of a linked player's dashboard
+// (Player Coaching Dashboard reused as-is, see PlayerDashboardPage.jsx)
+// passes the viewed player's id explicitly instead. No extra RLS needed:
+// draw_entries' existing "Anyone authenticated can view draw entries" select
+// policy (phase2_schema.sql) already covers this read for any signed-in user.
+export async function getMyEntries(playerId) {
+  let effectiveId = playerId;
+  if (!effectiveId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    effectiveId = user.id;
+  }
   const { data, error } = await supabase
     .from('draw_entries')
     .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade))')
-    .eq('entered_by', user.id)
+    .eq('entered_by', effectiveId)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(row => ({
@@ -2744,6 +2754,20 @@ export async function deleteTrainingSession(sessionId) {
   if (error) throw new Error(error.message);
 }
 
+// Coach Intelligence System sidebar's real "this week" count — every
+// session this coach has logged (across every linked player) since a given
+// date. `training_sessions` has no coach-scoped index beyond logged_by, but
+// this is a small, infrequent read (once per shell mount), not a hot path.
+export async function getTrainingSessionsLoggedByCoach(coachId, sinceDate) {
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .select('*')
+    .eq('logged_by', coachId)
+    .gte('session_date', sinceDate);
+  if (error) throw new Error(error.message);
+  return data.map(rowToTrainingSession);
+}
+
 // ---------------------------------------------------------------------------
 // Multi-segment dashboard, Phase 6 — coach-side: drill library + roster
 // segment-awareness. Skill groups are NOT a table — computed at read time in
@@ -2760,6 +2784,10 @@ function rowToDrill(row) {
     focusStroke: row.focus_stroke,
     difficulty: row.difficulty,
     videoUrl: row.video_url,
+    skillKey: row.skill_key,
+    defaultVolume: row.default_volume,
+    defaultFrequencyPerWeek: row.default_frequency_per_week,
+    defaultDurationWeeks: row.default_duration_weeks,
     createdAt: row.created_at,
   };
 }
@@ -2770,11 +2798,16 @@ export async function getDrillLibrary() {
   return data.map(rowToDrill);
 }
 
-export async function createDrill({ title, description, focusStroke, difficulty, videoUrl }) {
+export async function createDrill({ title, description, focusStroke, difficulty, videoUrl, skillKey, defaultVolume, defaultFrequencyPerWeek, defaultDurationWeeks }) {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from('drill_library')
-    .insert({ created_by: user.id, title, description: description || null, focus_stroke: focusStroke || null, difficulty: difficulty || null, video_url: videoUrl || null })
+    .insert({
+      created_by: user.id, title, description: description || null, focus_stroke: focusStroke || null,
+      difficulty: difficulty || null, video_url: videoUrl || null, skill_key: skillKey || null,
+      default_volume: defaultVolume || null, default_frequency_per_week: defaultFrequencyPerWeek || null,
+      default_duration_weeks: defaultDurationWeeks || null,
+    })
     .select().single();
   if (error) throw new Error(error.message);
   return rowToDrill(data);
@@ -2783,6 +2816,64 @@ export async function createDrill({ title, description, focusStroke, difficulty,
 export async function deleteDrill(drillId) {
   const { error } = await supabase.from('drill_library').delete().eq('id', drillId);
   if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 32 — Coach Intelligence System: drill assignments
+// A coach assigning one real drill to a real set of their players for a real
+// date range — backs both "today's assigned block" (Log Session view) and
+// Progress Correlation (src/lib/coachAnalytics.js's computeDrillCorrelation,
+// which reads real matches before/after the range).
+// ---------------------------------------------------------------------------
+
+function rowToDrillAssignment(row) {
+  return {
+    id: row.id,
+    coachId: row.coach_id,
+    drillId: row.drill_id,
+    drillTitle: row.drill?.title,
+    category: row.category,
+    subcategory: row.subcategory,
+    skillKey: row.skill_key,
+    playerIds: row.player_ids || [],
+    frequencyPerWeek: row.frequency_per_week,
+    durationWeeks: row.duration_weeks,
+    startDate: row.start_date,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getDrillAssignments(coachId) {
+  const { data, error } = await supabase
+    .from('drill_assignments')
+    .select('*, drill:drill_library(title)')
+    .eq('coach_id', coachId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToDrillAssignment);
+}
+
+export async function createDrillAssignment({ coachId, drillId, category, subcategory, skillKey, playerIds, frequencyPerWeek, durationWeeks }) {
+  const { data, error } = await supabase
+    .from('drill_assignments')
+    .insert({
+      coach_id: coachId, drill_id: drillId, category, subcategory, skill_key: skillKey,
+      player_ids: playerIds, frequency_per_week: frequencyPerWeek, duration_weeks: durationWeeks,
+    })
+    .select('*, drill:drill_library(title)').single();
+  if (error) throw new Error(error.message);
+  return rowToDrillAssignment(data);
+}
+
+export async function updateDrillAssignment(assignmentId, { status }) {
+  const { data, error } = await supabase
+    .from('drill_assignments')
+    .update({ status })
+    .eq('id', assignmentId)
+    .select('*, drill:drill_library(title)').single();
+  if (error) throw new Error(error.message);
+  return rowToDrillAssignment(data);
 }
 
 // One linked player's roster row: profile + every segment they have ranking
