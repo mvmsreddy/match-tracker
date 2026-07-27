@@ -30,19 +30,9 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
             </NavLink>
           )}
 
-          {/* Player + Coach: personal history */}
-          {(role === 'player' || role === 'coach') && (
-            <NavLink to="/history" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-              Match History
-            </NavLink>
-          )}
-
-          {/* Player + Coach: compare */}
-          {(role === 'player' || role === 'coach') && (
-            <NavLink to="/compare" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-              Compare
-            </NavLink>
-          )}
+          {/* Match History + Compare moved into the multi-segment dashboard's
+              "My Matches" tab (/player-dashboard?tab=matches) instead of
+              living here as separate menu entries. */}
 
           {/* Coach: my players */}
           {role === 'coach' && (

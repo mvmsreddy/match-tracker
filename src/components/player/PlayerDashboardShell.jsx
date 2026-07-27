@@ -11,6 +11,7 @@ const TABS = [
   { id: 'overview', code: 'OV', label: 'Overview' },
   { id: 'performance', code: 'PF', label: 'My Performance' },
   { id: 'tournaments', code: 'TN', label: 'My Tournaments' },
+  { id: 'matches', code: 'MX', label: 'My Matches' },
   { id: 'training', code: 'TG', label: 'Training' },
   { id: 'analytics', code: 'AN', label: 'Match Analytics' },
   { id: 'recommendations', code: 'RC', label: 'Recommendations' },

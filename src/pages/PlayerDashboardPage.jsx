@@ -7,6 +7,7 @@ import PlayerDashboardShell from '../components/player/PlayerDashboardShell';
 import OverviewTab from '../components/player/OverviewTab';
 import MyPerformanceTab from '../components/player/MyPerformanceTab';
 import TournamentsTab from '../components/player/TournamentsTab';
+import MyMatchesTab from '../components/player/MyMatchesTab';
 import TrainingLogTab from '../components/player/TrainingLogTab';
 import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
@@ -80,6 +81,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) 
           {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} onTabChange={setActiveTab} />}
           {activeTab === 'performance' && <MyPerformanceTab />}
           {activeTab === 'tournaments' && <TournamentsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} />}
+          {activeTab === 'matches' && <MyMatchesTab playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'analytics' && <MatchAnalyticsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'recommendations' && <RecommendationsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
