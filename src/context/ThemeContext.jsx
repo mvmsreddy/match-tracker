@@ -2,8 +2,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const THEMES = [
   { id: 'dark',     label: 'Dark',     swatch: '#14293D' },
-  { id: 'light',    label: 'Light',    swatch: '#F0F4F8' },
-  { id: 'court',    label: 'Court',    swatch: '#8B4513' },
   { id: 'midnight', label: 'Midnight', swatch: '#1A1040' },
   { id: 'navy',     label: 'Navy',     swatch: '#0B1620' },
 ];
