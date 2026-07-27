@@ -30,6 +30,16 @@ function navItemsForRole(role) {
     ? { id: 'roster', code: 'MP', label: 'My Players', to: '/my-players' }
     : { id: 'roster', code: 'MC', label: 'My Coaches', to: '/my-coaches' };
 
+  // Rankings browser is coach/organizer territory (scouting across many
+  // players' segments) — a player already sees their own rank on their
+  // dashboard, so it's dropped from their nav instead of duplicating it.
+  if (role === 'player') {
+    return {
+      tabBar: [dashboard, track, tournaments, stats],
+      rail: [dashboard, track, tournaments, stats, roster, profile],
+    };
+  }
+
   return {
     tabBar: [dashboard, track, tournaments, stats, rankings],
     rail: [dashboard, track, tournaments, stats, rankings, roster, profile],

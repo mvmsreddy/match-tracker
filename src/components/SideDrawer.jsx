@@ -68,10 +68,13 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
             AITA Calendar
           </NavLink>
 
-          {/* All roles: AITA rankings mirror */}
-          <NavLink to="/aita-rankings" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-            AITA Rankings
-          </NavLink>
+          {/* Coach + organizer: AITA rankings mirror — players see their own
+              rank on their dashboard instead of a separate rankings browser */}
+          {role !== 'player' && (
+            <NavLink to="/aita-rankings" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
+              AITA Rankings
+            </NavLink>
+          )}
         </nav>
 
         <div className="drawer-divider" />
