@@ -44,6 +44,52 @@ export function computeRankProgress(startRank, currentRank, targetRank) {
   return Math.max(0, Math.min(100, Math.round(((startRank - currentRank) / (startRank - targetRank)) * 100)));
 }
 
+// Single source of truth for "is the player behind pace on their active
+// goal". Previously computed three different ways in three different places
+// (topbar + GoalsPanel used rank-vs-elapsed-time, Progress Tracker used a
+// points straight-line projection) — a goal with both targetRank and
+// targetPoints set could show "on pace" in the header and "behind pace" on
+// the Progress tab at the same time. Prefers the points projection when the
+// goal has a targetPoints (it's the more precise of the two: it compares an
+// actual value against a real interpolated target for today's date, not a
+// proxy), falling back to the rank/elapsed-time proxy otherwise.
+export function computeGoalPace(circuit, goal) {
+  if (!goal || !goal.targetDate) return null;
+  const startPoint = circuit.points[0];
+  if (!startPoint) return null;
+  const startMs = new Date(startPoint.date).getTime();
+  const endMs = new Date(goal.targetDate).getTime();
+  if (endMs <= startMs) return null;
+
+  if (goal.targetPoints) {
+    const frac = Math.min(1, Math.max(0, (Date.now() - startMs) / (endMs - startMs)));
+    const needed = Math.round(startPoint.totalPoints + (goal.targetPoints - startPoint.totalPoints) * frac);
+    const actual = circuit.latest.totalPoints;
+    const gap = needed - actual;
+    return {
+      metric: 'points',
+      behindPace: actual < needed,
+      note: actual < needed ? `BEHIND PACE — NEED ${gap} MORE POINTS BY NOW` : 'ON PACE',
+    };
+  }
+
+  if (goal.targetRank) {
+    const progressPct = computeRankProgress(startPoint.rank, circuit.latest.rank, goal.targetRank);
+    if (progressPct == null) return null;
+    const elapsedPct = Math.round(((Date.now() - startMs) / (endMs - startMs)) * 100);
+    const gap = elapsedPct - progressPct;
+    return {
+      metric: 'rank',
+      behindPace: gap > 3,
+      note: gap > 3
+        ? `PACE MARKER AT ${elapsedPct}% — ${gap} POINTS BEHIND`
+        : (gap < -3 ? `AHEAD OF PACE BY ${Math.abs(gap)} POINTS` : 'ON PACE'),
+    };
+  }
+
+  return null;
+}
+
 // PLACEHOLDER: any future *verified* cross-category point relationship would
 // hook in here (e.g. a function describing how a result in one circuit
 // affects another). Not implemented — an earlier spec draft assumed AITA

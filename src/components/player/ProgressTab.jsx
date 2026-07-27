@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, ComposedChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import * as api from '../../api';
+import { computeGoalPace } from '../../lib/segments';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -70,8 +71,11 @@ export default function ProgressTab({ circuit, playerId }) {
   if (goals === null) return <div className="history-empty">Loading progress…</div>;
   if (error) return <div className="history-empty">{error}</div>;
 
-  const behindPace = activeGoal && chartData.length > 0 && chartData[chartData.length - 1].needed != null
-    && chartData[chartData.length - 1].actual < chartData[chartData.length - 1].needed;
+  // Shared with the topbar/GoalsPanel verdict (src/lib/segments.js) so this
+  // tab never shows "behind pace" while the header shows "on pace" for the
+  // same goal.
+  const goalPace = activeGoal ? computeGoalPace(circuit, activeGoal) : null;
+  const behindPace = goalPace?.behindPace ?? false;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -88,7 +92,9 @@ export default function ProgressTab({ circuit, playerId }) {
         <div className="pcd-card-head">
           <div>
             <div className="pcd-card-title">Actual vs projected points</div>
-            <div className="pcd-card-sub">{activeGoal ? 'Straight-line projection to your goal' : 'Set a goal in Overview to see a projection line'}</div>
+            <div className="pcd-card-sub">
+              {activeGoal?.targetPoints ? 'Straight-line projection to your goal' : (activeGoal ? 'Set a points target on your goal to see a projection line' : 'Set a goal in Overview to see a projection line')}
+            </div>
           </div>
           <div className="pcd-legend">
             <div className="pcd-legend-item"><span className="pcd-legend-swatch" style={{ background: 'var(--accent)' }} />ACTUAL</div>

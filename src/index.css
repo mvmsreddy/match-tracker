@@ -1417,9 +1417,22 @@ a.t-field-link:hover { text-decoration: underline; }
 .pcd-id-meta .v { color: var(--text); }
 .pcd-id-meta .accent { color: var(--accent); }
 .pcd-id-meta .sep { color: var(--border); }
-.pcd-id-meta select {
-  background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 3px 6px;
-  font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.05em; cursor: pointer;
+
+.pcd-segment-switcher {
+  display: flex; align-items: center; gap: 9px; padding: 7px 12px 7px 14px; border-radius: 11px;
+  background: var(--bg3); border: 1px solid var(--border2); flex: none;
+}
+.pcd-segment-switcher-label {
+  font: 600 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2);
+}
+.pcd-segment-switcher-value { font: 700 13px/1 'Archivo', sans-serif; color: var(--text); }
+.pcd-segment-switcher-select {
+  background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 5px 8px;
+  font: 700 13px/1 'Archivo', sans-serif; cursor: pointer; max-width: 220px;
+}
+.pcd-segment-switcher-count {
+  font: 600 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--accent);
+  background: rgba(198,226,61,0.14); padding: 4px 8px; border-radius: 6px; white-space: nowrap;
 }
 
 .pcd-topbar-goal { flex: 1; min-width: 220px; max-width: 420px; }
@@ -1467,6 +1480,7 @@ a.t-field-link:hover { text-decoration: underline; }
 .pcd-card-sub { font: 400 12px/1.4 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 6px; }
 .pcd-card-link { font: 600 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.05em; color: var(--accent); text-decoration: none; white-space: nowrap; }
 .pcd-card-link:hover { color: var(--text); }
+button.pcd-card-link { background: none; border: 0; padding: 0; cursor: pointer; }
 
 .pcd-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 .pcd-stat-grid.n2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }

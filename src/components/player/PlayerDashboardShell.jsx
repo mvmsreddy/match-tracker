@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { computeRankProgress } from '../../lib/segments';
+import { computeGoalPace, computeRankProgress } from '../../lib/segments';
 import MTNavChrome from '../nav/MTNavChrome';
 import TopNav from '../TopNav';
 
@@ -74,15 +74,8 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
   const rankProgress = circuit && activeGoal?.targetRank
     ? computeRankProgress(circuit.points[0]?.rank, circuit.latest.rank, activeGoal.targetRank)
     : null;
-  const behindPace = rankProgress != null && activeGoal?.targetDate
-    ? (() => {
-        const start = new Date(circuit.points[0].date).getTime();
-        const end = new Date(activeGoal.targetDate).getTime();
-        if (end <= start) return false;
-        const elapsedPct = Math.round(((Date.now() - start) / (end - start)) * 100);
-        return elapsedPct > rankProgress;
-      })()
-    : false;
+  const goalPace = circuit && activeGoal ? computeGoalPace(circuit, activeGoal) : null;
+  const behindPace = goalPace?.behindPace ?? false;
 
   return (
     <div className="root">
@@ -111,14 +104,28 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                     <span title="AITA rankings sync periodically">SYNCED {syncedAgo(circuit.latest.date)}</span>
                   </>
                 )}
-                {circuits?.length > 1 && (
-                  <select value={selectedKey || ''} onChange={e => onSelectKey(e.target.value || null)}>
-                    {circuits.map(c => <option key={c.key} value={c.key}>{c.category} {c.subcategory}</option>)}
-                  </select>
-                )}
               </div>
             </div>
           </div>
+
+          {circuits?.length > 0 && (
+            <div className="pcd-segment-switcher">
+              <span className="pcd-segment-switcher-label">Viewing</span>
+              {circuits.length > 1 ? (
+                <select
+                  className="pcd-segment-switcher-select"
+                  value={selectedKey || ''}
+                  onChange={e => onSelectKey(e.target.value || null)}
+                  aria-label="Switch segment"
+                >
+                  {circuits.map(c => <option key={c.key} value={c.key}>{c.category} {c.subcategory}</option>)}
+                </select>
+              ) : (
+                <span className="pcd-segment-switcher-value">{circuit?.category} {circuit?.subcategory}</span>
+              )}
+              {circuits.length > 1 && <span className="pcd-segment-switcher-count">{circuits.length} SEGMENTS</span>}
+            </div>
+          )}
 
           {rankProgress != null && (
             <div className="pcd-topbar-goal">

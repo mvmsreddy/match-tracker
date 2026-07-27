@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as api from '../../api';
-import { computeRankProgress } from '../../lib/segments';
+import { computeGoalPace, computeRankProgress } from '../../lib/segments';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -107,17 +107,18 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
   const startRank = circuit.points[0]?.rank;
   const rankProgress = activeGoal.targetRank ? computeRankProgress(startRank, latest.rank, activeGoal.targetRank) : null;
 
-  let paceMarkPct = null, paceNote = null;
-  if (rankProgress != null && activeGoal.targetDate) {
+  // Pace note comes from the shared computeGoalPace so this hero card never
+  // disagrees with the topbar/Progress Tracker verdict for the same goal.
+  // The elapsed-time marker overlaid on the bar below is still rank-specific
+  // (the bar itself is a rank-progress bar) so it's only drawn when that's
+  // also the metric the shared verdict picked.
+  const goalPace = computeGoalPace(circuit, activeGoal);
+  const paceNote = goalPace?.note ?? null;
+  let paceMarkPct = null;
+  if (goalPace?.metric === 'rank' && rankProgress != null && activeGoal.targetDate) {
     const startMs = new Date(circuit.points[0].date).getTime();
     const endMs = new Date(activeGoal.targetDate).getTime();
-    if (endMs > startMs) {
-      paceMarkPct = Math.max(0, Math.min(100, Math.round(((Date.now() - startMs) / (endMs - startMs)) * 100)));
-      const gap = paceMarkPct - rankProgress;
-      paceNote = gap > 3
-        ? `PACE MARKER AT ${paceMarkPct}% — ${gap} POINTS BEHIND`
-        : (gap < -3 ? `AHEAD OF PACE BY ${Math.abs(gap)} POINTS` : 'ON PACE');
-    }
+    if (endMs > startMs) paceMarkPct = Math.max(0, Math.min(100, Math.round(((Date.now() - startMs) / (endMs - startMs)) * 100)));
   }
 
   const monthsLeft = activeGoal.targetDate

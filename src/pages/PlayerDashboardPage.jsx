@@ -73,7 +73,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) 
 
       {!loading && circuits.length > 0 && selectedCircuit && (
         <>
-          {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} />}
+          {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} onTabChange={setActiveTab} />}
           {activeTab === 'tournaments' && <TournamentsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} />}
           {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'analytics' && <MatchAnalyticsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}

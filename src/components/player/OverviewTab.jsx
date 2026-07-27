@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-  ResponsiveContainer, AreaChart, Area, LineChart, Line,
+  ResponsiveContainer, LineChart, Line,
   CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import * as api from '../../api';
@@ -39,7 +39,7 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 // the tracker via matches.event_match_id, Phase 4) instead of tournament-
 // level entries. Clicking a recent-result / upcoming row opens
 // MatchDetailModal with real per-match analytics when tracked.
-export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You' }) {
+export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You', onTabChange }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState(null);
   const [segMatches, setSegMatches] = useState(null);
@@ -124,8 +124,9 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
         </div>
       </div>
 
+      {/* Current rank isn't repeated here — it's always visible in the topbar
+          (RANKED …) right above, so this row covers what the topbar doesn't. */}
       <div className="pcd-stat-grid n4">
-        <div className="pcd-stat-card"><div className="pcd-stat-card-label">Current rank</div><div className="pcd-stat-card-value">{latest.rank}</div></div>
         <div className="pcd-stat-card"><div className="pcd-stat-card-label">Current points</div><div className="pcd-stat-card-value">{latest.totalPoints}</div></div>
         <div className="pcd-stat-card"><div className="pcd-stat-card-label">Best rank</div><div className="pcd-stat-card-value">{bestRank}</div></div>
         <div className="pcd-stat-card"><div className="pcd-stat-card-label">Best points</div><div className="pcd-stat-card-value">{bestPoints}</div></div>
@@ -137,19 +138,8 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
         </div>
       )}
 
-      <div className="pcd-card">
-        <div className="pcd-card-title" style={{ marginBottom: 4 }}>Points Growth</div>
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="var(--border2)" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} minTickGap={40} />
-            <YAxis stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-            <Tooltip content={<ChartTooltip valueLabel="Points" />} cursor={{ stroke: 'var(--border)', strokeDasharray: '3 3' }} />
-            <Area type="monotone" dataKey="totalPoints" stroke="var(--accent)" strokeWidth={2} fill="var(--accent)" fillOpacity={0.1} dot={false} activeDot={{ r: 5, stroke: 'var(--bg2)', strokeWidth: 2, fill: 'var(--accent)' }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
+      {/* Points-over-time lives on the Progress Tracker tab (with the goal
+          projection line) instead of being duplicated here. */}
       <div className="pcd-card">
         <div className="pcd-card-title">Ranking Growth</div>
         <div className="pcd-card-sub" style={{ marginBottom: 12 }}>Lower is better — axis is inverted</div>
@@ -170,7 +160,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
             <div className="pcd-card-title">Upcoming matches</div>
             <div className="pcd-card-sub">Resolved from your entered draws in this segment</div>
           </div>
-          <Link to="/tournaments" className="pcd-card-link">FULL SCHEDULE</Link>
+          <button className="pcd-card-link" onClick={() => onTabChange('tournaments')}>FULL SCHEDULE</button>
         </div>
         {schedule.error && <div className="history-empty">{schedule.error}</div>}
         {schedule.loading && <div className="history-empty">Loading…</div>}
@@ -213,7 +203,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       <div className="pcd-card">
         <div className="pcd-card-head">
           <div className="pcd-card-title">Recent results</div>
-          <Link to="/tournaments" className="pcd-card-link">VIEW ALL</Link>
+          <button className="pcd-card-link" onClick={() => onTabChange('tournaments')}>VIEW ALL</button>
         </div>
         {!schedule.loading && schedule.recent.length === 0 && (
           <div className="history-empty">No completed {circuit.category} {circuit.subcategory} matches found yet.</div>
