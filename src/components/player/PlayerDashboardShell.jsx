@@ -4,11 +4,12 @@ import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { computeRankProgress } from '../../lib/segments';
-import SideDrawer from '../SideDrawer';
+import MTNavChrome from '../nav/MTNavChrome';
+import TopNav from '../TopNav';
 
 const TABS = [
   { id: 'overview', code: 'OV', label: 'Overview' },
-  { id: 'tournaments', code: 'TN', label: 'Tournaments' },
+  { id: 'tournaments', code: 'TN', label: 'My Tournaments' },
   { id: 'training', code: 'TG', label: 'Training' },
   { id: 'analytics', code: 'AN', label: 'Match Analytics' },
   { id: 'recommendations', code: 'RC', label: 'Recommendations' },
@@ -29,18 +30,19 @@ function syncedAgo(iso) {
   return `${days}D AGO`;
 }
 
-// Sidebar + topbar chrome for the Player Coaching Dashboard mockup — replaces
-// TopNav/MTNavChrome + the tab-pill-row on this page only (see
-// src/pages/PlayerDashboardPage.jsx). Full app navigation (Dashboard, Track,
-// theme switching, logout) is preserved via the same SideDrawer every other
-// theme already uses, opened from the hamburger next to the brand chip,
-// rather than dropped in favor of the mockup's app (which has no other pages
-// to link to).
+// Topbar + in-page tab strip for the Player Coaching Dashboard mockup.
+// Previously this rendered its own bespoke sidebar (a THIRD nav surface
+// besides the hamburger drawer and MTNavChrome's rail, only shown here) —
+// that made the left nav change shape depending on which page a player was
+// on. Now it reuses the exact same MTNavChrome/TopNav chrome every other
+// page renders, and the six dashboard sections (Overview/My Tournaments/
+// Training/Match Analytics/Recommendations/Progress Tracker) are an in-page
+// pill submenu (the same .pcd-pill-row pattern TrainingLogTab/
+// SkillGroupDetailView already use) instead of a second sidebar.
 export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, circuits, selectedKey, onSelectKey, viewPlayerId, isOwnDashboard = true, viewPlayerName, children }) {
-  const { user, logout } = useAuth();
-  const { theme, setTheme, THEMES } = useTheme();
+  const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeGoal, setActiveGoal] = useState(null);
   const [coachLink, setCoachLink] = useState(null);
 
@@ -53,9 +55,9 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
     return () => { cancelled = true; };
   }, [viewPlayerId, circuit?.key]);
 
-  // The "linked coach" footer card only makes sense on a player's own view
-  // of their own dashboard — irrelevant (and potentially confusing) when a
-  // coach is browsing a player's dashboard from the Coach Intelligence System.
+  // The "linked coach" card only makes sense on a player's own view of their
+  // own dashboard — irrelevant (and potentially confusing) when a coach is
+  // browsing a player's dashboard from the Coach Intelligence System.
   useEffect(() => {
     if (!user || !isOwnDashboard) return;
     let cancelled = false;
@@ -83,43 +85,8 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
     : false;
 
   return (
-    <div className="pcd-root">
-      <div className="pcd-sidebar">
-        <div className="pcd-sidebar-brand">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            style={{ border: 0, cursor: 'pointer', background: 'transparent', padding: 0, display: 'flex' }}
-          >
-            <span className="pcd-brand-chip">MT</span>
-          </button>
-          <span className="pcd-brand-text">Match Tracker</span>
-        </div>
-
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            className={`pcd-nav-item${activeTab === t.id ? ' active' : ''}`}
-            onClick={() => onTabChange(t.id)}
-          >
-            <span className="pcd-nav-chip">{t.code}</span>
-            <span className="pcd-nav-label">{t.label}</span>
-          </button>
-        ))}
-
-        {isOwnDashboard && coachLink && (
-          <div className="pcd-sidebar-coach">
-            <div className="pcd-coach-label">Coach</div>
-            <div className="pcd-coach-row">
-              <span className="pcd-coach-chip">{initials(coachLink.coach?.displayName)}</span>
-              <div style={{ minWidth: 0 }}>
-                <div className="pcd-coach-name">{coachLink.coach?.displayName || 'Your coach'}</div>
-                <div className="pcd-coach-sub">LINKED COACH</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="root">
+      {theme === 'navy' ? <MTNavChrome active="dashboard" /> : <TopNav />}
 
       <div className="pcd-main">
         <div className="pcd-topbar">
@@ -166,6 +133,16 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
             </div>
           )}
 
+          {isOwnDashboard && coachLink && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderRadius: 12, background: 'var(--bg3)', border: '1px solid var(--border2)' }}>
+              <span className="pcd-coach-chip">{initials(coachLink.coach?.displayName)}</span>
+              <div style={{ minWidth: 0 }}>
+                <div className="pcd-coach-name">{coachLink.coach?.displayName || 'Your coach'}</div>
+                <div className="pcd-coach-sub">LINKED COACH</div>
+              </div>
+            </div>
+          )}
+
           <div className="pcd-topbar-actions">
             <button className="pcd-icon-btn" onClick={() => onTabChange('recommendations')} aria-label="Recommendations">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -179,19 +156,21 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
         </div>
 
         <div className="pcd-content">
+          <div className="pcd-pill-row" style={{ width: 'fit-content' }}>
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                className={`pcd-pill${activeTab === t.id ? ' active' : ''}`}
+                onClick={() => onTabChange(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           {children}
         </div>
       </div>
-
-      <SideDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        user={user}
-        logout={logout}
-        theme={theme}
-        setTheme={setTheme}
-        THEMES={THEMES}
-      />
     </div>
   );
 }
