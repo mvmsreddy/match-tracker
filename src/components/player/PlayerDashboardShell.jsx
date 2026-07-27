@@ -9,6 +9,7 @@ import TopNav from '../TopNav';
 
 const TABS = [
   { id: 'overview', code: 'OV', label: 'Overview' },
+  { id: 'performance', code: 'PF', label: 'My Performance' },
   { id: 'tournaments', code: 'TN', label: 'My Tournaments' },
   { id: 'training', code: 'TG', label: 'Training' },
   { id: 'analytics', code: 'AN', label: 'Match Analytics' },

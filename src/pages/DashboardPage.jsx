@@ -6,7 +6,6 @@ import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import TopNav from '../components/TopNav';
 import MTNavChrome from '../components/nav/MTNavChrome';
-import PerformanceTab from '../components/PerformanceTab';
 
 // ---------------------------------------------------------------------------
 // Role-specific banners shown at the top of the dashboard
@@ -462,14 +461,15 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Player: official ranking performance across governing bodies/circuits */}
+        {/* Player: ranking performance now lives entirely on the multi-segment
+            dashboard (Overview + My Performance tabs) instead of being
+            duplicated here — this is just the door into it. */}
         {role === 'player' && (
           <>
-            <div className="dashboard-section-title" style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              <span>Performance</span>
-              <Link to="/player-dashboard" style={{ fontSize: 12 }}>Full multi-segment dashboard →</Link>
-            </div>
-            <PerformanceTab aitaReg={user.aitaReg} />
+            <div className="dashboard-section-title" style={{ marginTop: 20 }}>Performance</div>
+            <Link to="/player-dashboard?tab=performance" className="dashboard-cta">
+              View My Performance →
+            </Link>
           </>
         )}
 

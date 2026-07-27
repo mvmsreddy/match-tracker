@@ -5,13 +5,14 @@ import { SegmentProvider, useSegment } from '../context/SegmentContext';
 import * as api from '../api';
 import PlayerDashboardShell from '../components/player/PlayerDashboardShell';
 import OverviewTab from '../components/player/OverviewTab';
+import MyPerformanceTab from '../components/player/MyPerformanceTab';
 import TournamentsTab from '../components/player/TournamentsTab';
 import TrainingLogTab from '../components/player/TrainingLogTab';
 import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
 import ProgressTab from '../components/player/ProgressTab';
 
-// Player Coaching Dashboard — multi-segment plan (all 6 player-side tabs
+// Player Coaching Dashboard — multi-segment plan (all player-side tabs
 // implemented: Overview/Tournaments Phase 2, Goals/Training Phase 3,
 // tracker-tournament linking Phase 4, Match Analytics/Recommendations/
 // Progress Phase 5), visually rebuilt to match the "Player Coaching
@@ -21,6 +22,9 @@ import ProgressTab from '../components/player/ProgressTab';
 // category/subcategory circuit) is selected via SegmentContext; segments are
 // fully independent, never merged (see src/lib/segments.js) — no cascading
 // points logic anywhere in this feature, see the plan doc's Context section.
+// My Performance is the one exception — it deliberately reads/browses
+// outside the selected segment (see MyPerformanceTab.jsx), replacing the old
+// Dashboard page's embedded PerformanceTab + rankings-browser link.
 //
 // Also reused, read-mostly, by the Coach Intelligence System's Roster
 // "DASHBOARD →" link (route /coach/players/:playerId/dashboard) — the exact
@@ -74,6 +78,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) 
       {!loading && circuits.length > 0 && selectedCircuit && (
         <>
           {activeTab === 'overview' && <OverviewTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} onTabChange={setActiveTab} />}
+          {activeTab === 'performance' && <MyPerformanceTab />}
           {activeTab === 'tournaments' && <TournamentsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} selfName={selfName} />}
           {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'analytics' && <MatchAnalyticsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
