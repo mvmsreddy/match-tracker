@@ -1,3 +1,5 @@
+@import './styles/app-tailwind.css';
+
 * { box-sizing: border-box; }
 body { margin: 0; }
 
@@ -16,30 +18,9 @@ body { margin: 0; }
   --shadow: rgba(0,0,0,0.45);
   --court-fill: #1C5266; --court-fill2: #194A5C; --court-line: #E8E4D6;
 }
-[data-theme="midnight"] {
-  --bg: #0D0A1F; --bg2: #1A1535; --bg3: #120F28; --bg4: #0F0C22;
-  --border: #2E2858; --border2: #251F4A;
-  --text: #E8E0FF; --text2: #9890C0; --text3: #8078A8; --text4: #6860A0; --text5: #8880B0;
-  --accent: #A78BFA; --accent-text: #0D0A1F;
-  --opp: #F87171; --danger: #EF4444; --danger-bg: #2A0F0F;
-  --win: #34D399; --win-text: #6EE7B7; --win-hover: #0A1F18;
-  --forced: #FBBF24; --forced-text: #FCD34D; --forced-hover: #1F1A08;
-  --info: #60A5FA; --info-text: #93C5FD;
-  --shadow: rgba(0,0,0,0.7);
-  --court-fill: #2A2158; --court-fill2: #241D4A; --court-line: #E8E0FF;
-}
-[data-theme="navy"] {
-  --bg: #0B1620; --bg2: #14232E; --bg3: #1B2E3B; --bg4: #111E28;
-  --border: #27414F; --border2: #1B2E3B;
-  --text: #EEF3F2; --text2: #8CA5B3; --text3: #6B8494; --text4: #5C7686; --text5: #9AB0BE;
-  --accent: #C6E23D; --accent-text: #0B1620;
-  --opp: #FF6B5A; --danger: #FF6B5A; --danger-bg: #2A1A16;
-  --win: #C6E23D; --win-text: #C6E23D; --win-hover: #1B2A12;
-  --forced: #C89A3A; --forced-text: #E0B450; --forced-hover: #241C0A;
-  --info: #4FC3E8; --info-text: #7DD8F5;
-  --shadow: rgba(0,0,0,0.5);
-  --court-fill: #163247; --court-fill2: #122A3C; --court-line: #EEF3F2;
-}
+/* 'midnight'/'navy' theme variants retired along with the 3-theme picker —
+   ThemeContext now only ever sets .dark, so these [data-theme] blocks would
+   be unreachable dead CSS. */
 
 .root { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
 .wrap { max-width: 680px; margin: 0 auto; padding: 0 16px; }
@@ -257,30 +238,12 @@ body { margin: 0; }
 .match-over-banner { background: var(--accent); color: var(--bg); font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; text-align: center; padding: 10px; margin: 14px 16px 0; border-radius: 3px; }
 
 /* ---------- Login page ---------- */
+/* .login-screen/.login-subtitle/.login-error are still used as a generic
+   full-page-loading + inline-error pattern by ProtectedRoute and several
+   out-of-scope pages — kept even though LoginPage itself has moved on. */
 .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; }
-.login-card { width: 100%; max-width: 380px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 28px 24px; }
-.login-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.3rem; margin: 0 0 4px; }
 .login-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text5); letter-spacing: 0.05em; margin-bottom: 22px; }
-.login-field { margin-bottom: 14px; }
-.login-field label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); display: block; margin-bottom: 5px; }
-.login-field input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 10px; border-radius: 3px; font-family: 'Inter'; font-size: 0.9rem; }
-.login-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.login-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 12px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; margin-top: 6px; }
-.login-btn:hover { opacity: 0.92; }
-.login-btn:disabled { opacity: 0.5; cursor: default; }
 .login-error { color: var(--danger); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; margin-bottom: 12px; }
-.login-demo { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); line-height: 1.6; }
-.login-demo b { color: var(--text2); }
-.login-demo-row { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; }
-.login-demo-row:hover { color: var(--accent); }
-.login-tab-row { display: flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
-.login-tab { flex: 1; background: none; border: none; color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 9px; cursor: pointer; }
-.login-tab.active { background: var(--border); color: var(--text); }
-.login-google-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 3px; padding: 11px; font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; margin-bottom: 14px; }
-.login-google-btn:hover { background: #f8f8f8; }
-.login-google-btn:disabled { opacity: 0.6; cursor: default; }
-.login-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); }
-.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
 /* ---------- Collapsible header ---------- */
 .header-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 5px 10px; border-radius: 2px; cursor: pointer; white-space: nowrap; }
@@ -525,10 +488,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* ================================================
    THEME PICKER
    ================================================ */
-.theme-picker { display: flex; gap: 6px; align-items: center; }
-.theme-swatch { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.1s; flex-shrink: 0; }
-.theme-swatch:hover { transform: scale(1.2); }
-.theme-swatch.active { border-color: var(--accent); transform: scale(1.15); }
 
 /* ================================================
    TOP NAV (hamburger layout)
@@ -615,66 +574,15 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* ================================================
    DASHBOARD PAGE
    ================================================ */
-.dashboard-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 0 40px; }
-.dashboard-welcome { padding: 24px 20px 16px; }
-.dashboard-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.4rem; margin: 0 0 4px; color: var(--text); }
-.dashboard-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); letter-spacing: 0.05em; }
-.dashboard-cta { display: block; max-width: 560px; margin: 0 20px 20px; background: var(--accent); color: var(--accent-text); font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding: 14px; border-radius: 5px; text-decoration: none; }
-.dashboard-cta:hover { opacity: 0.9; }
-.dashboard-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 560px; margin: 0 20px 24px; }
-@media (max-width: 520px) { .dashboard-stats-grid { grid-template-columns: repeat(3, 1fr); } }
-.dashboard-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 10px; text-align: center; }
-.dashboard-stat-value { font-family: 'Oswald', sans-serif; font-size: 1.6rem; font-weight: 700; line-height: 1; color: var(--text); }
-.dashboard-stat-value.dashboard-stat-win { color: var(--win-text); }
-.dashboard-stat-value.dashboard-stat-loss { color: var(--opp); }
-.dashboard-stat-value.dashboard-stat-accent { color: var(--accent); }
-.dashboard-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); margin-top: 5px; }
-.dashboard-recent { max-width: 560px; margin: 0 20px; }
-
 /* Phase 11 — dashboard tournament activity (rendered inside .dashboard-recent
    wrappers, which already supply the 0 20px / max-width 560px box) */
-.db-tourney-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; padding: 12px 14px; margin-bottom: 14px; }
-.db-tourney-name { font-size: 0.9rem; font-weight: 600; font-family: 'Inter', sans-serif; color: var(--text); text-decoration: none; }
-.db-tourney-name:hover { color: var(--accent); }
-.db-tourney-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--text4); margin: 2px 0 8px; }
-.db-event-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--bg3); font-size: 0.8rem; color: var(--text2); text-decoration: none; }
-.db-event-row:first-of-type { border-top: none; }
-.db-event-row:hover { color: var(--accent); }
-.db-event-pos { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--text4); white-space: nowrap; }
-
-.db-roster-list { display: flex; flex-direction: column; gap: 8px; }
-.db-roster-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px; }
-.db-roster-record { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent); white-space: nowrap; }
+/* .dashboard-section-title/.dashboard-view-all/.result-badge are still used
+   by out-of-scope Player-Dashboard components (TournamentsTab, MyMatchesTab,
+   OverviewTab) — kept even though DashboardPage itself has moved on. */
 .dashboard-section-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: var(--text2); margin-bottom: 10px; }
-.dashboard-match-list { display: flex; flex-direction: column; gap: 8px; }
-.dashboard-match-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
-.dashboard-match-card:hover { border-color: var(--accent); }
-.dashboard-match-info { min-width: 0; flex: 1; }
-.dashboard-match-title { font-size: 0.86rem; font-weight: 600; font-family: 'Inter', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dashboard-match-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text3); margin-top: 3px; }
-.dashboard-match-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .result-badge { font-family: 'Oswald', sans-serif; font-size: 0.72rem; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.result-win { background: var(--win); color: var(--bg); }
-.result-loss { background: var(--danger); color: var(--text); }
 .dashboard-view-all { display: block; text-align: center; margin-top: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--accent); text-decoration: none; letter-spacing: 0.04em; }
 .dashboard-view-all:hover { text-decoration: underline; }
-
-/* ---------- Dashboard: on-court banner + form sparkline ---------- */
-@keyframes db-livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.db-live-banner { margin: 0 20px 20px; background: linear-gradient(135deg, var(--win-hover) 0%, var(--bg2) 60%); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
-.db-live-banner-text { min-width: 200px; flex: 1; }
-.db-live-pulse-row { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.66rem; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 8px; }
-.db-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: block; animation: db-livepulse 1.6s infinite; }
-.db-live-title { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.02em; color: var(--text); }
-.db-live-sub { font-family: 'Archivo', sans-serif; font-size: 0.82rem; color: var(--text2); margin-top: 6px; }
-.db-live-cta { flex-shrink: 0; border: 0; cursor: pointer; background: var(--accent); color: var(--accent-text); font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 14px 20px; border-radius: 12px; text-decoration: none; }
-
-.db-form-card { margin: 0 20px 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
-.db-form-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); margin: 4px 0 14px; }
-.db-form-bars { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
-.db-form-bar { flex: 1; height: 100%; border-radius: 4px 4px 2px 2px; align-self: flex-end; }
-.db-form-bar.win { background: var(--win); height: 100%; }
-.db-form-bar.loss { background: var(--border2); height: 55%; }
 
 /* ================================================
    TOURNAMENTS MODULE
@@ -858,13 +766,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
    ================================================ */
 
 /* ---------- Role picker (signup) ---------- */
-.role-picker { display: flex; gap: 8px; margin-top: 4px; }
-.role-card { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 8px; cursor: pointer; transition: border-color 0.15s; }
-.role-card:hover { border-color: var(--accent); }
-.role-card.selected { border-color: var(--accent); background: rgba(198,226,61,0.08); }
-.role-card-label { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text); }
-.role-card.selected .role-card-label { color: var(--accent); }
-.role-card-desc { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: var(--text4); text-align: center; line-height: 1.4; }
 
 /* ---------- Role badges ---------- */
 .role-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 20px; font-weight: 700; }
@@ -874,22 +775,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 
 /* Smaller inline badge used in drawer */
 .drawer-role-badge { display: inline-block; margin-bottom: 10px; }
-
-/* ---------- Dashboard role banners ---------- */
-.db-role-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 16px 4px; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border); }
-.db-role-banner-player    { border-color: var(--win);    background: rgba(106,175,90,0.06); }
-.db-role-banner-coach     { border-color: var(--forced); background: rgba(184,146,42,0.06); }
-.db-role-banner-organizer { border-color: var(--accent); background: rgba(198,226,61,0.05); }
-.db-role-banner-text { flex: 1; min-width: 0; }
-.db-role-banner-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 3px; }
-.db-role-banner-sub { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--text2); }
-.db-verified-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: 1px 6px; margin-left: 8px; }
-.db-pending-alert { color: var(--opp); font-weight: 600; }
-.db-role-cta { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); text-decoration: none; white-space: nowrap; border: 1px solid var(--accent); border-radius: 4px; padding: 5px 10px; }
-.db-role-cta:hover { background: rgba(198,226,61,0.1); }
-.db-role-cta-alert { color: var(--opp); border-color: var(--opp); }
-.db-role-cta-alert:hover { background: rgba(227,123,107,0.1); }
-.db-organizer-actions { max-width: 680px; margin: 0 auto; padding: 0 16px; }
 
 /* ---------- Profile page ---------- */
 .profile-form { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }

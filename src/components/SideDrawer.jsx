@@ -69,23 +69,6 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
 
         <div className="drawer-divider" />
 
-        <div className="drawer-section">
-          <div className="drawer-section-label">Theme</div>
-          <div className="theme-picker">
-            {THEMES.map(t => (
-              <button
-                key={t.id}
-                className={`theme-swatch${theme === t.id ? ' active' : ''}`}
-                style={{ background: t.swatch }}
-                title={t.label}
-                onClick={() => setTheme(t.id)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="drawer-divider" />
-
         <button className="guide-btn drawer-guide-btn" onClick={downloadAppGuide}>
           Download Guide PDF ↓
         </button>

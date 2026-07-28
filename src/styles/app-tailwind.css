@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@theme {
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --color-background: hsl(var(--app-background));
+  --color-foreground: hsl(var(--app-foreground));
+  --color-card: hsl(var(--app-card));
+  --color-card-foreground: hsl(var(--app-card-foreground));
+  --color-popover: hsl(var(--app-popover));
+  --color-popover-foreground: hsl(var(--app-popover-foreground));
+  --color-primary: hsl(var(--app-primary));
+  --color-primary-foreground: hsl(var(--app-primary-foreground));
+  --color-secondary: hsl(var(--app-secondary));
+  --color-secondary-foreground: hsl(var(--app-secondary-foreground));
+  --color-muted: hsl(var(--app-muted));
+  --color-muted-foreground: hsl(var(--app-muted-foreground));
+  --color-accent: hsl(var(--app-accent));
+  --color-accent-foreground: hsl(var(--app-accent-foreground));
+  --color-destructive: hsl(var(--app-destructive));
+  --color-destructive-foreground: hsl(var(--app-destructive-foreground));
+  --color-border: hsl(var(--app-border));
+  --color-input: hsl(var(--app-input));
+  --color-ring: hsl(var(--app-ring));
+  --color-chart-1: hsl(var(--app-chart-1));
+  --color-chart-2: hsl(var(--app-chart-2));
+  --color-chart-3: hsl(var(--app-chart-3));
+  --color-chart-4: hsl(var(--app-chart-4));
+  --color-chart-5: hsl(var(--app-chart-5));
+  --radius-lg: var(--app-radius);
+  --radius-md: calc(var(--app-radius) - 2px);
+  --radius-sm: calc(var(--app-radius) - 4px);
+}
+
+:root {
+  --app-background: 0 0% 100%; --app-foreground: 0 0% 4%;
+  --app-card: 165 20% 97%; --app-card-foreground: 0 0% 4%;
+  --app-popover: 0 0% 100%; --app-popover-foreground: 0 0% 4%;
+  --app-primary: 222 100% 50%; --app-primary-foreground: 0 0% 100%;
+  --app-secondary: 210 15% 95%; --app-secondary-foreground: 0 0% 4%;
+  --app-muted: 210 15% 95%; --app-muted-foreground: 215 16% 47%;
+  --app-accent: 72 100% 50%; --app-accent-foreground: 0 0% 4%;
+  --app-destructive: 4 100% 59%; --app-destructive-foreground: 0 0% 100%;
+  --app-border: 214 32% 91%; --app-input: 214 32% 91%; --app-ring: 222 100% 50%;
+  --app-chart-1: 222 100% 50%; --app-chart-2: 72 100% 50%; --app-chart-3: 145 63% 49%;
+  --app-chart-4: 4 100% 59%; --app-chart-5: 215 16% 47%;
+  --app-radius: 0.25rem;
+}
+.dark {
+  --app-background: 0 0% 4%; --app-foreground: 0 0% 100%;
+  --app-card: 210 8% 11%; --app-card-foreground: 0 0% 100%; --app-popover: 0 0% 4%; --app-popover-foreground: 0 0% 100%;
+  --app-primary: 222 100% 60%;
+  --app-secondary: 210 8% 15%; --app-secondary-foreground: 0 0% 100%;
+  --app-muted: 210 8% 15%; --app-muted-foreground: 214 15% 65%;
+  --app-accent: 68 100% 50%; --app-accent-foreground: 0 0% 4%;
+  --app-destructive: 4 100% 62%;
+  --app-border: 215 20% 22%; --app-input: 215 20% 22%; --app-ring: 222 100% 60%;
+  --app-chart-1: 222 100% 60%; --app-chart-2: 68 100% 50%; --app-chart-3: 145 63% 55%;
+  --app-chart-4: 4 100% 62%; --app-chart-5: 214 15% 65%;
+}
+
+/* app-tailwind.css skips Tailwind's Preflight layer (same reason as
+   tracker-tailwind.css - avoids resetting the legacy pages sharing this
+   stylesheet), so the anchor reset below is added by hand. It's placed in
+   the same "utilities" layer Tailwind's own utility classes use (rather
+   than an separately-ordered layer) so a plain element-selector rule here
+   always loses to any class-selector utility on normal specificity, instead
+   of depending on cross-layer priority ordering. */
+@layer utilities {
+  body { font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; }
+  h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Manrope', system-ui, sans-serif; letter-spacing: -0.02em; }
+  a { text-decoration: none; color: inherit; }
+}

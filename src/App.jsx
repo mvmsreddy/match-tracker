@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SegmentProvider } from './context/SegmentContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppShell from './components/AppShell';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PlayerDashboardPage from './pages/PlayerDashboardPage';
@@ -30,12 +31,14 @@ export default function App() {
           <SegmentProvider>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/history" element={<MatchHistoryPage />} />
+                <Route path="/compare" element={<ComparePage />} />
+              </Route>
               <Route path="/player-dashboard" element={<ProtectedRoute><PlayerDashboardPage /></ProtectedRoute>} />
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><MatchHistoryPage /></ProtectedRoute>} />
               <Route path="/history/:matchId" element={<ProtectedRoute><MatchDetailPage /></ProtectedRoute>} />
-              <Route path="/compare" element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
               <Route path="/tournaments" element={<ProtectedRoute><TournamentsListPage /></ProtectedRoute>} />
               <Route path="/tournaments/:id" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
               <Route path="/tournaments/:id/events/:eventId" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />

@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import { computeStats, computeServeStats, computeReturnStats, replayMatchAnalytics } from '../lib/analytics';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
+import { Button } from '@/components/primitives/button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
-function fmtRatio(r) { return r === Infinity ? '\u221e' : r.toFixed(2); }
+function fmtRatio(r) { return r === Infinity ? '∞' : r.toFixed(2); }
 function fmtPct(p) { return p.toFixed(1) + '%'; }
 
 export default function ComparePage() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [list, setList] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [details, setDetails] = useState({});
@@ -49,71 +47,84 @@ export default function ComparePage() {
   const rows = selectedMatches.length > 0 ? buildComparisonRows(selectedMatches) : [];
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
-      <div className="header">
-        <h1 className="title">Compare Matches</h1>
-        <div className="subtitle">SELECT TWO OR MORE SAVED MATCHES TO COMPARE &middot; {user.name}</div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
+      <div>
+        <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Select two or more saved matches to compare</div>
+        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Compare Matches</h1>
       </div>
 
-      {error && <div className="history-empty">{error}</div>}
-      {list === null && !error && <div className="history-empty">Loading match history...</div>}
+      {error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
+      )}
+      {list === null && !error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading match history...</div>
+      )}
       {list && list.length === 0 && (
-        <div className="history-empty">No saved matches yet. Generate a PDF report from the Tracker page to save one.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          No saved matches yet. Generate a PDF report from the Tracker page to save one.
+        </div>
       )}
 
       {list && list.length > 0 && (
         <>
-          <div className="history-list">
+          <div className="space-y-2">
             {list.map((m) => (
-              <label className="history-card" key={m.id} style={{ cursor: 'pointer' }}>
-                <div className="history-card-main">
-                  <div className="history-card-title">{m.selfName} vs {m.oppName}</div>
-                  <div className="history-card-sub">
+              <label
+                key={m.id}
+                className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary cursor-pointer"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold truncate">{m.selfName} vs {m.oppName}</div>
+                  <div className="text-xs text-muted-foreground truncate">
                     {(m.tournament ? m.tournament + ' | ' : '')}{m.date || ''} {m.sessionType === 'practice' ? '(Practice)' : ''}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div className="history-card-score">{m.scoreSummary}</div>
-                  <input type="checkbox" checked={selectedIds.includes(m.id)} onChange={() => toggleSelect(m.id)} />
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-sm font-bold">{m.scoreSummary}</div>
+                  <input
+                    type="checkbox"
+                    className="accent-primary w-4 h-4"
+                    checked={selectedIds.includes(m.id)}
+                    onChange={() => toggleSelect(m.id)}
+                  />
                 </div>
               </label>
             ))}
           </div>
 
-          <div className="wrap" style={{ margin: '14px 0' }}>
-            <button
-              className="action-btn primary"
-              disabled={selectedIds.length < 2 || loadingDetails}
-              onClick={loadComparison}
-            >
-              {loadingDetails ? 'Loading...' : 'Compare selected (' + selectedIds.length + ')'}
-            </button>
-          </div>
+          <Button
+            type="button"
+            disabled={selectedIds.length < 2 || loadingDetails}
+            onClick={loadComparison}
+          >
+            {loadingDetails ? 'Loading...' : 'Compare selected (' + selectedIds.length + ')'}
+          </Button>
         </>
       )}
 
       {selectedMatches.length > 0 && (
-        <div className="panel" style={{ overflowX: 'auto' }}>
-          <h2 className="panel-title">Side-by-side ({selectedMatches[0].selfName}'s performance)</h2>
-          <table className="stat-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
+        <div className="rounded-sm border border-border bg-card p-4 sm:p-6 overflow-x-auto">
+          <h2 className="font-display font-extrabold text-lg tracking-tighter mb-3">
+            Side-by-side ({selectedMatches[0].selfName}'s performance)
+          </h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Metric</TableHead>
                 {selectedMatches.map((m) => (
-                  <th key={m.id} className="self-col">{m.oppName} &middot; {m.date || '-'}</th>
+                  <TableHead key={m.id}>{m.oppName} &middot; {m.date || '-'}</TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row) => (
-                <tr key={row.label}>
-                  <td>{row.label}</td>
-                  {row.values.map((v, i) => <td key={i} className="self-col">{v}</td>)}
-                </tr>
+                <TableRow key={row.label}>
+                  <TableCell className="font-semibold">{row.label}</TableCell>
+                  {row.values.map((v, i) => <TableCell key={i}>{v}</TableCell>)}
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
