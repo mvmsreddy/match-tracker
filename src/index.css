@@ -52,46 +52,18 @@ body { margin: 0; }
 .court-marker-crosshair circle { fill: none; stroke: var(--forced-text); stroke-width: 2; }
 
 /* Shot Location Heatmap — read-only court(s) colored by Winner/Forced/Unforced outcome */
-.shot-heatmap-pair { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
-.zone-court-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1 1 0; min-width: 130px; max-width: 220px; }
-.zone-court-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text2); text-align: center; }
 .zone-cell { fill: var(--court-fill); stroke: var(--court-line); stroke-width: 1; stroke-opacity: 0.35; }
 .zone-cell.out { fill: var(--bg2); stroke-opacity: 0.2; }
 .zone-band { stroke: none; }
-.shot-heatmap-pair .court-zone-label { fill: var(--text); paint-order: stroke; stroke: rgba(0,0,0,0.55); stroke-width: 2.2px; stroke-linejoin: round; }
-.shot-heatmap-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
-.legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.legend-swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-.shot-heatmap-table-wrap { margin-top: 14px; overflow-x: auto; }
-
-.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-.chip { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 20px; font-family: 'Inter'; font-size: 0.8rem; cursor: pointer; user-select: none; }
-.chip:hover { border-color: var(--accent); }
-.chip.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
-.chip.wide { width: 100%; text-align: center; }
-.chip.warn { border-color: var(--danger); color: var(--danger); }
-.chip.warn:hover { background: var(--danger-bg); }
-.chip.warn.selected { background: var(--danger); color: var(--text); }
 
 .panel { max-width: 680px; margin: 16px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 16px; }
 .panel-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: var(--text2); margin: 0 0 10px; }
-.stat-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; }
-.stat-table th, .stat-table td { padding: 6px 4px; border-bottom: 1px solid var(--border); text-align: center; }
-.stat-table th:first-child, .stat-table td:first-child { text-align: left; }
-.stat-table th { color: var(--text4); text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.04em; }
-.stat-table td.self-col { color: var(--accent); }
-.stat-table td.opp-col { color: var(--opp); }
 
-
-.action-bar { max-width: 680px; margin: 0 auto; display: flex; gap: 10px; padding: 0 16px; flex-wrap: wrap; align-items: center; }
 .action-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 15px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; }
 .action-btn:hover { border-color: var(--accent); }
 .action-btn:disabled { opacity: 0.6; }
 .action-btn.primary { border-color: var(--accent); color: var(--accent); }
-.action-btn.danger { border-color: var(--danger); color: var(--danger); }
-.action-btn.danger.confirming { background: var(--danger); color: var(--bg); }
 .status-msg { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--accent); min-height: 1.2em; }
-.hint { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #5F7A8E; margin-top: 8px; line-height: 1.5; }
 /* ---------- Login page ---------- */
 /* .login-screen/.login-subtitle/.login-error are still used as a generic
    full-page-loading + inline-error pattern by ProtectedRoute and several
@@ -101,15 +73,7 @@ body { margin: 0; }
 .login-error { color: var(--danger); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; margin-bottom: 12px; }
 
 /* ---------- Match history page ---------- */
-.history-list { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
-.history-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.history-card-main { font-family: 'Inter'; }
-.history-card-title { font-size: 0.88rem; font-weight: 600; }
-.history-card-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text3); margin-top: 4px; }
-.history-card-score { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent); white-space: nowrap; }
 .history-empty { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text4); text-align: center; padding: 40px 16px; }
-.user-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text2); display: flex; align-items: center; gap: 10px; }
-.logout-link { color: var(--opp); cursor: pointer; text-decoration: underline; }
 .guide-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
 .guide-btn:hover { color: var(--accent); border-color: var(--accent); }
 
@@ -121,7 +85,7 @@ body { margin: 0; }
 body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 
 /* Faster taps on all interactive elements (removes 300ms delay) */
-.chip, button, a, .logout-link, .login-demo-row {
+button, a {
   touch-action: manipulation;
 }
 
@@ -130,9 +94,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 
 /* ── Small phones (≤ 520px) ── */
 @media (max-width: 520px) {
-  /* TopNav: hide the user's display name to save space */
-  .user-chip > span:first-child { display: none; }
-
   /* Header: tighter padding, hide decorative subtitle */
   .header { padding: 12px 12px 10px; }
   .title { font-size: 1.1rem; }
@@ -142,11 +103,9 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
   /* Prevent iOS input zoom (triggers when font-size < 16px) */
   .field input,
   .field select,
-  .login-field input,
   .notes textarea { font-size: 16px; }
 
   /* Action bar: stack buttons full-width for easy one-thumb tapping */
-  .action-bar { flex-direction: column; padding: 0 12px; gap: 8px; }
   .action-btn {
     width: 100%;
     text-align: center;
@@ -158,15 +117,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
   /* Panels: match the page horizontal padding */
   .panel { margin: 10px 12px; padding: 14px 12px; }
   .panel-title { font-size: 0.78rem; }
-  .stat-table { font-size: 0.7rem; }
-  .stat-table th, .stat-table td { padding: 6px 3px; }
-
-  /* History page */
-  .history-list { padding: 0 12px; }
-  .history-card { padding: 12px; flex-wrap: wrap; }
-  .history-card-title { font-size: 0.84rem; }
-  .history-card-sub { font-size: 0.6rem; }
-  .history-card-score { font-size: 0.78rem; }
 
   /* Safe area padding for devices with home indicators (iPhone X+) */
   .root { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
@@ -175,7 +125,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* ── Very small phones (≤ 360px) ── */
 @media (max-width: 360px) {
   .title { font-size: 0.95rem; }
-  .stat-table { font-size: 0.64rem; }
   .action-btn { font-size: 0.68rem; padding: 13px 12px; }
 }
 
@@ -270,93 +219,11 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .drawer-logout-btn { background: none; border: 1px solid var(--border); color: var(--opp); font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 7px 14px; border-radius: 3px; cursor: pointer; width: 100%; }
 .drawer-logout-btn:hover { border-color: var(--opp); background: rgba(227,123,107,0.08); }
 
-/* ================================================
-   DASHBOARD PAGE
-   ================================================ */
-/* Phase 11 — dashboard tournament activity (rendered inside .dashboard-recent
-   wrappers, which already supply the 0 20px / max-width 560px box) */
-/* .dashboard-section-title/.dashboard-view-all/.result-badge are still used
-   by out-of-scope Player-Dashboard components (TournamentsTab, MyMatchesTab,
-   OverviewTab) — kept even though DashboardPage itself has moved on. */
-.dashboard-section-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: var(--text2); margin-bottom: 10px; }
-.result-badge { font-family: 'Oswald', sans-serif; font-size: 0.72rem; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.dashboard-view-all { display: block; text-align: center; margin-top: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--accent); text-decoration: none; letter-spacing: 0.04em; }
-.dashboard-view-all:hover { text-decoration: underline; }
-
-/* ================================================
-   TOURNAMENTS MODULE
-   ================================================ */
-
-/* Shared scrollable page body */
-.page-scroll { flex: 1; overflow-y: auto; padding-bottom: 24px; }
-
-/* ---------- Tournament list ---------- */
-.t-list { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
-.t-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; align-items: flex-start; gap: 10px; transition: border-color 0.15s; }
-.t-card:hover { border-color: var(--accent); }
-.t-card-main { flex: 1; text-decoration: none; color: inherit; display: block; }
-.t-card-name { font-family: 'Oswald', sans-serif; font-size: 1.05rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-.t-card-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text3); margin-top: 2px; letter-spacing: 0.04em; }
-.t-card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.t-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 20px; border: 1px solid var(--border); color: var(--text3); }
-.t-badge-grade { border-color: var(--accent); color: var(--accent); }
-.t-card-location { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); margin-top: 6px; }
-.t-card-dates { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 3px; }
-.t-card-draws { display: flex; gap: 6px; margin-top: 8px; }
-.t-draw-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; padding: 2px 8px; border-radius: 3px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text3); }
-.t-delete-btn { background: none; border: none; color: var(--text4); cursor: pointer; font-size: 0.8rem; padding: 4px; border-radius: 3px; flex-shrink: 0; }
-.t-delete-btn:hover { color: var(--danger); }
-
-/* ---------- Tournament tile grid (AITA Calendar) ---------- */
-.t-grid { max-width: 1100px; margin: 16px auto; padding: 0 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.t-tile { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color 0.15s; }
-.t-tile:hover, .t-tile:focus-visible { border-color: var(--accent); outline: none; }
-.t-badge-urgent { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
-.t-badge-soon { border-color: #f5c842; color: #f5c842; background: rgba(245,200,66,0.1); }
-.t-badge-closed { color: var(--text4); }
-
-/* ---------- Ranking table (AITA Rankings) ---------- */
-.rank-table-wrap { margin: 12px 16px; border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; }
-.rank-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
-.rank-table th { text-align: left; padding: 8px 10px; background: rgba(255,255,255,0.03); color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.58rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.rank-table td { padding: 6px 10px; border-bottom: 1px solid var(--border2); color: var(--text2); white-space: nowrap; }
-.rank-table tr:last-child td { border-bottom: none; }
-.rank-table tr:hover td { background: rgba(255,255,255,0.02); }
-.rank-table .rank-cell { color: var(--accent); font-weight: 700; }
-.rank-table .name-cell { color: var(--text); font-weight: 600; }
-.rank-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 16px; }
-
-
-/* ---------- Create tournament modal ---------- */
+/* Generic modal shell — still used by AiReviewModal.jsx */
 .t-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .t-modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; padding: 20px; }
-.t-modal-wide { max-width: 680px; }
 .t-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .t-modal-title { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-.t-create-form { display: flex; flex-direction: column; gap: 10px; }
-.t-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.t-checkbox-label { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text2); cursor: pointer; }
-.t-checkbox-label input { accent-color: var(--accent); width: 14px; height: 14px; }
-
-/* ---------- Tournament detail header ---------- */
-.t-back-link { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); text-decoration: none; letter-spacing: 0.04em; }
-.t-back-link:hover { color: var(--accent); }
-.t-header-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
-.t-header-referee { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); }
-
-/* ---------- Draw type + view tabs ---------- */
-.t-draw-tabs { display: flex; border-bottom: 2px solid var(--bg2); padding: 0 16px; gap: 4px; }
-.t-draw-tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); cursor: pointer; }
-.t-draw-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.t-view-tabs { display: flex; align-items: center; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
-.t-view-tab { background: none; border: 1px solid transparent; border-radius: 4px; padding: 6px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); cursor: pointer; }
-.t-view-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(198,226,61,0.06); }
-.t-view-tab:hover:not(.active) { color: var(--text2); }
-.t-upload-btn { margin-left: auto; font-size: 0.65rem; padding: 6px 12px; }
-
-/* ---------- Bulk draw upload ---------- */
-.t-bulk-textarea { width: 100%; min-height: 220px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; resize: vertical; line-height: 1.6; }
-.t-bulk-textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* ================================================
    PHASE 1 — ROLES, PROFILES, COACH-PLAYER
@@ -365,7 +232,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* ---------- Role picker (signup) ---------- */
 
 /* ---------- Role badges ---------- */
-.role-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 20px; font-weight: 700; }
 .role-badge-player    { background: rgba(106,175,90,0.15);  color: var(--win-text);    border: 1px solid var(--win); }
 .role-badge-coach     { background: rgba(184,146,42,0.15);  color: var(--forced-text); border: 1px solid var(--forced); }
 .role-badge-organizer { background: rgba(198,226,61,0.12);  color: var(--accent);      border: 1px solid var(--accent); }
@@ -395,217 +261,14 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .role-overlay-confirm:disabled { opacity: 0.4; cursor: default; }
 .role-overlay-note { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 12px; text-align: center; }
 
-/* ================================================
-   PHASE 2 — Tournament Weeks + Events
-   ================================================ */
-
-/* Week info bar (detail page) */
-.t-week-info-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px 0; }
-.t-info-item { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); }
-
-/* Breadcrumb */
-.t-breadcrumb { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-bottom: 4px; letter-spacing: 0.03em; }
-.t-breadcrumb a { color: var(--accent); text-decoration: none; }
-.t-breadcrumb a:hover { text-decoration: underline; }
-
-/* Events section */
-.t-events-list { padding: 16px; display: flex; flex-direction: column; gap: 0; }
-.t-section-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); margin-bottom: 12px; }
-
-/* Event card */
-.t-event-card { display: flex; align-items: center; gap: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; overflow: hidden; transition: border-color 0.15s; }
-.t-event-card:hover { border-color: var(--text3); }
-.t-event-card-main { flex: 1; padding: 14px 16px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 6px; }
-.t-event-card-name { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); display: flex; align-items: center; gap: 10px; }
-.t-event-age { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent); font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; }
-.t-event-card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-
-/* Status badges */
-.t-status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px; font-weight: 600; }
-.t-status-setup { background: rgba(255,255,255,0.06); color: var(--text3); }
-.t-status-draw_ready { background: rgba(198,226,61,0.1); color: var(--accent); }
-.t-status-in_progress { background: rgba(59,178,115,0.12); color: #3bb273; }
-.t-status-complete { background: rgba(255,255,255,0.04); color: var(--text4); }
-
-/* Tournament list badges */
-.t-badge-code { background: rgba(255,255,255,0.05); color: var(--text3); }
-.t-badge-events { background: rgba(198,226,61,0.08); color: var(--accent); }
-.t-badge-qual { background: rgba(255,200,0,0.08); color: #f5c842; }
-.t-badge-grade { background: rgba(120,180,255,0.1); color: #7ab4ff; }
-
-/* ---- Phase 12 — Factsheet details panel ---- */
-.t-factsheet-panel { margin: 8px 16px 0; padding: 10px 12px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; gap: 5px; }
-.t-fs-row { display: flex; flex-wrap: wrap; gap: 16px; }
-.t-fs-item { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
-.t-fs-item b { color: var(--text2); font-weight: 600; }
-
-/* ---- AITA factsheet — mirrors the official PDF's banner-table layout ---- */
-.t-factsheet-body { display: flex; flex-direction: column; gap: 14px; }
-.t-fs-section { display: flex; flex-direction: column; }
-
-.t-fs-banner { background: #f5c842; color: #241a00; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 7px 10px; border-radius: 6px 6px 0 0; }
-
-.t-fs-table { border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; overflow: hidden; }
-.t-fs-tr { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; border-top: 1px solid var(--border); }
-.t-fs-tr:first-child { border-top: none; }
-.t-fs-td-label { padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text3); background: rgba(255,255,255,0.02); border-right: 1px solid var(--border); }
-.t-fs-td-value { padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text); word-break: break-word; }
-.t-fs-tr-danger .t-fs-td-label, .t-fs-tr-danger .t-fs-td-value { color: var(--danger); }
-.t-fs-tr-split { display: flex; flex-wrap: wrap; border-top: 1px solid var(--border); }
-.t-fs-tr-split:first-child { border-top: none; }
-.t-fs-half { flex: 1 1 180px; display: grid; grid-template-columns: minmax(90px, 45%) 1fr; }
-.t-fs-half + .t-fs-half { border-left: 1px solid var(--border); }
-
-.t-fs-gridtable { border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; overflow-x: auto; }
-.t-fs-gridtable-head, .t-fs-gridtable-row { display: grid; }
-.t-fs-gridtable-head { background: rgba(255,255,255,0.03); font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); }
-.t-fs-gridtable-head > div, .t-fs-gridtable-row > div { padding: 7px 9px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text2); border-top: 1px solid var(--border); word-break: break-word; }
-.t-fs-gridtable-head > div { border-top: none; }
-.t-fs-gridtable-head > div + div, .t-fs-gridtable-row > div + div { border-left: 1px solid var(--border); }
-
-a.t-field-link { color: var(--accent); text-decoration: none; }
-a.t-field-link:hover { text-decoration: underline; }
-.t-field-toggle { background: none; border: none; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; padding: 0; }
-
-/* Week card extras */
-.t-card-courts { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 3px; }
-
-/* Danger button */
-.t-danger-btn { background: transparent; border: 1px solid #e05252; color: #e05252; }
-.t-danger-btn:hover { background: rgba(224,82,82,0.08); }
-
-/* ================================================
-   PHASE 3 — Player Entry (EventDetailPage)
-   ================================================ */
-
-/* Draw type tabs */
-.t-draw-tabs { display: flex; gap: 0; padding: 0 16px; border-bottom: 1px solid var(--border); margin-top: 4px; }
-.t-draw-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); cursor: pointer; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
-.t-draw-tab:hover { color: var(--text2); }
-.t-draw-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-/* Entry progress */
-.t-entry-progress { padding: 12px 16px 6px; }
-.t-entry-progress-label { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); margin-bottom: 6px; }
-.t-entry-progress-pct { color: var(--accent); }
-.t-progress-track { height: 3px; background: var(--border); border-radius: 2px; }
-.t-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
-
-/* Entry table */
-.t-entry-table-wrap { padding: 12px 16px 24px; overflow-x: auto; }
-.t-entry-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-.t-entry-table th { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.t-entry-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
-.t-entry-row:hover td { background: rgba(255,255,255,0.02); }
-
-/* Column widths */
-.t-th-pos, .t-entry-pos { width: 44px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text4); }
-.t-th-seed, .t-entry-seed { width: 56px; }
-.t-th-aita, .t-entry-aita { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); white-space: nowrap; }
-.t-th-state, .t-entry-state { width: 54px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); }
-.t-th-rank, .t-entry-rank { width: 60px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); text-align: right; }
-.t-th-sc, .t-entry-sc { width: 50px; }
-.t-th-actions, .t-entry-actions { width: 68px; text-align: right; white-space: nowrap; }
-
-/* Entry name cell */
-.t-entry-name-main { font-weight: 600; font-size: 0.88rem; color: var(--text); }
-.t-entry-first { font-weight: 400; color: var(--text2); }
-.t-entry-partner { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text3); margin-top: 2px; }
-.t-entry-partner-aita { color: var(--text4); }
-.t-entry-dash { color: var(--text4); }
-
-/* Badges */
-.t-seed-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--accent); }
-.t-sc-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; background: rgba(255,255,255,0.06); color: var(--text2); padding: 2px 6px; border-radius: 3px; }
-.t-alt-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: #f5c842; display: inline-block; margin-top: 3px; }
-
-/* Row action buttons */
-.t-icon-btn { background: none; border: none; color: var(--text4); cursor: pointer; padding: 4px 6px; border-radius: 3px; font-size: 0.85rem; transition: color 0.15s, background 0.15s; }
-.t-icon-btn:hover { color: var(--accent); background: rgba(198,226,61,0.08); }
-.t-icon-btn-del:hover { color: #e05252; background: rgba(224,82,82,0.08); }
-
-/* Generic search input (used in modals) */
-.t-search-input { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 8px 12px; box-sizing: border-box; }
-.t-search-input:focus { outline: none; border-color: var(--accent); }
-
-/* Step 2 events panel inside the create wizard */
-.t-events-step { display: flex; flex-direction: column; gap: 4px; }
-.t-events-step select, .t-events-step input[type="number"] { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; }
-
-
-/* Platform search results */
-.t-search-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 4px; }
-.t-search-results { border: 1px solid var(--border); border-radius: 5px; margin-top: 4px; overflow: hidden; }
-.t-search-result-item { display: flex; flex-direction: column; gap: 2px; width: 100%; background: var(--bg2); border: none; border-bottom: 1px solid var(--border); padding: 8px 12px; cursor: pointer; text-align: left; transition: background 0.12s; }
-.t-search-result-item:last-child { border-bottom: none; }
-.t-search-result-item:hover { background: var(--bg3, rgba(255,255,255,0.04)); }
-.t-sr-name { font-weight: 600; font-size: 0.85rem; color: var(--text); display: flex; align-items: center; gap: 6px; }
-.t-sr-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); }
-.t-sr-aita-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.06em; color: #7ab4ff; background: rgba(120,180,255,0.1); border: 1px solid rgba(120,180,255,0.25); border-radius: 3px; padding: 1px 4px; }
-
-/* Section label inside modals */
+/* Section label inside modals — still used by AiReviewModal.jsx */
 .t-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 14px 0 8px; }
 
-/* Modal large variant */
+/* Modal large variant — still used by AiReviewModal.jsx */
 .t-modal-lg { max-width: 680px; }
 
-/* Bulk import */
-.t-bulk-help { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; margin-bottom: 10px; line-height: 1.7; }
-.t-bulk-help code { color: var(--accent); font-size: 0.62rem; }
-.t-bulk-preview { margin-top: 12px; }
-.t-bulk-textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; padding: 10px 12px; resize: vertical; box-sizing: border-box; line-height: 1.7; }
-.t-bulk-textarea:focus { outline: none; border-color: var(--accent); }
-
-/* ================================================
-   PHASE 4 — Draw Engine (auto-seed, BYEs, swap, draw sheet)
-   ================================================ */
-
-/* View bar (toggle + stats) */
-.t-view-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 4px; flex-wrap: wrap; gap: 8px; }
-.t-view-stats { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
-.t-stat-bye  { color: var(--text4); }
-.t-stat-gap  { color: var(--text4); }
-.t-view-toggle { display: flex; gap: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-.t-vtab { background: none; border: none; padding: 5px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); cursor: pointer; transition: background 0.12s, color 0.12s; }
-.t-vtab.active { background: var(--accent); color: var(--bg); font-weight: 700; }
-
-/* Engine action buttons */
-.t-engine-btn { background: rgba(198,226,61,0.07); border: 1px solid rgba(198,226,61,0.25); color: var(--accent); }
-.t-engine-btn:hover:not(:disabled) { background: rgba(198,226,61,0.14); }
-.t-engine-btn:disabled { opacity: 0.45; cursor: default; }
-
-/* Swap mode button */
-.t-swap-btn { border: 1px solid var(--border); }
-.t-swap-btn.active { background: rgba(255,200,0,0.1); border-color: #f5c842; color: #f5c842; }
-
-/* Swap hint bar */
-.t-swap-hint { display: flex; align-items: center; gap: 12px; padding: 7px 16px; background: rgba(255,200,0,0.06); border-bottom: 1px solid rgba(255,200,0,0.15); font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #f5c842; }
-.t-swap-cancel { background: none; border: 1px solid rgba(245,200,66,0.4); color: #f5c842; border-radius: 3px; padding: 2px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; cursor: pointer; margin-left: auto; }
-
-/* BYE row styling */
-.t-entry-bye td { color: var(--text4); }
-.t-bye-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.06em; color: var(--text4); }
-
-/* Swap-mode row states */
-.t-entry-swappable { cursor: pointer; }
-.t-entry-swappable:hover td { background: rgba(255,200,0,0.05); }
-.t-entry-selected td { background: rgba(255,200,0,0.1) !important; }
-
-/* ---- Phase 10 — Withdrawals / Alternates / Lucky Losers ---- */
-.t-entry-withdrawn td { color: var(--text4); opacity: 0.65; }
+/* WD label — still used by BracketMatchCard (EventDetailPage.jsx) */
 .t-wd-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; color: #e05252; }
-.t-icon-btn-wd:hover { color: #e05252; background: rgba(224,82,82,0.08); }
-
-.t-alt-pos-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 4px; }
-
-.t-withdraw-note { font-size: 0.78rem; color: var(--text3); background: rgba(224,82,82,0.06); border: 1px solid rgba(224,82,82,0.2); border-radius: 5px; padding: 8px 10px; margin-bottom: 10px; }
-.t-withdraw-empty { font-size: 0.78rem; color: var(--text4); padding: 6px 0; }
-.t-withdraw-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-.t-withdraw-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 0.82rem; }
-
-.t-ll-status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
-.t-ll-waiting { background: rgba(198,226,61,0.1); color: var(--accent); }
-.t-ll-called  { background: rgba(255,255,255,0.06); color: var(--text3); }
 
 .t-ds-withdrawn { color: hsl(var(--app-muted-foreground)); opacity: 0.65; }
 
@@ -629,34 +292,6 @@ a.t-field-link:hover { text-decoration: underline; }
 /* ================================================
    PHASE 5 — Bracket View + Score Entry
    ================================================ */
-
-/* Generate bracket button */
-.t-gen-btn { background: rgba(198,226,61,0.1); border: 1px solid rgba(198,226,61,0.35); color: var(--accent); font-weight: 700; letter-spacing: 0.04em; }
-.t-gen-btn:hover:not(:disabled) { background: rgba(198,226,61,0.18); }
-.t-gen-btn:disabled { opacity: 0.4; cursor: default; }
-
-/* Promote Qualifiers button */
-.t-promote-btn { background: rgba(106,175,90,0.1); border: 1px solid rgba(106,175,90,0.4); color: var(--win-text); font-weight: 700; letter-spacing: 0.03em; }
-.t-promote-btn:hover { background: rgba(106,175,90,0.18); }
-
-/* PDF download button */
-.t-pdf-btn { background: rgba(159,176,190,0.08); border: 1px solid rgba(159,176,190,0.3); color: var(--text3); }
-.t-pdf-btn:hover { background: rgba(159,176,190,0.14); color: var(--text); }
-
-/* ---- Score Modal ---- */
-.t-score-matchup { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
-.t-score-player  { flex: 1; text-align: center; font-weight: 700; font-size: 0.88rem; color: var(--text); line-height: 1.25; }
-.t-score-vs      { color: var(--text4); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; flex-shrink: 0; }
-
-.t-outcome-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-.t-outcome-btn  { flex: 1; min-width: 90px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; }
-.t-outcome-btn:hover { background: var(--bg2); color: var(--text); }
-.t-outcome-btn.active { background: rgba(198,226,61,0.12); border-color: rgba(198,226,61,0.5); color: var(--accent); font-weight: 700; }
-
-.t-winner-btns { display: flex; gap: 8px; margin-bottom: 14px; }
-.t-winner-btn  { flex: 1; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); border-radius: 5px; padding: 10px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; line-height: 1.3; text-align: center; }
-.t-winner-btn:hover { background: var(--bg2); color: var(--text); }
-.t-winner-btn.active { background: rgba(106,175,90,0.15); border-color: rgba(106,175,90,0.5); color: var(--win-text); }
 
 /* ---- Bracket Match Card ---- */
 .t-bmc { width: 236px; background: hsl(var(--app-card)); border: 1px solid hsl(var(--app-border)); border-radius: var(--radius-sm); overflow: hidden; position: absolute; transition: border-color 0.12s, box-shadow 0.12s; }
@@ -687,71 +322,4 @@ a.t-field-link:hover { text-decoration: underline; }
 .t-bracket-label  { width: 236px; flex-shrink: 0; margin-right: 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: hsl(var(--app-muted-foreground)); text-align: center; }
 .t-bracket-label:last-child { margin-right: 0; }
 .t-bracket-grid   { position: relative; }
-
-/* ================================================
-   PHASE 7 — Order of Play page
-   ================================================ */
-
-/* Link in TournamentDetailPage events header */
-.oop-link-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); text-decoration: none; padding: 4px 10px; border: 1px solid rgba(198,226,61,0.3); border-radius: 4px; }
-.oop-link-btn:hover { background: rgba(198,226,61,0.08); }
-
-/* Courts control in header */
-.oop-courts-control { display: flex; align-items: center; gap: 6px; }
-.oop-courts-control label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
-.oop-courts-input { width: 48px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 5px 8px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
-.oop-courts-input:focus { outline: none; border-color: var(--accent); }
-
-/* ---- Schedule / filter view ---- */
-.oop-schedule-wrap { padding: 0; }
-.oop-filter-bar { display: flex; gap: 6px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.oop-filter-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text3); border-radius: 3px; padding: 4px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; }
-.oop-filter-btn:hover { background: var(--bg3); color: var(--text); }
-.oop-filter-btn.active { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
-.oop-filter-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; color: var(--text4); }
-
-.oop-table-wrap { overflow-x: auto; }
-.oop-table { width: 100%; border-collapse: collapse; }
-.oop-table th { padding: 8px 12px; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.oop-th-num { width: 54px; text-align: center; }
-.oop-th-status { width: 100px; }
-
-.oop-row td { padding: 8px 12px; border-bottom: 1px solid rgba(44,76,104,0.4); vertical-align: middle; font-size: 0.83rem; }
-.oop-row:hover td { background: rgba(255,255,255,0.02); }
-.oop-row-conflict td { background: color-mix(in srgb, var(--forced) 8%, transparent) !important; }
-.oop-row-done { opacity: 0.6; }
-.oop-td-event { min-width: 155px; }
-.oop-row-event { font-weight: 600; color: var(--text); }
-.oop-row-round { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 2px; }
-.oop-td-players { min-width: 200px; }
-.oop-p1, .oop-p2 { color: var(--text); }
-.oop-vsep { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); margin: 0 6px; }
-.oop-conflict-inline { color: var(--forced-text); margin-left: 4px; }
-.oop-td-num { width: 54px; text-align: center; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
-.oop-td-status { white-space: nowrap; }
-.oop-saving { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-left: 4px; }
-.oop-num-input { width: 42px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 3px; padding: 3px 6px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
-.oop-num-input:focus { outline: none; border-color: var(--accent); }
-
-/* ---- Board view ---- */
-.oop-board-wrap { padding: 16px; }
-.oop-day-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-.oop-day-tab { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); border-radius: 4px; padding: 6px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; cursor: pointer; transition: background 0.12s, color 0.12s; }
-.oop-day-tab:hover { background: var(--bg3); color: var(--text); }
-.oop-day-tab.active { background: var(--accent); color: var(--accent-text); font-weight: 700; border-color: var(--accent); }
-.oop-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
-.oop-court-col { flex-shrink: 0; width: 220px; }
-.oop-court-header { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-.oop-court-slot { display: flex; gap: 6px; margin-bottom: 8px; align-items: flex-start; }
-.oop-slot-num { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); width: 18px; flex-shrink: 0; padding-top: 8px; text-align: right; }
-
-/* Board match card */
-.oop-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; flex: 1; }
-.oop-card-conflict { border-color: color-mix(in srgb, var(--forced) 50%, transparent); background: color-mix(in srgb, var(--forced) 4%, transparent); }
-.oop-card-done { opacity: 0.55; }
-.oop-card-event { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); margin-bottom: 5px; }
-.oop-card-players { display: flex; flex-direction: column; gap: 2px; }
-.oop-player { font-size: 0.78rem; font-weight: 600; color: var(--text); }
-.oop-player-won { color: var(--win-text); }
-.oop-vs { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); }
 
