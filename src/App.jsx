@@ -43,13 +43,13 @@ export default function App() {
                 <Route path="/aita-calendar" element={<AitaCalendarPage />} />
                 <Route path="/aita-calendar/:id" element={<AitaTournamentFactsheetPage />} />
                 <Route path="/aita-rankings" element={<AitaRankingsPage />} />
+                <Route path="/tournaments" element={<TournamentsListPage />} />
+                <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+                <Route path="/tournaments/:id/events/:eventId" element={<EventDetailPage />} />
+                <Route path="/tournaments/:id/oop" element={<OrderOfPlayPage />} />
               </Route>
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
               <Route path="/history/:matchId" element={<ProtectedRoute><MatchDetailPage /></ProtectedRoute>} />
-              <Route path="/tournaments" element={<ProtectedRoute><TournamentsListPage /></ProtectedRoute>} />
-              <Route path="/tournaments/:id" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
-              <Route path="/tournaments/:id/events/:eventId" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
-              <Route path="/tournaments/:id/oop" element={<ProtectedRoute><OrderOfPlayPage /></ProtectedRoute>} />
               <Route path="/video-analysis-test" element={<ProtectedRoute><VideoAnalysisTestPage /></ProtectedRoute>} />
             </Routes>
           </SegmentProvider>

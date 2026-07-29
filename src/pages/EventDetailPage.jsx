@@ -2,13 +2,32 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
-import { useTheme } from '../context/ThemeContext';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
 import { checkAgeEligibility, minEligibleAgeGroup } from '../utils/eligibility';
 import { DOUBLES_MIN_PAIRS_FOR_POINTS, ANNUAL_TOURNAMENT_LIMITS, bracketSize } from '../utils/aitaGradeRules';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Table, TableHeader, TableBody, TableRow as UITableRow, TableHead, TableCell } from '@/components/primitives/table';
+import { cn } from '../lib/utils';
+
+const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
+
+const STATUS_STYLES = {
+  setup: 'bg-muted text-muted-foreground',
+  draw_ready: 'bg-primary/10 text-primary',
+  in_progress: 'bg-chart-2/15 text-chart-2',
+  complete: 'bg-chart-3/15 text-chart-3',
+};
+
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -205,19 +224,19 @@ function ImportPane({ maxPos, startPos, existingPositions, isAlternate, onImport
 
   return (
     <>
-      <div className="t-bulk-help">
-        <strong>Two formats:</strong>{' '}
-        <code>FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> (auto-position)
+      <div className="text-sm text-muted-foreground mb-3">
+        <strong className="text-foreground">Two formats:</strong>{' '}
+        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> (auto-position)
         {' '}or{' '}
-        <code>Pos, FamilyName, ...</code> (explicit position).
+        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">Pos, FamilyName, ...</code> (explicit position).
         Tab-separated (Excel/Sheets) also works.
-        {!isAlternate && <>{' '}<strong>{remaining > 0 ? remaining : 0}</strong> slot{remaining !== 1 ? 's' : ''} available.</>}
+        {!isAlternate && <>{' '}<strong className="text-foreground">{remaining > 0 ? remaining : 0}</strong> slot{remaining !== 1 ? 's' : ''} available.</>}
       </div>
 
       {!preview && (
         <>
           <textarea
-            className="t-bulk-textarea"
+            className="w-full min-h-[220px] rounded-sm border border-input bg-transparent px-3 py-2 font-mono text-xs resize-y leading-relaxed"
             rows={11}
             value={text}
             onChange={e => setText(e.target.value)}
@@ -225,7 +244,7 @@ function ImportPane({ maxPos, startPos, existingPositions, isAlternate, onImport
             autoFocus
           />
           {parseErrors.length > 0 && (
-            <div className="login-error" style={{ marginTop: 8 }}>
+            <div className="text-sm text-destructive mt-2 space-y-0.5">
               {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
             </div>
           )}
@@ -233,46 +252,46 @@ function ImportPane({ maxPos, startPos, existingPositions, isAlternate, onImport
       )}
 
       {preview && (
-        <div className="t-bulk-preview">
-          <div className="t-section-label">{preview.length} player{preview.length !== 1 ? 's' : ''} to import{isAlternate ? ' as Alternates' : ''}</div>
-          <div className="t-entry-table-wrap">
-            <table className="t-entry-table">
-              <thead>
-                <tr><th>Pos</th><th>Seed</th><th>Name</th><th>AITA Reg</th><th>State</th><th>Rank</th><th>SC</th></tr>
-              </thead>
-              <tbody>
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-2">{preview.length} player{preview.length !== 1 ? 's' : ''} to import{isAlternate ? ' as Alternates' : ''}</div>
+          <div className="rounded-sm border border-border overflow-x-auto max-h-80 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <UITableRow><TableHead>Pos</TableHead><TableHead>Seed</TableHead><TableHead>Name</TableHead><TableHead>AITA Reg</TableHead><TableHead>State</TableHead><TableHead>Rank</TableHead><TableHead>SC</TableHead></UITableRow>
+              </TableHeader>
+              <TableBody>
                 {preview.map((e, i) => (
-                  <tr key={i}>
-                    <td>{isAlternate ? `Alt ${e.position - (startPos - 1)}` : e.position}</td>
-                    <td>{e.seed || '—'}</td>
-                    <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
-                    <td>{e.aitaReg || '—'}</td>
-                    <td>{e.playerState || '—'}</td>
-                    <td>{e.ranking || '—'}</td>
-                    <td>{e.statusCode ? <span className="t-sc-badge">{e.statusCode}</span> : '—'}</td>
-                  </tr>
+                  <UITableRow key={i}>
+                    <TableCell>{isAlternate ? `Alt ${e.position - (startPos - 1)}` : e.position}</TableCell>
+                    <TableCell>{e.seed || '—'}</TableCell>
+                    <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
+                    <TableCell>{e.aitaReg || '—'}</TableCell>
+                    <TableCell>{e.playerState || '—'}</TableCell>
+                    <TableCell>{e.ranking || '—'}</TableCell>
+                    <TableCell>{e.statusCode ? <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{e.statusCode}</span> : '—'}</TableCell>
+                  </UITableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
 
-      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+      {saveError && <div className="text-sm text-destructive mt-2">{saveError}</div>}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+      <div className="flex gap-2 mt-4">
         {!preview && (
-          <button className="action-btn primary" onClick={handlePreview} disabled={!text.trim()}>Preview</button>
+          <Button onClick={handlePreview} disabled={!text.trim()}>Preview</Button>
         )}
         {preview && (
           <>
-            <button className="action-btn primary" disabled={saving || preview.length === 0} onClick={handleImport}>
+            <Button disabled={saving || preview.length === 0} onClick={handleImport}>
               {saving ? 'Importing…' : `Import ${preview.length} Player${preview.length !== 1 ? 's' : ''}`}
-            </button>
-            <button className="action-btn" onClick={() => { setPreview(null); setSaveError(''); }}>Back</button>
+            </Button>
+            <Button variant="outline" onClick={() => { setPreview(null); setSaveError(''); }}>Back</Button>
           </>
         )}
-        <button className="action-btn" onClick={onClose}>Cancel</button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
       </div>
     </>
   );
@@ -329,9 +348,9 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
     }
   }
 
-  if (loadError) return <div className="login-error" style={{ marginTop: 8 }}>{loadError}</div>;
-  if (!allEntries) return <div className="history-empty">Loading entries…</div>;
-  if (allEntries.length === 0) return <div className="history-empty">No active entries to withdraw.</div>;
+  if (loadError) return <div className="text-sm text-destructive mt-2">{loadError}</div>;
+  if (!allEntries) return <div className="text-sm text-muted-foreground">Loading entries…</div>;
+  if (allEntries.length === 0) return <div className="text-sm text-muted-foreground">No active entries to withdraw.</div>;
 
   const mainEntries = allEntries.filter(e => e.drawType === 'main' && !e.isAlternate);
   const qualEntries = allEntries.filter(e => e.drawType === 'qualifying' && !e.isAlternate);
@@ -339,18 +358,18 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
 
   const renderGroup = (label, group) => group.length === 0 ? null : (
     <>
-      <div className="t-section-label" style={{ margin: '10px 0 4px' }}>{label}</div>
+      <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mt-2.5 mb-1">{label}</div>
       {group.map(e => (
-        <label key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: '1px solid var(--border,#2a2a2a)', cursor: 'pointer', fontSize: 13 }}>
-          <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleEntry(e.id)} style={{ width: 15, height: 15, flexShrink: 0 }} />
-          <span style={{ minWidth: 32, color: 'var(--text3,#777)', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>
+        <label key={e.id} className="flex items-center gap-2.5 py-1.5 border-b border-border cursor-pointer text-sm">
+          <input type="checkbox" className="accent-primary shrink-0" checked={selected.has(e.id)} onChange={() => toggleEntry(e.id)} />
+          <span className="min-w-8 text-muted-foreground font-mono text-[0.68rem]">
             {e.isAlternate ? `A${e.position - (e.drawType === 'main' ? (allEntries.find(x => x.drawType === 'main' && !x.isAlternate) ? 0 : 0) : 0)}` : `#${e.position}`}
           </span>
-          {e.seed && <span className="t-sc-badge">[{e.seed}]</span>}
-          <span style={{ flex: 1 }}>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</span>
-          <span style={{ color: 'var(--text3,#777)', fontSize: 11 }}>{e.aitaReg || ''}</span>
-          <span style={{ color: 'var(--text3,#777)', fontSize: 11 }}>{e.playerState || ''}</span>
-          {e.statusCode && <span className="t-sc-badge">{e.statusCode}</span>}
+          {e.seed && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">[{e.seed}]</span>}
+          <span className="flex-1">{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</span>
+          <span className="text-muted-foreground text-[0.68rem]">{e.aitaReg || ''}</span>
+          <span className="text-muted-foreground text-[0.68rem]">{e.playerState || ''}</span>
+          {e.statusCode && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{e.statusCode}</span>}
         </label>
       ))}
     </>
@@ -358,45 +377,44 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-          <input type="checkbox"
+      <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+        <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input type="checkbox" className="accent-primary"
             checked={selected.size === allEntries.length && allEntries.length > 0}
             onChange={toggleAll}
           />
           Select all ({allEntries.length})
         </label>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <select value={wdType} onChange={e => setWdType(e.target.value)} style={{ fontSize: 13 }}>
+        <div className="ml-auto flex items-center gap-2">
+          <select className={selectCls} value={wdType} onChange={e => setWdType(e.target.value)}>
             {WD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <input type="date" value={wdDate} onChange={e => setWdDate(e.target.value)} style={{ fontSize: 13 }} />
+          <Input type="date" value={wdDate} onChange={e => setWdDate(e.target.value)} className="w-auto" />
           {(wdType === 'NS' || wdType === 'LW') && (
-            <span style={{ fontSize: 11, color: 'var(--text2,#888)' }} title="AITA rules: No-Show deducts ranking points by grade; a 3rd+ Late Withdrawal in a calendar year (SS/NS/Nationals only) deducts 15. See the Audit Log tab for the computed amount.">
+            <span className="text-[0.68rem] text-muted-foreground" title="AITA rules: No-Show deducts ranking points by grade; a 3rd+ Late Withdrawal in a calendar year (SS/NS/Nationals only) deducts 15. See the Audit Log tab for the computed amount.">
               ranking-point penalty may apply
             </span>
           )}
         </div>
       </div>
 
-      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--border,#2a2a2a)', borderRadius: 6, padding: '0 10px' }}>
+      <div className="max-h-80 overflow-y-auto border border-border rounded-sm px-2.5">
         {renderGroup('Main Draw', mainEntries)}
         {renderGroup('Qualifying', qualEntries)}
         {renderGroup('Alternates', altEntries)}
       </div>
 
-      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+      {saveError && <div className="text-sm text-destructive mt-2">{saveError}</div>}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
-        <button
-          className="action-btn primary"
-          style={{ background: selected.size > 0 ? '#7c3a00' : undefined, color: selected.size > 0 ? '#ffd9b0' : undefined }}
+      <div className="flex gap-2 mt-4 items-center">
+        <Button
+          className={cn(selected.size > 0 && 'bg-chart-2 text-white hover:bg-chart-2/90')}
           disabled={saving || selected.size === 0}
           onClick={handleApply}
         >
           {saving ? 'Applying…' : `Apply Withdrawal to ${selected.size} Player${selected.size !== 1 ? 's' : ''}`}
-        </button>
-        <button className="action-btn" onClick={onClose}>Cancel</button>
+        </Button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
       </div>
     </>
   );
@@ -434,24 +452,24 @@ function FullListPane({ event, onImport, saving, onClose }) {
   const SectionTable = ({ label, arr }) => {
     if (!arr || !arr.length) return null;
     return (
-      <div style={{ marginBottom: 12 }}>
-        <div className="t-section-label">{label} — {arr.length} player{arr.length !== 1 ? 's' : ''}</div>
-        <div className="t-entry-table-wrap">
-          <table className="t-entry-table">
-            <thead><tr><th>Pos</th><th>Name</th><th>State</th><th>AITA Reg</th><th>Rank</th><th>Seed</th></tr></thead>
-            <tbody>
+      <div className="mb-3">
+        <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">{label} — {arr.length} player{arr.length !== 1 ? 's' : ''}</div>
+        <div className="rounded-sm border border-border overflow-x-auto">
+          <Table>
+            <TableHeader><UITableRow><TableHead>Pos</TableHead><TableHead>Name</TableHead><TableHead>State</TableHead><TableHead>AITA Reg</TableHead><TableHead>Rank</TableHead><TableHead>Seed</TableHead></UITableRow></TableHeader>
+            <TableBody>
               {arr.map((e, i) => (
-                <tr key={i}>
-                  <td>{e.position}</td>
-                  <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
-                  <td>{e.playerState || '—'}</td>
-                  <td>{e.aitaReg || '—'}</td>
-                  <td>{e.ranking || '—'}</td>
-                  <td>{e.seed || '—'}</td>
-                </tr>
+                <UITableRow key={i}>
+                  <TableCell>{e.position}</TableCell>
+                  <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
+                  <TableCell>{e.playerState || '—'}</TableCell>
+                  <TableCell>{e.aitaReg || '—'}</TableCell>
+                  <TableCell>{e.ranking || '—'}</TableCell>
+                  <TableCell>{e.seed || '—'}</TableCell>
+                </UITableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     );
@@ -459,18 +477,18 @@ function FullListPane({ event, onImport, saving, onClose }) {
 
   return (
     <>
-      <div className="t-bulk-help">
+      <div className="text-sm text-muted-foreground mb-3">
         Paste the full AITA acceptance list in one go. Rows are auto-routed by the{' '}
-        <strong>StatusCode</strong> column:{' '}
-        <code>MAIN DRAW</code>, <code>QUALIFYING DRAW</code>, <code>ALTERNATES</code>, <code>WITHDRAWAL LIST</code>.
+        <strong className="text-foreground">StatusCode</strong> column:{' '}
+        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">MAIN DRAW</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">QUALIFYING DRAW</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">ALTERNATES</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">WITHDRAWAL LIST</code>.
         {' '}Comma or tab-separated. Header row and <em>State ↔ AitaReg</em> column order are auto-detected.
-        All four sections are imported — withdrawal list entries appear in the <strong>Withdrawal</strong> tab.
+        All four sections are imported — withdrawal list entries appear in the <strong className="text-foreground">Withdrawal</strong> tab.
       </div>
 
       {!preview && (
         <>
           <textarea
-            className="t-bulk-textarea"
+            className="w-full min-h-[220px] rounded-sm border border-input bg-transparent px-3 py-2 font-mono text-xs resize-y leading-relaxed"
             rows={11}
             value={text}
             onChange={e => setText(e.target.value)}
@@ -478,7 +496,7 @@ function FullListPane({ event, onImport, saving, onClose }) {
             autoFocus
           />
           {parseErrors.length > 0 && (
-            <div className="login-error" style={{ marginTop: 8 }}>
+            <div className="text-sm text-destructive mt-2 space-y-0.5">
               {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
             </div>
           )}
@@ -486,49 +504,49 @@ function FullListPane({ event, onImport, saving, onClose }) {
       )}
 
       {preview && (
-        <div className="t-bulk-preview" style={{ maxHeight: 340, overflowY: 'auto' }}>
+        <div className="max-h-[340px] overflow-y-auto">
           <SectionTable label="Main Draw"  arr={preview.main} />
           <SectionTable label="Qualifying" arr={preview.qualifying} />
           <SectionTable label="Alternates" arr={preview.alternates} />
           {preview.withdrawal.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="t-section-label">Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}</div>
-              <div className="t-entry-table-wrap">
-                <table className="t-entry-table">
-                  <thead><tr><th>#</th><th>Name</th><th>State</th><th>AITA Reg</th><th>Rank</th></tr></thead>
-                  <tbody>
+            <div className="mb-3">
+              <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}</div>
+              <div className="rounded-sm border border-border overflow-x-auto">
+                <Table>
+                  <TableHeader><UITableRow><TableHead>#</TableHead><TableHead>Name</TableHead><TableHead>State</TableHead><TableHead>AITA Reg</TableHead><TableHead>Rank</TableHead></UITableRow></TableHeader>
+                  <TableBody>
                     {preview.withdrawal.map((e, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}</td>
-                        <td>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</td>
-                        <td>{e.playerState || '—'}</td>
-                        <td>{e.aitaReg || '—'}</td>
-                        <td>{e.ranking || '—'}</td>
-                      </tr>
+                      <UITableRow key={i}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
+                        <TableCell>{e.playerState || '—'}</TableCell>
+                        <TableCell>{e.aitaReg || '—'}</TableCell>
+                        <TableCell>{e.ranking || '—'}</TableCell>
+                      </UITableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+      {saveError && <div className="text-sm text-destructive mt-2">{saveError}</div>}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+      <div className="flex gap-2 mt-4">
         {!preview && (
-          <button className="action-btn primary" onClick={handlePreview} disabled={!text.trim()}>Preview</button>
+          <Button onClick={handlePreview} disabled={!text.trim()}>Preview</Button>
         )}
         {preview && (
           <>
-            <button className="action-btn primary" disabled={saving || totalToImport === 0} onClick={handleImport}>
+            <Button disabled={saving || totalToImport === 0} onClick={handleImport}>
               {saving ? 'Importing…' : `Import ${totalToImport} Player${totalToImport !== 1 ? 's' : ''}`}
-            </button>
-            <button className="action-btn" onClick={() => { setPreview(null); setSaveError(''); }}>Back</button>
+            </Button>
+            <Button variant="outline" onClick={() => { setPreview(null); setSaveError(''); }}>Back</Button>
           </>
         )}
-        <button className="action-btn" onClick={onClose}>Cancel</button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
       </div>
     </>
   );
@@ -605,20 +623,20 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
   const tabs = BULK_TABS.filter(t => t.key !== 'qualifying' || event.hasQualifying);
 
   return (
-    <div className="t-modal-overlay" onClick={onClose}>
-      <div className="t-modal t-modal-lg" onClick={e => e.stopPropagation()}>
-        <div className="t-modal-header">
-          <span className="t-modal-title">Bulk Import / Withdrawal</span>
-          <button className="drawer-close" onClick={onClose}>✕</button>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-lg font-display font-extrabold tracking-tight">Bulk Import / Withdrawal</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
         </div>
 
         {/* Tab bar */}
-        <div className="t-view-toggle" style={{ marginBottom: 14 }}>
+        <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card mb-4">
           {tabs.map(t => (
             <button
               key={t.key}
-              className={'t-vtab' + (activeTab === t.key ? ' active' : '')}
               onClick={() => setActiveTab(t.key)}
+              className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === t.key ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             >
               {t.label}
             </button>
@@ -873,211 +891,197 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
   }
 
   return (
-    <div className="t-modal-overlay" onClick={onClose}>
-      <div className="t-modal t-modal-lg" onClick={e => e.stopPropagation()}>
-        <div className="t-modal-header">
-          <span className="t-modal-title">{editingEntry ? 'Edit Entry' : 'Add Player'}</span>
-          <button className="drawer-close" onClick={onClose}>✕</button>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-lg font-display font-extrabold tracking-tight">{editingEntry ? 'Edit Entry' : 'Add Player'}</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
         </div>
 
-        <form onSubmit={handleSave} className="t-create-form">
+        <form onSubmit={handleSave} className="space-y-3">
           {/* Position / Seed / Status */}
-          <div className="t-form-row">
-            <div className="field" style={{ maxWidth: 110 }}>
-              <label>Draw Position</label>
-              <input
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Draw Position">
+              <Input
                 type="number" min="1" max={maxPos}
                 value={form.position}
                 disabled={form.isAlternate}
                 onChange={e => set('position', e.target.value)}
               />
               {form.isAlternate && (
-                <div className="t-alt-pos-hint">Alternate #{form.position - maxPos}</div>
+                <div className="text-[0.68rem] text-muted-foreground">Alternate #{form.position - maxPos}</div>
               )}
-            </div>
-            <div className="field" style={{ maxWidth: 110 }}>
-              <label>Seed</label>
-              <input
+            </Field>
+            <Field label="Seed">
+              <Input
                 type="number" min="1" max={event.numSeeds}
                 value={form.seed}
                 onChange={e => set('seed', e.target.value)}
                 placeholder="—"
               />
-            </div>
-            <div className="field">
-              <label>Status Code</label>
-              <select value={form.statusCode} onChange={e => set('statusCode', e.target.value)}>
+            </Field>
+            <Field label="Status Code">
+              <select className={selectCls} value={form.statusCode} onChange={e => set('statusCode', e.target.value)}>
                 {STATUS_CODES.map(c => (
                   <option key={c} value={c}>{c || '— None —'}</option>
                 ))}
               </select>
-            </div>
+            </Field>
           </div>
 
           {/* Platform player search */}
-          <div className="field">
-            <label>Search Platform Player (optional)</label>
-            <input
+          <Field label="Search Platform Player (optional)">
+            <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Type name or AITA reg to auto-fill…"
             />
-            {searching && <div className="t-search-hint">Searching…</div>}
+            {searching && <div className="text-xs text-muted-foreground">Searching…</div>}
             {searchResults.length > 0 && (
-              <div className="t-search-results">
+              <div className="border border-border rounded-sm divide-y divide-border max-h-48 overflow-y-auto">
                 {searchResults.map((p, i) => (
                   <button
                     key={p.id || p.aitaReg || i}
                     type="button"
-                    className="t-search-result-item"
+                    className="w-full text-left px-3 py-2 bg-transparent hover:bg-secondary flex flex-col gap-0.5"
                     onClick={() => fillFromPlayer(p)}
                   >
-                    <span className="t-sr-name">
+                    <span className="text-sm font-semibold flex items-center gap-1.5">
                       {p.familyName ? `${p.familyName}${p.firstName ? ', ' + p.firstName : ''}` : p.displayName}
-                      {p._source === 'aita' && <span className="t-sr-aita-badge">AITA</span>}
+                      {p._source === 'aita' && <span className="inline-flex items-center rounded-sm bg-primary/10 text-primary px-1.5 py-0.5 text-[0.6rem] font-bold">AITA</span>}
                     </span>
-                    <span className="t-sr-meta">
+                    <span className="text-xs text-muted-foreground">
                       {[p.aitaReg, p.stateAbbr || p.state, p.ranking && `Rank ${p.ranking}`, p.ageGroup].filter(Boolean).join(' · ')}
                     </span>
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </Field>
 
           {/* Player details */}
-          <div className="t-section-label">Player Details</div>
-          <div className="t-form-row">
-            <div className="field">
-              <label>Family Name *</label>
-              <input
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground pt-1">Player Details</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Family Name *">
+              <Input
                 value={form.familyName}
                 onChange={e => set('familyName', e.target.value)}
                 placeholder="Last name"
                 autoFocus={!editingEntry}
               />
-            </div>
-            <div className="field">
-              <label>First Name</label>
-              <input
+            </Field>
+            <Field label="First Name">
+              <Input
                 value={form.firstName}
                 onChange={e => set('firstName', e.target.value)}
                 placeholder="First name"
               />
-            </div>
+            </Field>
           </div>
-          <div className="t-form-row">
-            <div className="field">
-              <label>AITA Reg #</label>
-              <input
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="AITA Reg #">
+              <Input
                 value={form.aitaReg}
                 onChange={e => set('aitaReg', e.target.value)}
                 placeholder="e.g. MHAP12345"
               />
-            </div>
-            <div className="field">
-              <label>State</label>
-              <select value={form.playerState} onChange={e => set('playerState', e.target.value)}>
+            </Field>
+            <Field label="State">
+              <select className={selectCls} value={form.playerState} onChange={e => set('playerState', e.target.value)}>
                 <option value="">— State —</option>
                 {STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-            </div>
+            </Field>
           </div>
-          <div className="t-form-row">
-            <div className="field">
-              <label>Ranking</label>
-              <input
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Ranking">
+              <Input
                 type="number" min="1"
                 value={form.ranking}
                 onChange={e => set('ranking', e.target.value)}
                 placeholder="AITA rank"
               />
-            </div>
-            <div className="field">
-              <label>Date of Birth</label>
-              <input
+            </Field>
+            <Field label="Date of Birth">
+              <Input
                 type="date"
                 value={form.dateOfBirth}
                 onChange={e => set('dateOfBirth', e.target.value)}
               />
-            </div>
+            </Field>
           </div>
 
           {/* Doubles partner */}
           {event.isDoubles && (
             <>
-              <div className="t-section-label" style={{ marginTop: 12 }}>Partner Details</div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Partner Family Name *</label>
-                  <input
+              <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground pt-2">Partner Details</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Partner Family Name *">
+                  <Input
                     value={form.partnerFamilyName}
                     onChange={e => set('partnerFamilyName', e.target.value)}
                     placeholder="Partner last name"
                   />
-                </div>
-                <div className="field">
-                  <label>Partner First Name</label>
-                  <input
+                </Field>
+                <Field label="Partner First Name">
+                  <Input
                     value={form.partnerFirstName}
                     onChange={e => set('partnerFirstName', e.target.value)}
                     placeholder="Partner first name"
                   />
-                </div>
+                </Field>
               </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Partner AITA Reg #</label>
-                  <input
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Partner AITA Reg #">
+                  <Input
                     value={form.partnerAitaReg}
                     onChange={e => set('partnerAitaReg', e.target.value)}
                     placeholder="e.g. MHAP67890"
                   />
-                </div>
-                <div className="field">
-                  <label>Partner State</label>
-                  <select value={form.partnerState} onChange={e => set('partnerState', e.target.value)}>
+                </Field>
+                <Field label="Partner State">
+                  <select className={selectCls} value={form.partnerState} onChange={e => set('partnerState', e.target.value)}>
                     <option value="">— State —</option>
                     {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </div>
+                </Field>
               </div>
-              <div className="t-form-row">
-                <div className="field" style={{ maxWidth: 160 }}>
-                  <label>Partner Ranking</label>
-                  <input
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Partner Ranking">
+                  <Input
                     type="number" min="1"
                     value={form.partnerRanking}
                     onChange={e => set('partnerRanking', e.target.value)}
                     placeholder="Rank"
                   />
-                </div>
+                </Field>
               </div>
             </>
           )}
 
           {/* Alternate */}
-          <div className="field" style={{ marginTop: 4 }}>
-            <label className="t-checkbox-label">
+          <div className="pt-1 space-y-2">
+            <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
+                className="accent-primary"
                 checked={form.isAlternate}
                 onChange={e => set('isAlternate', e.target.checked)}
               />
               Alternate / replacement entry
             </label>
             {form.isAlternate && (
-              <input
-                style={{ marginTop: 6 }}
+              <Input
                 value={form.replacingName}
                 onChange={e => set('replacingName', e.target.value)}
                 placeholder="Replacing (player name)"
               />
             )}
             {form.isAlternate && (
-              <label className="t-checkbox-label" style={{ marginTop: 6 }}>
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  className="accent-primary"
                   checked={form.isOnsiteSignin}
                   onChange={e => set('isOnsiteSignin', e.target.checked)}
                 />
@@ -1087,22 +1091,22 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
           </div>
 
           {limitWarning && (
-            <div className="t-stat-gap" style={{ marginTop: 10, fontSize: 12 }}>{limitWarning}</div>
+            <div className="text-xs text-chart-2 font-semibold">{limitWarning}</div>
           )}
-          {error && <div className="login-error" style={{ marginTop: 10 }}>{error}</div>}
+          {error && <div className="text-sm text-destructive">{error}</div>}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <div className="flex gap-2 pt-2">
             {limitWarning ? (
-              <button type="button" className="action-btn primary" disabled={saving}
+              <Button type="button" disabled={saving}
                 onClick={() => handleSave(null, { skipLimitCheck: true })}>
                 {saving ? 'Saving…' : 'Add Anyway'}
-              </button>
+              </Button>
             ) : (
-              <button type="submit" className="action-btn primary" disabled={saving}>
+              <Button type="submit" disabled={saving}>
                 {saving ? 'Saving…' : editingEntry ? 'Save Changes' : 'Add Player'}
-              </button>
+              </Button>
             )}
-            <button type="button" className="action-btn" onClick={onClose}>Cancel</button>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           </div>
         </form>
       </div>
@@ -1113,77 +1117,82 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
 // ---------------------------------------------------------------------------
 // EntryRow  (players list view)
 // ---------------------------------------------------------------------------
+function Dash() { return <span className="text-muted-foreground">—</span>; }
+
+const scBadgeCls = 'inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold';
+const moveSelectCls = 'text-[0.68rem] rounded-sm border border-input bg-transparent px-1 py-1';
+const iconBtnCls = 'w-7 h-7 shrink-0 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary text-muted-foreground';
+
 function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, currentGroup }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
-    <tr
-      className={
-        't-entry-row' +
-        (isBye ? ' t-entry-bye' : '') +
-        (isWithdrawn ? ' t-entry-withdrawn' : '') +
-        (selected ? ' t-entry-selected' : '') +
-        (swapMode && !isBye ? ' t-entry-swappable' : '')
-      }
+    <UITableRow
+      className={cn(
+        (isBye || isWithdrawn) && 'opacity-60',
+        selected && 'bg-primary/10',
+        swapMode && !isBye && 'cursor-pointer hover:bg-secondary'
+      )}
       onClick={swapMode && !isBye ? () => onSelect(entry) : undefined}
     >
-      <td className="t-entry-pos">{entry.position}</td>
-      <td className="t-entry-seed">
-        {entry.seed ? <span className="t-seed-badge">[{entry.seed}]</span> : <span className="t-entry-dash">—</span>}
-      </td>
-      <td className="t-entry-name">
+      <TableCell className="font-mono">{entry.position}</TableCell>
+      <TableCell>
+        {entry.seed ? <span className={scBadgeCls}>[{entry.seed}]</span> : <Dash />}
+      </TableCell>
+      <TableCell>
         {isBye ? (
-          <span className="t-bye-label">BYE</span>
+          <span className="text-muted-foreground italic uppercase text-xs">BYE</span>
         ) : (
           <>
-            <div className="t-entry-name-main">
+            <div className="font-semibold text-sm">
               {entry.familyName}
-              {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
-              {isWithdrawn && <span className="t-wd-label"> WD</span>}
+              {entry.firstName ? <span className="font-normal">, {entry.firstName}</span> : null}
+              {isWithdrawn && <span className="text-destructive font-bold text-xs"> WD</span>}
             </div>
             {isDoubles && entry.partnerFamilyName && (
-              <div className="t-entry-partner">
+              <div className="text-xs text-muted-foreground">
                 + {entry.partnerFamilyName}
                 {entry.partnerFirstName ? `, ${entry.partnerFirstName}` : ''}
               </div>
             )}
             {entry.isAlternate && (
-              <span className="t-alt-badge">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
+              <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.62rem] font-bold mt-0.5">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
             )}
           </>
         )}
-      </td>
-      <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
-      <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
-      <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
-      <td className="t-entry-sc">
-        {entry.statusCode ? <span className="t-sc-badge">{entry.statusCode}</span> : <span className="t-entry-dash">—</span>}
-      </td>
+      </TableCell>
+      <TableCell>{entry.aitaReg || <Dash />}</TableCell>
+      <TableCell>{entry.playerState || <Dash />}</TableCell>
+      <TableCell>{entry.ranking || <Dash />}</TableCell>
+      <TableCell>
+        {entry.statusCode ? <span className={scBadgeCls}>{entry.statusCode}</span> : <Dash />}
+      </TableCell>
       {isOwner && !swapMode && (
-        <td className="t-entry-actions">
-          {!isBye && <button className="t-icon-btn" onClick={() => onEdit(entry)} title="Edit">✎</button>}
-          {!isBye && !isWithdrawn && (
-            <button className="t-icon-btn t-icon-btn-wd" onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
-          )}
-          {!isBye && onMove && (
-            <select
-              className="t-move-select"
-              value=""
-              title="Move to group"
-              onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
-              style={{ fontSize: 11, padding: '2px 2px', background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#aaa)', border: '1px solid var(--border,#333)', borderRadius: 3, cursor: 'pointer' }}
-            >
-              <option value="">Move→</option>
-              {currentGroup !== 'main'       && <option value="main">Main Draw</option>}
-              {currentGroup !== 'qualifying' && <option value="qualifying">Qualifying</option>}
-              {currentGroup !== 'alternates' && <option value="alternates">Alternates</option>}
-              {currentGroup !== 'withdrawal' && <option value="withdrawal">Withdrawal</option>}
-            </select>
-          )}
-          <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
-        </td>
+        <TableCell>
+          <div className="flex items-center gap-1">
+            {!isBye && <button className={iconBtnCls} onClick={() => onEdit(entry)} title="Edit">✎</button>}
+            {!isBye && !isWithdrawn && (
+              <button className={cn(iconBtnCls, 'hover:text-chart-2')} onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
+            )}
+            {!isBye && onMove && (
+              <select
+                className={moveSelectCls}
+                value=""
+                title="Move to group"
+                onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
+              >
+                <option value="">Move→</option>
+                {currentGroup !== 'main'       && <option value="main">Main Draw</option>}
+                {currentGroup !== 'qualifying' && <option value="qualifying">Qualifying</option>}
+                {currentGroup !== 'alternates' && <option value="alternates">Alternates</option>}
+                {currentGroup !== 'withdrawal' && <option value="withdrawal">Withdrawal</option>}
+              </select>
+            )}
+            <button className={cn(iconBtnCls, 'hover:text-destructive')} onClick={() => onDelete(entry.id)} title="Remove">✕</button>
+          </div>
+        </TableCell>
       )}
-    </tr>
+    </UITableRow>
   );
 }
 
@@ -1192,42 +1201,43 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
 // ---------------------------------------------------------------------------
 function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove }) {
   return (
-    <tr className="t-entry-row">
-      <td className="t-entry-pos">#{entry.position - maxPos}</td>
-      <td className="t-entry-name">
-        <div className="t-entry-name-main">
+    <UITableRow>
+      <TableCell className="font-mono">#{entry.position - maxPos}</TableCell>
+      <TableCell>
+        <div className="font-semibold text-sm flex items-center gap-1.5">
           {entry.familyName}
-          {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+          {entry.firstName ? <span className="font-normal">, {entry.firstName}</span> : null}
           {entry.isOnsiteSignin && (
-            <span className="t-sc-badge" style={{ marginLeft: 6 }} title="Onsite/walk-in sign-in — no prior ranked registration">
+            <span className={scBadgeCls} title="Onsite/walk-in sign-in — no prior ranked registration">
               ONSITE
             </span>
           )}
         </div>
-      </td>
-      <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
-      <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
-      <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
+      </TableCell>
+      <TableCell>{entry.aitaReg || <Dash />}</TableCell>
+      <TableCell>{entry.playerState || <Dash />}</TableCell>
+      <TableCell>{entry.ranking || <Dash />}</TableCell>
       {isOwner && (
-        <td className="t-entry-actions">
-          {onMove && (
-            <select
-              className="t-move-select"
-              value=""
-              title="Move to group"
-              onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
-              style={{ fontSize: 11, padding: '2px 2px', background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#aaa)', border: '1px solid var(--border,#333)', borderRadius: 3, cursor: 'pointer' }}
-            >
-              <option value="">Move→</option>
-              <option value="main">Main Draw</option>
-              <option value="qualifying">Qualifying</option>
-              <option value="withdrawal">Withdrawal</option>
-            </select>
-          )}
-          <button className="t-icon-btn t-icon-btn-del" onClick={() => onDelete(entry.id)} title="Remove">✕</button>
-        </td>
+        <TableCell>
+          <div className="flex items-center gap-1">
+            {onMove && (
+              <select
+                className={moveSelectCls}
+                value=""
+                title="Move to group"
+                onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
+              >
+                <option value="">Move→</option>
+                <option value="main">Main Draw</option>
+                <option value="qualifying">Qualifying</option>
+                <option value="withdrawal">Withdrawal</option>
+              </select>
+            )}
+            <button className={cn(iconBtnCls, 'hover:text-destructive')} onClick={() => onDelete(entry.id)} title="Remove">✕</button>
+          </div>
+        </TableCell>
       )}
-    </tr>
+    </UITableRow>
   );
 }
 
@@ -1260,82 +1270,70 @@ function WithdrawModal({ entry, event, drawType, matches, alternateEntries, luck
   }
 
   return (
-    <div className="t-modal-overlay" onClick={onClose}>
-      <div className="t-modal" onClick={e => e.stopPropagation()}>
-        <div className="t-modal-header">
-          <span className="t-modal-title">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-sm max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-lg font-display font-extrabold tracking-tight">
             Withdraw {entry.familyName}{entry.firstName ? `, ${entry.firstName}` : ''}
           </span>
-          <button className="drawer-close" onClick={onClose}>✕</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
         </div>
 
         {hasPlayed && (
-          <div className="t-withdraw-note">
+          <div className="rounded-sm bg-chart-2/10 border border-chart-2/30 text-chart-2 text-sm px-3 py-2 mb-3">
             This player has already completed a match — an alternate cannot fill this spot.
           </div>
         )}
 
         {showAlternates && (
-          <>
-            <div className="t-section-label">Call In an Alternate</div>
+          <div className="mb-3">
+            <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1.5">Call In an Alternate</div>
             {alternateEntries.length === 0 ? (
-              <div className="t-withdraw-empty">No alternates entered for this draw.</div>
+              <div className="text-sm text-muted-foreground">No alternates entered for this draw.</div>
             ) : (
-              <div className="t-withdraw-list">
+              <div className="space-y-1.5">
                 {alternateEntries.map(alt => (
-                  <div key={alt.id} className="t-withdraw-item">
-                    <span>
+                  <div key={alt.id} className="flex items-center justify-between gap-3 p-2.5 rounded-sm border border-border bg-card">
+                    <span className="text-sm flex items-center gap-1.5">
                       {alt.familyName}{alt.firstName ? `, ${alt.firstName}` : ''}
                       {alt.ranking ? ` (rank ${alt.ranking})` : ''}
-                      {alt.isOnsiteSignin && <span className="t-sc-badge" style={{ marginLeft: 6 }}>ONSITE</span>}
+                      {alt.isOnsiteSignin && <span className={scBadgeCls}>ONSITE</span>}
                     </span>
-                    <button
-                      className="action-btn primary"
-                      disabled={saving}
-                      onClick={() => run(() => onCallInAlternate(alt))}
-                    >
-                      Call In
-                    </button>
+                    <Button size="sm" disabled={saving} onClick={() => run(() => onCallInAlternate(alt))}>Call In</Button>
                   </div>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
 
         {showLuckyLosers && (
-          <>
-            <div className="t-section-label">Call In a Lucky Loser</div>
+          <div className="mb-3">
+            <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1.5">Call In a Lucky Loser</div>
             {waitingLuckyLosers.length === 0 ? (
-              <div className="t-withdraw-empty">
+              <div className="text-sm text-muted-foreground">
                 No lucky losers available. Run Random Draw on the Lucky Losers tab once qualifying is decided.
               </div>
             ) : (
-              <div className="t-withdraw-list">
+              <div className="space-y-1.5">
                 {waitingLuckyLosers.map(ll => (
-                  <div key={ll.id} className="t-withdraw-item">
-                    <span>#{ll.priority} — {ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</span>
-                    <button
-                      className="action-btn primary"
-                      disabled={saving}
-                      onClick={() => run(() => onCallInLuckyLoser(ll))}
-                    >
-                      Call In
-                    </button>
+                  <div key={ll.id} className="flex items-center justify-between gap-3 p-2.5 rounded-sm border border-border bg-card">
+                    <span className="text-sm">#{ll.priority} — {ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</span>
+                    <Button size="sm" disabled={saving} onClick={() => run(() => onCallInLuckyLoser(ll))}>Call In</Button>
                   </div>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
 
-        {error && <div className="login-error" style={{ marginTop: 8 }}>{error}</div>}
+        {error && <div className="text-sm text-destructive mb-2">{error}</div>}
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <button className="action-btn" disabled={saving} onClick={() => run(onNoReplacement)}>
+        <div className="flex gap-2 pt-1">
+          <Button variant="outline" disabled={saving} onClick={() => run(onNoReplacement)}>
             {hasPlayed ? 'Grant Walkover to Opponent' : 'Withdraw — No Replacement'}
-          </button>
-          <button className="action-btn" onClick={onClose} disabled={saving}>Cancel</button>
+          </Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
         </div>
       </div>
     </div>
@@ -1352,46 +1350,45 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
   const hasAny = luckyLosers.length > 0;
 
   return (
-    <div className="page-scroll">
+    <div className="space-y-3">
       {isOwner && (
-        <div style={{ padding: '8px 16px' }}>
-          <button className="action-btn t-engine-btn" onClick={onRandomDraw} disabled={drawing}>
-            {drawing ? 'Drawing…' : hasAny ? '↺ Re-Draw' : '🎲 Random Draw'}
-          </button>
-        </div>
+        <Button onClick={onRandomDraw} disabled={drawing}>
+          {drawing ? 'Drawing…' : hasAny ? '↺ Re-Draw' : '🎲 Random Draw'}
+        </Button>
       )}
       {luckyLosers.length === 0 ? (
-        <div className="history-empty">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
           No lucky losers drawn yet. Run Random Draw once the qualifying deciding round is complete.
         </div>
       ) : (
-        <div className="t-entry-table-wrap">
-          <table className="t-entry-table">
-            <thead>
-              <tr>
-                <th>#</th><th>Player</th><th>AITA Reg</th><th>Status</th>
-                {isOwner && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-sm border border-border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <UITableRow>
+                <TableHead>#</TableHead><TableHead>Player</TableHead><TableHead>AITA Reg</TableHead><TableHead>Status</TableHead>
+                {isOwner && <TableHead />}
+              </UITableRow>
+            </TableHeader>
+            <TableBody>
               {luckyLosers.map(ll => (
-                <tr key={ll.id}>
-                  <td>{ll.priority}</td>
-                  <td>{ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</td>
-                  <td>{ll.entry?.aitaReg || <span className="t-entry-dash">—</span>}</td>
-                  <td>
+                <UITableRow key={ll.id}>
+                  <TableCell>{ll.priority}</TableCell>
+                  <TableCell>{ll.entry?.familyName}{ll.entry?.firstName ? `, ${ll.entry.firstName}` : ''}</TableCell>
+                  <TableCell>{ll.entry?.aitaReg || <Dash />}</TableCell>
+                  <TableCell>
                     {ll.status === 'called_in'
-                      ? <span className="t-ll-status-badge t-ll-called">Called In</span>
-                      : <span className="t-ll-status-badge t-ll-waiting">Waiting</span>}
-                  </td>
+                      ? <span className="inline-flex items-center rounded-sm bg-chart-3/15 text-chart-3 px-2 py-0.5 text-[0.68rem] font-semibold">Called In</span>
+                      : <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.68rem] font-semibold">Waiting</span>}
+                  </TableCell>
                   {isOwner && (
-                    <td>
+                    <TableCell>
                       {ll.status === 'waiting' && (
                         unresolvedWithdrawn.length === 0 ? (
-                          <span className="t-entry-dash">No open slot</span>
+                          <span className="text-muted-foreground">No open slot</span>
                         ) : (
-                          <div style={{ display: 'flex', gap: 6 }}>
+                          <div className="flex items-center gap-1.5">
                             <select
+                              className={selectCls}
                               value={pickedTarget[ll.id] || ''}
                               onChange={e => setPickedTarget(prev => ({ ...prev, [ll.id]: e.target.value }))}
                             >
@@ -1400,22 +1397,16 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
                                 <option key={e.id} value={e.id}>Pos {e.position} — {e.familyName}</option>
                               ))}
                             </select>
-                            <button
-                              className="action-btn primary"
-                              disabled={!pickedTarget[ll.id]}
-                              onClick={() => onCallIn(pickedTarget[ll.id], ll)}
-                            >
-                              Call In
-                            </button>
+                            <Button size="sm" disabled={!pickedTarget[ll.id]} onClick={() => onCallIn(pickedTarget[ll.id], ll)}>Call In</Button>
                           </div>
                         )
                       )}
-                    </td>
+                    </TableCell>
                   )}
-                </tr>
+                </UITableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -1437,45 +1428,45 @@ function AuditLogPanel({ eventId }) {
     return () => { cancelled = true; };
   }, [eventId]);
 
-  if (loadError) return <div className="page-scroll"><div className="login-error">{loadError}</div></div>;
-  if (rows === null) return <div className="page-scroll"><div className="history-empty">Loading…</div></div>;
+  if (loadError) return <div className="text-sm text-destructive">{loadError}</div>;
+  if (rows === null) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   return (
-    <div className="page-scroll">
+    <div>
       {rows.length === 0 ? (
-        <div className="history-empty">No withdrawals logged yet.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No withdrawals logged yet.</div>
       ) : (
-        <div className="t-entry-table-wrap">
-          <table className="t-entry-table">
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Draw</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Initiated By</th>
-                <th>Penalty</th>
-                <th>Replacement</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-sm border border-border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <UITableRow>
+                <TableHead>Player</TableHead>
+                <TableHead>Draw</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Initiated By</TableHead>
+                <TableHead>Penalty</TableHead>
+                <TableHead>Replacement</TableHead>
+              </UITableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map(row => (
-                <tr key={row.id}>
-                  <td className="t-entry-name">{row.playerName}{row.aitaReg ? ` (${row.aitaReg})` : ''}</td>
-                  <td>{row.drawType === 'qualifying' ? 'Qualifying' : 'Main'}</td>
-                  <td>{row.withdrawalType}</td>
-                  <td>{row.withdrawalDate}</td>
-                  <td>{row.initiatedBy === 'self' ? 'Self' : 'Referee'}</td>
-                  <td>
+                <UITableRow key={row.id}>
+                  <TableCell className="font-semibold">{row.playerName}{row.aitaReg ? ` (${row.aitaReg})` : ''}</TableCell>
+                  <TableCell>{row.drawType === 'qualifying' ? 'Qualifying' : 'Main'}</TableCell>
+                  <TableCell>{row.withdrawalType}</TableCell>
+                  <TableCell>{row.withdrawalDate}</TableCell>
+                  <TableCell>{row.initiatedBy === 'self' ? 'Self' : 'Referee'}</TableCell>
+                  <TableCell>
                     {row.penaltyPoints
-                      ? <span className="t-stat-gap" title={row.penaltyReason || ''}>{row.penaltyPoints} pts</span>
-                      : <span className="t-entry-dash">—</span>}
-                  </td>
-                  <td>{row.replacementName || <span className="t-entry-dash">—</span>}</td>
-                </tr>
+                      ? <span className="text-chart-2 font-semibold" title={row.penaltyReason || ''}>{row.penaltyPoints} pts</span>
+                      : <Dash />}
+                  </TableCell>
+                  <TableCell>{row.replacementName || <Dash />}</TableCell>
+                </UITableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -1504,16 +1495,16 @@ function DrawLinePlayer({ entry, pos, selected, swapMode, onClick }) {
       <span className="t-ds-pos">{pos}</span>
       {entry?.seed && <span className="t-ds-seed">[{entry.seed}]</span>}
       <span className="t-ds-name">
-        {isEmpty  ? <span className="t-entry-dash">—</span>  :
+        {isEmpty  ? <Dash />  :
          isBye    ? 'BYE'                                      :
          `${entry.familyName}${entry.firstName ? ', ' + entry.firstName : ''}`}
       </span>
-      {isWithdrawn && <span className="t-wd-label"> WD</span>}
+      {isWithdrawn && <span className="text-destructive font-bold text-xs"> WD</span>}
       {!isBye && !isEmpty && entry.playerState && (
         <span className="t-ds-state">{entry.playerState}</span>
       )}
       {!isBye && !isEmpty && entry.statusCode && (
-        <span className="t-sc-badge" style={{ marginLeft: 6 }}>{entry.statusCode}</span>
+        <span className={cn(scBadgeCls, 'ml-1.5')}>{entry.statusCode}</span>
       )}
     </div>
   );
@@ -1606,86 +1597,80 @@ function ScoreModal({ match, entry1, entry2, onSave, onClose }) {
   }
 
   return (
-    <div className="t-modal-overlay" onClick={onClose}>
-      <div className="t-modal" onClick={e => e.stopPropagation()}>
-        <div className="t-modal-header">
-          <span className="t-modal-title">Enter Result</span>
-          <button className="drawer-close" onClick={onClose}>✕</button>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-sm max-w-md w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-lg font-display font-extrabold tracking-tight">Enter Result</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
         </div>
 
         {/* Match players */}
-        <div className="t-score-matchup">
-          <div className="t-score-player">{p1Name}</div>
-          <div className="t-score-vs">vs</div>
-          <div className="t-score-player">{p2Name}</div>
+        <div className="flex items-center justify-center gap-2.5 py-3 border-b border-border mb-4 text-center">
+          <div className="flex-1 font-bold text-sm">{p1Name}</div>
+          <div className="text-muted-foreground text-xs font-mono shrink-0">vs</div>
+          <div className="flex-1 font-bold text-sm">{p2Name}</div>
         </div>
 
-        <form onSubmit={handleSave} className="t-create-form">
+        <form onSubmit={handleSave} className="space-y-3">
           {/* Outcome type */}
-          <div className="field">
-            <label>Outcome</label>
-            <div className="t-outcome-btns">
+          <Field label="Outcome">
+            <div className="flex gap-1.5 flex-wrap">
               {OUTCOME_TYPES.map(o => (
                 <button key={o} type="button"
-                  className={'t-outcome-btn' + (outcomeType === o ? ' active' : '')}
+                  className={cn('flex-1 min-w-20 rounded-sm border px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide', outcomeType === o ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
                   onClick={() => setOutcomeType(o)}>
                   {o.charAt(0).toUpperCase() + o.slice(1)}
                 </button>
               ))}
             </div>
-          </div>
+          </Field>
 
           {/* Score (shown only for "score" outcome) */}
           {outcomeType === 'score' && (
-            <div className="field">
-              <label>Score</label>
-              <input
+            <Field label="Score">
+              <Input
                 value={score}
                 onChange={e => setScore(e.target.value)}
                 placeholder="e.g. 6-3, 7-5  or  6-4, 3-6, 6-2"
                 autoFocus
               />
-            </div>
+            </Field>
           )}
 
           {/* Winner */}
-          <div className="field">
-            <label>Winner</label>
-            <div className="t-winner-btns">
+          <Field label="Winner">
+            <div className="flex gap-2">
               {entry1 && !entry1.isBye && (
                 <button type="button"
-                  className={'t-winner-btn' + (winnerId === match.entry1Id ? ' active' : '')}
+                  className={cn('flex-1 rounded-sm border px-3 py-2.5 text-sm font-semibold text-center', winnerId === match.entry1Id ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
                   onClick={() => setWinnerId(match.entry1Id)}>
                   {p1Name}
                 </button>
               )}
               {entry2 && !entry2.isBye && (
                 <button type="button"
-                  className={'t-winner-btn' + (winnerId === match.entry2Id ? ' active' : '')}
+                  className={cn('flex-1 rounded-sm border px-3 py-2.5 text-sm font-semibold text-center', winnerId === match.entry2Id ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
                   onClick={() => setWinnerId(match.entry2Id)}>
                   {p2Name}
                 </button>
               )}
             </div>
-          </div>
+          </Field>
 
           {/* Umpire */}
-          <div className="field">
-            <label>Umpire (optional)</label>
-            <input
+          <Field label="Umpire (optional)">
+            <Input
               value={umpire}
               onChange={e => setUmpire(e.target.value)}
               placeholder="Umpire name"
             />
-          </div>
+          </Field>
 
-          {error && <div className="login-error" style={{ marginTop: 8 }}>{error}</div>}
+          {error && <div className="text-sm text-destructive">{error}</div>}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" className="action-btn primary" disabled={saving}>
-              {saving ? 'Saving…' : 'Save Result'}
-            </button>
-            <button type="button" className="action-btn" onClick={onClose}>Cancel</button>
+          <div className="flex gap-2 pt-2">
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Result'}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           </div>
         </form>
       </div>
@@ -1816,7 +1801,6 @@ function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore
 export default function EventDetailPage() {
   const { id: weekId, eventId } = useParams();
   const { user } = useAuth();
-  const { theme } = useTheme();
 
   const [week,    setWeek]    = useState(null);
   const [event,   setEvent]   = useState(null);
@@ -2316,37 +2300,34 @@ export default function EventDetailPage() {
 
   // ---- RENDER --------------------------------------------------------------
   if (loading) return (
-    <div className="root">{theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-      <div className="page-scroll"><div className="history-empty">Loading…</div></div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto">
+      <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading…</div>
     </div>
   );
 
   if (error && !event) return (
-    <div className="root">{theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-      <div className="page-scroll"><div className="history-empty">{error}</div></div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto">
+      <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
     </div>
   );
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="header">
-        <div className="title-row">
+      <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="t-breadcrumb">
-              <Link to="/tournaments">Tournaments</Link>
-              <span> / </span>
-              <Link to={`/tournaments/${weekId}`}>{week?.name}</Link>
-              <span> / </span>
-              <span>{event?.category} {event?.ageGroup}</span>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+              <Link to="/tournaments" className="hover:text-foreground">Tournaments</Link>
+              <span>/</span>
+              <Link to={`/tournaments/${weekId}`} className="hover:text-foreground">{week?.name}</Link>
+              <span>/</span>
+              <span className="text-foreground">{event?.category} {event?.ageGroup}</span>
             </div>
-            <h1 className="title">{event?.category}</h1>
-            <div className="subtitle">
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{event?.category}</h1>
+            <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
               {event?.ageGroup} · {week?.name}
               {event?.entriesOpen && (
-                <span style={{ marginLeft: 10, background: '#1a6b3a', color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11, verticalAlign: 'middle' }}>
+                <span className="inline-flex items-center rounded-sm bg-chart-3/15 text-chart-3 px-2 py-0.5 text-[0.68rem] font-semibold">
                   Entries Open
                 </span>
               )}
@@ -2355,80 +2336,61 @@ export default function EventDetailPage() {
 
           {/* Action buttons — context-aware */}
           {activeTab !== 'lucky_losers' && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div className="flex flex-wrap items-start gap-2">
             {isOwner && viewMode !== 'bracket' && (
               <>
-                <button className="action-btn primary"
-                  onClick={() => { setEditingEntry(null); setShowAdd(true); }}>
-                  + Add Player
-                </button>
-                <button className="action-btn" onClick={() => setShowBulk(true)}>
-                  Bulk Import
-                </button>
+                <Button onClick={() => { setEditingEntry(null); setShowAdd(true); }}>+ Add Player</Button>
+                <Button variant="outline" onClick={() => setShowBulk(true)}>Bulk Import</Button>
                 {hasSeededPlayers && (
-                  <button className="action-btn t-engine-btn"
-                    onClick={handleAutoSeed} disabled={seeding}>
+                  <Button variant="outline" onClick={handleAutoSeed} disabled={seeding}>
                     {seeding ? 'Seeding…' : '⚡ Auto-Seed'}
-                  </button>
+                  </Button>
                 )}
                 {hasGaps && !byeCount && (
-                  <button className="action-btn t-engine-btn"
-                    onClick={handleFillByes} disabled={fillingByes}>
+                  <Button variant="outline" onClick={handleFillByes} disabled={fillingByes}>
                     {fillingByes ? 'Filling…' : '+ Fill BYEs'}
-                  </button>
+                  </Button>
                 )}
                 {byeCount > 0 && !hasGaps && (
-                  <button className="action-btn t-engine-btn" onClick={handleClearByes}>
-                    Clear BYEs
-                  </button>
+                  <Button variant="outline" onClick={handleClearByes}>Clear BYEs</Button>
                 )}
                 {mainEntries.length > 0 && !hasGaps && (
-                  <button
-                    className={'action-btn t-swap-btn' + (swapMode ? ' active' : '')}
+                  <Button
+                    variant={swapMode ? 'default' : 'outline'}
                     onClick={toggleSwapMode}
                   >
                     {swapMode ? (selectedEntry ? `Swap: ${selectedEntry.familyName}…` : 'Click to swap') : '⇅ Swap'}
-                  </button>
+                  </Button>
                 )}
               </>
             )}
             {/* Randomize Draw — organiser only, before publishing */}
             {isOwner && playerCount > 0 && event?.status === 'setup' && (
-              <button
-                className="action-btn"
-                style={{ background: '#1a4b8a', color: '#fff' }}
-                onClick={handleRandomizeDraw}
-                disabled={seeding}
-              >
+              <Button onClick={handleRandomizeDraw} disabled={seeding}>
                 {seeding ? 'Shuffling…' : '🎲 Randomize Draw'}
-              </button>
+              </Button>
             )}
             {/* Publish Draw / Re-generate Bracket */}
             {isOwner && playerCount > 0 && (
-              <button
-                className="action-btn t-gen-btn"
-                onClick={handleGenerateBracket}
-                disabled={generating}
-              >
+              <Button onClick={handleGenerateBracket} disabled={generating}>
                 {generating
                   ? 'Publishing…'
                   : event?.status !== 'setup'
                     ? '↺ Regenerate Bracket'
                     : '▶ Publish Draw'}
-              </button>
+              </Button>
             )}
             {/* Promote Qualifiers — visible when qualifying draw is fully decided */}
             {isOwner && qualComplete && (
-              <button className="action-btn t-promote-btn" onClick={handlePromoteQualifiers}>
+              <Button className="bg-chart-3 text-white hover:bg-chart-3/90" onClick={handlePromoteQualifiers}>
                 ✓ Promote Qualifiers → Main
-              </button>
+              </Button>
             )}
             {/* Open / Close / Freeze entries — organiser only */}
             {isOwner && (
               <>
-                <button
-                  className="action-btn"
-                  style={{ background: event?.entriesOpen ? '#7c3a00' : 'var(--accent,#1a6b3a)', color: '#fff' }}
+                <Button
+                  className={cn(event?.entriesOpen ? 'bg-chart-2 text-white hover:bg-chart-2/90' : 'bg-chart-3 text-white hover:bg-chart-3/90')}
                   onClick={async () => {
                     try {
                       const opening = !event?.entriesOpen;
@@ -2449,11 +2411,11 @@ export default function EventDetailPage() {
                   }}
                 >
                   {event?.entriesOpen ? 'Close Entries' : 'Open Entries'}
-                </button>
+                </Button>
                 {event?.entriesOpen && (
-                  <button
-                    className="action-btn"
-                    style={{ background: '#4b1fa0', color: '#fff' }}
+                  <Button
+                    variant="outline"
+                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
                     onClick={async () => {
                       if (!window.confirm('Freeze entries? Players will no longer be able to self-enter or withdraw online. This cannot be undone easily.')) return;
                       try {
@@ -2463,14 +2425,14 @@ export default function EventDetailPage() {
                     }}
                   >
                     🔒 Freeze Entries
-                  </button>
+                  </Button>
                 )}
               </>
             )}
             {/* PDF draw sheet — always available when entries exist */}
             {mainEntries.length > 0 && (
-              <button
-                className="action-btn t-pdf-btn"
+              <Button
+                variant="outline"
                 onClick={() => generateDrawSheetPDF({
                   event: { ...event, drawType },
                   week,
@@ -2479,41 +2441,40 @@ export default function EventDetailPage() {
                 })}
               >
                 ⬇ PDF
-              </button>
+              </Button>
             )}
           </div>
           )}
         </div>
-      </div>
 
       {/* Draw-type tabs — always visible */}
-      <div className="t-draw-tabs">
-        <button className={'t-draw-tab' + (activeTab === 'main' ? ' active' : '')}
+      <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
+        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'main' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
           Main Draw ({event?.drawSize ?? '?'})
         </button>
         {event?.hasQualifying && (
-          <button className={'t-draw-tab' + (activeTab === 'qualifying' ? ' active' : '')}
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'qualifying' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             onClick={() => { setActiveTab('qualifying'); setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
             Qualifying ({event.qualifyingSize || '—'})
           </button>
         )}
-        <button className={'t-draw-tab' + (activeTab === 'alternates' ? ' active' : '')}
+        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'alternates' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => { setActiveTab('alternates'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
           Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
         </button>
-        <button className={'t-draw-tab' + (activeTab === 'withdrawal' ? ' active' : '')}
+        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'withdrawal' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => { setActiveTab('withdrawal'); setSwapMode(false); setSelectedEntry(null); }}>
           Withdrawal{withdrawnEntries.length > 0 ? ` (${withdrawnEntries.length})` : ''}
         </button>
         {event?.hasQualifying && (
-          <button className={'t-draw-tab' + (activeTab === 'lucky_losers' ? ' active' : '')}
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'lucky_losers' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             onClick={() => { setActiveTab('lucky_losers'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
             Lucky Losers
           </button>
         )}
         {isOwner && (
-          <button className={'t-draw-tab' + (activeTab === 'audit_log' ? ' active' : '')}
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'audit_log' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             onClick={() => { setActiveTab('audit_log'); setSwapMode(false); setSelectedEntry(null); }}>
             Audit Log
           </button>
@@ -2522,31 +2483,31 @@ export default function EventDetailPage() {
 
       {/* View toggle + stats — only for draw tabs; hidden from players before draw is published */}
       {(activeTab === 'main' || activeTab === 'qualifying') && (isOwner || event?.status !== 'setup') && (
-      <div className="t-view-bar">
-        <div className="t-view-stats">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground flex items-center flex-wrap gap-1">
           <span>{playerCount} player{playerCount !== 1 ? 's' : ''}</span>
-          {byeCount > 0 && <span className="t-stat-bye"> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
-          {hasGaps && <span className="t-stat-gap"> · {maxPos - mainEntries.length} open</span>}
+          {byeCount > 0 && <span> · {byeCount} BYE{byeCount !== 1 ? 's' : ''}</span>}
+          {hasGaps && <span> · {maxPos - mainEntries.length} open</span>}
           {activeTab === 'main' && event?.isDoubles && playerCount > 0 && playerCount < DOUBLES_MIN_PAIRS_FOR_POINTS && (
-            <span className="t-stat-gap" title="AITA rule: doubles draws need at least 8 pairs for ranking points to be awarded.">
+            <span title="AITA rule: doubles draws need at least 8 pairs for ranking points to be awarded.">
               {' '}· below {DOUBLES_MIN_PAIRS_FOR_POINTS} pairs — no ranking points
             </span>
           )}
           {event?.status && event.status !== 'setup' && (
-            <span className={`t-status-badge t-status-${event.status}`} style={{ marginLeft: 8 }}>
+            <span className={cn('inline-flex items-center rounded-sm px-2 py-0.5 text-[0.68rem] font-semibold ml-2', STATUS_STYLES[event.status] || 'bg-muted text-muted-foreground')}>
               {event.status.replace('_', ' ')}
             </span>
           )}
         </div>
-        <div className="t-view-toggle">
-          <button className={'t-vtab' + (viewMode === 'list' ? ' active' : '')}
+        <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', viewMode === 'list' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             onClick={() => setViewMode('list')}>List</button>
           {matches.length === 0 && (
-            <button className={'t-vtab' + (viewMode === 'drawsheet' ? ' active' : '')}
+            <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', viewMode === 'drawsheet' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
               onClick={() => setViewMode('drawsheet')}>Draw Sheet</button>
           )}
           {matches.length > 0 && (
-            <button className={'t-vtab' + (viewMode === 'bracket' ? ' active' : '')}
+            <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', viewMode === 'bracket' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
               onClick={() => setViewMode('bracket')}>Bracket</button>
           )}
         </div>
@@ -2555,23 +2516,23 @@ export default function EventDetailPage() {
 
       {/* Progress bar — only for draw tabs; organiser only before publish */}
       {(activeTab === 'main' || activeTab === 'qualifying') && (isOwner || event?.status !== 'setup') && viewMode !== 'bracket' && (
-        <div className="t-entry-progress">
-          <div className="t-entry-progress-label">
+        <div>
+          <div className="flex items-center justify-between text-sm mb-1.5">
             <span><strong>{mainEntries.length}</strong> / {maxPos} positions filled</span>
-            <span className="t-entry-progress-pct">{fillPct}%</span>
+            <span className="text-muted-foreground">{fillPct}%</span>
           </div>
-          <div className="t-progress-track">
-            <div className="t-progress-fill" style={{ width: `${fillPct}%` }} />
+          <div className="h-2 rounded-sm bg-muted">
+            <div className="h-full rounded-sm bg-primary" style={{ width: `${fillPct}%` }} />
           </div>
         </div>
       )}
 
-      {error && <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>{error}</div>}
+      {error && <div className="text-sm text-destructive">{error}</div>}
       {(activeTab === 'main' || activeTab === 'qualifying') && swapMode && (
-        <div className="t-swap-hint">
+        <div className="rounded-sm bg-primary/10 border border-primary/30 text-primary text-sm px-3 py-2 flex items-center gap-3">
           {selectedEntry ? `Click another player to swap with ${selectedEntry.familyName}.`
             : 'Click any player to select, then click another to swap positions.'}
-          <button className="t-swap-cancel" onClick={toggleSwapMode}>Cancel</button>
+          <button className="ml-auto bg-transparent text-primary underline text-sm" onClick={toggleSwapMode}>Cancel</button>
         </div>
       )}
 
@@ -2588,93 +2549,93 @@ export default function EventDetailPage() {
           onCallIn={handleCallInLuckyLoserFromTab}
         />
       ) : activeTab === 'alternates' ? (
-        <div className="page-scroll">
+        <div>
           {alternateEntries.length === 0 ? (
-            <div className="history-empty">No alternates yet. Use + Add Player (alternate) or import via Bulk Import → Alternates tab.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No alternates yet. Use + Add Player (alternate) or import via Bulk Import → Alternates tab.</div>
           ) : (
-            <div className="t-entry-table-wrap">
-              <table className="t-entry-table">
-                <thead>
-                  <tr>
-                    <th className="t-th-pos">#</th>
-                    <th>Player</th>
-                    <th className="t-th-aita">AITA Reg</th>
-                    <th className="t-th-state">State</th>
-                    <th className="t-th-rank">Rank</th>
-                    {isOwner && <th className="t-th-actions"></th>}
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="rounded-sm border border-border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <UITableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Player</TableHead>
+                    <TableHead>AITA Reg</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>Rank</TableHead>
+                    {isOwner && <TableHead />}
+                  </UITableRow>
+                </TableHeader>
+                <TableBody>
                   {alternateEntries.map(entry => (
                     <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} />
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
       ) : activeTab === 'withdrawal' ? (
-        <div className="page-scroll">
+        <div>
           {withdrawnEntries.length === 0 ? (
-            <div className="history-empty">No withdrawal list entries. Use Bulk Import → Full List to import the full acceptance list including withdrawals.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No withdrawal list entries. Use Bulk Import → Full List to import the full acceptance list including withdrawals.</div>
           ) : (
-            <div className="t-entry-table-wrap">
-              <table className="t-entry-table">
-                <thead>
-                  <tr>
-                    <th className="t-th-pos">#</th>
-                    <th>Player</th>
-                    <th className="t-th-aita">AITA Reg</th>
-                    <th className="t-th-state">State</th>
-                    <th className="t-th-rank">Rank</th>
-                    <th className="t-th-sc">Type</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="rounded-sm border border-border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <UITableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Player</TableHead>
+                    <TableHead>AITA Reg</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Type</TableHead>
+                  </UITableRow>
+                </TableHeader>
+                <TableBody>
                   {withdrawnEntries.map((entry, i) => (
-                    <tr key={entry.id} className="t-entry-row t-entry-withdrawn">
-                      <td className="t-entry-pos">{i + 1}</td>
-                      <td className="t-entry-name">
-                        <div className="t-entry-name-main">
+                    <UITableRow key={entry.id} className="opacity-60">
+                      <TableCell className="font-mono">{i + 1}</TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-sm">
                           {entry.familyName}
-                          {entry.firstName ? <span className="t-entry-first">, {entry.firstName}</span> : null}
+                          {entry.firstName ? <span className="font-normal">, {entry.firstName}</span> : null}
                         </div>
-                      </td>
-                      <td className="t-entry-aita">{entry.aitaReg || <span className="t-entry-dash">—</span>}</td>
-                      <td className="t-entry-state">{entry.playerState || <span className="t-entry-dash">—</span>}</td>
-                      <td className="t-entry-rank">{entry.ranking || <span className="t-entry-dash">—</span>}</td>
-                      <td className="t-entry-sc">
-                        <span className="t-sc-badge" style={{ background: '#7c3a00', color: '#ffd9b0' }}>
+                      </TableCell>
+                      <TableCell>{entry.aitaReg || <Dash />}</TableCell>
+                      <TableCell>{entry.playerState || <Dash />}</TableCell>
+                      <TableCell>{entry.ranking || <Dash />}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.68rem] font-semibold">
                           {entry.withdrawalType || 'W'}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </UITableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
       ) : (
-      <div className="page-scroll">
+      <div>
         {/* Players cannot see draw until organiser publishes it */}
         {!isOwner && event?.status === 'setup' && mainEntries.length > 0 ? (
-          <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.2rem', marginBottom: 10 }}>📋</div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 6 }}>Draw Not Yet Announced</div>
-            <div style={{ color: 'var(--text3,#777)', fontSize: 13 }}>
+          <div className="py-10 px-4 text-center">
+            <div className="text-4xl mb-2.5">📋</div>
+            <div className="font-bold text-base mb-1.5">Draw Not Yet Announced</div>
+            <div className="text-sm text-muted-foreground">
               The organiser will publish the draw soon. Check back later.
             </div>
           </div>
 
         ) : mainEntries.length === 0 ? (
-          <div className="history-empty">
+          <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
             {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
           </div>
 
         ) : viewMode === 'bracket' ? (
           matches.length === 0 ? (
-            <div className="history-empty">Bracket not generated yet.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Bracket not generated yet.</div>
           ) : (
             <BracketView
               matches={matches}
@@ -2698,22 +2659,22 @@ export default function EventDetailPage() {
           />
 
         ) : (
-          <>
-            <div className="t-entry-table-wrap">
-              <table className="t-entry-table">
-                <thead>
-                  <tr>
-                    <th className="t-th-pos">Pos</th>
-                    <th className="t-th-seed">Seed</th>
-                    <th>{event?.isDoubles ? 'Team' : 'Player'}</th>
-                    <th className="t-th-aita">AITA Reg</th>
-                    <th className="t-th-state">State</th>
-                    <th className="t-th-rank">Rank</th>
-                    <th className="t-th-sc">SC</th>
-                    {isOwner && !swapMode && <th className="t-th-actions"></th>}
-                  </tr>
-                </thead>
-                <tbody>
+          <div className="space-y-4">
+            <div className="rounded-sm border border-border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <UITableRow>
+                    <TableHead>Pos</TableHead>
+                    <TableHead>Seed</TableHead>
+                    <TableHead>{event?.isDoubles ? 'Team' : 'Player'}</TableHead>
+                    <TableHead>AITA Reg</TableHead>
+                    <TableHead>State</TableHead>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>SC</TableHead>
+                    {isOwner && !swapMode && <TableHead />}
+                  </UITableRow>
+                </TableHeader>
+                <TableBody>
                   {sortedEntries.map(entry => (
                     <EntryRow
                       key={entry.id}
@@ -2730,34 +2691,34 @@ export default function EventDetailPage() {
                       currentGroup={activeTab}
                     />
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Alternates — only meaningful for the main draw */}
             {activeTab === 'main' && !swapMode && (
-              <div style={{ marginTop: 18 }}>
-                <div className="t-section-label" style={{ padding: '0 16px' }}>
+              <div>
+                <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-2">
                   Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
                 </div>
                 {alternateEntries.length === 0 ? (
-                  <div className="history-empty" style={{ padding: '8px 16px' }}>
+                  <div className="border border-dashed border-border rounded-sm p-4 text-center text-sm text-muted-foreground">
                     None yet — check "Alternate / replacement entry" in + Add Player.
                   </div>
                 ) : (
-                  <div className="t-entry-table-wrap">
-                    <table className="t-entry-table">
-                      <thead>
-                        <tr>
-                          <th className="t-th-pos">#</th>
-                          <th>Player</th>
-                          <th className="t-th-aita">AITA Reg</th>
-                          <th className="t-th-state">State</th>
-                          <th className="t-th-rank">Rank</th>
-                          {isOwner && <th className="t-th-actions"></th>}
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <div className="rounded-sm border border-border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <UITableRow>
+                          <TableHead>#</TableHead>
+                          <TableHead>Player</TableHead>
+                          <TableHead>AITA Reg</TableHead>
+                          <TableHead>State</TableHead>
+                          <TableHead>Rank</TableHead>
+                          {isOwner && <TableHead />}
+                        </UITableRow>
+                      </TableHeader>
+                      <TableBody>
                         {alternateEntries.map(entry => (
                           <AlternateRow
                             key={entry.id}
@@ -2768,13 +2729,13 @@ export default function EventDetailPage() {
                             onMove={isOwner ? handleMoveEntry : undefined}
                           />
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
       )}

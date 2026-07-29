@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
 import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Textarea } from '@/components/primitives/textarea';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
+import { cn } from '../lib/utils';
 
 const SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet', 'Artificial Grass'];
 const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB','HR','UK','HP','JK','OD','AS','MN','NL','SK','TR','MZ','AR','GA','JH','CG','BR','BH'];
@@ -14,6 +17,17 @@ const GRADES = ['National Series', 'Super Series', 'Championship Series (7-Day)'
 const CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles'];
 const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 const DRAW_SIZES = [4, 8, 16, 32, 48, 64, 128];
+
+const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
+
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
 
 // AITA draw defaults by grade + category — verified against the source PDF
 // (see src/utils/aitaGradeRules.js). Also attaches maxMainDirect/maxQualDirect
@@ -59,7 +73,6 @@ function formatDateRange(start, end) {
 
 export default function TournamentsListPage() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [weeks, setWeeks] = useState(null);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -232,467 +245,294 @@ export default function TournamentsListPage() {
     : [];
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <h1 className="title">Tournaments</h1>
-            <div className="subtitle">LIVE EVENTS &amp; DRAW TRACKER</div>
-          </div>
-          {isOrganizer && (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                className="action-btn primary"
-                onClick={() => { pdfInputRef.current?.click(); setParseError(''); }}
-                disabled={parsing}
-                title="Upload AITA Factsheet PDF to auto-fill the form"
-              >
-                {parsing ? 'Reading PDF…' : '⬆ Upload Factsheet PDF'}
-              </button>
-              <button className="action-btn" onClick={openCreateManual}>
-                + Create Manually
-              </button>
-              <input
-                ref={pdfInputRef}
-                type="file"
-                accept=".pdf,application/pdf"
-                style={{ display: 'none' }}
-                onChange={handlePdfUpload}
-              />
-            </div>
-          )}
-          {parseError && (
-            <div className="login-error" style={{ marginTop: 6, fontSize: 13 }}>{parseError}</div>
-          )}
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Live Events &amp; Draw Tracker</div>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Tournaments</h1>
+          {parseError && <div className="text-sm text-destructive mt-1">{parseError}</div>}
         </div>
+        {isOrganizer && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => { pdfInputRef.current?.click(); setParseError(''); }} disabled={parsing} title="Upload AITA Factsheet PDF to auto-fill the form">
+              {parsing ? 'Reading PDF…' : '⬆ Upload Factsheet PDF'}
+            </Button>
+            <Button variant="outline" onClick={openCreateManual}>+ Create Manually</Button>
+            <input ref={pdfInputRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handlePdfUpload} />
+          </div>
+        )}
       </div>
 
       {/* Create Week Modal */}
       {showCreate && (
-        <div className="t-modal-overlay" onClick={closeModal}>
-          <div className="t-modal" onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={closeModal}>
+          <div className="bg-card border border-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <span className="text-lg font-display font-extrabold tracking-tight">
                 {step === 2 ? `Add Events — ${form.name}` : parsedFromPdf ? 'Review Tournament Details' : 'New Tournament Week'}
               </span>
-              <button className="drawer-close" onClick={closeModal}>✕</button>
+              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
             </div>
-            {step === 1 && (
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <span style={{ background: 'var(--accent,#1a6b3a)', color: '#fff', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>1 · Tournament Details</span>
-                <span style={{ background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#888)', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>2 · Add Events</span>
-              </div>
-            )}
-            {step === 2 && (
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                <span style={{ background: 'var(--surface2,#2a2a2a)', color: 'var(--text2,#888)', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>1 · Tournament Details</span>
-                <span style={{ background: 'var(--accent,#1a6b3a)', color: '#fff', borderRadius: 12, padding: '2px 10px', fontSize: 12 }}>2 · Add Events</span>
-              </div>
-            )}
+
+            <div className="flex gap-1.5 mb-4">
+              <span className={cn('rounded-sm px-2.5 py-0.5 text-xs font-semibold', step === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>1 · Tournament Details</span>
+              <span className={cn('rounded-sm px-2.5 py-0.5 text-xs font-semibold', step === 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>2 · Add Events</span>
+            </div>
 
             {parsedFromPdf && step === 1 && (
-              <div style={{
-                background: 'var(--accent, #1a6b3a)', color: '#fff',
-                borderRadius: 6, padding: '8px 12px', margin: '0 0 12px',
-                fontSize: 13, display: 'flex', alignItems: 'center', gap: 8,
-              }}>
+              <div className="rounded-sm bg-primary/10 border border-primary/30 text-primary text-sm px-3 py-2 mb-4 flex items-center gap-2">
                 <span>✓ Auto-filled from Factsheet PDF — review and edit before submitting</span>
-                <button
-                  type="button"
-                  style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16 }}
-                  onClick={() => setParsedFromPdf(false)}
-                  title="Dismiss"
-                >✕</button>
+                <button type="button" className="ml-auto bg-transparent text-primary" onClick={() => setParsedFromPdf(false)} title="Dismiss">✕</button>
               </div>
             )}
 
-            {step === 1 && <form onSubmit={handleStep1} className="t-create-form">
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Tournament Name *</label>
-                  <input
-                    value={form.name}
-                    onChange={e => set('name', e.target.value)}
-                    placeholder="e.g. SMTA AITA Circuit"
-                    autoFocus
-                  />
+            {step === 1 && (
+              <form onSubmit={handleStep1} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Tournament Name *">
+                    <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. SMTA AITA Circuit" autoFocus />
+                  </Field>
+                  <Field label="Subtitle / Series">
+                    <Input value={form.subtitle} onChange={e => set('subtitle', e.target.value)} placeholder="e.g. AITA Circuit" />
+                  </Field>
                 </div>
-                <div className="field">
-                  <label>Subtitle / Series</label>
-                  <input
-                    value={form.subtitle}
-                    onChange={e => set('subtitle', e.target.value)}
-                    placeholder="e.g. AITA Circuit"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Tournament Code">
+                    <Input value={form.tournamentCode} onChange={e => set('tournamentCode', e.target.value)} placeholder="e.g. HYD-2026-07" />
+                  </Field>
+                  <Field label="Surface">
+                    <select className={selectCls} value={form.surface} onChange={e => set('surface', e.target.value)}>
+                      {SURFACES.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </Field>
                 </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Tournament Code</label>
-                  <input
-                    value={form.tournamentCode}
-                    onChange={e => set('tournamentCode', e.target.value)}
-                    placeholder="e.g. HYD-2026-07"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="City">
+                    <Input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Hyderabad" />
+                  </Field>
+                  <Field label="State">
+                    <select className={selectCls} value={form.stateAbbr} onChange={e => set('stateAbbr', e.target.value)}>
+                      <option value="">— State —</option>
+                      {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </Field>
                 </div>
-                <div className="field">
-                  <label>Surface</label>
-                  <select value={form.surface} onChange={e => set('surface', e.target.value)}>
-                    {SURFACES.map(s => <option key={s}>{s}</option>)}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Venue / Facility">
+                    <Input value={form.location} onChange={e => set('location', e.target.value)} placeholder="Club / sports complex" />
+                  </Field>
+                  <Field label="Referee">
+                    <Input value={form.referee} onChange={e => set('referee', e.target.value)} placeholder="Referee name" />
+                  </Field>
                 </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>City</label>
-                  <input
-                    value={form.city}
-                    onChange={e => set('city', e.target.value)}
-                    placeholder="e.g. Hyderabad"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Start Date"><Input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} /></Field>
+                  <Field label="End Date"><Input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} /></Field>
                 </div>
-                <div className="field">
-                  <label>State</label>
-                  <select value={form.stateAbbr} onChange={e => set('stateAbbr', e.target.value)}>
-                    <option value="">— State —</option>
-                    {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Number of Courts">
+                    <Input type="number" min="1" max="20" value={form.numCourts} onChange={e => set('numCourts', e.target.value)} />
+                  </Field>
+                  <Field label="Day Start Time">
+                    <Input type="time" value={form.dayStartTime} onChange={e => set('dayStartTime', e.target.value)} />
+                  </Field>
                 </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Venue / Facility</label>
-                  <input
-                    value={form.location}
-                    onChange={e => set('location', e.target.value)}
-                    placeholder="Club / sports complex"
-                  />
-                </div>
-                <div className="field">
-                  <label>Referee</label>
-                  <input
-                    value={form.referee}
-                    onChange={e => set('referee', e.target.value)}
-                    placeholder="Referee name"
-                  />
-                </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Start Date</label>
-                  <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} />
-                </div>
-                <div className="field">
-                  <label>End Date</label>
-                  <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} />
-                </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Number of Courts</label>
-                  <input
-                    type="number" min="1" max="20"
-                    value={form.numCourts}
-                    onChange={e => set('numCourts', e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>Day Start Time</label>
-                  <input
-                    type="time"
-                    value={form.dayStartTime}
-                    onChange={e => set('dayStartTime', e.target.value)}
-                  />
-                </div>
-              </div>
 
-              {/* ── More Details (optional / Phase 12) ───────────────────── */}
-              <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                <button
-                  type="button"
-                  className="action-btn"
-                  style={{ fontSize: 12, padding: '4px 10px' }}
-                  onClick={() => setShowMore(v => !v)}
-                >
-                  {showMore ? '▲ Hide Details' : '▼ More Details (optional)'}
-                </button>
-              </div>
+                {/* ── More Details (optional / Phase 12) ───────────────────── */}
+                <div className="pt-2 border-t border-border">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowMore(v => !v)}>
+                    {showMore ? '▲ Hide Details' : '▼ More Details (optional)'}
+                  </Button>
+                </div>
 
-              {showMore && (
-                <>
-                  {/* Classification */}
-                  <div className="t-form-row" style={{ marginTop: 10 }}>
-                    <div className="field">
-                      <label>Grade / Series</label>
-                      <select value={form.grade} onChange={e => set('grade', e.target.value)}>
+                {showMore && (
+                  <div className="space-y-3">
+                    <Field label="Grade / Series">
+                      <select className={selectCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
                         <option value="">— select —</option>
                         {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                       </select>
-                    </div>
-                  </div>
+                    </Field>
 
-                  {/* Deadlines */}
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Entry Deadline</label>
-                      <input type="date" value={form.entryDeadline} onChange={e => set('entryDeadline', e.target.value)} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Field label="Entry Deadline"><Input type="date" value={form.entryDeadline} onChange={e => set('entryDeadline', e.target.value)} /></Field>
+                      <Field label="Withdrawal Deadline"><Input type="date" value={form.withdrawalDeadline} onChange={e => set('withdrawalDeadline', e.target.value)} /></Field>
+                      <Field label="Freeze Deadline"><Input type="datetime-local" value={form.freezeDeadline} onChange={e => set('freezeDeadline', e.target.value)} /></Field>
                     </div>
-                    <div className="field">
-                      <label>Withdrawal Deadline</label>
-                      <input type="date" value={form.withdrawalDeadline} onChange={e => set('withdrawalDeadline', e.target.value)} />
-                    </div>
-                    <div className="field">
-                      <label>Freeze Deadline</label>
-                      <input type="datetime-local" value={form.freezeDeadline} onChange={e => set('freezeDeadline', e.target.value)} />
-                    </div>
-                  </div>
 
-                  {/* Qualifying dates */}
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Qualifying Start Date</label>
-                      <input type="date" value={form.qualifyingStartDate} onChange={e => set('qualifyingStartDate', e.target.value)} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Qualifying Start Date"><Input type="date" value={form.qualifyingStartDate} onChange={e => set('qualifyingStartDate', e.target.value)} /></Field>
+                      <Field label="Qualifying End Date"><Input type="date" value={form.qualifyingEndDate} onChange={e => set('qualifyingEndDate', e.target.value)} /></Field>
                     </div>
-                    <div className="field">
-                      <label>Qualifying End Date</label>
-                      <input type="date" value={form.qualifyingEndDate} onChange={e => set('qualifyingEndDate', e.target.value)} />
-                    </div>
-                  </div>
 
-                  {/* Officials */}
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Tournament Director</label>
-                      <input value={form.directorName} onChange={e => set('directorName', e.target.value)} placeholder="Director name" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Tournament Director"><Input value={form.directorName} onChange={e => set('directorName', e.target.value)} placeholder="Director name" /></Field>
+                      <Field label="Director Phone"><Input value={form.directorPhone} onChange={e => set('directorPhone', e.target.value)} placeholder="+91 …" /></Field>
                     </div>
-                    <div className="field">
-                      <label>Director Phone</label>
-                      <input value={form.directorPhone} onChange={e => set('directorPhone', e.target.value)} placeholder="+91 …" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Director Email"><Input type="email" value={form.directorEmail} onChange={e => set('directorEmail', e.target.value)} placeholder="director@example.com" /></Field>
+                      <Field label="Referee Phone"><Input value={form.refereePhone} onChange={e => set('refereePhone', e.target.value)} placeholder="+91 …" /></Field>
                     </div>
-                  </div>
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Director Email</label>
-                      <input type="email" value={form.directorEmail} onChange={e => set('directorEmail', e.target.value)} placeholder="director@example.com" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Referee Email"><Input type="email" value={form.refereeEmail} onChange={e => set('refereeEmail', e.target.value)} placeholder="referee@example.com" /></Field>
                     </div>
-                    <div className="field">
-                      <label>Referee Phone</label>
-                      <input value={form.refereePhone} onChange={e => set('refereePhone', e.target.value)} placeholder="+91 …" />
-                    </div>
-                  </div>
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Referee Email</label>
-                      <input type="email" value={form.refereeEmail} onChange={e => set('refereeEmail', e.target.value)} placeholder="referee@example.com" />
-                    </div>
-                  </div>
 
-                  {/* Venue */}
-                  <div className="field">
-                    <label>Venue Address</label>
-                    <input value={form.venueAddress} onChange={e => set('venueAddress', e.target.value)} placeholder="Street / landmark" />
-                  </div>
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Pincode</label>
-                      <input value={form.venuePincode} onChange={e => set('venuePincode', e.target.value)} placeholder="500001" />
+                    <Field label="Venue Address">
+                      <Input value={form.venueAddress} onChange={e => set('venueAddress', e.target.value)} placeholder="Street / landmark" />
+                    </Field>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Pincode"><Input value={form.venuePincode} onChange={e => set('venuePincode', e.target.value)} placeholder="500001" /></Field>
+                      <Field label="Venue Phone"><Input value={form.venuePhone} onChange={e => set('venuePhone', e.target.value)} placeholder="+91 …" /></Field>
                     </div>
-                    <div className="field">
-                      <label>Venue Phone</label>
-                      <input value={form.venuePhone} onChange={e => set('venuePhone', e.target.value)} placeholder="+91 …" />
-                    </div>
-                  </div>
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Ball Brand</label>
-                      <input value={form.ballBrand} onChange={e => set('ballBrand', e.target.value)} placeholder="e.g. Wilson US Open" />
-                    </div>
-                    <div className="field" style={{ justifyContent: 'flex-end', paddingTop: 20 }}>
-                      <label className="t-checkbox-label">
-                        <input type="checkbox" checked={form.hasFloodlights} onChange={e => set('hasFloodlights', e.target.checked)} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                      <Field label="Ball Brand"><Input value={form.ballBrand} onChange={e => set('ballBrand', e.target.value)} placeholder="e.g. Wilson US Open" /></Field>
+                      <label className="flex items-center gap-2 text-sm pb-1.5">
+                        <input type="checkbox" className="accent-primary" checked={form.hasFloodlights} onChange={e => set('hasFloodlights', e.target.checked)} />
                         Floodlights available
                       </label>
                     </div>
-                  </div>
 
-                  {/* Fees */}
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Entry Fee – Singles (₹)</label>
-                      <input type="number" min="0" value={form.entryFeeSingles} onChange={e => set('entryFeeSingles', e.target.value)} placeholder="0" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Entry Fee – Singles (₹)"><Input type="number" min="0" value={form.entryFeeSingles} onChange={e => set('entryFeeSingles', e.target.value)} placeholder="0" /></Field>
+                      <Field label="Entry Fee – Doubles (₹)"><Input type="number" min="0" value={form.entryFeeDoubles} onChange={e => set('entryFeeDoubles', e.target.value)} placeholder="0" /></Field>
                     </div>
-                    <div className="field">
-                      <label>Entry Fee – Doubles (₹)</label>
-                      <input type="number" min="0" value={form.entryFeeDoubles} onChange={e => set('entryFeeDoubles', e.target.value)} placeholder="0" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Daily Allowance (₹)"><Input type="number" min="0" value={form.dailyAllowance} onChange={e => set('dailyAllowance', e.target.value)} placeholder="0" /></Field>
+                      <Field label="Stringing Charges"><Input value={form.stringingCharges} onChange={e => set('stringingCharges', e.target.value)} placeholder="e.g. ₹150/set" /></Field>
                     </div>
-                  </div>
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Daily Allowance (₹)</label>
-                      <input type="number" min="0" value={form.dailyAllowance} onChange={e => set('dailyAllowance', e.target.value)} placeholder="0" />
-                    </div>
-                    <div className="field">
-                      <label>Stringing Charges</label>
-                      <input value={form.stringingCharges} onChange={e => set('stringingCharges', e.target.value)} placeholder="e.g. ₹150/set" />
-                    </div>
-                  </div>
 
-                  {/* AITA registration card */}
-                  <div className="field">
-                    <label className="t-checkbox-label">
-                      <input type="checkbox" checked={form.aitaCardRequired} onChange={e => set('aitaCardRequired', e.target.checked)} />
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" className="accent-primary" checked={form.aitaCardRequired} onChange={e => set('aitaCardRequired', e.target.checked)} />
                       AITA registration card required at sign-in
                     </label>
-                  </div>
 
-                  {/* Hotel / accommodation (informational reference only) */}
-                  <div className="field">
-                    <label>Hotel / Accommodation</label>
-                    {form.hotelOptions.map((hotel, idx) => (
-                      <div key={idx} className="t-form-row" style={{ marginBottom: 6, alignItems: 'flex-end' }}>
-                        <div className="field">
-                          <input value={hotel.name} onChange={e => updateHotelRow(idx, 'name', e.target.value)} placeholder="Hotel name" />
-                        </div>
-                        <div className="field">
-                          <input value={hotel.address} onChange={e => updateHotelRow(idx, 'address', e.target.value)} placeholder="Address" />
-                        </div>
-                        <div className="field">
-                          <input value={hotel.phone} onChange={e => updateHotelRow(idx, 'phone', e.target.value)} placeholder="Phone" />
-                        </div>
-                        <div className="field">
-                          <input type="number" min="0" value={hotel.roomRate} onChange={e => updateHotelRow(idx, 'roomRate', e.target.value)} placeholder="Room rate (₹)" />
-                        </div>
-                        <div className="field">
-                          <input value={hotel.distanceToVenue} onChange={e => updateHotelRow(idx, 'distanceToVenue', e.target.value)} placeholder="Distance to venue" />
-                        </div>
-                        <label className="t-checkbox-label" style={{ paddingBottom: 8 }}>
-                          <input type="checkbox" checked={hotel.breakfastIncluded} onChange={e => updateHotelRow(idx, 'breakfastIncluded', e.target.checked)} />
-                          Breakfast
-                        </label>
-                        <button type="button" className="t-icon-btn t-icon-btn-del" onClick={() => removeHotelRow(idx)} title="Remove">✕</button>
+                    {/* Hotel / accommodation (informational reference only) */}
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1.5">Hotel / Accommodation</div>
+                      <div className="space-y-2">
+                        {form.hotelOptions.map((hotel, idx) => (
+                          <div key={idx} className="border border-border rounded-sm p-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <Input value={hotel.name} onChange={e => updateHotelRow(idx, 'name', e.target.value)} placeholder="Hotel name" />
+                            <Input value={hotel.address} onChange={e => updateHotelRow(idx, 'address', e.target.value)} placeholder="Address" />
+                            <Input value={hotel.phone} onChange={e => updateHotelRow(idx, 'phone', e.target.value)} placeholder="Phone" />
+                            <Input type="number" min="0" value={hotel.roomRate} onChange={e => updateHotelRow(idx, 'roomRate', e.target.value)} placeholder="Room rate (₹)" />
+                            <Input value={hotel.distanceToVenue} onChange={e => updateHotelRow(idx, 'distanceToVenue', e.target.value)} placeholder="Distance to venue" />
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input type="checkbox" className="accent-primary" checked={hotel.breakfastIncluded} onChange={e => updateHotelRow(idx, 'breakfastIncluded', e.target.checked)} />
+                                Breakfast
+                              </label>
+                              <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeHotelRow(idx)} title="Remove">✕</Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <button type="button" className="action-btn" onClick={addHotelRow}>+ Add Hotel</button>
+                      <Button type="button" variant="outline" size="sm" className="mt-2" onClick={addHotelRow}>+ Add Hotel</Button>
+                    </div>
+
+                    <Field label="Sign-in Instructions">
+                      <Textarea rows={3} value={form.signinInstructions} onChange={e => set('signinInstructions', e.target.value)} placeholder="e.g. Qualifying sign-in: Fri 18 Jul, 12–2pm at venue reception" />
+                    </Field>
                   </div>
+                )}
 
-                  {/* Sign-in instructions */}
-                  <div className="field">
-                    <label>Sign-in Instructions</label>
-                    <textarea
-                      rows={3}
-                      className="t-bulk-textarea"
-                      value={form.signinInstructions}
-                      onChange={e => set('signinInstructions', e.target.value)}
-                      placeholder="e.g. Qualifying sign-in: Fri 18 Jul, 12–2pm at venue reception"
-                    />
-                  </div>
-                </>
-              )}
+                {saveError && <div className="text-sm text-destructive">{saveError}</div>}
 
-              {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button type="submit" className="action-btn primary">
-                  Next: Add Events →
-                </button>
-                <button type="button" className="action-btn" onClick={closeModal}>
-                  Cancel
-                </button>
-              </div>
-            </form>}
+                <div className="flex gap-2 pt-2">
+                  <Button type="submit">Next: Add Events →</Button>
+                  <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
+                </div>
+              </form>
+            )}
 
             {/* Step 2: Add Events */}
             {step === 2 && (
-              <div className="t-events-step">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text2,#888)' }}>
-                    {form.grade && <strong>{form.grade}</strong>} · Draw sizes auto-filled from AITA rules
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {form.grade && <strong className="text-foreground">{form.grade}</strong>} · Draw sizes auto-filled from AITA rules
                   </span>
-                  <button type="button" className="action-btn" onClick={addEventRow}>+ Add Event</button>
+                  <Button type="button" variant="outline" size="sm" onClick={addEventRow}>+ Add Event</Button>
                 </div>
 
                 {eventRows.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text2,#888)', fontSize: 14 }}>
+                  <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
                     No events yet — click "+ Add Event" to add events, or skip to create the tournament without events.
                   </div>
                 )}
 
                 {eventRows.length > 0 && (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border,#333)' }}>
-                          <th style={{ textAlign: 'left', padding: '4px 6px' }}>Category</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px' }}>Age</th>
-                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Draw</th>
-                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Seeds</th>
-                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Qual?</th>
-                          <th style={{ textAlign: 'center', padding: '4px 6px' }}>Qual Size</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <div className="rounded-sm border border-border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Age</TableHead>
+                          <TableHead className="text-center">Draw</TableHead>
+                          <TableHead className="text-center">Seeds</TableHead>
+                          <TableHead className="text-center">Qual?</TableHead>
+                          <TableHead className="text-center">Qual Size</TableHead>
+                          <TableHead />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {eventRows.map((row, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid var(--border,#222)' }}>
-                            <td style={{ padding: '4px 6px' }}>
-                              <select value={row.category} onChange={e => updateEventRow(idx, 'category', e.target.value)} style={{ fontSize: 13 }}>
+                          <TableRow key={idx}>
+                            <TableCell>
+                              <select className={selectCls} value={row.category} onChange={e => updateEventRow(idx, 'category', e.target.value)}>
                                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                               </select>
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <select value={row.ageGroup} onChange={e => updateEventRow(idx, 'ageGroup', e.target.value)} style={{ fontSize: 13 }}>
+                            </TableCell>
+                            <TableCell>
+                              <select className={selectCls} value={row.ageGroup} onChange={e => updateEventRow(idx, 'ageGroup', e.target.value)}>
                                 {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
                               </select>
-                            </td>
-                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                              <select value={row.drawSize} onChange={e => updateEventRow(idx, 'drawSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <select className={selectCls} value={row.drawSize} onChange={e => updateEventRow(idx, 'drawSize', Number(e.target.value))}>
                                 {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
-                            </td>
-                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                              <select value={row.numSeeds} onChange={e => updateEventRow(idx, 'numSeeds', Number(e.target.value))} style={{ fontSize: 13, width: 55 }}>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <select className={selectCls} value={row.numSeeds} onChange={e => updateEventRow(idx, 'numSeeds', Number(e.target.value))}>
                                 {[2,4,8,16,32].map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
-                            </td>
-                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
-                              <input type="checkbox" checked={!!row.hasQualifying} onChange={e => updateEventRow(idx, 'hasQualifying', e.target.checked)} />
-                            </td>
-                            <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <input type="checkbox" className="accent-primary" checked={!!row.hasQualifying} onChange={e => updateEventRow(idx, 'hasQualifying', e.target.checked)} />
+                            </TableCell>
+                            <TableCell className="text-center">
                               {row.hasQualifying ? (
                                 <>
-                                  <select value={row.qualifyingSize} onChange={e => updateEventRow(idx, 'qualifyingSize', Number(e.target.value))} style={{ fontSize: 13, width: 60 }}>
+                                  <select className={selectCls} value={row.qualifyingSize} onChange={e => updateEventRow(idx, 'qualifyingSize', Number(e.target.value))}>
                                     {[16,32,48,64].map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
                                   {row.qualifyingOpen && (
-                                    <div style={{ fontSize: 11, color: 'var(--text2,#888)', marginTop: 2 }} title="AITA rules: qualifying for this grade is open (no cap) — this is just a starting size, set the real count once qualifying sign-in closes.">
+                                    <div className="text-[11px] text-muted-foreground mt-0.5" title="AITA rules: qualifying for this grade is open (no cap) — this is just a starting size, set the real count once qualifying sign-in closes.">
                                       Open draw — adjust after sign-in
                                     </div>
                                   )}
                                 </>
                               ) : '—'}
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <button type="button" onClick={() => removeEventRow(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2,#888)', fontSize: 16 }} title="Remove">✕</button>
-                            </td>
-                          </tr>
+                            </TableCell>
+                            <TableCell>
+                              <button type="button" onClick={() => removeEventRow(idx)} className="bg-transparent text-muted-foreground hover:text-destructive" title="Remove">✕</button>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
 
-                {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+                {saveError && <div className="text-sm text-destructive">{saveError}</div>}
 
-                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                  <button type="button" className="action-btn" onClick={() => { setStep(1); setSaveError(''); }}>
-                    ← Back
-                  </button>
-                  <button type="button" className="action-btn primary" disabled={saving} onClick={handleSubmitAll}>
+                <div className="flex gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => { setStep(1); setSaveError(''); }}>← Back</Button>
+                  <Button type="button" disabled={saving} onClick={handleSubmitAll}>
                     {saving ? 'Creating…' : `Create Tournament${eventRows.length > 0 ? ` + ${eventRows.length} Event${eventRows.length !== 1 ? 's' : ''}` : ''}`}
-                  </button>
-                  <button type="button" className="action-btn" onClick={closeModal}>Cancel</button>
+                  </Button>
+                  <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
                 </div>
               </div>
             )}
@@ -701,74 +541,63 @@ export default function TournamentsListPage() {
       )}
 
       {/* Content */}
-      <div className="page-scroll">
-        {missingPlayerFields.length > 0 && (
-          <div style={{
-            background: '#7c3a00', color: '#ffd9b0',
-            borderRadius: 8, padding: '10px 14px',
-            margin: '0 16px 12px', fontSize: 13,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ fontSize: 18 }}>⚠</span>
-            <span>
-              Complete your profile to enter tournaments — missing: <strong>{missingPlayerFields.join(', ')}</strong>.{' '}
-              <Link to="/profile" style={{ color: '#ffd9b0', textDecoration: 'underline' }}>Update Profile →</Link>
-            </span>
-          </div>
-        )}
-        {error && <div className="history-empty">{error}</div>}
+      {missingPlayerFields.length > 0 && (
+        <div className="rounded-sm border border-destructive/30 bg-destructive/10 text-destructive text-sm px-3 py-2.5 flex items-center gap-2.5">
+          <span className="text-lg">⚠</span>
+          <span>
+            Complete your profile to enter tournaments — missing: <strong>{missingPlayerFields.join(', ')}</strong>.{' '}
+            <Link to="/profile" className="underline">Update Profile →</Link>
+          </span>
+        </div>
+      )}
+      {error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
+      )}
 
-        {weeks === null && !error && (
-          <div className="history-empty">Loading tournaments…</div>
-        )}
+      {weeks === null && !error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading tournaments…</div>
+      )}
 
-        {weeks && weeks.length === 0 && (
-          <div className="history-empty">
-            {isOrganizer
-              ? 'No tournament weeks yet. Click + New Tournament Week to create one.'
-              : 'No tournaments are currently scheduled.'}
-          </div>
-        )}
+      {weeks && weeks.length === 0 && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          {isOrganizer
+            ? 'No tournament weeks yet. Click + New Tournament Week to create one.'
+            : 'No tournaments are currently scheduled.'}
+        </div>
+      )}
 
-        {weeks && weeks.length > 0 && (
-          <div className="t-list">
-            {weeks.map(w => (
-              <div key={w.id} className="t-card">
-                <Link to={`/tournaments/${w.id}`} className="t-card-main">
-                  <div className="t-card-name">{w.name}</div>
-                  {w.subtitle && <div className="t-card-sub">{w.subtitle}</div>}
-                  <div className="t-card-meta">
-                    {w.surface && <span className="t-badge">{w.surface}</span>}
-                    {w.tournamentCode && <span className="t-badge t-badge-code">{w.tournamentCode}</span>}
-                    <span className="t-badge t-badge-events">
-                      {w.eventCount !== undefined ? `${w.eventCount} event${w.eventCount !== 1 ? 's' : ''}` : ''}
-                    </span>
-                  </div>
-                  <div className="t-card-location">
-                    {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
-                    {w.location && ` · ${w.location}`}
-                  </div>
-                  {(w.startDate || w.endDate) && (
-                    <div className="t-card-dates">{formatDateRange(w.startDate, w.endDate)}</div>
-                  )}
-                  {w.numCourts && (
-                    <div className="t-card-courts">{w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
-                  )}
-                </Link>
-                {w.createdBy === user?.id && (
-                  <button
-                    className="t-delete-btn"
-                    onClick={() => handleDelete(w.id)}
-                    title="Delete tournament week"
-                  >
-                    ✕
-                  </button>
+      {weeks && weeks.length > 0 && (
+        <div className="space-y-2">
+          {weeks.map(w => (
+            <div key={w.id} className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary">
+              <Link to={`/tournaments/${w.id}`} className="flex-1 min-w-0">
+                <div className="text-sm font-bold truncate">{w.name}</div>
+                {w.subtitle && <div className="text-xs text-muted-foreground truncate">{w.subtitle}</div>}
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {w.surface && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{w.surface}</span>}
+                  {w.tournamentCode && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{w.tournamentCode}</span>}
+                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-sm bg-primary/10 text-primary px-2 py-0.5 text-[0.68rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
+                  {w.location && ` · ${w.location}`}
+                </div>
+                {(w.startDate || w.endDate) && (
+                  <div className="text-xs text-muted-foreground">{formatDateRange(w.startDate, w.endDate)}</div>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                {w.numCourts && (
+                  <div className="text-xs text-muted-foreground">{w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
+                )}
+              </Link>
+              {w.createdBy === user?.id && (
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0" onClick={() => handleDelete(w.id)} title="Delete tournament week">
+                  ✕
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

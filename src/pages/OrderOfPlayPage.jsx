@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import { generateOOPPdf } from '../utils/oopPdf';
+import { Button } from '@/components/primitives/button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
+import { cn } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,6 +49,8 @@ function detectConflicts(matches) {
 
   return conflictIds;
 }
+
+const numInputCls = 'w-12 rounded-sm border border-input bg-transparent px-1.5 py-1 text-sm text-center';
 
 // ---------------------------------------------------------------------------
 // ScheduleRow — table row with editable day/court/order inputs
@@ -99,93 +101,57 @@ function ScheduleRow({ match, isOwner, hasConflict, onSave }) {
   const p2 = playerName(match.entry2);
 
   return (
-    <tr
-      className={
-        'oop-row' +
-        (hasConflict ? ' oop-row-conflict' : '') +
-        (isComplete  ? ' oop-row-done'     : '')
-      }
-    >
+    <TableRow className={cn(hasConflict && 'bg-chart-2/5', isComplete && 'opacity-60')}>
       {/* Event / Round */}
-      <td className="oop-td-event">
-        <div style={{ fontWeight: 600 }}>
-          {match.eventAgeGroup} {match.eventCategory}
-        </div>
-        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', opacity: 0.7 }}>
-          R{match.round} · #{match.matchSlot} [{drawLabel}]
-        </div>
-      </td>
+      <TableCell>
+        <div className="font-semibold">{match.eventAgeGroup} {match.eventCategory}</div>
+        <div className="font-mono text-[0.72rem] text-muted-foreground">R{match.round} · #{match.matchSlot} [{drawLabel}]</div>
+      </TableCell>
 
       {/* Players */}
-      <td>
-        <span>
-          {hasConflict && <span style={{ color: '#f59e0b', marginRight: 4 }}>⚠</span>}
-          {p1} vs {p2}
-        </span>
-      </td>
+      <TableCell>
+        {hasConflict && <span className="text-chart-2 mr-1">⚠</span>}
+        {p1} vs {p2}
+      </TableCell>
 
       {/* Day */}
-      <td>
+      <TableCell>
         {isOwner ? (
-          <input
-            className="oop-num-input"
-            type="number"
-            min="1"
-            style={{ width: 42 }}
-            value={day}
-            onChange={e => setDay(e.target.value)}
-            onBlur={handleBlur}
-          />
+          <input className={numInputCls} type="number" min="1" value={day} onChange={e => setDay(e.target.value)} onBlur={handleBlur} />
         ) : (
           <span>{match.dayNumber ?? '—'}</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Court */}
-      <td>
+      <TableCell>
         {isOwner ? (
-          <input
-            className="oop-num-input"
-            type="number"
-            min="1"
-            style={{ width: 42 }}
-            value={court}
-            onChange={e => setCourt(e.target.value)}
-            onBlur={handleBlur}
-          />
+          <input className={numInputCls} type="number" min="1" value={court} onChange={e => setCourt(e.target.value)} onBlur={handleBlur} />
         ) : (
           <span>{match.courtNumber ?? '—'}</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Match order */}
-      <td>
+      <TableCell>
         {isOwner ? (
-          <input
-            className="oop-num-input"
-            type="number"
-            min="1"
-            style={{ width: 42 }}
-            value={order}
-            onChange={e => setOrder(e.target.value)}
-            onBlur={handleBlur}
-          />
+          <input className={numInputCls} type="number" min="1" value={order} onChange={e => setOrder(e.target.value)} onBlur={handleBlur} />
         ) : (
           <span>{match.matchOrder ?? '—'}</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Status */}
-      <td>
+      <TableCell>
         {saving ? (
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', opacity: 0.5 }}>···</span>
+          <span className="font-mono text-muted-foreground opacity-60">···</span>
         ) : (
-          <span className={`t-status-badge t-status-${match.status}`}>
+          <span className={cn('inline-flex items-center rounded-sm px-2 py-0.5 text-[0.68rem] font-semibold', match.status === 'complete' ? 'bg-chart-3/15 text-chart-3' : 'bg-muted text-muted-foreground')}>
             {match.status === 'complete' ? 'Complete' : 'Pending'}
           </span>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -204,25 +170,19 @@ function BoardMatchCard({ match, hasConflict }) {
   const p2Won = match.winnerEntryId && match.winnerEntryId === match.entry2Id;
 
   return (
-    <div
-      className={
-        'oop-card' +
-        (hasConflict ? ' oop-card-conflict' : '') +
-        (isComplete  ? ' oop-card-done'     : '')
-      }
-    >
-      <div className="oop-card-event">
+    <div className={cn('rounded-sm border border-border bg-card p-2.5 mb-2', hasConflict && 'border-chart-2', isComplete && 'opacity-70')}>
+      <div className="font-mono text-[0.65rem] text-muted-foreground mb-1.5">
         {match.eventAgeGroup} {match.eventCategory} [{drawLabel}] · R{match.round}
       </div>
 
-      <div className="oop-card-players">
-        <div className={'oop-player' + (p1Won ? ' oop-player-won' : '')}>{p1}</div>
-        <div className="oop-vs">vs</div>
-        <div className={'oop-player' + (p2Won ? ' oop-player-won' : '')}>{p2}</div>
+      <div className="space-y-0.5">
+        <div className={cn('text-sm', p1Won && 'font-bold text-chart-3')}>{p1}</div>
+        <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wide">vs</div>
+        <div className={cn('text-sm', p2Won && 'font-bold text-chart-3')}>{p2}</div>
       </div>
 
       {hasConflict && (
-        <div className="oop-conflict-badge">⚠ Player Conflict</div>
+        <div className="mt-1.5 text-[0.68rem] font-semibold text-chart-2">⚠ Player Conflict</div>
       )}
     </div>
   );
@@ -237,7 +197,6 @@ const FILTERS = ['All', 'Unscheduled', 'Scheduled', 'Complete'];
 export default function OrderOfPlayPage() {
   const { id: weekId } = useParams();
   const { user } = useAuth();
-  const { theme } = useTheme();
 
   const [week,       setWeek]       = useState(null);
   const [matches,    setMatches]    = useState([]);
@@ -339,155 +298,115 @@ export default function OrderOfPlayPage() {
   // Loading / error states
   if (loading) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-        <div className="page-scroll">
-          <div className="history-empty">Loading…</div>
-        </div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading…</div>
       </div>
     );
   }
 
   if (error && !week) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-        <div className="page-scroll">
-          <div className="history-empty">{error}</div>
-        </div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <div className="t-breadcrumb">
-              <Link to="/tournaments">Tournaments</Link>
-              <span> / </span>
-              <Link to={`/tournaments/${weekId}`}>{week?.name}</Link>
-              <span> / </span>
-              <span>Order of Play</span>
-            </div>
-            <h1 className="title">Order of Play</h1>
-            <div className="subtitle">{week?.name}</div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+            <Link to="/tournaments" className="hover:text-foreground">Tournaments</Link>
+            <span>/</span>
+            <Link to={`/tournaments/${weekId}`} className="hover:text-foreground">{week?.name}</Link>
+            <span>/</span>
+            <span className="text-foreground">Order of Play</span>
           </div>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Order of Play</h1>
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           {isOwner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.875rem' }}>
+            <>
+              <label className="flex items-center gap-1.5 text-sm">
                 Courts
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={numCourts}
-                  onChange={e => setNumCourts(Number(e.target.value))}
-                  style={{ width: 48 }}
-                  className="oop-num-input"
-                />
+                <input type="number" min="1" max="50" value={numCourts} onChange={e => setNumCourts(Number(e.target.value))} className={numInputCls} />
               </label>
-              <button
-                className="action-btn primary"
-                onClick={handleAutoSchedule}
-                disabled={scheduling}
-              >
-                {scheduling ? 'Scheduling…' : '⚡ Auto-Schedule'}
-              </button>
-            </div>
+              <Button onClick={handleAutoSchedule} disabled={scheduling}>{scheduling ? 'Scheduling…' : '⚡ Auto-Schedule'}</Button>
+            </>
           )}
-          {/* OOP PDF — always visible when matches exist */}
           {matches.length > 0 && (
-            <button
-              className="action-btn t-pdf-btn"
-              onClick={() => generateOOPPdf({ week, matches })}
-            >
-              ⬇ OOP PDF
-            </button>
+            <Button variant="outline" onClick={() => generateOOPPdf({ week, matches })}>⬇ OOP PDF</Button>
           )}
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className="t-view-bar">
-        <div className="t-view-stats">
-          <span>{matches.length} matches · {scheduledCount} scheduled</span>
-          {conflictCount > 0 && (
-            <span style={{ color: '#f59e0b', marginLeft: 8 }}>⚠ {conflictCount} conflicts</span>
-          )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground">
+          {matches.length} matches · {scheduledCount} scheduled
+          {conflictCount > 0 && <span className="text-chart-2 font-semibold ml-2">⚠ {conflictCount} conflicts</span>}
         </div>
-        <div className="t-view-toggle">
-          <button
-            className={'t-vtab' + (viewMode === 'schedule' ? ' active' : '')}
-            onClick={() => setViewMode('schedule')}
-          >
-            Schedule
-          </button>
-          <button
-            className={'t-vtab' + (viewMode === 'board' ? ' active' : '')}
-            onClick={() => setViewMode('board')}
-          >
-            Board
-          </button>
+        <div className="inline-flex border border-border rounded-sm p-1 bg-card">
+          {['schedule', 'board'].map(m => (
+            <button
+              key={m}
+              onClick={() => setViewMode(m)}
+              className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold capitalize', viewMode === m ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+            >
+              {m}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Error line */}
-      {error && (
-        <div style={{ padding: '6px 16px', color: '#e05252', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem' }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="text-sm text-destructive">{error}</div>}
 
       {/* Empty state */}
       {matches.length === 0 ? (
-        <div className="page-scroll">
-          <div className="history-empty">
-            No matches found. Generate brackets for events in this tournament first.
-          </div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          No matches found. Generate brackets for events in this tournament first.
         </div>
       ) : viewMode === 'schedule' ? (
         /* ------------------------------------------------------------------ */
         /* SCHEDULE VIEW                                                        */
         /* ------------------------------------------------------------------ */
-        <div className="page-scroll">
+        <div className="space-y-3">
           {/* Filter bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
-            <div style={{ display: 'flex', gap: 6 }}>
+          <div className="flex items-center justify-between">
+            <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
               {FILTERS.map(f => (
                 <button
                   key={f}
-                  className={'oop-filter-btn' + (filter === f ? ' active' : '')}
                   onClick={() => setFilter(f)}
+                  className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', filter === f ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
                 >
                   {f}
                 </button>
               ))}
             </div>
-            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+            <span className="text-sm text-muted-foreground">
               {filteredMatches.length} match{filteredMatches.length !== 1 ? 'es' : ''}
             </span>
           </div>
 
           {/* Table */}
-          <div className="t-entry-table-wrap">
-            <table className="t-entry-table">
-              <thead>
-                <tr>
-                  <th>Event / Round</th>
-                  <th>Matchup</th>
-                  <th>Day</th>
-                  <th>Ct</th>
-                  <th>#</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-sm border border-border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event / Round</TableHead>
+                  <TableHead>Matchup</TableHead>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Ct</TableHead>
+                  <TableHead>#</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredMatches.map(m => (
                   <ScheduleRow
                     key={m.id}
@@ -497,26 +416,26 @@ export default function OrderOfPlayPage() {
                     onSave={handleSaveSchedule}
                   />
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       ) : (
         /* ------------------------------------------------------------------ */
         /* BOARD VIEW                                                           */
         /* ------------------------------------------------------------------ */
-        <div className="page-scroll">
+        <div>
           {days.length === 0 ? (
-            <div className="history-empty">No scheduled matches yet.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No scheduled matches yet.</div>
           ) : (
             <>
               {/* Day tabs */}
-              <div className="oop-day-tabs">
+              <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card mb-4">
                 {days.map(d => (
                   <button
                     key={d}
-                    className={'oop-day-tab' + (activeDay === d ? ' active' : '')}
                     onClick={() => setActiveDay(d)}
+                    className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeDay === d ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
                   >
                     Day {d}
                   </button>
@@ -525,17 +444,17 @@ export default function OrderOfPlayPage() {
 
               {/* Court columns */}
               {courts.length === 0 ? (
-                <div className="history-empty">No matches scheduled for Day {activeDay}.</div>
+                <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No matches scheduled for Day {activeDay}.</div>
               ) : (
-                <div className="oop-board">
+                <div className="flex gap-4 overflow-x-auto pb-2">
                   {courts.map(courtNum => {
                     const courtMatches = dayMatches
                       .filter(m => m.courtNumber === courtNum)
                       .sort((a, b) => (a.matchOrder ?? 0) - (b.matchOrder ?? 0));
 
                     return (
-                      <div key={courtNum} className="oop-court-col" style={{ width: 220 }}>
-                        <div className="oop-court-header">Court {courtNum}</div>
+                      <div key={courtNum} className="w-56 shrink-0">
+                        <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Court {courtNum}</div>
                         {courtMatches.map(m => (
                           <BoardMatchCard
                             key={m.id}

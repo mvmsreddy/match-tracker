@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { cn } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -39,9 +39,27 @@ const EMPTY_EVENT_FORM = {
   lastDayOfPlay: '',
 };
 
+const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
+
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Status badge
 // ---------------------------------------------------------------------------
+
+const STATUS_STYLES = {
+  setup: 'bg-muted text-muted-foreground',
+  draw_ready: 'bg-primary/10 text-primary',
+  in_progress: 'bg-chart-2/15 text-chart-2',
+  complete: 'bg-chart-3/15 text-chart-3',
+};
 
 function StatusBadge({ status }) {
   const labels = {
@@ -51,7 +69,7 @@ function StatusBadge({ status }) {
     complete: 'Complete',
   };
   return (
-    <span className={`t-status-badge t-status-${status}`}>
+    <span className={cn('inline-flex items-center rounded-sm px-2 py-0.5 text-[0.68rem] font-semibold', STATUS_STYLES[status] || 'bg-muted text-muted-foreground')}>
       {labels[status] || status}
     </span>
   );
@@ -59,19 +77,25 @@ function StatusBadge({ status }) {
 
 // Verified against the source PDF's three-stage withdrawal structure — see
 // getEntryStage() in aitaGradeRules.js.
+const ENTRY_STAGE_STYLES = {
+  [ENTRY_STAGE.OPEN]: 'bg-chart-3/15 text-chart-3',
+  [ENTRY_STAGE.ENTRY_CLOSED]: 'bg-chart-2/15 text-chart-2',
+  [ENTRY_STAGE.LATE_WITHDRAWAL]: 'bg-destructive/15 text-destructive',
+  [ENTRY_STAGE.FROZEN]: 'bg-destructive/25 text-destructive',
+};
 const ENTRY_STAGE_LABELS = {
-  [ENTRY_STAGE.OPEN]: { text: 'Entries Open', color: '#1a6b3a' },
-  [ENTRY_STAGE.ENTRY_CLOSED]: { text: 'Entry Closed', color: '#b8860b' },
-  [ENTRY_STAGE.LATE_WITHDRAWAL]: { text: 'Late Withdrawal Only', color: '#c0392b' },
-  [ENTRY_STAGE.FROZEN]: { text: 'Frozen — Referee Only', color: '#7a1f1f' },
+  [ENTRY_STAGE.OPEN]: 'Entries Open',
+  [ENTRY_STAGE.ENTRY_CLOSED]: 'Entry Closed',
+  [ENTRY_STAGE.LATE_WITHDRAWAL]: 'Late Withdrawal Only',
+  [ENTRY_STAGE.FROZEN]: 'Frozen — Referee Only',
 };
 
 function EntryStageBadge({ stage }) {
-  const info = ENTRY_STAGE_LABELS[stage];
-  if (!info) return null;
+  const label = ENTRY_STAGE_LABELS[stage];
+  if (!label) return null;
   return (
-    <span className="t-badge" style={{ background: info.color, color: '#fff', fontWeight: 600 }}>
-      {info.text}
+    <span className={cn('inline-flex items-center rounded-sm px-2 py-0.5 text-[0.68rem] font-bold', ENTRY_STAGE_STYLES[stage])}>
+      {label}
     </span>
   );
 }
@@ -87,67 +111,52 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
   const canInviteDoubles = event.isDoubles && !myEntry && entryOpen;
   const isEntered = !!myEntry && myEntry.entryStatus !== 'withdrawn';
   return (
-    <div className="t-event-card">
-      <Link to={`/tournaments/${weekId}/events/${event.id}`} className="t-event-card-main">
-        <div className="t-event-card-name">
-          {event.category}
-          <span className="t-event-age">{event.ageGroup}</span>
+    <div className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary">
+      <Link to={`/tournaments/${weekId}/events/${event.id}`} className="flex-1 min-w-0">
+        <div className="text-sm font-bold">
+          {event.category} <span className="text-muted-foreground font-normal">{event.ageGroup}</span>
         </div>
-        <div className="t-event-card-meta">
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
           <StatusBadge status={event.status} />
-          <span className="t-badge">Draw {event.drawSize}</span>
-          <span className="t-badge">{event.numSeeds} seeds</span>
+          <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">Draw {event.drawSize}</span>
+          <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{event.numSeeds} seeds</span>
           {event.hasQualifying && (
-            <span className="t-badge t-badge-qual">Qualifying {event.qualifyingSize}</span>
+            <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">Qualifying {event.qualifyingSize}</span>
           )}
           {event.signinDate && (
-            <span className="t-badge" title="Sign-in">
+            <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold" title="Sign-in">
               Sign-in {event.signinDate}{event.signinTime ? ` ${event.signinTime}` : ''}
             </span>
           )}
           {event.firstDayOfPlay && (
-            <span className="t-badge" title="Play dates">
+            <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold" title="Play dates">
               Play {event.firstDayOfPlay}{event.lastDayOfPlay ? ` – ${event.lastDayOfPlay}` : ''}
             </span>
           )}
         </div>
       </Link>
-      {onEnter && isEntered && (
-        <button
-          className="action-btn"
-          style={{ fontSize: 12, padding: '4px 10px', background: 'var(--accent,#1a6b3a)', color: '#fff', opacity: withdrawOpen ? 1 : 0.6 }}
-          onClick={withdrawOpen ? () => onWithdraw(event.id) : undefined}
-          disabled={!withdrawOpen}
-          title={withdrawOpen ? 'Withdraw from this event' : 'Freeze deadline passed — contact the tournament referee to withdraw'}
-        >
-          ✓ Entered
-        </button>
-      )}
-      {onEnter && canEnterSingles && (
-        <button
-          className="action-btn"
-          style={{ fontSize: 12, padding: '4px 10px' }}
-          onClick={() => onEnter(event)}
-          title="Enter this event"
-        >
-          Enter →
-        </button>
-      )}
-      {onInvitePartner && canInviteDoubles && (
-        <button
-          className="action-btn"
-          style={{ fontSize: 12, padding: '4px 10px' }}
-          onClick={() => onInvitePartner(event)}
-          title="Invite a doubles partner"
-        >
-          + Partner
-        </button>
-      )}
-      {isOwner && (
-        <button className="t-delete-btn" onClick={() => onDelete(event.id)} title="Delete event">
-          ✕
-        </button>
-      )}
+      <div className="flex items-center gap-2 shrink-0">
+        {onEnter && isEntered && (
+          <Button
+            size="sm"
+            className="bg-chart-3 text-white hover:bg-chart-3/90 disabled:opacity-60"
+            onClick={withdrawOpen ? () => onWithdraw(event.id) : undefined}
+            disabled={!withdrawOpen}
+            title={withdrawOpen ? 'Withdraw from this event' : 'Freeze deadline passed — contact the tournament referee to withdraw'}
+          >
+            ✓ Entered
+          </Button>
+        )}
+        {onEnter && canEnterSingles && (
+          <Button size="sm" variant="outline" onClick={() => onEnter(event)} title="Enter this event">Enter →</Button>
+        )}
+        {onInvitePartner && canInviteDoubles && (
+          <Button size="sm" variant="outline" onClick={() => onInvitePartner(event)} title="Invite a doubles partner">+ Partner</Button>
+        )}
+        {isOwner && (
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(event.id)} title="Delete event">✕</Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -159,7 +168,6 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
 export default function TournamentDetailPage() {
   const { id: weekId } = useParams();
   const { user } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const [week, setWeek] = useState(null);
@@ -336,273 +344,199 @@ export default function TournamentDetailPage() {
 
   if (error) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-        <div className="page-scroll">
-          <div className="history-empty">{error}</div>
-        </div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
       </div>
     );
   }
 
   if (!week) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-        <div className="page-scroll">
-          <div className="history-empty">Loading…</div>
-        </div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading…</div>
       </div>
     );
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="tournaments" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <div className="t-breadcrumb">
-              <Link to="/tournaments">Tournaments</Link>
-              <span> / </span>
-              <span>{week.name}</span>
-            </div>
-            <h1 className="title">{week.name}</h1>
-            {week.subtitle && <div className="subtitle">{week.subtitle.toUpperCase()}</div>}
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+            <Link to="/tournaments" className="hover:text-foreground">Tournaments</Link>
+            <span>/</span>
+            <span className="text-foreground">{week.name}</span>
           </div>
-          {isOwner && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                className="action-btn primary"
-                onClick={() => { setShowAddEvent(true); setSaveError(''); }}
-              >
-                + Add Event
-              </button>
-              <button className="action-btn t-danger-btn" onClick={handleDeleteWeek}>
-                Delete Week
-              </button>
-            </div>
-          )}
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{week.name}</h1>
+          {week.subtitle && <div className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{week.subtitle}</div>}
         </div>
+        {isOwner && (
+          <div className="flex gap-2">
+            <Button onClick={() => { setShowAddEvent(true); setSaveError(''); }}>+ Add Event</Button>
+            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleDeleteWeek}>Delete Week</Button>
+          </div>
+        )}
       </div>
 
       {/* Week Info Bar */}
-      <div className="t-week-info-bar">
-        {week.surface && <span className="t-badge">{week.surface}</span>}
-        {week.grade && <span className="t-badge t-badge-grade">{week.grade}</span>}
-        {week.tournamentCode && <span className="t-badge t-badge-code">{week.tournamentCode}</span>}
+      <div className="flex flex-wrap items-center gap-2">
+        {week.surface && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{week.surface}</span>}
+        {week.grade && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{week.grade}</span>}
+        {week.tournamentCode && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{week.tournamentCode}</span>}
         {(week.city || week.stateAbbr) && (
-          <span className="t-info-item">
-            {[week.city, week.stateAbbr].filter(Boolean).join(', ')}
-          </span>
+          <span className="text-xs text-muted-foreground">{[week.city, week.stateAbbr].filter(Boolean).join(', ')}</span>
         )}
-        {week.location && <span className="t-info-item">{week.location}</span>}
+        {week.location && <span className="text-xs text-muted-foreground">{week.location}</span>}
         {(week.startDate || week.endDate) && (
-          <span className="t-info-item">
+          <span className="text-xs text-muted-foreground">
             {week.startDate}{week.endDate && week.endDate !== week.startDate ? ` – ${week.endDate}` : ''}
           </span>
         )}
-        {week.numCourts && (
-          <span className="t-info-item">{week.numCourts} court{week.numCourts !== 1 ? 's' : ''}</span>
-        )}
-        {week.referee && <span className="t-info-item">Referee: {week.referee}</span>}
+        {week.numCourts && <span className="text-xs text-muted-foreground">{week.numCourts} court{week.numCourts !== 1 ? 's' : ''}</span>}
+        {week.referee && <span className="text-xs text-muted-foreground">Referee: {week.referee}</span>}
       </div>
 
       {/* Extended details panel — Phase 12 factsheet fields */}
       {(week.directorName || week.entryDeadline || week.qualifyingStartDate ||
         week.venueAddress || week.entryFeeSingles || week.signinInstructions ||
         week.stringingCharges || week.aitaCardRequired || (week.hotelOptions && week.hotelOptions.length > 0)) && (
-        <div className="t-factsheet-panel">
+        <div className="rounded-sm border border-border bg-card p-3">
           {/* Always-visible summary row */}
-          <div className="t-fs-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <EntryStageBadge stage={entryStage} />
-              {week.entryDeadline && <span className="t-fs-item"><b>Entry deadline:</b> {week.entryDeadline}</span>}
-              {week.withdrawalDeadline && <span className="t-fs-item"><b>Withdrawal deadline:</b> {week.withdrawalDeadline}</span>}
-              {week.freezeDeadline && <span className="t-fs-item"><b>Freeze deadline:</b> {new Date(week.freezeDeadline).toLocaleString()}</span>}
+              {week.entryDeadline && <span className="text-xs text-muted-foreground"><b className="text-foreground">Entry deadline:</b> {week.entryDeadline}</span>}
+              {week.withdrawalDeadline && <span className="text-xs text-muted-foreground"><b className="text-foreground">Withdrawal deadline:</b> {week.withdrawalDeadline}</span>}
+              {week.freezeDeadline && <span className="text-xs text-muted-foreground"><b className="text-foreground">Freeze deadline:</b> {new Date(week.freezeDeadline).toLocaleString()}</span>}
               {(week.qualifyingStartDate || week.qualifyingEndDate) && (
-                <span className="t-fs-item">
-                  <b>Qualifying:</b> {week.qualifyingStartDate}
+                <span className="text-xs text-muted-foreground">
+                  <b className="text-foreground">Qualifying:</b> {week.qualifyingStartDate}
                   {week.qualifyingEndDate && week.qualifyingEndDate !== week.qualifyingStartDate ? ` – ${week.qualifyingEndDate}` : ''}
                 </span>
               )}
             </div>
-            <button
-              onClick={() => setShowDetails(v => !v)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent,#1a6b3a)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap', padding: '2px 6px' }}
-            >
+            <button onClick={() => setShowDetails(v => !v)} className="bg-transparent text-primary text-xs whitespace-nowrap px-1.5">
               {showDetails ? '▲ Less' : '▼ More info'}
             </button>
           </div>
 
           {/* Collapsible extra detail */}
           {showDetails && (
-            <>
+            <div className="mt-3 pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
               {(week.directorName || week.directorPhone || week.directorEmail) && (
-                <div className="t-fs-row">
-                  <span className="t-fs-item">
-                    <b>Director:</b> {[week.directorName, week.directorPhone, week.directorEmail].filter(Boolean).join(' · ')}
-                  </span>
-                </div>
+                <div><b className="text-foreground">Director:</b> {[week.directorName, week.directorPhone, week.directorEmail].filter(Boolean).join(' · ')}</div>
               )}
               {(week.refereePhone || week.refereeEmail) && (
-                <div className="t-fs-row">
-                  <span className="t-fs-item">
-                    <b>Referee contact:</b> {[week.refereePhone, week.refereeEmail].filter(Boolean).join(' · ')}
-                  </span>
-                </div>
+                <div><b className="text-foreground">Referee contact:</b> {[week.refereePhone, week.refereeEmail].filter(Boolean).join(' · ')}</div>
               )}
               {(week.venueAddress || week.venuePincode || week.venuePhone) && (
-                <div className="t-fs-row">
-                  <span className="t-fs-item" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', maxHeight: 120, overflowY: 'auto', display: 'block' }}>
-                    <b>Venue:</b> {[week.venueAddress, week.venuePincode, week.venuePhone].filter(Boolean).join(', ')}
-                  </span>
+                <div className="break-words whitespace-pre-wrap max-h-32 overflow-y-auto">
+                  <b className="text-foreground">Venue:</b> {[week.venueAddress, week.venuePincode, week.venuePhone].filter(Boolean).join(', ')}
                 </div>
               )}
               {(week.ballBrand || week.hasFloodlights) && (
-                <div className="t-fs-row">
-                  {week.ballBrand && <span className="t-fs-item"><b>Balls:</b> {week.ballBrand}</span>}
-                  {week.hasFloodlights && <span className="t-fs-item">Floodlights available</span>}
+                <div className="flex flex-wrap gap-3">
+                  {week.ballBrand && <span><b className="text-foreground">Balls:</b> {week.ballBrand}</span>}
+                  {week.hasFloodlights && <span>Floodlights available</span>}
                 </div>
               )}
               {(week.entryFeeSingles || week.entryFeeDoubles || week.dailyAllowance || week.stringingCharges) && (
-                <div className="t-fs-row">
-                  {week.entryFeeSingles && <span className="t-fs-item"><b>Singles entry:</b> ₹{week.entryFeeSingles}</span>}
-                  {week.entryFeeDoubles && <span className="t-fs-item"><b>Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
-                  {week.dailyAllowance && <span className="t-fs-item"><b>Daily allowance:</b> ₹{week.dailyAllowance}</span>}
-                  {week.stringingCharges && <span className="t-fs-item"><b>Stringing:</b> {week.stringingCharges}</span>}
+                <div className="flex flex-wrap gap-3">
+                  {week.entryFeeSingles && <span><b className="text-foreground">Singles entry:</b> ₹{week.entryFeeSingles}</span>}
+                  {week.entryFeeDoubles && <span><b className="text-foreground">Doubles entry:</b> ₹{week.entryFeeDoubles}</span>}
+                  {week.dailyAllowance && <span><b className="text-foreground">Daily allowance:</b> ₹{week.dailyAllowance}</span>}
+                  {week.stringingCharges && <span><b className="text-foreground">Stringing:</b> {week.stringingCharges}</span>}
                 </div>
               )}
-              {week.aitaCardRequired && (
-                <div className="t-fs-row">
-                  <span className="t-fs-item">AITA registration card required at sign-in</span>
-                </div>
-              )}
+              {week.aitaCardRequired && <div>AITA registration card required at sign-in</div>}
               {week.signinInstructions && (
-                <div className="t-fs-row">
-                  <span className="t-fs-item" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    <b>Sign-in:</b> {week.signinInstructions}
-                  </span>
-                </div>
+                <div className="break-words whitespace-pre-wrap"><b className="text-foreground">Sign-in:</b> {week.signinInstructions}</div>
               )}
               {week.hotelOptions && week.hotelOptions.length > 0 && (
-                <div className="t-fs-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-                  <span className="t-fs-item"><b>Hotels:</b></span>
+                <div className="space-y-1">
+                  <div><b className="text-foreground">Hotels:</b></div>
                   {week.hotelOptions.map((hotel, idx) => (
-                    <span key={idx} className="t-fs-item" style={{ paddingLeft: 12 }}>
+                    <div key={idx} className="pl-3">
                       {hotel.name}
                       {hotel.address ? ` — ${hotel.address}` : ''}
                       {hotel.phone ? ` · ${hotel.phone}` : ''}
                       {hotel.roomRate ? ` · ₹${hotel.roomRate}/night` : ''}
                       {hotel.breakfastIncluded ? ' · breakfast included' : ''}
                       {hotel.distanceToVenue ? ` · ${hotel.distanceToVenue} from venue` : ''}
-                    </span>
+                    </div>
                   ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       )}
 
       {/* Add Event Modal */}
       {showAddEvent && (
-        <div className="t-modal-overlay" onClick={() => setShowAddEvent(false)}>
-          <div className="t-modal" onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">Add Event</span>
-              <button className="drawer-close" onClick={() => setShowAddEvent(false)}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowAddEvent(false)}>
+          <div className="bg-card border border-border rounded-sm max-w-lg w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <span className="text-lg font-display font-extrabold tracking-tight">Add Event</span>
+              <button onClick={() => setShowAddEvent(false)} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
             </div>
-            <form onSubmit={handleAddEvent} className="t-create-form">
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Category *</label>
-                  <select value={form.category} onChange={e => set('category', e.target.value)}>
+            <form onSubmit={handleAddEvent} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Category *">
+                  <select className={selectCls} value={form.category} onChange={e => set('category', e.target.value)}>
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
-                </div>
-                <div className="field">
-                  <label>Age Group *</label>
-                  <select value={form.ageGroup} onChange={e => set('ageGroup', e.target.value)}>
+                </Field>
+                <Field label="Age Group *">
+                  <select className={selectCls} value={form.ageGroup} onChange={e => set('ageGroup', e.target.value)}>
                     {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
                   </select>
-                </div>
+                </Field>
               </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Main Draw Size</label>
-                  <select value={form.drawSize} onChange={e => set('drawSize', Number(e.target.value))}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Main Draw Size">
+                  <select className={selectCls} value={form.drawSize} onChange={e => set('drawSize', Number(e.target.value))}>
                     {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </div>
-                <div className="field">
-                  <label>Number of Seeds</label>
-                  <select value={form.numSeeds} onChange={e => set('numSeeds', Number(e.target.value))}>
+                </Field>
+                <Field label="Number of Seeds">
+                  <select className={selectCls} value={form.numSeeds} onChange={e => set('numSeeds', Number(e.target.value))}>
                     {SEED_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </div>
+                </Field>
               </div>
-              <div className="field">
-                <label className="t-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={form.hasQualifying}
-                    onChange={e => set('hasQualifying', e.target.checked)}
-                  />
-                  Has Qualifying Draw
-                </label>
-              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" className="accent-primary" checked={form.hasQualifying} onChange={e => set('hasQualifying', e.target.checked)} />
+                Has Qualifying Draw
+              </label>
               {form.hasQualifying && (
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Qualifying Draw Size</label>
-                    <select value={form.qualifyingSize} onChange={e => set('qualifyingSize', Number(e.target.value))}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Qualifying Draw Size">
+                    <select className={selectCls} value={form.qualifyingSize} onChange={e => set('qualifyingSize', Number(e.target.value))}>
                       {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                  </div>
-                  <div className="field">
-                    <label>Qualifying Spots (to main draw)</label>
-                    <input
-                      type="number" min="1" max="16"
-                      value={form.qualifyingSpots}
-                      onChange={e => set('qualifyingSpots', Number(e.target.value))}
-                    />
-                  </div>
+                  </Field>
+                  <Field label="Qualifying Spots (to main draw)">
+                    <Input type="number" min="1" max="16" value={form.qualifyingSpots} onChange={e => set('qualifyingSpots', Number(e.target.value))} />
+                  </Field>
                 </div>
               )}
 
               {/* Phase 19 — per-category sign-in window & play dates */}
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Sign-in Date</label>
-                  <input type="date" value={form.signinDate} onChange={e => set('signinDate', e.target.value)} />
-                </div>
-                <div className="field">
-                  <label>Sign-in Time</label>
-                  <input type="time" value={form.signinTime} onChange={e => set('signinTime', e.target.value)} />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Sign-in Date"><Input type="date" value={form.signinDate} onChange={e => set('signinDate', e.target.value)} /></Field>
+                <Field label="Sign-in Time"><Input type="time" value={form.signinTime} onChange={e => set('signinTime', e.target.value)} /></Field>
               </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>First Day of Play</label>
-                  <input type="date" value={form.firstDayOfPlay} onChange={e => set('firstDayOfPlay', e.target.value)} />
-                </div>
-                <div className="field">
-                  <label>Last Day of Play</label>
-                  <input type="date" value={form.lastDayOfPlay} onChange={e => set('lastDayOfPlay', e.target.value)} />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="First Day of Play"><Input type="date" value={form.firstDayOfPlay} onChange={e => set('firstDayOfPlay', e.target.value)} /></Field>
+                <Field label="Last Day of Play"><Input type="date" value={form.lastDayOfPlay} onChange={e => set('lastDayOfPlay', e.target.value)} /></Field>
               </div>
 
-              {saveError && <div className="login-error" style={{ marginTop: 8 }}>{saveError}</div>}
+              {saveError && <div className="text-sm text-destructive">{saveError}</div>}
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button type="submit" className="action-btn primary" disabled={saving}>
-                  {saving ? 'Adding…' : 'Add Event'}
-                </button>
-                <button type="button" className="action-btn" onClick={() => setShowAddEvent(false)}>
-                  Cancel
-                </button>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" disabled={saving}>{saving ? 'Adding…' : 'Add Event'}</Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddEvent(false)}>Cancel</Button>
               </div>
             </form>
           </div>
@@ -611,120 +545,105 @@ export default function TournamentDetailPage() {
 
       {/* Self-entry confirmation modal */}
       {entryModal && (
-        <div className="t-modal-overlay" onClick={() => setEntryModal(null)}>
-          <div className="t-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">Confirm Entry</span>
-              <button className="drawer-close" onClick={() => setEntryModal(null)}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setEntryModal(null)}>
+          <div className="bg-card border border-border rounded-sm max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <span className="text-lg font-display font-extrabold tracking-tight">Confirm Entry</span>
+              <button onClick={() => setEntryModal(null)} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
-              <p style={{ margin: '0 0 8px' }}>
-                <strong>{entryModal.event.category} {entryModal.event.ageGroup}</strong>
-              </p>
-              <p style={{ margin: '0 0 4px' }}>Your AITA rank: <strong>{user?.ranking || 'Unranked'}</strong></p>
-              <p style={{ margin: '0 0 4px' }}>
+            <div className="text-sm leading-relaxed space-y-1.5 mb-4">
+              <p className="font-bold">{entryModal.event.category} {entryModal.event.ageGroup}</p>
+              <p>Your AITA rank: <strong>{user?.ranking || 'Unranked'}</strong></p>
+              <p>
                 Placement:{' '}
                 {entryModal.placement.isAlternate
-                  ? <span style={{ color: '#f59e0b' }}>Alternate (draw is full)</span>
+                  ? <span className="text-chart-2 font-semibold">Alternate (draw is full)</span>
                   : entryModal.placement.drawType === 'main'
-                    ? <span style={{ color: '#22c55e' }}>Main Draw — position {entryModal.placement.position}</span>
-                    : <span style={{ color: '#60a5fa' }}>Qualifying Draw — position {entryModal.placement.position}</span>
+                    ? <span className="text-chart-3 font-semibold">Main Draw — position {entryModal.placement.position}</span>
+                    : <span className="text-primary font-semibold">Qualifying Draw — position {entryModal.placement.position}</span>
                 }
               </p>
             </div>
-            {entryError && <div className="login-error" style={{ marginBottom: 8 }}>{entryError}</div>}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="action-btn primary" onClick={handleSelfEnter} disabled={enteringSelf}>
-                {enteringSelf ? 'Entering…' : 'Confirm Entry'}
-              </button>
-              <button className="action-btn" onClick={() => { setEntryModal(null); setEntryError(''); }}>
-                Cancel
-              </button>
+            {entryError && <div className="text-sm text-destructive mb-2">{entryError}</div>}
+            <div className="flex gap-2">
+              <Button onClick={handleSelfEnter} disabled={enteringSelf}>{enteringSelf ? 'Entering…' : 'Confirm Entry'}</Button>
+              <Button variant="outline" onClick={() => { setEntryModal(null); setEntryError(''); }}>Cancel</Button>
             </div>
           </div>
         </div>
       )}
 
-      {entryError && !entryModal && (
-        <div style={{ margin: '0 16px 8px', color: '#ef4444', fontSize: 13 }}>{entryError}</div>
-      )}
+      {entryError && !entryModal && <div className="text-sm text-destructive">{entryError}</div>}
 
       {/* Doubles invitation modal */}
       {inviteModal && (
-        <div className="t-modal-overlay" onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }}>
-          <div className="t-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">Invite Doubles Partner</span>
-              <button className="drawer-close" onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }}>
+          <div className="bg-card border border-border rounded-sm max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <span className="text-lg font-display font-extrabold tracking-tight">Invite Doubles Partner</span>
+              <button onClick={() => { setInviteModal(null); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); }} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
             </div>
-            <p style={{ fontSize: 13, margin: '0 0 10px', color: 'var(--text2,#888)' }}>
+            <p className="text-sm text-muted-foreground mb-2">
               {inviteModal.event.category} {inviteModal.event.ageGroup} — search for a partner by name or AITA Reg.
             </p>
-            <input
-              className="t-search-input"
-              style={{ width: '100%', marginBottom: 8 }}
+            <Input
+              className="mb-2"
               placeholder="Search by name or AITA Reg…"
               value={partnerQuery}
               autoFocus
               onChange={e => { setPartnerQuery(e.target.value); searchPartners(e.target.value); }}
             />
             {partnerResults.length > 0 && (
-              <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border,#333)', borderRadius: 6 }}>
+              <div className="max-h-56 overflow-y-auto border border-border rounded-sm divide-y divide-border">
                 {partnerResults.map(p => (
                   <div
                     key={p.aitaReg}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border,#222)', cursor: 'pointer' }}
+                    className="flex items-center justify-between gap-3 p-3 cursor-pointer hover:bg-secondary"
                     onClick={() => handleSendInvitation(p)}
                   >
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{p.familyName}{p.firstName ? `, ${p.firstName}` : ''}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text2,#888)' }}>{p.aitaReg} · {p.state} · {p.rankingRank ? `Rank ${p.rankingRank}` : 'Unranked'}</div>
+                      <div className="text-sm font-bold">{p.familyName}{p.firstName ? `, ${p.firstName}` : ''}</div>
+                      <div className="text-xs text-muted-foreground">{p.aitaReg} · {p.state} · {p.rankingRank ? `Rank ${p.rankingRank}` : 'Unranked'}</div>
                     </div>
-                    <button className="action-btn primary" style={{ fontSize: 12, padding: '3px 10px' }} disabled={inviting}>
-                      {inviting ? '…' : 'Invite'}
-                    </button>
+                    <Button size="sm" disabled={inviting}>{inviting ? '…' : 'Invite'}</Button>
                   </div>
                 ))}
               </div>
             )}
-            {inviteError && <div className="login-error" style={{ marginTop: 8 }}>{inviteError}</div>}
+            {inviteError && <div className="text-sm text-destructive mt-2">{inviteError}</div>}
           </div>
         </div>
       )}
 
       {/* Events list */}
-      <div className="page-scroll">
-        {events.length === 0 ? (
-          <div className="history-empty">
-            {isOwner
-              ? 'No events yet. Click + Add Event to add the first category.'
-              : 'No events have been added to this tournament week yet.'}
+      {events.length === 0 ? (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          {isOwner
+            ? 'No events yet. Click + Add Event to add the first category.'
+            : 'No events have been added to this tournament week yet.'}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Events ({events.length})</span>
+            <Link to={`/tournaments/${weekId}/oop`} className="text-sm text-primary hover:underline">Order of Play →</Link>
           </div>
-        ) : (
-          <div className="t-events-list">
-            <div className="t-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Events ({events.length})</span>
-              <Link to={`/tournaments/${weekId}/oop`} className="oop-link-btn">
-                Order of Play →
-              </Link>
-            </div>
-            {events.map(ev => (
-              <EventCard
-                key={ev.id}
-                event={ev}
-                weekId={weekId}
-                isOwner={isOwner}
-                onDelete={handleDeleteEvent}
-                myEntry={isPlayer ? myEntries[ev.id] : undefined}
-                onEnter={isPlayer ? openEntryModal : undefined}
-                onWithdraw={isPlayer ? handleWithdraw : undefined}
-                onInvitePartner={isPlayer ? (event) => { setInviteModal({ event }); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); } : undefined}
-                entryStage={entryStage}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          {events.map(ev => (
+            <EventCard
+              key={ev.id}
+              event={ev}
+              weekId={weekId}
+              isOwner={isOwner}
+              onDelete={handleDeleteEvent}
+              myEntry={isPlayer ? myEntries[ev.id] : undefined}
+              onEnter={isPlayer ? openEntryModal : undefined}
+              onWithdraw={isPlayer ? handleWithdraw : undefined}
+              onInvitePartner={isPlayer ? (event) => { setInviteModal({ event }); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); } : undefined}
+              entryStage={entryStage}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
