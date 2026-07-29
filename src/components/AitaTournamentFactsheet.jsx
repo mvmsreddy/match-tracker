@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { cn } from '../lib/utils';
+import { buttonVariants } from './primitives/button';
 
 // Scraped factsheet fields can balloon into a dump of the entire remaining
 // PDF text when the sync parser's end-label match fails on a given PDF
@@ -170,7 +172,11 @@ function formatDateRange(first, last) {
 }
 
 function Banner({ children }) {
-  return <div className="t-fs-banner">{children}</div>;
+  return (
+    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/40">
+      {children}
+    </div>
+  );
 }
 
 // Any scraped field can in principle be the one that ballooned, so every
@@ -188,19 +194,19 @@ function FieldValue({ value, href }) {
   const linkable = href && !isLong;
   const shown = !isLong || expanded ? textOnly : `${textOnly.slice(0, TRUNCATE_AT).trimEnd()}…`;
   return (
-    <span style={{ whiteSpace: 'pre-wrap' }}>
-      {linkable ? <a className="t-field-link" href={href}>{shown}</a> : shown}
+    <span className="whitespace-pre-wrap">
+      {linkable ? <a className="text-primary underline underline-offset-2 hover:no-underline" href={href}>{shown}</a> : shown}
       {isLong && (
         <>
           {' '}
-          <button type="button" className="t-field-toggle" onClick={() => setExpanded(e => !e)}>
+          <button type="button" className="text-primary text-xs font-semibold hover:underline" onClick={() => setExpanded(e => !e)}>
             {expanded ? 'Show less' : 'Show more'}
           </button>
         </>
       )}
       {urls.map(u => (
-        <div key={u} style={{ marginTop: 4 }}>
-          <a className="t-field-link" href={u} target="_blank" rel="noopener noreferrer">
+        <div key={u} className="mt-1">
+          <a className="text-primary underline underline-offset-2 hover:no-underline" href={u} target="_blank" rel="noopener noreferrer">
             {MAPS_URL_RE.test(u) ? '📍 Open in Google Maps ↗' : `${u.length > 46 ? `${u.slice(0, 46)}…` : u} ↗`}
           </a>
         </div>
@@ -212,9 +218,9 @@ function FieldValue({ value, href }) {
 function TableRow({ label, value, href, danger }) {
   if (!value) return null;
   return (
-    <div className={`t-fs-tr${danger ? ' t-fs-tr-danger' : ''}`}>
-      <div className="t-fs-td-label">{label}</div>
-      <div className="t-fs-td-value"><FieldValue value={value} href={href} /></div>
+    <div className={cn('grid grid-cols-[160px_1fr] gap-3 px-4 py-2 text-sm border-b border-border last:border-0', danger && 'bg-destructive/5')}>
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={cn(danger && 'text-destructive font-semibold')}><FieldValue value={value} href={href} /></div>
     </div>
   );
 }
@@ -223,11 +229,11 @@ function TableRowSplit({ pairs }) {
   const visible = pairs.filter(p => p.value);
   if (visible.length === 0) return null;
   return (
-    <div className="t-fs-tr t-fs-tr-split">
+    <div className="grid grid-cols-2 gap-4 px-4 py-2 border-b border-border last:border-0">
       {visible.map((p) => (
-        <div className="t-fs-half" key={p.label}>
-          <div className="t-fs-td-label">{p.label}</div>
-          <div className="t-fs-td-value"><FieldValue value={p.value} href={p.href} /></div>
+        <div key={p.label}>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{p.label}</div>
+          <div className="text-sm"><FieldValue value={p.value} href={p.href} /></div>
         </div>
       ))}
     </div>
@@ -237,9 +243,9 @@ function TableRowSplit({ pairs }) {
 function TableSection({ title, hasContent, children }) {
   if (!hasContent) return null;
   return (
-    <div className="t-fs-section">
+    <div className="rounded-sm border border-border bg-card overflow-hidden">
       <Banner>{title}</Banner>
-      <div className="t-fs-table">{children}</div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -247,13 +253,13 @@ function TableSection({ title, hasContent, children }) {
 function GridTable({ columns, headers, rows }) {
   const style = { gridTemplateColumns: columns };
   return (
-    <div className="t-fs-gridtable">
-      <div className="t-fs-gridtable-head" style={style}>
-        {headers.map(h => <div key={h}>{h}</div>)}
+    <div className="text-sm">
+      <div className="grid bg-muted/40 text-xs font-bold uppercase tracking-wide text-muted-foreground border-b border-border" style={style}>
+        {headers.map(h => <div key={h} className="px-4 py-2">{h}</div>)}
       </div>
       {rows.map((r, ri) => (
-        <div className="t-fs-gridtable-row" style={style} key={ri}>
-          {r.map((c, ci) => <div key={ci}>{c || '—'}</div>)}
+        <div className="grid border-b border-border last:border-0" style={style} key={ri}>
+          {r.map((c, ci) => <div key={ci} className="px-4 py-2">{c || '—'}</div>)}
         </div>
       ))}
     </div>
@@ -297,13 +303,17 @@ export default function AitaTournamentFactsheet({ t }) {
   const leftoverSignin = drawEvents.length === 0 ? t.signinInstructions : '';
 
   return (
-    <div className="t-factsheet-body">
-      <div className="t-week-info-bar" style={{ padding: '0 0 10px' }}>
-        {t.surface && <span className="t-badge">{t.surface}</span>}
-        {(t.city || t.venue) && (
-          <span className="t-info-item">{[t.venue, t.city].filter(Boolean).join(', ')}</span>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 pb-1">
+        {t.surface && (
+          <span className="inline-flex items-center rounded-sm border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+            {t.surface}
+          </span>
         )}
-        {t.startDate && <span className="t-info-item">{t.startDate}</span>}
+        {(t.city || t.venue) && (
+          <span className="text-sm text-muted-foreground">{[t.venue, t.city].filter(Boolean).join(', ')}</span>
+        )}
+        {t.startDate && <span className="text-sm text-muted-foreground">{t.startDate}</span>}
       </div>
 
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
@@ -335,7 +345,7 @@ export default function AitaTournamentFactsheet({ t }) {
       </TableSection>
 
       {drawEvents.length > 0 && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Draws &amp; Sign-in Details</Banner>
           <GridTable
             columns={drawsHaveDayCols ? '1.1fr 0.7fr 1.3fr 0.8fr 0.8fr' : '1.3fr 0.9fr 1.6fr'}
@@ -383,7 +393,7 @@ export default function AitaTournamentFactsheet({ t }) {
       </TableSection>
 
       {hasFees && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Entry Fees</Banner>
           <GridTable
             columns="1.2fr 1fr 1.3fr"
@@ -398,10 +408,10 @@ export default function AitaTournamentFactsheet({ t }) {
       )}
 
       {leaked?.hotels?.length > 0 && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Accommodation</Banner>
           {leaked.hotels.map((h, i) => (
-            <div className="t-fs-table" style={{ marginBottom: i < leaked.hotels.length - 1 ? 10 : 0 }} key={h.name || i}>
+            <div className={cn(i < leaked.hotels.length - 1 && 'border-b-4 border-background')} key={h.name || i}>
               <TableRow label="Hotel" value={h.name} />
               <TableRow label="Address" value={h.address} />
               <TableRow label="Phone" value={h.phone} href={h.phone ? `tel:${h.phone.split(/[,/]/)[0].replace(/[^\d+]/g, '')}` : undefined} />
@@ -413,7 +423,7 @@ export default function AitaTournamentFactsheet({ t }) {
       )}
 
       {leaked?.ageEligibility && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Age Eligibility</Banner>
           <GridTable
             columns="1.5fr 1fr"
@@ -424,7 +434,7 @@ export default function AitaTournamentFactsheet({ t }) {
       )}
 
       {t.dailyAllowance && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Daily Allowance (Main Draw Players)</Banner>
           <GridTable
             columns="1.5fr 1fr"
@@ -435,28 +445,26 @@ export default function AitaTournamentFactsheet({ t }) {
       )}
 
       {leftoverSignin && (
-        <div className="t-fs-section">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <Banner>Sign-in</Banner>
-          <div className="t-fs-table">
-            <TableRow label="Instructions" value={leftoverSignin} />
-          </div>
+          <TableRow label="Instructions" value={leftoverSignin} />
         </div>
       )}
 
       {leaked && (
-        <div className="history-empty" style={{ padding: '0', textAlign: 'left', fontSize: '0.6rem' }}>
+        <div className="text-xs text-muted-foreground">
           Some fields above were recovered from a mis-synced field — cross-check against the official PDF if anything looks off.
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '4px 0 0' }}>
+      <div className="flex flex-wrap gap-2 pt-1">
         {t.factsheetUrl && (
-          <a className="action-btn primary" href={t.factsheetUrl} target="_blank" rel="noopener noreferrer">
+          <a className={buttonVariants({ size: 'sm' })} href={t.factsheetUrl} target="_blank" rel="noopener noreferrer">
             ⬇ Download Fact Sheet (PDF)
           </a>
         )}
         {t.sourceUrl && (
-          <a className="action-btn" href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
+          <a className={buttonVariants({ variant: 'outline', size: 'sm' })} href={t.sourceUrl} target="_blank" rel="noopener noreferrer">
             View on AITA site ↗
           </a>
         )}

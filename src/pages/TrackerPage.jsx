@@ -129,7 +129,7 @@ export default function TrackerPage() {
   }
 
   return (
-    <div className="tracker-shell root flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
+    <div className="tracker-shell flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
       {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav variant="tracker" />}
 
       {/* Scorebar only while a match is running */}

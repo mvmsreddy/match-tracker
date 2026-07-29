@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
 const PAGE_SIZE = 50;
 
@@ -13,9 +13,10 @@ function formatDob(iso) {
   return `${d}-${m}-${y}`;
 }
 
+const selectCls = 'rounded-sm border border-input bg-transparent px-2.5 py-1.5 text-sm cursor-pointer';
+
 export default function AitaRankingsPage() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const isOrganizer = user?.role === 'organizer';
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -109,105 +110,105 @@ export default function AitaRankingsPage() {
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="rankings" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <h1 className="title">AITA Rankings</h1>
-            <div className="subtitle">MIRRORED FROM AITATENNIS.COM</div>
-          </div>
-          {isOrganizer && (
-            <button className="action-btn primary" onClick={handleSyncNow} disabled={syncing}>
-              {syncing ? 'Syncing…' : '⟳ Sync Now'}
-            </button>
-          )}
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Mirrored from aitatennis.com</div>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">AITA Rankings</h1>
         </div>
+        {isOrganizer && (
+          <Button onClick={handleSyncNow} disabled={syncing}>
+            {syncing ? 'Syncing…' : '⟳ Sync Now'}
+          </Button>
+        )}
       </div>
 
-      {syncMessage && <div className="history-empty" style={{ padding: '8px 16px' }}>{syncMessage}</div>}
+      {syncMessage && (
+        <div className="border border-border bg-muted/40 rounded-sm p-3 text-sm text-muted-foreground">{syncMessage}</div>
+      )}
 
-      {error && <div className="history-empty">{error}</div>}
+      {error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
+      )}
 
       {facets && facets.length === 0 && !error && (
-        <div className="history-empty">No ranking categories loaded yet.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No ranking categories loaded yet.</div>
       )}
 
       {facets && facets.length > 0 && (
         <>
-          <div className="t-week-info-bar">
-            <select className="t-badge" style={{ cursor: 'pointer' }} value={category} onChange={e => setCategory(e.target.value)}>
+          <div className="flex flex-wrap items-center gap-2">
+            <select className={selectCls} value={category} onChange={e => setCategory(e.target.value)}>
               {[...new Set(facets.map(f => f.category))].map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select className="t-badge" style={{ cursor: 'pointer' }} value={subcategory} onChange={e => setSubcategory(e.target.value)}>
+            <select className={selectCls} value={subcategory} onChange={e => setSubcategory(e.target.value)}>
               {subcategoryOptions.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select className="t-badge" style={{ cursor: 'pointer' }} value={date} onChange={e => setDate(e.target.value)}>
+            <select className={selectCls} value={date} onChange={e => setDate(e.target.value)}>
               {dates.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <input
+            <Input
               type="text"
               placeholder="Search player name…"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid var(--border,#333)', background: 'transparent', color: 'inherit', fontSize: '0.78rem' }}
+              className="w-56"
             />
             {result && (
-              <span className="t-info-item">{result.totalCount} player{result.totalCount === 1 ? '' : 's'}</span>
+              <span className="text-xs text-muted-foreground">{result.totalCount} player{result.totalCount === 1 ? '' : 's'}</span>
             )}
           </div>
 
-          <div className="page-scroll">
-            {result === null && <div className="history-empty">Loading rankings…</div>}
+          {result === null && (
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading rankings…</div>
+          )}
 
-            {result && result.rows.length === 0 && (
-              <div className="history-empty">No players found.</div>
-            )}
+          {result && result.rows.length === 0 && (
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No players found.</div>
+          )}
 
-            {result && result.rows.length > 0 && (
-              <>
-                <div className="rank-table-wrap">
-                  <table className="rank-table">
-                    <thead>
-                      <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Reg No.</th>
-                        <th>DOB</th>
-                        <th>State</th>
-                        <th>Singles</th>
-                        <th>Doubles</th>
-                        <th>25% Best Dbls</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.rows.map(r => (
-                        <tr key={r.id}>
-                          <td className="rank-cell">{r.rank}</td>
-                          <td className="name-cell">{r.playerName}</td>
-                          <td>{r.regNo || '—'}</td>
-                          <td>{formatDob(r.dob)}</td>
-                          <td>{r.state || '—'}</td>
-                          <td>{r.pointsBreakdown?.singlesPts ?? '—'}</td>
-                          <td>{r.pointsBreakdown?.doublesPts ?? '—'}</td>
-                          <td>{r.pointsBreakdown?.best25DoublesPts ?? '—'}</td>
-                          <td className="name-cell">{r.totalPoints}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          {result && result.rows.length > 0 && (
+            <>
+              <div className="rounded-sm border border-border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead>Reg No.</TableHead>
+                      <TableHead>DOB</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Singles</TableHead>
+                      <TableHead>Doubles</TableHead>
+                      <TableHead>25% Best Dbls</TableHead>
+                      <TableHead>Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {result.rows.map(r => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-bold">{r.rank}</TableCell>
+                        <TableCell className="font-bold">{r.playerName}</TableCell>
+                        <TableCell>{r.regNo || '—'}</TableCell>
+                        <TableCell>{formatDob(r.dob)}</TableCell>
+                        <TableCell>{r.state || '—'}</TableCell>
+                        <TableCell>{r.pointsBreakdown?.singlesPts ?? '—'}</TableCell>
+                        <TableCell>{r.pointsBreakdown?.doublesPts ?? '—'}</TableCell>
+                        <TableCell>{r.pointsBreakdown?.best25DoublesPts ?? '—'}</TableCell>
+                        <TableCell className="font-bold">{r.totalPoints}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-                <div className="rank-pagination">
-                  <button className="action-btn" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>← Prev</button>
-                  <span className="t-info-item">Page {page + 1} of {totalPages}</span>
-                  <button className="action-btn" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
-                </div>
-              </>
-            )}
-          </div>
+              <div className="flex items-center justify-center gap-3">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>← Prev</Button>
+                <span className="text-xs text-muted-foreground">Page {page + 1} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</Button>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

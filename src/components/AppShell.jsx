@@ -85,14 +85,14 @@ export default function AppShell() {
         <div className="px-3 py-4 border-t border-border space-y-1">
           <button
             onClick={toggle}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" strokeWidth={2.5} /> : <Moon className="w-4 h-4" strokeWidth={2.5} />}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="w-4 h-4" strokeWidth={2.5} />
             Log out
@@ -104,7 +104,7 @@ export default function AppShell() {
         {/* Header */}
         <header className="sticky top-0 z-30 bg-background border-b border-border px-4 lg:px-8 py-3 flex items-center justify-between gap-3">
           <button
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm hover:bg-secondary"
+            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm bg-transparent hover:bg-secondary"
             onClick={() => setMobileNavOpen(true)}
             aria-label="Open menu"
           >
@@ -124,7 +124,7 @@ export default function AppShell() {
             <NotificationsBell />
             <button
               onClick={toggle}
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm hover:bg-secondary"
+              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm bg-transparent hover:bg-secondary"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -154,7 +154,7 @@ export default function AppShell() {
                     </NavLink>
                     <button
                       onClick={logout}
-                      className="w-full text-left px-2 py-1.5 rounded-sm text-sm hover:bg-secondary flex items-center gap-2"
+                      className="w-full text-left px-2 py-1.5 rounded-sm text-sm bg-transparent hover:bg-secondary flex items-center gap-2"
                     >
                       <LogOut className="w-3.5 h-3.5" /> Log out
                     </button>
@@ -204,7 +204,7 @@ export default function AppShell() {
           <div className="fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border p-4 lg:hidden overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <span className="font-display font-extrabold text-lg tracking-tighter">Menu</span>
-              <button onClick={() => setMobileNavOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-secondary">
+              <button onClick={() => setMobileNavOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary">
                 <X className="w-4 h-4" />
               </button>
             </div>

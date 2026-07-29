@@ -1,18 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Badge } from '@/components/primitives/badge';
 
 export default function CoachPlayersPage() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const isCoach = user.role === 'coach';
 
   const [links, setLinks]           = useState(null);
-  const [roster, setRoster]         = useState(null); // coach-only: segment-aware roster (Phase 6)
+  const [roster, setRoster]         = useState(null); // coach-only: segment-aware roster
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching]   = useState(false);
@@ -28,7 +28,7 @@ export default function CoachPlayersPage() {
     return () => { cancelled = true; };
   }, [user.id]);
 
-  // Segment-aware roster (Phase 6) — coach-only, drives the segment chips below
+  // Segment-aware roster — coach-only, drives the segment chips below
   useEffect(() => {
     if (!isCoach) return;
     let cancelled = false;
@@ -55,7 +55,6 @@ export default function CoachPlayersPage() {
     setActionError('');
     try {
       const results = await api.searchPlayers(searchQuery);
-      // Filter out already linked players
       const linkedIds = myLinks.map(l => l.playerId);
       setSearchResults(results.filter(p => !linkedIds.includes(p.id) && p.id !== user.id));
     } catch (err) {
@@ -102,198 +101,149 @@ export default function CoachPlayersPage() {
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="roster" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <h1 className="title">{isCoach ? 'My Players' : 'My Coaches'}</h1>
-            <div className="subtitle">
-              {isCoach
-                ? 'Players linked to your coaching profile'
-                : 'Coaches connected to your player profile'}
-            </div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display font-extrabold text-2xl tracking-tighter">{isCoach ? 'My Players' : 'My Coaches'}</h1>
+          <div className="text-sm text-muted-foreground mt-0.5">
+            {isCoach ? 'Players linked to your coaching profile' : 'Coaches connected to your player profile'}
           </div>
-          {isCoach && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <Link to="/my-players" className="action-btn">Coach Intelligence →</Link>
-            </div>
-          )}
         </div>
+        {isCoach && (
+          <Link to="/my-players"><Button variant="outline" size="sm">Coach Intelligence &rarr;</Button></Link>
+        )}
       </div>
 
-      <div className="page-scroll">
-        {error && <div className="history-empty">{error}</div>}
-        {actionError && (
-          <div className="login-error" style={{ maxWidth: 680, margin: '8px auto', padding: '0 16px' }}>
-            {actionError}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
+      {actionError && <div className="text-destructive text-sm">{actionError}</div>}
+
+      {isCoach && (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Find a Player</div>
+          <div className="flex gap-2 flex-wrap">
+            <Input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              placeholder="Search by name or AITA reg…"
+              className="flex-1 min-w-52"
+            />
+            <Button onClick={handleSearch} disabled={searching || !searchQuery.trim()}>{searching ? 'Searching…' : 'Search'}</Button>
           </div>
-        )}
 
-        {/* Coach: search for players to link */}
-        {isCoach && (
-          <div className="cp-search-section">
-            <div className="cp-section-label">Find a Player</div>
-            <div className="cp-search-row">
-              <input
-                className="cp-search-input"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by name or AITA reg…"
-              />
-              <button
-                className="action-btn primary"
-                onClick={handleSearch}
-                disabled={searching || !searchQuery.trim()}
-              >
-                {searching ? 'Searching…' : 'Search'}
-              </button>
-            </div>
-
-            {searchResults.length > 0 && (
-              <div className="cp-results">
-                {searchResults.map(p => (
-                  <div key={p.id} className="cp-result-card">
-                    <div className="cp-result-info">
-                      <div className="cp-result-name">{p.displayName}</div>
-                      <div className="cp-result-meta">
-                        {p.aitaReg && <span>{p.aitaReg}</span>}
-                        {p.stateAbbr && <span> · {p.stateAbbr}</span>}
-                        {p.ranking && <span> · Rank {p.ranking}</span>}
-                        {p.clubName && <span> · {p.clubName}</span>}
-                      </div>
+          {searchResults.length > 0 && (
+            <div className="space-y-2 mt-4">
+              {searchResults.map(p => (
+                <div key={p.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50">
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">{p.displayName}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {[p.aitaReg, p.stateAbbr, p.ranking && `Rank ${p.ranking}`, p.clubName].filter(Boolean).join(' · ')}
                     </div>
-                    <button
-                      className="action-btn primary"
-                      onClick={() => handleSendRequest(p.id)}
-                    >
-                      Send Request
-                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-            {searchResults.length === 0 && searchQuery && !searching && (
-              <div className="cp-no-results">No players found. Try a different name or AITA reg.</div>
-            )}
-          </div>
-        )}
+                  <Button size="sm" onClick={() => handleSendRequest(p.id)}>Send Request</Button>
+                </div>
+              ))}
+            </div>
+          )}
+          {searchResults.length === 0 && searchQuery && !searching && (
+            <div className="text-sm text-muted-foreground mt-4">No players found. Try a different name or AITA reg.</div>
+          )}
+        </Card>
+      )}
 
-        {/* Incoming pending requests (player side) */}
-        {incomingPending.length > 0 && (
-          <div className="cp-section">
-            <div className="cp-section-label">Pending Requests</div>
+      {incomingPending.length > 0 && (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Pending Requests</div>
+          <div className="space-y-2">
             {incomingPending.map(link => {
               const other = getOtherParty(link);
               return (
-                <div key={link.id} className="cp-link-card cp-link-pending">
-                  <div className="cp-link-info">
-                    <div className="cp-link-name">{other?.displayName || '—'}</div>
-                    <div className="cp-link-meta">
-                      {other?.clubName && <span>{other.clubName}</span>}
-                      {other?.stateAbbr && <span> · {other.stateAbbr}</span>}
+                <div key={link.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50 flex-wrap">
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">{other?.displayName || '—'}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {[other?.clubName, other?.stateAbbr].filter(Boolean).join(' · ')}
                     </div>
-                    <div className="cp-link-status-tag pending">Request pending</div>
+                    <Badge variant="secondary" className="mt-1.5">Request pending</Badge>
                   </div>
-                  <div className="cp-link-actions">
-                    <button
-                      className="action-btn primary"
-                      onClick={() => handleRespond(link.id, 'active')}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      className="action-btn danger"
-                      onClick={() => handleRespond(link.id, 'declined')}
-                    >
-                      Decline
-                    </button>
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" onClick={() => handleRespond(link.id, 'active')}>Accept</Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleRespond(link.id, 'declined')}>Decline</Button>
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Outgoing pending (coach side) */}
-        {outgoingPending.length > 0 && (
-          <div className="cp-section">
-            <div className="cp-section-label">Sent Requests</div>
+      {outgoingPending.length > 0 && (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Sent Requests</div>
+          <div className="space-y-2">
             {outgoingPending.map(link => {
               const other = getOtherParty(link);
               return (
-                <div key={link.id} className="cp-link-card cp-link-pending">
-                  <div className="cp-link-info">
-                    <div className="cp-link-name">{other?.displayName || '—'}</div>
-                    <div className="cp-link-meta">
-                      {other?.aitaReg && <span>{other.aitaReg}</span>}
-                      {other?.stateAbbr && <span> · {other.stateAbbr}</span>}
-                    </div>
-                    <div className="cp-link-status-tag pending">Awaiting response</div>
+                <div key={link.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50">
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">{other?.displayName || '—'}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{[other?.aitaReg, other?.stateAbbr].filter(Boolean).join(' · ')}</div>
+                    <Badge variant="secondary" className="mt-1.5">Awaiting response</Badge>
                   </div>
-                  <button className="t-delete-btn" onClick={() => handleUnlink(link.id)} title="Cancel request">✕</button>
+                  <button className="w-8 h-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleUnlink(link.id)} title="Cancel request">✕</button>
                 </div>
               );
             })}
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Active links */}
-        {links === null && <div className="history-empty">Loading…</div>}
+      {links === null && <div className="text-sm text-muted-foreground">Loading…</div>}
 
-        {links !== null && activeLinks.length === 0 && pendingLinks.length === 0 && (
-          <div className="history-empty">
-            {isCoach
-              ? 'No players linked yet. Search above to find and connect with players.'
-              : 'No coaches linked yet. Ask your coach to send you a connection request.'}
+      {links !== null && activeLinks.length === 0 && pendingLinks.length === 0 && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          {isCoach
+            ? 'No players linked yet. Search above to find and connect with players.'
+            : 'No coaches linked yet. Ask your coach to send you a connection request.'}
+        </div>
+      )}
+
+      {activeLinks.length > 0 && (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">
+            {isCoach ? `Active Players (${activeLinks.length})` : `My Coaches (${activeLinks.length})`}
           </div>
-        )}
-
-        {activeLinks.length > 0 && (
-          <div className="cp-section">
-            <div className="cp-section-label">
-              {isCoach ? `Active Players (${activeLinks.length})` : `My Coaches (${activeLinks.length})`}
-            </div>
+          <div className="space-y-2">
             {activeLinks.map(link => {
               const other = getOtherParty(link);
               const rosterEntry = isCoach ? roster?.find(r => r.id === other?.id) : null;
               return (
-                <div key={link.id} className="cp-link-card">
-                  <div className="cp-link-info">
-                    <div className="cp-link-name">
+                <div key={link.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-card">
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">
                       {isCoach
-                        ? <Link to={`/coach/players/${other?.id}`}>{other?.displayName || '—'}</Link>
+                        ? <Link to={`/coach/players/${other?.id}`} className="hover:text-primary">{other?.displayName || '—'}</Link>
                         : (other?.displayName || '—')}
                     </div>
-                    <div className="cp-link-meta">
-                      {other?.aitaReg && <span>AITA {other.aitaReg}</span>}
-                      {other?.stateAbbr && <span> · {other.stateAbbr}</span>}
-                      {other?.ranking && <span> · Rank {other.ranking}</span>}
-                      {other?.clubName && <span> · {other.clubName}</span>}
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {[other?.aitaReg && `AITA ${other.aitaReg}`, other?.stateAbbr, other?.ranking && `Rank ${other.ranking}`, other?.clubName].filter(Boolean).join(' · ')}
                     </div>
                     {rosterEntry && rosterEntry.segments.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
                         {rosterEntry.segments.map(s => (
-                          <span key={s.key} className="t-badge">{s.category} {s.subcategory} · #{s.latest.rank}</span>
+                          <Badge key={s.key} variant="secondary">{s.category} {s.subcategory} &middot; #{s.latest.rank}</Badge>
                         ))}
                       </div>
                     )}
                   </div>
-                  <button
-                    className="t-delete-btn"
-                    onClick={() => handleUnlink(link.id)}
-                    title="Remove link"
-                  >
-                    ✕
-                  </button>
+                  <button className="w-8 h-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleUnlink(link.id)} title="Remove link">✕</button>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 }

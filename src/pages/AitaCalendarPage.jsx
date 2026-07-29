@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import AitaTournamentFactsheet from '../components/AitaTournamentFactsheet';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { cn } from '../lib/utils';
 
 const AGE_GROUPS = ['Under 10', 'Under 12', 'Under 14', 'Under 16', 'Under 18', 'Men', 'Women', 'Senior'];
 
@@ -49,15 +49,17 @@ function daysUntil(dateStr) {
 function entryUrgency(entryDeadline) {
   const days = daysUntil(entryDeadline);
   if (days === null) return null;
-  if (days < 0) return { label: 'Entries closed', className: 't-badge-closed' };
-  if (days <= 3) return { label: days === 0 ? 'Entries close today' : `Closes in ${days}d`, className: 't-badge-urgent' };
-  if (days <= 7) return { label: `Closes in ${days}d`, className: 't-badge-soon' };
+  if (days < 0) return { label: 'Entries closed', className: 'bg-muted text-muted-foreground' };
+  if (days <= 3) return { label: days === 0 ? 'Entries close today' : `Closes in ${days}d`, className: 'bg-destructive/10 text-destructive' };
+  if (days <= 7) return { label: `Closes in ${days}d`, className: 'bg-primary/10 text-primary' };
   return null;
 }
 
+const badgeCls = 'inline-flex items-center rounded-sm border border-transparent px-2 py-0.5 text-[0.68rem] font-semibold';
+const selectCls = 'rounded-sm border border-input bg-transparent px-2.5 py-1.5 text-sm cursor-pointer';
+
 export default function AitaCalendarPage() {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const isOrganizer = user?.role === 'organizer';
 
   const [tournaments, setTournaments] = useState(null);
@@ -147,112 +149,130 @@ export default function AitaCalendarPage() {
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <h1 className="title">AITA Calendar</h1>
-            <div className="subtitle">MIRRORED FROM AITATENNIS.COM</div>
-          </div>
-          {isOrganizer && (
-            <button className="action-btn primary" onClick={handleSyncNow} disabled={syncing}>
-              {syncing ? 'Syncing…' : '⟳ Sync Now'}
-            </button>
-          )}
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Mirrored from aitatennis.com</div>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">AITA Calendar</h1>
         </div>
+        {isOrganizer && (
+          <Button onClick={handleSyncNow} disabled={syncing}>
+            {syncing ? 'Syncing…' : '⟳ Sync Now'}
+          </Button>
+        )}
       </div>
 
-      <div className="t-week-info-bar">
-        <select className="t-badge" style={{ cursor: 'pointer' }} value={ageGroup} onChange={e => setAgeGroup(e.target.value)}>
+      <div className="flex flex-wrap items-center gap-2">
+        <select className={selectCls} value={ageGroup} onChange={e => setAgeGroup(e.target.value)}>
           <option value="">All age groups</option>
           {AGE_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
-        <select className="t-badge" style={{ cursor: 'pointer' }} value={city} onChange={e => setCity(e.target.value)}>
+        <select className={selectCls} value={city} onChange={e => setCity(e.target.value)}>
           <option value="">All cities</option>
           {facets.cities.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select className="t-badge" style={{ cursor: 'pointer' }} value={grade} onChange={e => setGrade(e.target.value)}>
+        <select className={selectCls} value={grade} onChange={e => setGrade(e.target.value)}>
           <option value="">All grades</option>
           {facets.grades.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
-        <input
+        <Input
           type="text"
           placeholder="Search tournament name…"
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
-          style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid var(--border,#333)', background: 'transparent', color: 'inherit', fontSize: '0.78rem' }}
+          className="w-56"
         />
         {syncLog?.startedAt && (
-          <span className="t-info-item">
+          <span className="text-xs text-muted-foreground">
             Last synced: {timeAgo(syncLog.finishedAt || syncLog.startedAt)}
             {syncLog.error ? ' (last run failed)' : ''}
           </span>
         )}
       </div>
 
-      <div className="chip-row" style={{ padding: '0 16px' }}>
-        {DATE_PRESETS.map(p => (
-          <span
-            key={p.key || 'all'}
-            className={`chip${datePreset === p.key ? ' selected' : ''}`}
-            onClick={() => setDatePreset(p.key)}
-          >
-            {p.label}
-          </span>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
+          {DATE_PRESETS.map(p => (
+            <button
+              key={p.key || 'all'}
+              type="button"
+              onClick={() => setDatePreset(p.key)}
+              className={cn(
+                'px-3 py-1.5 rounded-sm text-xs font-semibold',
+                datePreset === p.key ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
         {hasActiveFilters && (
-          <span className="chip warn" onClick={clearFilters}>Clear filters</span>
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={clearFilters}>
+            Clear filters
+          </Button>
         )}
       </div>
 
-      {syncMessage && <div className="history-empty" style={{ padding: '8px 16px' }}>{syncMessage}</div>}
+      {syncMessage && (
+        <div className="border border-border bg-muted/40 rounded-sm p-3 text-sm text-muted-foreground">{syncMessage}</div>
+      )}
 
-      <div className="page-scroll">
-        {error && <div className="history-empty">{error}</div>}
+      {error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
+      )}
 
-        {tournaments === null && !error && (
-          <div className="history-empty">Loading AITA calendar…</div>
-        )}
+      {tournaments === null && !error && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading AITA calendar…</div>
+      )}
 
-        {tournaments && tournaments.length === 0 && (
-          <div className="history-empty">No tournaments found for this filter.</div>
-        )}
+      {tournaments && tournaments.length === 0 && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No tournaments found for this filter.</div>
+      )}
 
-        {tournaments && tournaments.length > 0 && (
-          <div className="t-grid">
-            {tournaments.map(t => {
-              const urgency = entryUrgency(t.entryDeadline);
-              return (
-                <button key={t.id} className="t-tile" onClick={() => setSelected(t)}>
-                  <div className="t-card-name">{t.name}</div>
-                  <div className="t-card-meta">
-                    {t.ageGroup && <span className="t-badge">{t.ageGroup}</span>}
-                    {t.grade && <span className="t-badge t-badge-grade">{t.grade}</span>}
-                    {urgency && <span className={`t-badge ${urgency.className}`}>{urgency.label}</span>}
-                  </div>
-                  <div className="t-card-location">
-                    {[t.city, t.venue].filter(Boolean).join(' · ')}
-                  </div>
-                  {t.startDate && <div className="t-card-dates">{t.startDate}</div>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {tournaments && tournaments.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {tournaments.map(t => {
+            const urgency = entryUrgency(t.entryDeadline);
+            return (
+              <button
+                key={t.id}
+                onClick={() => setSelected(t)}
+                className="text-left flex flex-col gap-2 rounded-sm border border-border bg-card hover:border-primary p-4"
+              >
+                <div className="text-sm font-bold">{t.name}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {t.ageGroup && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.ageGroup}</span>}
+                  {t.grade && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.grade}</span>}
+                  {urgency && <span className={cn(badgeCls, urgency.className)}>{urgency.label}</span>}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {[t.city, t.venue].filter(Boolean).join(' · ')}
+                </div>
+                {t.startDate && <div className="text-xs text-muted-foreground">{t.startDate}</div>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {selected && (
-        <div className="t-modal-overlay" onClick={() => setSelected(null)}>
-          <div className="t-modal t-modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="t-modal-header">
-              <span className="t-modal-title">{selected.name}</span>
-              <button className="drawer-close" onClick={() => setSelected(null)}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+          <div
+            className="bg-card border border-border rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <span className="text-lg font-display font-extrabold tracking-tight">{selected.name}</span>
+              <button
+                onClick={() => setSelected(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-sm hover:bg-secondary shrink-0"
+              >
+                ✕
+              </button>
             </div>
             <AitaTournamentFactsheet t={selected} />
-            <div style={{ paddingTop: 10 }}>
-              <Link to={`/aita-calendar/${selected.id}`} className="t-breadcrumb">
+            <div className="pt-3">
+              <Link to={`/aita-calendar/${selected.id}`} className="text-sm text-primary hover:underline">
                 Open as full page ↗
               </Link>
             </div>

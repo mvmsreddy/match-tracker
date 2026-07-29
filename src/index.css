@@ -36,39 +36,6 @@ body { margin: 0; }
 .field select { width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 7px 8px; border-radius: 2px; font-family: 'Inter'; font-size: 0.82rem; }
 .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-.scorebar { flex-shrink: 0; padding: 12px 16px; border-bottom: 2px solid var(--bg2); z-index: 100; background: var(--bg); box-shadow: 0 3px 12px var(--shadow); }
-.score-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-family: 'JetBrains Mono', monospace; }
-.score-names { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; }
-.score-names .self-name { color: var(--accent); font-weight: 600; }
-.score-names .opp-name { color: var(--opp); font-weight: 600; }
-.score-sets { display: flex; gap: 6px; align-items: center; }
-.set-chip { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 3px 7px; font-size: 0.68rem; text-align: center; min-width: 34px; }
-.score-current { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1; }
-.server-tag { font-size: 0.62rem; color: var(--text4); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
-
-/* min-height is an explicit floor (not 0, not auto). auto would measure
-   content using chip flex-grow's max-height potential and balloon this way
-   past what's actually needed; 0 lets tab-content's overflow-y:auto never
-   see an overflow, silently clipping the undo bar / delete button off small
-   screens instead of scrolling to reach them. A fixed floor avoids both. */
-.wizard { display: flex; flex-direction: column; flex: 1; min-height: 300px; padding: 8px 16px 6px; }
-
-.wizard-title { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; flex-shrink: 0; }
-
-/* Step card — highlights the current active step, grows to fill wizard.
-   min-height keeps it from being squeezed to an unusably tiny sliver; once a
-   step's own content (e.g. a 7-option chip list) exceeds the card, it
-   scrolls internally instead of overflowing into the undo bar below it. */
-.wizard-step-card { flex: 1; display: flex; flex-direction: column; min-height: 180px; background: var(--bg3); border: 1px solid var(--border2); border-left: 3px solid var(--accent); border-radius: 5px; padding: 14px 14px 12px; margin-bottom: 8px; touch-action: pan-y; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.wizard-step-label { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 10px; }
-
-/* In-wizard back navigation — steps back one screen within the current point */
-.wizard-back-btn { align-self: flex-start; flex-shrink: 0; background: none; border: none; color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; padding: 2px 6px 10px 0; margin-bottom: 2px; cursor: pointer; }
-.wizard-back-btn:hover { color: var(--accent); }
-
-/* Breadcrumb showing completed choices */
-.wizard-breadcrumb { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: var(--text3); padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--bg2); line-height: 1.5; word-break: break-word; }
-
 /* Shot Location — two-tap court diagram (Hit From, then Dropped At) */
 .shot-location-court { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; }
 .shot-location-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); text-align: center; }
@@ -97,12 +64,6 @@ body { margin: 0; }
 .legend-swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
 .shot-heatmap-table-wrap { margin-top: 14px; overflow-x: auto; }
 
-/* wizard-grow: applied to the main content element inside each step to make it expand */
-.wizard-grow { flex: 1; min-height: 0; }
-.ball-in-play-grid.wizard-grow { align-items: stretch; }
-.chip-row.wizard-grow { flex-wrap: nowrap; align-items: stretch; flex: 1; min-height: 0; }
-.chip-row.wizard-grow .chip { flex: 1 1 0; min-height: 60px; font-size: 1rem; }
-
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
 .chip { background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 20px; font-family: 'Inter'; font-size: 0.8rem; cursor: pointer; user-select: none; }
 .chip:hover { border-color: var(--accent); }
@@ -111,93 +72,6 @@ body { margin: 0; }
 .chip.warn { border-color: var(--danger); color: var(--danger); }
 .chip.warn:hover { background: var(--danger-bg); }
 .chip.warn.selected { background: var(--danger); color: var(--text); }
-
-/* Larger chips for primary tracking actions */
-.chip-lg { padding: 14px 16px; font-size: 0.87rem; min-height: 50px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; }
-
-/* "I won" outcomes — green */
-.chip.self-pt { border-color: var(--win); color: var(--win-text); }
-.chip.self-pt:hover { background: var(--win-hover); border-color: var(--win); }
-.chip.self-pt.selected { background: var(--win); color: var(--bg); border-color: var(--win); }
-
-/* "They won" outcomes — red/orange */
-.chip.opp-pt { border-color: var(--danger); color: var(--opp); }
-.chip.opp-pt:hover { background: var(--danger-bg); border-color: var(--opp); }
-.chip.opp-pt.selected { background: var(--danger); color: var(--text); border-color: var(--danger); }
-
-/* "1st in" / "2nd in" action chips — lime accent */
-.chip.chip-action { border-color: var(--accent); color: var(--accent); }
-.chip.chip-action:hover { background: var(--win-hover); }
-
-/* 2-column grid for outcomes and stroke selection */
-.chip-grid-2 .chip { flex: 1 1 calc(50% - 4px); min-width: 0; }
-.chip-grid-2 .chip-full { flex: 1 1 100%; }
-
-/* 7-column grid for rally length */
-.chip-grid-rally .chip { flex: 1 1 0; min-width: 44px; }
-
-/* Service screen grid: Ace full-width, then pairs */
-.chip-grid-service { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip-grid-service .chip { flex: 1 1 calc(50% - 4px); min-width: 0; }
-.chip-grid-service .chip-full { flex: 1 1 100%; }
-
-/* Ball in play: two player columns */
-.ball-in-play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-/* Each column's chips have a hard min-height floor (below) — when the column
-   is squeezed shorter than its chips' combined minimum, they must scroll
-   within the column rather than spill into whatever sits below the grid
-   (e.g. the "Let" chip-row on the service screen). */
-.player-col { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-/* Chips inside player columns grow to fill available height */
-.player-col .chip-lg { flex: 1; min-height: 52px; max-height: 160px; }
-.player-col-name { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
-.player-col-name.self-name { color: var(--accent); }
-.player-col-name.opp-name { color: var(--opp); }
-.player-col-name.player-serving.self-name { background: rgba(198,226,61,0.14); border-bottom: 2px solid var(--accent); border-radius: 4px 4px 0 0; padding: 3px 6px 4px; }
-.player-col-name.player-serving.opp-name { background: rgba(227,123,107,0.14); border-bottom: 2px solid var(--opp); border-radius: 4px 4px 0 0; padding: 3px 6px 4px; }
-.player-col-name.player-serving::before { content: '● '; font-size: 0.42rem; vertical-align: middle; }
-
-/* Forced error chip — neutral amber */
-.chip.chip-forced { border-color: var(--forced); color: var(--forced-text); }
-.chip.chip-forced:hover { background: var(--forced-hover); border-color: var(--forced-text); }
-
-/* Let chip — subtle secondary style (rare action) */
-.chip.chip-let { border-color: var(--border); color: var(--text4); font-size: 0.76rem; }
-.chip.chip-let:hover { border-color: var(--text3); color: var(--text2); }
-
-/* Rally counter footer */
-.rally-footer { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-.rally-footer-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); white-space: nowrap; }
-
-/* Server toggle */
-.server-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
-.server-chip { flex: 1; text-align: center; min-height: 46px; border-radius: 6px; font-size: 0.87rem; }
-.disabled-chip { opacity: 0.45; cursor: default !important; pointer-events: none; }
-
-/* Live Track top bar */
-.live-track-bar { flex-shrink: 0; background: var(--bg3); border-bottom: 1px solid var(--border2); padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
-.live-track-server { display: flex; align-items: center; gap: 10px; }
-.live-track-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text4); white-space: nowrap; }
-.live-track-delete-btn { background: none; border: 1px solid #3A2828; color: #7A4040; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 3px; cursor: pointer; align-self: flex-end; }
-.live-track-delete-btn:hover { border-color: var(--danger); color: var(--danger); }
-.live-track-confirm { display: flex; align-items: center; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.live-track-confirm-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--opp); flex: 1; }
-.live-track-server-required { background: rgba(198,226,61,0.06); border-radius: 5px; padding: 6px 8px; border: 1px solid rgba(198,226,61,0.25); }
-.live-track-label-required { color: var(--accent); }
-.server-required-msg { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text4); text-align: center; padding: 40px 16px; letter-spacing: 0.05em; }
-
-/* Read-only server indicator in Wizard */
-.server-indicator { display: flex; align-items: center; gap: 6px; padding: 8px 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
-.server-indicator-label { color: var(--text4); }
-
-.toggle-inline { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text2); }
-.toggle-inline .chip { padding: 7px 14px; font-size: 0.74rem; }
-.undo-bar { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
-.undo-btn { background: none; border: 1px solid var(--border); color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; padding: 8px 14px; border-radius: 3px; cursor: pointer; }
-.undo-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.undo-btn:disabled { opacity: 0.3; }
-.delete-match-btn { background: none; border: 1px solid #3A2828; color: #7A4040; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-radius: 3px; cursor: pointer; margin-left: auto; }
-.delete-match-btn:hover { border-color: var(--danger); color: var(--danger); }
 
 .panel { max-width: 680px; margin: 16px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 16px; }
 .panel-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: var(--text2); margin: 0 0 10px; }
@@ -208,22 +82,6 @@ body { margin: 0; }
 .stat-table td.self-col { color: var(--accent); }
 .stat-table td.opp-col { color: var(--opp); }
 
-.bar-chart { margin-top: 10px; }
-.bar-group { margin-bottom: 10px; }
-.bar-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text2); margin-bottom: 4px; }
-.bar-track { display: flex; align-items: center; gap: 6px; height: 18px; }
-.bar-fill { height: 100%; border-radius: 2px; display: flex; align-items: center; padding: 0 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--bg); font-weight: 600; white-space: nowrap; }
-
-.log-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; }
-.log-table th, .log-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); text-align: center; }
-.log-table td:nth-child(2) { text-align: left; }
-.log-table th { color: var(--text4); text-transform: uppercase; font-size: 0.56rem; }
-.log-scroll { max-height: 280px; overflow-y: auto; margin-top: 6px; }
-.log-self { color: var(--accent); }
-.log-opp { color: var(--opp); }
-
-.notes textarea { width: 100%; min-height: 80px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 3px; font-family: 'Inter'; font-size: 0.85rem; resize: vertical; }
-.notes textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .action-bar { max-width: 680px; margin: 0 auto; display: flex; gap: 10px; padding: 0 16px; flex-wrap: wrap; align-items: center; }
 .action-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 15px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; }
@@ -234,9 +92,6 @@ body { margin: 0; }
 .action-btn.danger.confirming { background: var(--danger); color: var(--bg); }
 .status-msg { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--accent); min-height: 1.2em; }
 .hint { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #5F7A8E; margin-top: 8px; line-height: 1.5; }
-.hidden { display: none !important; }
-.match-over-banner { background: var(--accent); color: var(--bg); font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; text-align: center; padding: 10px; margin: 14px 16px 0; border-radius: 3px; }
-
 /* ---------- Login page ---------- */
 /* .login-screen/.login-subtitle/.login-error are still used as a generic
    full-page-loading + inline-error pattern by ProtectedRoute and several
@@ -244,12 +99,6 @@ body { margin: 0; }
 .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; }
 .login-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text5); letter-spacing: 0.05em; margin-bottom: 22px; }
 .login-error { color: var(--danger); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; margin-bottom: 12px; }
-
-/* ---------- Collapsible header ---------- */
-.header-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 5px 10px; border-radius: 2px; cursor: pointer; white-space: nowrap; }
-.header-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
-.header-collapsed-info { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text5); margin-top: 6px; line-height: 1.6; }
-.header-collapsed-info span { color: var(--accent); }
 
 /* ---------- Match history page ---------- */
 .history-list { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
@@ -265,98 +114,6 @@ body { margin: 0; }
 .guide-btn:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ================================================
-   SETUP PAGE
-   ================================================ */
-.setup-screen { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 0 0 60px; }
-.setup-card { max-width: 560px; margin: 0 auto; padding: 24px 20px; }
-.setup-header { text-align: center; margin-bottom: 28px; }
-.setup-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 1.8rem; margin: 0 0 6px; color: var(--text); }
-.setup-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text3); letter-spacing: 0.05em; margin: 0; }
-.setup-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin-bottom: 14px; }
-.setup-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 12px; }
-.setup-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 480px) { .setup-grid-2 { grid-template-columns: 1fr; } }
-.setup-start-btn { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 16px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; margin-top: 8px; touch-action: manipulation; }
-.setup-start-btn:hover { opacity: 0.9; }
-.setup-start-btn:disabled { opacity: 0.4; cursor: default; }
-.setup-hint { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text4); text-align: center; margin: 8px 0 0; }
-
-/* ================================================
-   ATP SCOREBOARD
-   ================================================ */
-.atp-board { display: flex; align-items: stretch; gap: 0; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; }
-.atp-players { flex: 1; min-width: 0; }
-.atp-row { display: flex; align-items: center; gap: 0; }
-.atp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.88rem; font-weight: 600; padding-right: 8px; position: relative; }
-.atp-name.self-name { color: var(--accent); }
-.atp-name.opp-name { color: var(--opp); }
-.atp-ball { display: inline-block; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
-.atp-set { width: 28px; text-align: center; flex-shrink: 0; font-size: 0.82rem; color: var(--text2); padding: 2px 0; }
-.atp-set-live { width: 32px; background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-weight: 600; }
-.atp-set-future { color: var(--text4); opacity: 0.35; }
-.atp-score-block { display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border); padding-left: 14px; margin-left: 10px; flex-shrink: 0; min-width: 72px; }
-.atp-game-score { font-size: 1.6rem; font-weight: 700; color: var(--text); line-height: 1; white-space: nowrap; }
-.atp-time { font-size: 0.6rem; color: var(--text4); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
-/* ── Match / session over freeze block ── */
-.match-over-block { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 24px 16px; padding: 28px 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); text-align: center; }
-.match-over-block-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text4); }
-.match-over-block-winner { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; color: var(--text); }
-.match-over-block-actions { display: flex; gap: 10px; margin-top: 4px; }
-
-/* ── Game / Set / Match transition card ── */
-.transition-card { display: flex; flex-direction: column; gap: 0; margin: 12px 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
-.transition-header { padding: 18px 16px 14px; background: var(--bg2); text-align: center; border-bottom: 1px solid var(--border); }
-.transition-headline { font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
-.transition-subline { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text2); letter-spacing: 0.03em; }
-.transition-next-server { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--text2); margin-top: 6px; }
-.transition-stats { padding: 12px 16px 4px; }
-.transition-stats-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); margin-bottom: 8px; }
-.transition-actions { display: flex; gap: 10px; padding: 12px 16px 16px; }
-.transition-continue-btn { flex: 1; background: var(--accent); color: #1a1a1a; border: none; border-radius: 6px; padding: 11px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; }
-.transition-continue-btn:hover { filter: brightness(1.08); }
-
-.tb-info-bar { display: flex; align-items: center; gap: 10px; padding: 4px 16px 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
-.tb-court-badge { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 2px 7px; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; }
-.tb-change-ends { color: #F3A93C; font-weight: 700; letter-spacing: 0.03em; animation: tb-pulse 0.9s ease-in-out infinite alternate; }
-@keyframes tb-pulse { from { opacity: 0.65; } to { opacity: 1; } }
-
-@media (max-width: 520px) {
-  .atp-board { padding: 8px 12px; }
-  .atp-name { font-size: 0.82rem; }
-  .atp-game-score { font-size: 1.35rem; }
-  .atp-score-block { min-width: 60px; padding-left: 10px; }
-}
-@media (max-width: 360px) {
-  .atp-game-score { font-size: 1.1rem; }
-  .atp-name { font-size: 0.76rem; }
-}
-
-/* ================================================
-   TAB BAR
-   ================================================ */
-.tab-bar { flex-shrink: 0; display: flex; border-bottom: 2px solid var(--bg2); max-width: 680px; margin: 0 auto; width: 100%; padding: 0 16px; gap: 0; }
-.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 20px; cursor: pointer; touch-action: manipulation; transition: color 0.15s, border-color 0.15s; }
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.tab-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-
-@media (max-width: 520px) {
-  .tab-bar { padding: 0 4px; }
-  .tab-btn { padding: 11px 10px; font-size: 0.63rem; letter-spacing: 0.03em; }
-}
-.tab-btn:disabled { opacity: 0.35; cursor: default; }
-
-/* ================================================
-   MOMENTUM GRAPH
-   ================================================ */
-.momentum-graph { margin: 10px 0 4px; }
-.momentum-svg { display: block; width: 100%; height: 90px; }
-.momentum-empty { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #4A6478; text-align: center; padding: 24px 0; }
-.momentum-streak { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; margin-bottom: 8px; flex-wrap: wrap; }
-.momentum-footer { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; margin-top: 6px; }
-.momentum-label { color: #4A6478; }
-
-/* ================================================
    MOBILE RESPONSIVE
    ================================================ */
 
@@ -367,12 +124,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .chip, button, a, .logout-link, .login-demo-row {
   touch-action: manipulation;
 }
-
-/* Serving dot — shown next to the current server's name */
-.serve-dot { font-size: 0.6em; vertical-align: middle; color: var(--accent); }
-
-/* score-right: the right section of the scorebar */
-.score-right { text-align: right; flex-shrink: 0; }
 
 /* Prevent page from overflowing horizontally */
 .root { overflow-x: hidden; }
@@ -394,38 +145,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
   .login-field input,
   .notes textarea { font-size: 16px; }
 
-  /* Scorebar: names + game score in top row, set history below */
-  .scorebar { padding: 9px 12px; }
-  .score-row { flex-wrap: wrap; row-gap: 6px; align-items: flex-start; }
-  .score-names { flex: 1 1 auto; min-width: 0; font-size: 0.84rem; }
-  .score-right { flex: 0 0 auto; }
-  .score-sets {
-    order: 3;
-    flex: 0 0 100%;
-    justify-content: flex-start;
-    padding-top: 6px;
-    border-top: 1px solid var(--bg2);
-  }
-  .score-current { font-size: 1.7rem; }
-  .server-tag { font-size: 0.6rem; }
-  .match-over-banner { margin: 8px 12px 0; font-size: 0.88rem; padding: 8px; }
-
-  /* Wizard: tighter side padding */
-  .wizard { padding: 10px 12px; }
-  .wizard-step-card { padding: 14px 12px; }
-  .wizard-breadcrumb { font-size: 0.63rem; }
-  .chip-lg { min-height: 52px; font-size: 0.88rem; padding: 13px 12px; }
-  .server-chip { min-height: 50px; font-size: 0.88rem; }
-  .undo-btn { padding: 10px 14px; font-size: 0.68rem; }
-
-  /* Rally chips: 4 across on first row, 3 on second — prevents 7-wide overflow */
-  .chip-grid-rally {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .chip-grid-rally .chip { flex: unset; min-width: unset; }
-
   /* Action bar: stack buttons full-width for easy one-thumb tapping */
   .action-bar { flex-direction: column; padding: 0 12px; gap: 8px; }
   .action-btn {
@@ -442,20 +161,12 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
   .stat-table { font-size: 0.7rem; }
   .stat-table th, .stat-table td { padding: 6px 3px; }
 
-  /* Point log */
-  .log-scroll { max-height: 200px; }
-  .log-table { font-size: 0.62rem; }
-  .log-table td, .log-table th { padding: 5px 3px; }
-
   /* History page */
   .history-list { padding: 0 12px; }
   .history-card { padding: 12px; flex-wrap: wrap; }
   .history-card-title { font-size: 0.84rem; }
   .history-card-sub { font-size: 0.6rem; }
   .history-card-score { font-size: 0.78rem; }
-
-  /* Notes textarea */
-  .notes textarea { min-height: 70px; }
 
   /* Safe area padding for devices with home indicators (iPhone X+) */
   .root { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
@@ -464,25 +175,13 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 /* ── Very small phones (≤ 360px) ── */
 @media (max-width: 360px) {
   .title { font-size: 0.95rem; }
-  .chip-lg { font-size: 0.82rem; min-height: 48px; padding: 11px 10px; }
-  .server-chip { min-height: 46px; font-size: 0.82rem; }
-  .chip-grid-2 .chip { font-size: 0.78rem; }
-  .score-current { font-size: 1.5rem; }
-  .score-names { font-size: 0.78rem; }
   .stat-table { font-size: 0.64rem; }
   .action-btn { font-size: 0.68rem; padding: 13px 12px; }
-  .wizard-breadcrumb { font-size: 0.6rem; }
 }
 
 /* ── Tablets and larger (≥ 640px) ── */
 @media (min-width: 640px) {
-  /* Constrain wizard and scorebar to same max-width as other panels */
-  .wizard { max-width: 680px; margin: 0 auto; }
-  .scorebar > * { max-width: 680px; margin-left: auto; margin-right: auto; }
   .header { max-width: 680px; margin: 0 auto; }
-  .wizard-step-card { border-radius: 6px; }
-  .live-track-bar { max-width: 680px; margin-left: auto; margin-right: auto; border-radius: 5px; }
-  .server-required-msg { max-width: 680px; margin: 0 auto; }
 }
 
 /* ================================================
@@ -627,63 +326,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 .rank-table .name-cell { color: var(--text); font-weight: 600; }
 .rank-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 16px; }
 
-/* ---------- Performance tab (governing body / circuit ranking growth) ---------- */
-.perf-tab { margin-bottom: 20px; }
-.perf-body-row { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
-.perf-body-pill {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em;
-  padding: 5px 14px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text3);
-  cursor: pointer;
-}
-.perf-body-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(198,226,61,0.08); }
-.perf-body-pill.disabled { opacity: 0.45; cursor: default; }
-.perf-soon { font-style: italic; }
-
-.perf-circuit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 0 16px 8px; }
-.perf-circuit-card {
-  text-align: left; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
-  cursor: pointer; font-family: inherit; color: inherit;
-}
-.perf-circuit-card:hover { border-color: var(--accent); }
-.perf-circuit-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.78rem; color: var(--text); margin-bottom: 8px; }
-.perf-circuit-stats { display: flex; gap: 18px; margin-bottom: 6px; }
-.perf-circuit-value { font-family: 'Oswald', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--text); line-height: 1; }
-.perf-circuit-label { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text4); margin-top: 3px; }
-.perf-circuit-trend { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; margin-bottom: 4px; }
-.perf-circuit-trend.up { color: var(--win-text); }
-.perf-circuit-trend.down { color: var(--opp); }
-.perf-circuit-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); }
-
-.perf-detail { margin: 0 16px; }
-.perf-stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin: 14px 0 18px; }
-.perf-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 8px; text-align: center; }
-.perf-stat-value { font-family: 'Oswald', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--text); line-height: 1; }
-.perf-stat-value.accent { color: var(--accent); }
-.perf-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text4); margin-top: 5px; }
-
-.perf-chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 10px 6px; margin-bottom: 16px; }
-.perf-chart-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.76rem; color: var(--text2); padding: 0 6px; }
-.perf-chart-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); padding: 2px 6px 6px; }
-
-.perf-tooltip { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
-.perf-tooltip-value { font-family: 'Oswald', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--text); }
-.perf-tooltip-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text3); margin-top: 2px; }
-
-/* ---------- Quick Mode (Tracker "Navy" fast point-entry) ---------- */
-.qm-panel { display: flex; flex-direction: column; gap: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-.qm-step-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text3); }
-.qm-win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.qm-win-btn { border: 0; cursor: pointer; border-radius: 14px; min-height: 88px; padding: 22px 12px; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; }
-.qm-win-self { background: var(--accent); color: var(--accent-text); }
-.qm-win-opp { background: var(--bg3); color: var(--text); }
-.qm-win-sub { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.62rem; letter-spacing: 0.1em; margin-top: 8px; opacity: 0.75; }
-.qm-chip-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
-.qm-chip { cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.78rem; padding: 13px 8px; border-radius: 10px; min-height: 46px; }
-.qm-chip.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
-.qm-footer-row { display: flex; gap: 8px; }
-.qm-footer-btn { flex: 1; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text3); font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.8rem; padding: 12px; border-radius: 10px; min-height: 46px; }
-.qm-footer-btn:disabled { opacity: 0.4; cursor: default; }
-.qm-footer-danger { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
 
 /* ---------- Create tournament modal ---------- */
 .t-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -775,86 +417,6 @@ body { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 
 /* Smaller inline badge used in drawer */
 .drawer-role-badge { display: inline-block; margin-bottom: 10px; }
-
-/* ---------- Profile page ---------- */
-.profile-form { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
-.profile-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.profile-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 2px; }
-.profile-role-row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
-.profile-role-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-.profile-role-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(198,226,61,0.08); }
-.profile-bio { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: 'Inter'; font-size: 0.85rem; resize: vertical; }
-.profile-bio:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.profile-verified-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 4px 10px; display: inline-block; }
-.profile-actions { display: flex; align-items: center; gap: 14px; padding: 0 0 24px; }
-
-/* ---------- Profile page: header card ---------- */
-.profile-card { max-width: 680px; margin: 16px auto 0; padding: 18px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
-.profile-avatar-lg {
-  flex-shrink: 0; width: 68px; height: 68px; border-radius: 50%;
-  background: var(--accent); color: var(--accent-text);
-  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.5rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.profile-card-info { flex: 1; min-width: 0; }
-.profile-name { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: 1.3rem; margin: 0 0 6px; word-break: break-word; }
-.profile-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.profile-verified-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--win-text); }
-.profile-edit-btn { flex-shrink: 0; }
-
-/* ---------- Profile page: annual entry allowance ---------- */
-.entry-allowance-card { max-width: 680px; margin: 0 auto 16px; padding: 0 16px 18px; }
-.entry-allowance-figure { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.entry-allowance-value { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 2rem; letter-spacing: -0.02em; color: var(--text); }
-.entry-allowance-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text3); }
-.entry-allowance-track { height: 12px; background: var(--bg3); border-radius: 6px; overflow: hidden; }
-.entry-allowance-fill { height: 100%; background: var(--accent); border-radius: 6px; }
-.entry-allowance-note { font-family: 'Inter', sans-serif; font-size: 0.72rem; color: var(--text3); margin-top: 10px; max-width: 60ch; }
-
-/* ---------- Profile page: view/read-only tabs + rows ---------- */
-.profile-tabs { max-width: 680px; margin: 4px auto 0; padding: 0 16px; display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
-.profile-tab-btn {
-  background: none; border: none; border-bottom: 2px solid transparent;
-  color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
-  text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 14px; cursor: pointer;
-}
-.profile-tab-btn:hover { color: var(--text); }
-.profile-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-.profile-view { max-width: 680px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
-.profile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border2); }
-.profile-row:last-child { border-bottom: none; }
-.profile-row-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); flex-shrink: 0; }
-.profile-row-value { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text); text-align: right; word-break: break-word; }
-.profile-about-text { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
-
-@media (max-width: 480px) {
-  .profile-card { gap: 12px; }
-  .profile-avatar-lg { width: 54px; height: 54px; font-size: 1.2rem; }
-  .profile-name { font-size: 1.05rem; }
-}
-
-/* ---------- Coach / Players page ---------- */
-.cp-search-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
-.cp-section { max-width: 680px; margin: 16px auto; padding: 0 16px; }
-.cp-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 8px; }
-.cp-search-row { display: flex; gap: 10px; margin-bottom: 10px; }
-.cp-search-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 4px; font-family: 'Inter'; font-size: 0.85rem; }
-.cp-search-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.cp-results { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-.cp-result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
-.cp-result-info { flex: 1; min-width: 0; }
-.cp-result-name { font-weight: 600; font-size: 0.88rem; }
-.cp-result-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 3px; }
-.cp-no-results { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text4); padding: 8px 0; }
-.cp-link-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.cp-link-pending { border-color: var(--forced); background: rgba(184,146,42,0.04); }
-.cp-link-info { flex: 1; min-width: 0; }
-.cp-link-name { font-weight: 600; font-size: 0.88rem; }
-.cp-link-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-top: 3px; }
-.cp-link-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.cp-link-status-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
-.cp-link-status-tag.pending { color: var(--forced-text); }
 
 /* ================================================
    ROLE SETUP OVERLAY (Google OAuth first login)
@@ -1238,353 +800,3 @@ a.t-field-link:hover { text-decoration: underline; }
 .oop-player-won { color: var(--win-text); }
 .oop-vs { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text4); }
 
-/* ================================================
-   PLAYER COACHING DASHBOARD (pcd-*)
-   Sidebar+topbar shell and card system for
-   src/pages/PlayerDashboardPage.jsx and src/components/player/*.
-   Built entirely on the existing theme tokens (var(--bg)...) so it is
-   pixel-faithful under the "navy" theme (the palette these tokens were
-   evidently built to match) and reskins gracefully under the other 4.
-   ================================================ */
-.pcd-root { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: 'Archivo', sans-serif; display: flex; }
-
-/* ---- Sidebar ---- */
-.pcd-sidebar {
-  flex: none; width: 68px; border-right: 1px solid var(--border2); background: var(--bg);
-  padding: 20px 12px; display: flex; flex-direction: column; gap: 5px; position: sticky; top: 0; height: 100dvh; overflow-y: auto;
-}
-@media (min-width: 900px) { .pcd-sidebar { width: 224px; } }
-.pcd-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 22px; }
-.pcd-brand-chip {
-  width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--accent-text);
-  display: flex; align-items: center; justify-content: center; font: 700 13px/1 'IBM Plex Mono', monospace; flex: none;
-}
-.pcd-brand-text { font: 700 15px/1.1 'Archivo', sans-serif; letter-spacing: -0.02em; white-space: nowrap; display: none; }
-@media (min-width: 900px) { .pcd-brand-text { display: block; } }
-
-.pcd-nav-item {
-  border: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 11px 10px; border-radius: 11px;
-  min-height: 48px; background: transparent; color: var(--text2); font: 600 14px/1.2 'Archivo', sans-serif; text-align: left; width: 100%;
-}
-.pcd-nav-item.active { background: rgba(198,226,61,0.12); color: var(--text); }
-.pcd-nav-chip {
-  width: 30px; height: 26px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
-  font: 600 11px/1 'IBM Plex Mono', monospace; background: var(--bg3); color: var(--text2);
-}
-.pcd-nav-item.active .pcd-nav-chip { background: var(--accent); color: var(--accent-text); }
-.pcd-nav-label { white-space: nowrap; display: none; }
-@media (min-width: 900px) { .pcd-nav-label { display: inline; } }
-
-.pcd-sidebar-coach { margin-top: auto; padding: 14px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border2); display: none; }
-@media (min-width: 900px) { .pcd-sidebar-coach { display: block; } }
-.pcd-coach-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; }
-.pcd-coach-row { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
-.pcd-coach-chip {
-  width: 30px; height: 30px; border-radius: 9px; background: var(--bg4); display: flex; align-items: center; justify-content: center;
-  font: 600 11px/1 'IBM Plex Mono', monospace; color: var(--info); flex: none;
-}
-.pcd-coach-name { font: 600 13px/1.2 'Archivo', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pcd-coach-sub { font: 400 10px/1.3 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 3px; }
-
-/* ---- Main + topbar ---- */
-.pcd-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
-.pcd-topbar {
-  position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border2); padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
-}
-.pcd-topbar-id { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.pcd-id-chip {
-  width: 44px; height: 44px; border-radius: 13px; background: var(--bg3); color: var(--accent);
-  display: flex; align-items: center; justify-content: center; font: 700 15px/1 'IBM Plex Mono', monospace; flex: none;
-}
-.pcd-id-name { font: 700 18px/1.1 'Archivo', sans-serif; letter-spacing: -0.025em; }
-.pcd-id-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 5px; font: 500 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--text2); }
-.pcd-id-meta .v { color: var(--text); }
-.pcd-id-meta .accent { color: var(--accent); }
-.pcd-id-meta .sep { color: var(--border); }
-
-.pcd-segment-switcher {
-  display: flex; align-items: center; gap: 9px; padding: 7px 12px 7px 14px; border-radius: 11px;
-  background: var(--bg3); border: 1px solid var(--border2); flex: none;
-}
-.pcd-segment-switcher-label {
-  font: 600 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2);
-}
-.pcd-segment-switcher-value { font: 700 13px/1 'Archivo', sans-serif; color: var(--text); }
-.pcd-segment-switcher-select {
-  background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 5px 8px;
-  font: 700 13px/1 'Archivo', sans-serif; cursor: pointer; max-width: 220px;
-}
-.pcd-segment-switcher-count {
-  font: 600 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--accent);
-  background: rgba(198,226,61,0.14); padding: 4px 8px; border-radius: 6px; white-space: nowrap;
-}
-
-.pcd-topbar-goal { flex: 1; min-width: 220px; max-width: 420px; }
-.pcd-topbar-goal-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
-.pcd-topbar-goal-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; }
-.pcd-topbar-goal-value { font: 600 11px/1 'IBM Plex Mono', monospace; color: var(--text); white-space: nowrap; }
-
-.pcd-progress-track { height: 8px; background: var(--bg3); border-radius: 5px; overflow: hidden; display: flex; position: relative; }
-.pcd-progress-track.lg { height: 12px; border-radius: 7px; background: rgba(0,0,0,0.35); }
-.pcd-progress-fill { height: 100%; background: var(--accent); border-radius: 5px; }
-.pcd-progress-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--opp); }
-.pcd-progress-note { font: 400 10px/1 'IBM Plex Mono', monospace; color: var(--opp); margin-top: 7px; white-space: nowrap; }
-
-.pcd-topbar-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
-.pcd-icon-btn {
-  position: relative; cursor: pointer; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border);
-  background: transparent; color: var(--text2); display: flex; align-items: center; justify-content: center;
-}
-.pcd-icon-btn-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--opp); display: block; }
-.pcd-btn-primary {
-  border: 0; cursor: pointer; white-space: nowrap; background: var(--accent); color: var(--accent-text);
-  font: 700 13px/1 'Archivo', sans-serif; padding: 13px 18px; border-radius: 11px; min-height: 44px;
-}
-.pcd-btn-secondary {
-  border: 1px solid var(--border); cursor: pointer; white-space: nowrap; background: var(--bg3); color: var(--text);
-  font: 600 12px/1 'Archivo', sans-serif; padding: 11px 14px; border-radius: 9px; min-height: 42px;
-}
-.pcd-btn-danger { background: var(--opp); color: var(--accent-text); }
-
-.pcd-content { flex: 1; padding: 22px 20px 48px; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
-
-/* ---- Cards ---- */
-.pcd-hero { background: linear-gradient(135deg, var(--win-hover) 0%, var(--bg2) 62%); border: 1px solid var(--border); border-radius: 18px; padding: 26px; }
-.pcd-hero-top { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
-.pcd-hero-label { font: 500 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--accent); text-transform: uppercase; }
-.pcd-hero-title { font: 800 30px/1.05 'Archivo', sans-serif; letter-spacing: -0.035em; margin-top: 12px; }
-.pcd-hero-body { font: 400 14px/1.5 'Archivo', sans-serif; color: var(--text2); margin-top: 10px; max-width: 44ch; }
-.pcd-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 22px; }
-.pcd-hero-stat-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; }
-.pcd-hero-stat-value { font: 800 28px/1 'Archivo', sans-serif; letter-spacing: -0.03em; margin-top: 10px; font-variant-numeric: tabular-nums; }
-
-.pcd-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
-.pcd-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.pcd-card-title { font: 700 17px/1 'Archivo', sans-serif; }
-.pcd-card-sub { font: 400 12px/1.4 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 6px; }
-.pcd-card-link { font: 600 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.05em; color: var(--accent); text-decoration: none; white-space: nowrap; }
-.pcd-card-link:hover { color: var(--text); }
-button.pcd-card-link { background: none; border: 0; padding: 0; cursor: pointer; }
-
-.pcd-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.pcd-stat-grid.n2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.pcd-stat-grid.n4 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-.pcd-stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-.pcd-stat-card-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2); }
-.pcd-stat-card-value { font: 800 30px/1 'Archivo', sans-serif; letter-spacing: -0.03em; margin: 12px 0 8px; font-variant-numeric: tabular-nums; }
-.pcd-stat-card-trend { font: 500 12px/1 'IBM Plex Mono', monospace; }
-.pcd-stat-card-trend.up { color: var(--accent); }
-.pcd-stat-card-trend.down { color: var(--opp); }
-.pcd-stat-card-trend.neutral { color: var(--info); }
-
-/* ---- Rows / lists ---- */
-.pcd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; background: var(--bg4); border-left: 3px solid var(--border); }
-.pcd-row-day { flex: none; width: 58px; }
-.pcd-row-day-label { font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text); }
-.pcd-row-time { font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 6px; }
-.pcd-row-main { flex: 1; min-width: 160px; }
-.pcd-row-title { font: 700 15px/1.2 'Archivo', sans-serif; }
-.pcd-row-meta { font: 400 12px/1.4 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 6px; }
-
-.pcd-badge {
-  flex: none; font: 600 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.08em; padding: 7px 10px; border-radius: 7px;
-  background: var(--bg3); color: var(--text2); white-space: nowrap;
-}
-.pcd-badge.win { background: rgba(198,226,61,0.16); color: var(--accent); }
-.pcd-badge.loss { background: rgba(255,107,90,0.16); color: var(--opp); }
-.pcd-badge.info { background: rgba(79,195,232,0.14); color: var(--info); }
-.pcd-badge.sm { font-size: 10px; padding: 6px 9px; }
-
-.pcd-result-row {
-  border: 0; cursor: pointer; text-align: left; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
-  padding: 15px 12px; border-radius: 11px; background: var(--bg4); min-height: 56px; width: 100%; color: inherit; font-family: inherit;
-}
-.pcd-result-badge { width: 28px; height: 28px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center; font: 700 12px/1 'IBM Plex Mono', monospace; }
-.pcd-result-badge.win { background: rgba(198,226,61,0.16); color: var(--accent); }
-.pcd-result-badge.loss { background: rgba(255,107,90,0.16); color: var(--opp); }
-.pcd-result-score { flex: none; font: 600 14px/1 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.pcd-result-arrow { flex: none; font: 600 11px/1 'IBM Plex Mono', monospace; color: var(--text2); }
-
-/* ---- Accordion (Tournaments) ---- */
-.pcd-accordion { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-.pcd-accordion.open { border-color: var(--text3); }
-.pcd-accordion-head {
-  width: 100%; border: 0; cursor: pointer; background: transparent; text-align: left; display: flex; flex-wrap: wrap;
-  align-items: center; gap: 16px; padding: 20px 22px; min-height: 64px; color: inherit; font-family: inherit;
-}
-.pcd-accordion-caret { flex: none; width: 22px; font: 600 14px/1 'IBM Plex Mono', monospace; color: var(--text2); }
-.pcd-accordion-body { border-top: 1px solid var(--border); padding: 6px 0; }
-.pcd-match-row {
-  width: 100%; border: 0; cursor: pointer; background: transparent; text-align: left; display: grid;
-  grid-template-columns: 44px 24px minmax(60px,1fr) 118px; column-gap: 14px; align-items: center;
-  padding: 15px 22px; min-height: 56px; border-bottom: 1px solid var(--border2); color: inherit; font-family: inherit;
-}
-@media (min-width: 640px) { .pcd-match-row { grid-template-columns: 44px 24px minmax(80px,1fr) 122px 74px 118px; } }
-.pcd-match-round { font: 600 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--text2); }
-.pcd-match-wl { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font: 700 11px/1 'IBM Plex Mono', monospace; }
-.pcd-match-opp { min-width: 0; font: 600 14px/1.2 'Archivo', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pcd-match-date { font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--text3); white-space: nowrap; display: none; }
-@media (min-width: 640px) { .pcd-match-date { display: block; } }
-.pcd-match-tag { justify-self: end; }
-
-/* ---- Training ---- */
-.pcd-pill-row { display: flex; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
-.pcd-pill { border: 0; cursor: pointer; white-space: nowrap; font: 600 13px/1 'Archivo', sans-serif; padding: 11px 15px; border-radius: 7px; min-height: 42px; background: transparent; color: var(--text2); }
-.pcd-pill.active { background: var(--accent); color: var(--accent-text); }
-
-.pcd-bar-row + .pcd-bar-row { margin-top: 14px; }
-.pcd-bar-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
-.pcd-bar-name { font: 600 13px/1 'Archivo', sans-serif; }
-.pcd-bar-value { font: 600 13px/1 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.pcd-bar-track { height: 10px; background: var(--bg3); border-radius: 6px; overflow: hidden; display: flex; }
-.pcd-bar-fill { height: 100%; border-radius: 6px; }
-
-.pcd-timeline-row { display: flex; gap: 14px; padding-bottom: 18px; }
-.pcd-timeline-date-col { flex: none; width: 52px; text-align: right; }
-.pcd-timeline-date { font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--text); }
-.pcd-timeline-dur { font: 400 10px/1 'IBM Plex Mono', monospace; color: var(--text3); margin-top: 5px; }
-.pcd-timeline-rail { flex: none; display: flex; flex-direction: column; align-items: center; width: 12px; }
-.pcd-timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin-top: 3px; }
-.pcd-timeline-line { flex: 1; width: 1px; background: var(--border); margin-top: 4px; }
-.pcd-timeline-body { flex: 1; min-width: 0; padding-bottom: 2px; }
-.pcd-timeline-title { font: 600 14px/1.2 'Archivo', sans-serif; }
-.pcd-timeline-volume { font: 400 12px/1.4 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 6px; }
-.pcd-timeline-note { font: 400 12px/1.5 'Archivo', sans-serif; color: var(--text3); margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border); }
-
-/* ---- Match analytics ---- */
-.pcd-insight-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; border-top: 3px solid var(--accent); }
-.pcd-insight-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.pcd-insight-kind { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; }
-.pcd-insight-sample { font: 500 10px/1 'IBM Plex Mono', monospace; color: var(--text3); }
-.pcd-insight-title { font: 700 19px/1.25 'Archivo', sans-serif; letter-spacing: -0.02em; margin-top: 14px; }
-.pcd-insight-value-row { display: flex; align-items: flex-end; gap: 14px; margin: 18px 0 14px; }
-.pcd-insight-value { font: 800 42px/1 'Archivo', sans-serif; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.pcd-insight-delta { font: 600 12px/1 'IBM Plex Mono', monospace; }
-.pcd-insight-baseline { font: 400 10px/1 'IBM Plex Mono', monospace; color: var(--text3); margin-top: 6px; }
-.pcd-insight-bar { height: 8px; background: var(--bg3); border-radius: 5px; overflow: hidden; display: flex; position: relative; margin-bottom: 16px; }
-.pcd-insight-body { font: 400 13px/1.55 'Archivo', sans-serif; color: var(--text2); }
-
-.pcd-trend-row { padding: 18px; border-radius: 12px; background: var(--bg4); border-left: 3px solid var(--border); }
-.pcd-trend-row + .pcd-trend-row { margin-top: 10px; }
-.pcd-trend-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.pcd-trend-title { font: 700 15px/1.3 'Archivo', sans-serif; }
-.pcd-trend-evidence { font: 400 12px/1.5 'Archivo', sans-serif; color: var(--text2); margin-top: 7px; }
-.pcd-trend-stat { flex: none; font: 700 20px/1 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.pcd-trend-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border2); }
-.pcd-trend-drill { flex: 1; min-width: 180px; font: 500 12px/1.4 'IBM Plex Mono', monospace; color: var(--info); }
-
-/* ---- Recommendations ---- */
-.pcd-rec-banner { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; border-left: 3px solid var(--opp); }
-.pcd-rec-banner-label { font: 500 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--opp); }
-.pcd-rec-banner-body { font: 700 20px/1.35 'Archivo', sans-serif; letter-spacing: -0.02em; margin-top: 12px; max-width: 64ch; }
-.pcd-rec-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-.pcd-rec-top { padding: 22px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-.pcd-rec-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-bottom: 12px; }
-.pcd-rec-tag { font: 600 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.1em; padding: 7px 9px; border-radius: 6px; }
-.pcd-rec-priority { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: var(--text3); }
-.pcd-rec-title { font: 700 19px/1.3 'Archivo', sans-serif; letter-spacing: -0.02em; }
-.pcd-rec-why { font: 400 13px/1.55 'Archivo', sans-serif; color: var(--text2); margin-top: 10px; max-width: 56ch; }
-.pcd-rec-gain-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); }
-.pcd-rec-gain { font: 800 34px/1 'Archivo', sans-serif; letter-spacing: -0.035em; color: var(--accent); margin-top: 10px; font-variant-numeric: tabular-nums; }
-.pcd-rec-section { border-top: 1px solid var(--border); padding: 18px 22px; }
-.pcd-rec-section-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2); margin-bottom: 14px; }
-.pcd-entry-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 15px; border-radius: 11px; background: var(--bg4); }
-.pcd-entry-row + .pcd-entry-row { margin-top: 8px; }
-.pcd-drill-chip { border: 1px solid var(--border); background: var(--bg4); border-radius: 11px; padding: 14px 16px; min-width: 180px; }
-
-/* ---- Progress ---- */
-.pcd-pace-banner { background: var(--bg2); border: 1px solid color-mix(in srgb, var(--opp) 40%, transparent); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.pcd-pace-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--opp); flex: none; animation: livepulse 1.8s infinite; }
-.pcd-legend { display: flex; gap: 16px; }
-.pcd-legend-item { display: flex; align-items: center; gap: 7px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--text2); }
-.pcd-legend-swatch { width: 14px; height: 3px; display: block; }
-.pcd-progress-table { width: 100%; border-collapse: collapse; }
-.pcd-progress-table th {
-  text-align: right; padding: 14px 12px; background: var(--bg3); font: 500 10px/1 'IBM Plex Mono', monospace;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2);
-}
-.pcd-progress-table th:first-child { text-align: left; }
-.pcd-progress-table td { text-align: right; padding: 16px 12px; border-top: 1px solid var(--border2); }
-.pcd-progress-table td:first-child { text-align: left; font: 600 14px/1 'Archivo', sans-serif; }
-
-/* ---- Match detail modal ---- */
-.pcd-modal-overlay {
-  position: fixed; inset: 0; z-index: 100; background: rgba(4,8,12,0.8); backdrop-filter: blur(6px);
-  display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto;
-}
-.pcd-modal { width: 100%; max-width: 720px; background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 40px 100px -20px rgba(0,0,0,0.8); }
-.pcd-modal-head { padding: 24px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-.pcd-modal-result { font: 500 11px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; }
-.pcd-modal-headline { font: 800 24px/1.15 'Archivo', sans-serif; letter-spacing: -0.03em; margin-top: 12px; }
-.pcd-modal-meta { font: 400 12px/1.4 'IBM Plex Mono', monospace; color: var(--text2); margin-top: 9px; }
-.pcd-modal-score { font: 700 22px/1 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.pcd-modal-close {
-  cursor: pointer; width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border);
-  background: transparent; color: var(--text2); font: 500 16px/1 'Archivo', sans-serif;
-}
-.pcd-modal-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
-.pcd-modal-section-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2); margin-bottom: 16px; }
-.pcd-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-.pcd-kpi-tile { background: var(--bg4); border-radius: 12px; padding: 16px; }
-.pcd-kpi-label { font: 500 10px/1.3 'IBM Plex Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text2); }
-.pcd-kpi-value { font: 800 24px/1 'Archivo', sans-serif; letter-spacing: -0.03em; margin-top: 11px; font-variant-numeric: tabular-nums; }
-.pcd-rally-bars { display: flex; align-items: flex-end; gap: 8px; height: 110px; }
-.pcd-rally-bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 8px; }
-.pcd-rally-pct { font: 600 12px/1 'IBM Plex Mono', monospace; text-align: center; }
-.pcd-rally-fill { border-radius: 6px 6px 3px 3px; }
-.pcd-rally-labels { display: flex; gap: 8px; margin-top: 10px; }
-.pcd-rally-label { flex: 1; text-align: center; font: 400 10px/1.3 'IBM Plex Mono', monospace; color: var(--text3); }
-.pcd-wing-row + .pcd-wing-row { margin-top: 14px; }
-.pcd-bp-row { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 10px; background: var(--bg4); }
-.pcd-bp-row + .pcd-bp-row { margin-top: 2px; }
-.pcd-bp-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.pcd-bp-text { flex: 1; min-width: 0; font: 400 13px/1.3 'Archivo', sans-serif; color: var(--text2); }
-.pcd-bp-at { font: 600 12px/1 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.pcd-modal-empty { padding: 40px 24px; text-align: center; }
-.pcd-modal-empty-title { font: 700 17px/1.3 'Archivo', sans-serif; }
-.pcd-modal-empty-body { font: 400 13px/1.55 'Archivo', sans-serif; color: var(--text2); margin: 12px auto 0; max-width: 44ch; }
-.pcd-modal-footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 10px; }
-
-@keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.oop-conflict-badge { margin-top: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--forced-text); }
-
-/* ================================================
-   COACH INTELLIGENCE SYSTEM — additions to the pcd-* system above.
-   Reuses .pcd-sidebar/.pcd-topbar/.pcd-card/.pcd-stat-grid/.pcd-row/
-   .pcd-badge/.pcd-pill/.pcd-bar-track/.pcd-accordion/.pcd-btn-* as-is; the
-   classes below are only for shapes that system doesn't already cover.
-   ================================================ */
-.pcd-sidebar-week { margin-top: auto; padding: 14px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border2); display: none; }
-@media (min-width: 900px) { .pcd-sidebar-week { display: block; } }
-.pcd-sidebar-week-label { font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--text2); text-transform: uppercase; }
-.pcd-sidebar-week-value { font: 800 24px/1 'Archivo', sans-serif; letter-spacing: -0.03em; margin-top: 11px; }
-.pcd-sidebar-week-value .unit { font: 400 13px/1 'IBM Plex Mono', monospace; color: var(--text2); }
-.pcd-sidebar-week-sub { font: 400 11px/1.4 'IBM Plex Mono', monospace; color: var(--text3); margin-top: 8px; }
-
-.pcd-fresh-chip { display: flex; align-items: center; gap: 7px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--text2); white-space: nowrap; }
-.pcd-fresh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: block; }
-
-.pcd-group-player-row { display: grid; grid-template-columns: 1fr 44px 52px; column-gap: 12px; align-items: center; padding: 11px 12px; border-radius: 10px; background: var(--bg4); }
-.pcd-group-player-row + .pcd-group-player-row { margin-top: 2px; }
-.pcd-group-player-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.pcd-group-player-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-
-.pcd-hscroll-table { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow-x: auto; overflow-y: hidden; }
-.pcd-grid-head-row { display: grid; column-gap: 14px; padding: 14px 20px; background: var(--bg3); font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
-.pcd-grid-body-row { display: grid; column-gap: 14px; padding: 15px 20px; border-top: 1px solid var(--border2); align-items: center; }
-
-.pcd-fav-btn { flex: none; cursor: pointer; width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border); background: transparent; color: var(--text3); font: 600 15px/1 'Archivo', sans-serif; }
-.pcd-fav-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(198,226,61,0.14); }
-
-.pcd-chip-toggle { cursor: pointer; white-space: nowrap; border: 1px solid var(--border); background: transparent; color: var(--text2); font: 600 13px/1 'Archivo', sans-serif; padding: 12px 14px; border-radius: 10px; min-height: 44px; }
-.pcd-chip-toggle.active { border-color: var(--accent); background: rgba(198,226,61,0.12); color: var(--accent); }
-
-.pcd-check-row { cursor: pointer; text-align: left; display: grid; grid-template-columns: 20px minmax(0,1fr) 96px; column-gap: 14px; align-items: center; border: 1px solid var(--border); background: var(--bg4); padding: 15px; border-radius: 11px; min-height: 56px; width: 100%; color: inherit; font-family: inherit; }
-.pcd-check-row.active { border-color: var(--accent); background: rgba(198,226,61,0.07); }
-.pcd-check-box { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font: 700 11px/1 'IBM Plex Mono', monospace; color: var(--accent-text); }
-.pcd-check-box.active { background: var(--accent); border-color: var(--accent); }
-
-.pcd-empty-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 40px 24px; text-align: center; }
-.pcd-empty-card-title { font: 700 17px/1.3 'Archivo', sans-serif; }
-.pcd-empty-card-body { font: 400 13px/1.55 'Archivo', sans-serif; color: var(--text2); margin: 12px auto 0; max-width: 52ch; }

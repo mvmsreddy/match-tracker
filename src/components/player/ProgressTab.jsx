@@ -4,6 +4,8 @@ import {
 } from 'recharts';
 import * as api from '../../api';
 import { computeGoalPace } from '../../lib/segments';
+import { Card } from '@/components/primitives/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -15,13 +17,12 @@ function monthKey(iso) {
   return iso.slice(0, 7); // 'YYYY-MM'
 }
 
-// Progress tracker (Phase 5) — real points-over-time for this segment
-// (circuit.points) plus, when an active goal exists, a straight-line
-// projection from the goal's creation point to its target, so "behind/ahead
-// of pace" is a real comparison against a real target rather than a
-// fabricated pace marker. Monthly breakdown counts real training sessions
-// logged per month (Phase 3) alongside the ranking snapshots recorded that
-// month.
+// Progress tracker — real points-over-time for this segment (circuit.points)
+// plus, when an active goal exists, a straight-line projection from the
+// goal's creation point to its target, so "behind/ahead of pace" is a real
+// comparison against a real target rather than a fabricated pace marker.
+// Monthly breakdown counts real training sessions logged per month alongside
+// the ranking snapshots recorded that month.
 export default function ProgressTab({ circuit, playerId }) {
   const [goals, setGoals] = useState(null);
   const [sessions, setSessions] = useState(null);
@@ -68,8 +69,8 @@ export default function ProgressTab({ circuit, playerId }) {
     return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month)).slice(0, 12);
   }, [circuit, sessions]);
 
-  if (goals === null) return <div className="history-empty">Loading progress…</div>;
-  if (error) return <div className="history-empty">{error}</div>;
+  if (goals === null) return <div className="text-sm text-muted-foreground">Loading progress…</div>;
+  if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
   // Shared with the topbar/GoalsPanel verdict (src/lib/segments.js) so this
   // tab never shows "behind pace" while the header shows "on pace" for the
@@ -78,67 +79,67 @@ export default function ProgressTab({ circuit, playerId }) {
   const behindPace = goalPace?.behindPace ?? false;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="space-y-4">
       {behindPace && (
-        <div className="pcd-pace-banner">
-          <div className="pcd-pace-dot" />
-          <div style={{ flex: 1, minWidth: 220, font: "700 15px/1.4 'Archivo', sans-serif" }}>
+        <div className="flex items-center gap-3 rounded-sm border border-destructive/30 bg-destructive/10 p-4">
+          <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+          <div className="flex-1 text-sm font-bold">
             You're currently behind the pace needed to hit your {circuit.category} {circuit.subcategory} goal by {activeGoal.targetDate ? formatDate(activeGoal.targetDate) : 'its target date'}.
           </div>
         </div>
       )}
 
-      <div className="pcd-card">
-        <div className="pcd-card-head">
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
           <div>
-            <div className="pcd-card-title">Actual vs projected points</div>
-            <div className="pcd-card-sub">
+            <div className="font-bold text-sm">Actual vs projected points</div>
+            <div className="text-xs text-muted-foreground">
               {activeGoal?.targetPoints ? 'Straight-line projection to your goal' : (activeGoal ? 'Set a points target on your goal to see a projection line' : 'Set a goal in Overview to see a projection line')}
             </div>
           </div>
-          <div className="pcd-legend">
-            <div className="pcd-legend-item"><span className="pcd-legend-swatch" style={{ background: 'var(--accent)' }} />ACTUAL</div>
-            {activeGoal && <div className="pcd-legend-item"><span className="pcd-legend-swatch" style={{ background: 'var(--opp)' }} />NEEDED</div>}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-primary" />Actual</div>
+            {activeGoal && <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-destructive" />Needed</div>}
           </div>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="var(--border2)" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} minTickGap={40} />
-            <YAxis stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-            <Tooltip labelFormatter={formatDate} contentStyle={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6 }} />
-            <Area type="monotone" dataKey="actual" stroke="none" fill="var(--accent)" fillOpacity={0.12} legendType="none" />
-            <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--accent)" strokeWidth={2.5} dot={false} activeDot={{ r: 5, stroke: 'var(--bg2)', strokeWidth: 2, fill: 'var(--accent)' }} />
-            {activeGoal && <Line type="monotone" dataKey="needed" name="Needed" stroke="var(--opp)" strokeWidth={2} strokeDasharray="5 4" dot={false} />}
+            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
+            <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
+            <YAxis stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
+            <Tooltip labelFormatter={formatDate} contentStyle={{ background: 'hsl(var(--color-popover))', border: '1px solid hsl(var(--color-border))', borderRadius: 4 }} />
+            <Area type="monotone" dataKey="actual" stroke="none" fill="hsl(var(--color-primary))" fillOpacity={0.12} legendType="none" />
+            <Line type="monotone" dataKey="actual" name="Actual" stroke="hsl(var(--color-primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-primary))' }} />
+            {activeGoal && <Line type="monotone" dataKey="needed" name="Needed" stroke="hsl(var(--color-destructive))" strokeWidth={2} strokeDasharray="5 4" dot={false} />}
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
-      <div className="pcd-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '22px 22px 0' }}><div className="pcd-card-title">Monthly breakdown</div></div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="pcd-progress-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Rank</th>
-                <th>Points</th>
-                <th>Training sessions</th>
-              </tr>
-            </thead>
-            <tbody>
+      <Card className="p-0 overflow-hidden">
+        <div className="p-4 sm:p-6 pb-0"><div className="font-bold text-sm">Monthly breakdown</div></div>
+        <div className="overflow-x-auto p-4 sm:p-6 pt-3">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Month</TableHead>
+                <TableHead>Rank</TableHead>
+                <TableHead>Points</TableHead>
+                <TableHead>Training sessions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {monthlyRows.map(r => (
-                <tr key={r.month}>
-                  <td>{r.month}</td>
-                  <td>{r.rank ?? '—'}</td>
-                  <td>{r.points ?? '—'}</td>
-                  <td>{r.training}</td>
-                </tr>
+                <TableRow key={r.month}>
+                  <TableCell>{r.month}</TableCell>
+                  <TableCell>{r.rank ?? '—'}</TableCell>
+                  <TableCell>{r.points ?? '—'}</TableCell>
+                  <TableCell>{r.training}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

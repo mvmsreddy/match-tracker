@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import SideDrawer from '../SideDrawer';
+import { Button } from '@/components/primitives/button';
 
 export const COACH_TABS = [
-  { id: 'groups', code: 'SG', label: 'Skill Groups' },
-  { id: 'roster', code: 'RO', label: 'Roster' },
-  { id: 'library', code: 'DL', label: 'Drill Library' },
-  { id: 'correlation', code: 'PC', label: 'Correlation' },
-  { id: 'log', code: 'LG', label: 'Log Session' },
+  { id: 'groups', label: 'Skill Groups' },
+  { id: 'roster', label: 'Roster' },
+  { id: 'library', label: 'Drill Library' },
+  { id: 'correlation', label: 'Correlation' },
+  { id: 'log', label: 'Log Session' },
 ];
 
 const VIEW_TITLES = {
@@ -29,13 +28,11 @@ function weekStartIso() {
   return d.toISOString().slice(0, 10);
 }
 
-// Sidebar + topbar chrome for the Coach Intelligence System — same visual
-// system as PlayerDashboardShell (the design's own consistent language),
-// with a coach-appropriate nav (5 real, data-backed views instead of 6).
+// Topbar + in-page tab strip for the Coach Intelligence System. Nav chrome
+// (sidebar/bottom-nav) is supplied by AppShell — this only owns the
+// title/actions header and the 5-view pill submenu.
 export default function CoachIntelligenceShell({ view, onViewChange, roster, children }) {
-  const { user, logout } = useAuth();
-  const { theme, setTheme, THEMES } = useTheme();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { user } = useAuth();
   const [weekSessions, setWeekSessions] = useState(null);
 
   useEffect(() => {
@@ -52,68 +49,41 @@ export default function CoachIntelligenceShell({ view, onViewChange, roster, chi
   const [title, subtitle] = VIEW_TITLES[titleKey] || VIEW_TITLES.groups;
 
   return (
-    <div className="pcd-root">
-      <div className="pcd-sidebar">
-        <div className="pcd-sidebar-brand">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            style={{ border: 0, cursor: 'pointer', background: 'transparent', padding: 0, display: 'flex' }}
-          >
-            <span className="pcd-brand-chip" style={{ background: 'var(--info)' }}>CI</span>
-          </button>
-          <div className="pcd-brand-text">
-            <div>Coach Intelligence</div>
-            <div style={{ font: "400 10px/1 'IBM Plex Mono', monospace", color: 'var(--text3)', marginTop: 4, whiteSpace: 'nowrap' }}>
-              {(user?.displayName || '').toUpperCase()}{linkedCount > 0 ? ` · ${linkedCount} PLAYER${linkedCount === 1 ? '' : 'S'}` : ''}
-            </div>
-          </div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display font-extrabold text-2xl tracking-tighter">{title}</h1>
+          <div className="text-sm text-muted-foreground mt-0.5">{subtitle}</div>
         </div>
-
-        {COACH_TABS.map(t => (
-          <button
-            key={t.id}
-            className={`pcd-nav-item${(view === t.id || (t.id === 'groups' && view === 'detail')) ? ' active' : ''}`}
-            onClick={() => onViewChange(t.id)}
-          >
-            <span className="pcd-nav-chip" style={(view === t.id || (t.id === 'groups' && view === 'detail')) ? { background: 'var(--info)', color: 'var(--accent-text)' } : undefined}>{t.code}</span>
-            <span className="pcd-nav-label">{t.label}</span>
-          </button>
-        ))}
-
-        <div className="pcd-sidebar-week">
-          <div className="pcd-sidebar-week-label">This week</div>
-          <div className="pcd-sidebar-week-value">{weekSessions == null ? '—' : weekSessions.length} <span className="unit">sessions logged</span></div>
-          <div className="pcd-sidebar-week-sub">{linkedCount} LINKED PLAYER{linkedCount === 1 ? '' : 'S'}</div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-primary">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Analytics fresh
+          </div>
+          <Button size="sm" onClick={() => onViewChange('log')}>Log a session</Button>
         </div>
       </div>
 
-      <div className="pcd-main">
-        <div className="pcd-topbar">
-          <div style={{ minWidth: 0 }}>
-            <div style={{ font: "700 24px/1.1 'Archivo', sans-serif", letterSpacing: '-.025em' }}>{title}</div>
-            <div style={{ font: "400 12px/1.4 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 6 }}>{subtitle}</div>
-          </div>
-          <div className="pcd-topbar-actions">
-            <div className="pcd-fresh-chip"><span className="pcd-fresh-dot" />ANALYTICS FRESH</div>
-            <button className="pcd-btn-primary" onClick={() => onViewChange('log')}>Log a session</button>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex flex-wrap border border-border rounded-sm p-1 bg-card gap-1">
+          {COACH_TABS.map(t => (
+            <button
+              key={t.id}
+              className={`px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors ${
+                (view === t.id || (t.id === 'groups' && view === 'detail')) ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => onViewChange(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-
-        <div className="pcd-content">
-          {children}
+        <div className="text-xs text-muted-foreground">
+          {weekSessions == null ? '—' : weekSessions.length} sessions logged this week &middot; {linkedCount} linked player{linkedCount === 1 ? '' : 's'}
         </div>
       </div>
 
-      <SideDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        user={user}
-        logout={logout}
-        theme={theme}
-        setTheme={setTheme}
-        THEMES={THEMES}
-      />
+      {children}
     </div>
   );
 }

@@ -123,8 +123,8 @@ function CoachViewedPlayerDashboard({ coachId, playerId }) {
     return () => { cancelled = true; };
   }, [coachId, playerId]);
 
-  if (state.loading) return <div className="pcd-root"><div className="history-empty">Loading player…</div></div>;
-  if (!state.player) return <div className="pcd-root"><div className="history-empty">This player isn't linked to your coaching profile.</div></div>;
+  if (state.loading) return <div className="px-4 lg:px-8 py-6 text-sm text-muted-foreground">Loading player…</div>;
+  if (!state.player) return <div className="px-4 lg:px-8 py-6 text-sm text-muted-foreground">This player isn't linked to your coaching profile.</div>;
 
   return (
     <SegmentProvider overrideAitaReg={state.player.aitaReg}>

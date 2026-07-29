@@ -9,6 +9,8 @@ import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
 import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -19,26 +21,25 @@ function formatDate(iso) {
 function dayLabel(iso, hasDay) {
   if (!iso || !hasDay) return 'TBC';
   const today = new Date().toISOString().slice(0, 10);
-  if (iso === today) return 'TODAY';
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
+  if (iso === today) return 'Today';
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' });
 }
 
 function ChartTooltip({ active, payload, label, valueLabel }) {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="perf-tooltip">
-      <div className="perf-tooltip-value">{payload[0].value}</div>
-      <div className="perf-tooltip-label">{valueLabel} · {formatDate(label)}</div>
+    <div className="rounded-sm border border-border bg-popover text-popover-foreground px-3 py-2 text-xs">
+      <div className="font-bold text-sm">{payload[0].value}</div>
+      <div className="text-muted-foreground mt-0.5">{valueLabel} &middot; {formatDate(label)}</div>
     </div>
   );
 }
 
 // Overview tab — real ranking-snapshot data (rank/points growth), real
-// ranking-goal progress (GoalsPanel, Phase 3), and real per-match upcoming/
-// recent data resolved by useSegmentMatchSchedule (cross-referenced against
-// the tracker via matches.event_match_id, Phase 4) instead of tournament-
-// level entries. Clicking a recent-result / upcoming row opens
-// MatchDetailModal with real per-match analytics when tracked.
+// ranking-goal progress (GoalsPanel), and real per-match upcoming/recent data
+// resolved by useSegmentMatchSchedule instead of tournament-level entries.
+// Clicking a recent-result / upcoming row opens MatchDetailModal with real
+// per-match analytics when tracked.
 export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You', onTabChange }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState(null);
@@ -96,139 +97,137 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
   const rankDelta = previous ? previous.rank - latest.rank : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div className="space-y-4">
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
-      <div className="pcd-stat-grid n2">
-        <div className="pcd-stat-card">
-          <div className="pcd-stat-card-label">Matches this month</div>
-          <div className="pcd-stat-card-value">{monthStats ? monthStats.matchesThisMonth : '—'}</div>
-        </div>
-        <div className="pcd-stat-card">
-          <div className="pcd-stat-card-label">Avg points per match</div>
-          <div className="pcd-stat-card-value">{monthStats?.avgPts ?? '—'}</div>
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Matches this month</div>
+          <div className="font-display font-extrabold text-xl">{monthStats ? monthStats.matchesThisMonth : '—'}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Avg points per match</div>
+          <div className="font-display font-extrabold text-xl">{monthStats?.avgPts ?? '—'}</div>
           {monthStats?.avgPtsTrendUp != null && (
-            <div className={`pcd-stat-card-trend ${monthStats.avgPtsTrendUp ? 'up' : 'down'}`}>
+            <div className={`text-xs mt-1 ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
               {monthStats.avgPtsTrendUp ? '▲' : '▼'} vs season average
             </div>
           )}
-        </div>
-        <div className="pcd-stat-card">
-          <div className="pcd-stat-card-label">Upcoming tournaments</div>
-          <div className="pcd-stat-card-value">{entries === null ? '—' : upcomingEntries.length}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Upcoming tournaments</div>
+          <div className="font-display font-extrabold text-xl">{entries === null ? '—' : upcomingEntries.length}</div>
           {upcomingEntries.length > 0 && (
-            <div className="pcd-stat-card-trend neutral">
+            <div className="text-xs text-muted-foreground mt-1">
               next in {Math.max(0, Math.round((new Date(upcomingEntries[0].event.week.startDate) - new Date()) / 86400000))}d
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Current rank isn't repeated here — it's always visible in the topbar
-          (RANKED …) right above, so this row covers what the topbar doesn't. */}
-      <div className="pcd-stat-grid n4">
-        <div className="pcd-stat-card"><div className="pcd-stat-card-label">Current points</div><div className="pcd-stat-card-value">{latest.totalPoints}</div></div>
-        <div className="pcd-stat-card"><div className="pcd-stat-card-label">Best rank</div><div className="pcd-stat-card-value">{bestRank}</div></div>
-        <div className="pcd-stat-card"><div className="pcd-stat-card-label">Best points</div><div className="pcd-stat-card-value">{bestPoints}</div></div>
+          right above, so this row covers what the topbar doesn't. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4"><div className="text-xs text-muted-foreground">Current points</div><div className="font-display font-extrabold text-xl">{latest.totalPoints}</div></Card>
+        <Card className="p-4"><div className="text-xs text-muted-foreground">Best rank</div><div className="font-display font-extrabold text-xl">{bestRank}</div></Card>
+        <Card className="p-4"><div className="text-xs text-muted-foreground">Best points</div><div className="font-display font-extrabold text-xl">{bestPoints}</div></Card>
       </div>
 
       {rankDelta !== 0 && (
-        <div className={`perf-circuit-trend ${rankDelta > 0 ? 'up' : 'down'}`}>
-          {rankDelta > 0 ? '▲' : '▼'} {Math.abs(rankDelta)} since last update · first seen {formatDate(firstSeen)} · {snapshotCount} snapshots
+        <div className={`text-xs font-semibold ${rankDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
+          {rankDelta > 0 ? '▲' : '▼'} {Math.abs(rankDelta)} since last update &middot; first seen {formatDate(firstSeen)} &middot; {snapshotCount} snapshots
         </div>
       )}
 
       {/* Points-over-time lives on the Progress Tracker tab (with the goal
           projection line) instead of being duplicated here. */}
-      <div className="pcd-card">
-        <div className="pcd-card-title">Ranking Growth</div>
-        <div className="pcd-card-sub" style={{ marginBottom: 12 }}>Lower is better — axis is inverted</div>
+      <Card className="p-4 sm:p-6">
+        <div className="font-bold text-sm">Ranking Growth</div>
+        <div className="text-xs text-muted-foreground mb-3">Lower is better — axis is inverted</div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="var(--border2)" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} minTickGap={40} />
-            <YAxis reversed stroke="var(--border)" tick={{ fill: 'var(--text4)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} allowDecimals={false} />
-            <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'var(--border)', strokeDasharray: '3 3' }} />
-            <Line type="monotone" dataKey="rank" stroke="var(--win)" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: 'var(--bg2)', strokeWidth: 2, fill: 'var(--win)' }} />
+            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
+            <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
+            <YAxis reversed stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} allowDecimals={false} />
+            <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'hsl(var(--color-border))', strokeDasharray: '3 3' }} />
+            <Line type="monotone" dataKey="rank" stroke="hsl(var(--color-chart-3))" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-chart-3))' }} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
-      <div className="pcd-card">
-        <div className="pcd-card-head">
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <div className="pcd-card-title">Upcoming matches</div>
-            <div className="pcd-card-sub">Resolved from your entered draws in this segment</div>
+            <div className="font-bold text-sm">Upcoming matches</div>
+            <div className="text-xs text-muted-foreground">Resolved from your entered draws in this segment</div>
           </div>
-          <button className="pcd-card-link" onClick={() => onTabChange('tournaments')}>FULL SCHEDULE</button>
+          <button className="text-xs font-semibold text-primary hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>Full schedule</button>
         </div>
-        {schedule.error && <div className="history-empty">{schedule.error}</div>}
-        {schedule.loading && <div className="history-empty">Loading…</div>}
+        {schedule.error && <div className="text-sm text-muted-foreground">{schedule.error}</div>}
+        {schedule.loading && <div className="text-sm text-muted-foreground">Loading…</div>}
         {!schedule.loading && schedule.upcoming.length === 0 && (
-          <div className="history-empty">No upcoming {circuit.category} {circuit.subcategory} matches found in your entered draws.</div>
+          <div className="text-sm text-muted-foreground">No upcoming {circuit.category} {circuit.subcategory} matches found in your entered draws.</div>
         )}
         {schedule.upcoming.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="space-y-2">
             {schedule.upcoming.slice(0, 7).map(m => {
               const isToday = m.date === new Date().toISOString().slice(0, 10);
               return (
-                <div key={m.id} className="pcd-row" style={{ borderLeftColor: isToday ? 'var(--opp)' : 'var(--info)' }}>
-                  <div className="pcd-row-day">
-                    <div className="pcd-row-day-label" style={{ color: isToday ? 'var(--opp)' : 'var(--info)' }}>{dayLabel(m.date, m.hasDay)}</div>
-                    <div className="pcd-row-time">{m.round || 'TBC'}</div>
+                <div key={m.id} className={`flex items-center gap-3 p-3 rounded-sm border border-border bg-card border-l-4 ${isToday ? 'border-l-destructive' : 'border-l-blue-400'}`}>
+                  <div className="w-14 shrink-0 text-center">
+                    <div className={`text-xs font-bold ${isToday ? 'text-destructive' : 'text-blue-400'}`}>{dayLabel(m.date, m.hasDay)}</div>
+                    <div className="text-[10px] text-muted-foreground">{m.round || 'TBC'}</div>
                   </div>
-                  <div className="pcd-row-main">
-                    <div className="pcd-row-title">{m.opponentName}</div>
-                    <div className="pcd-row-meta">{m.tournamentName}{m.grade ? ` · ${m.grade}` : ''}</div>
+                  <div className="flex-1 min-w-32">
+                    <div className="text-sm font-semibold">{m.opponentName}</div>
+                    <div className="text-xs text-muted-foreground">{m.tournamentName}{m.grade ? ` · ${m.grade}` : ''}</div>
                   </div>
-                  <div className="pcd-badge info">{m.h2h || 'FIRST MEETING'}</div>
+                  <span className="rounded-sm px-2 py-0.5 text-[10px] font-bold bg-blue-400/10 text-blue-400 shrink-0">{m.h2h || 'First meeting'}</span>
                   {isOwnDashboard && (
-                    <button
-                      className="pcd-btn-primary"
+                    <Button
+                      size="sm"
                       onClick={() => navigate('/track', { state: { trackerPrefill: {
                         oppName: m.opponentName, tournament: m.tournamentName, round: m.round || '', date: m.date || '',
                         governingBody: 'AITA', eventMatchId: m.id, normalizedCategory: circuit.category, normalizedSubcategory: circuit.subcategory,
                       } } })}
                     >
                       {isToday ? 'Launch tracker' : 'Prepare'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className="pcd-card">
-        <div className="pcd-card-head">
-          <div className="pcd-card-title">Recent results</div>
-          <button className="pcd-card-link" onClick={() => onTabChange('tournaments')}>VIEW ALL</button>
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="font-bold text-sm">Recent results</div>
+          <button className="text-xs font-semibold text-primary hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>View all</button>
         </div>
         {!schedule.loading && schedule.recent.length === 0 && (
-          <div className="history-empty">No completed {circuit.category} {circuit.subcategory} matches found yet.</div>
+          <div className="text-sm text-muted-foreground">No completed {circuit.category} {circuit.subcategory} matches found yet.</div>
         )}
         {schedule.recent.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div className="space-y-2">
             {schedule.recent.slice(0, 5).map(m => (
-              <button key={m.id} className="pcd-result-row" onClick={() => setModalMatch(m)}>
-                <div className={`pcd-result-badge ${m.won ? 'win' : 'loss'}`}>{m.won ? 'W' : 'L'}</div>
-                <div style={{ flex: 1, minWidth: 150 }}>
-                  <div style={{ font: "600 14px/1.2 'Archivo', sans-serif" }}>{m.opponentName}</div>
-                  <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 5 }}>
-                    {m.tournamentName} · {m.round} · {formatDate(m.date)}
-                  </div>
+              <button key={m.id} className="w-full flex items-center gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary text-left" onClick={() => setModalMatch(m)}>
+                <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${m.won ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{m.won ? 'W' : 'L'}</span>
+                <div className="flex-1 min-w-32">
+                  <div className="text-sm font-semibold">{m.opponentName}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{m.tournamentName} &middot; {m.round} &middot; {formatDate(m.date)}</div>
                 </div>
-                <div className="pcd-result-score" style={{ color: m.won ? 'var(--accent)' : 'var(--opp)' }}>{m.score || '—'}</div>
-                {m.tracked && <span className="pcd-badge win sm">FULL STATS</span>}
-                <div className="pcd-result-arrow">→</div>
+                <div className={`text-sm font-bold shrink-0 ${m.won ? 'text-primary' : 'text-destructive'}`}>{m.score || '—'}</div>
+                {m.tracked && <span className="rounded-sm px-2 py-0.5 text-[10px] font-bold bg-primary/10 text-primary shrink-0">Full stats</span>}
+                <div className="text-muted-foreground shrink-0">→</div>
               </button>
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
-      {error && <div className="history-empty">{error}</div>}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
 
       {modalMatch && (
         <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />

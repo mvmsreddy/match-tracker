@@ -4,6 +4,8 @@ import { aggregateStrokeBreakdown, strokeWinRates } from '../../lib/segmentAnaly
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { seedCountForDraw, roundDepth, ROUND_ORDER, estimateExpectedPoints } from '../../utils/aitaGradeRules';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
+import { Card } from '@/components/primitives/card';
+import { Badge } from '@/components/primitives/badge';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -22,34 +24,23 @@ function historicalRound(recentMatches) {
   return ROUND_ORDER[depths[Math.floor(depths.length / 2)]];
 }
 
-// Placeholder library — see Missing Systems: there is no real coach-assigned
-// drill linkage yet (drill_library has no player/assignment column, and no
-// player-facing page ever reads it). Shown only when this player has a real
-// active coach link, per the mockup's own structure, with generic content
-// tied to what's actually true (stroke that needs work) rather than fabricated
-// drill names sourced from nowhere.
+// Placeholder library — there is no real coach-assigned drill linkage yet.
+// Shown only when this player has a real active coach link, with generic
+// content tied to what's actually true (stroke that needs work) rather than
+// fabricated drill names sourced from nowhere.
 function placeholderDrills(stroke) {
   const s = (stroke || 'Groundstroke').toLowerCase();
   return [
-    { name: `${stroke || 'Groundstroke'} consistency reps`, meta: 'ASK YOUR COACH TO ASSIGN' },
-    { name: `${s.includes('serve') ? 'Second-serve' : 'Break-point'} pressure drills`, meta: 'ASK YOUR COACH TO ASSIGN' },
+    { name: `${stroke || 'Groundstroke'} consistency reps`, meta: 'Ask your coach to assign' },
+    { name: `${s.includes('serve') ? 'Second-serve' : 'Break-point'} pressure drills`, meta: 'Ask your coach to assign' },
   ];
 }
 
 // Rule-based (explicitly v1, not ML) recommendations — cross-references the
-// segment's real ranking goal (Phase 3) with its weakest tracked stroke
-// (Phase 5 aggregation) and its recent tournament-entry pace. Every segment
-// shown here is this player's own independent standing in that category —
-// no cross-segment point-transfer suggestions (the "cascading points" idea
-// from an early draft of this spec was checked against AITA's actual rules
-// and found false; see the plan doc's Context section). If this player is
-// also active in another segment, that segment's own real progress can be
-// viewed independently by switching segments in the picker above.
-//
-// "Suggested entries" expected-points uses the real AITA ranking-points-by-
-// round table (src/utils/aitaGradeRules.js POINTS_BY_ROUND, transcribed from
-// the AITA rules PDF) priced at this player's own historically-typical
-// furthest round reached in this segment — not a guessed number.
+// segment's real ranking goal with its weakest tracked stroke and its recent
+// tournament-entry pace. "Suggested entries" expected-points uses the real
+// AITA ranking-points-by-round table priced at this player's own
+// historically-typical furthest round reached in this segment.
 export default function RecommendationsTab({ circuit, playerId }) {
   const [goals, setGoals] = useState(null);
   const [matches, setMatches] = useState(null);
@@ -111,9 +102,6 @@ export default function RecommendationsTab({ circuit, playerId }) {
       .filter(t => {
         const seg = normalizeEventSegment(t.category, t.ageGroup);
         if (!seg || seg.category !== circuit.category || seg.subcategory !== circuit.subcategory) return false;
-        // Best-effort "not yet entered" check — aita_tournaments (the AITA
-        // calendar mirror) has no foreign key into this app's own events, so
-        // this matches on name+date rather than a real join.
         return !enteredKey.has(`${(t.name || '').toLowerCase()}|${t.startDate}`);
       })
       .slice(0, 4)
@@ -122,122 +110,111 @@ export default function RecommendationsTab({ circuit, playerId }) {
         const likelySeeded = seeds && myRank && myRank <= seeds;
         const expected = estimateExpectedPoints({ grade: t.grade, historicalRound: round });
         return {
-          id: t.id, name: t.name, meta: `${formatDate(t.startDate)} · ${t.city || ''} · ${t.grade || ''}${t.drawSize ? ` · ${t.drawSize} DRAW` : ''}`,
-          seedLabel: likelySeeded ? `LIKELY SEEDED (TOP ${seeds})` : (seeds ? 'UNSEEDED RANGE' : null),
+          id: t.id, name: t.name, meta: `${formatDate(t.startDate)} · ${t.city || ''} · ${t.grade || ''}${t.drawSize ? ` · ${t.drawSize} draw` : ''}`,
+          seedLabel: likelySeeded ? `Likely seeded (top ${seeds})` : (seeds ? 'Unseeded range' : null),
           expected,
         };
       });
   }, [calendar, circuit, segmentEntries, schedule.recent]);
 
-  if (goals === null) return <div className="history-empty">Loading recommendations…</div>;
-  if (error) return <div className="history-empty">{error}</div>;
+  if (goals === null) return <div className="text-sm text-muted-foreground">Loading recommendations…</div>;
+  if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
   const rankGap = activeGoal?.targetRank ? circuit.latest.rank - activeGoal.targetRank : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="space-y-4">
       {!activeGoal && (
-        <div className="history-empty">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
           Set a ranking goal in the Overview tab to get gap-to-goal recommendations for {circuit.category} {circuit.subcategory}.
         </div>
       )}
 
       {activeGoal && rankGap !== null && (
-        <div className="pcd-rec-banner">
-          <div className="pcd-rec-banner-label">Gap to goal</div>
-          <div className="pcd-rec-banner-body">
+        <Card className="p-4 border-l-4 border-primary">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Gap to goal</div>
+          <div className="text-sm mt-1">
             {rankGap > 0
-              ? <>You need to climb <span style={{ color: 'var(--accent)' }}>{rankGap} ranking places</span> to reach top {activeGoal.targetRank} in {circuit.category} {circuit.subcategory}.</>
+              ? <>You need to climb <span className="font-bold text-primary">{rankGap} ranking places</span> to reach top {activeGoal.targetRank} in {circuit.category} {circuit.subcategory}.</>
               : <>You're already at or ahead of your top {activeGoal.targetRank} target for {circuit.category} {circuit.subcategory}.</>}
           </div>
-        </div>
+        </Card>
       )}
 
-      <div className="pcd-rec-card">
-        <div className="pcd-rec-top">
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <div className="pcd-rec-tags">
-              <span className="pcd-rec-tag" style={{ background: 'rgba(198,226,61,.14)', color: 'var(--accent)' }}>ENTRY STRATEGY</span>
-              <span className="pcd-rec-priority">PRIORITY 1</span>
-            </div>
-            <div className="pcd-rec-title">Events you haven't entered yet in this segment</div>
-            <div className="pcd-rec-why">
-              Expected points = your historically-typical furthest round in {circuit.category} {circuit.subcategory}, priced at that round for each event's actual grade.
-            </div>
-          </div>
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className="bg-primary/10 text-primary border-transparent">Entry strategy</Badge>
+          <span className="text-xs font-bold text-muted-foreground">Priority 1</span>
+        </div>
+        <div className="font-bold text-sm">Events you haven't entered yet in this segment</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          Expected points = your historically-typical furthest round in {circuit.category} {circuit.subcategory}, priced at that round for each event's actual grade.
         </div>
         {suggestedEntries.length === 0 && (
-          <div className="pcd-rec-section"><div className="history-empty">No upcoming {circuit.category} {circuit.subcategory} events found on the AITA calendar right now.</div></div>
+          <div className="mt-4 text-sm text-muted-foreground">No upcoming {circuit.category} {circuit.subcategory} events found on the AITA calendar right now.</div>
         )}
         {suggestedEntries.length > 0 && (
-          <div className="pcd-rec-section">
-            <div className="pcd-rec-section-label">Suggested entries</div>
+          <div className="mt-4 space-y-2">
             {suggestedEntries.map(e => (
-              <div key={e.id} className="pcd-entry-row">
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <div style={{ font: "600 14px/1.2 'Archivo', sans-serif" }}>{e.name}</div>
-                  <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 6 }}>{e.meta}</div>
+              <div key={e.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50">
+                <div className="flex-1 min-w-40">
+                  <div className="text-sm font-semibold">{e.name}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{e.meta}</div>
                 </div>
-                {e.seedLabel && <span className="pcd-badge info">{e.seedLabel}</span>}
-                <div style={{ flex: 'none', textAlign: 'right', minWidth: 70 }}>
-                  <div style={{ font: "700 16px/1 'IBM Plex Mono', monospace", color: 'var(--accent)' }}>{e.expected != null ? `~${e.expected}` : '—'}</div>
-                  <div style={{ font: "400 9px/1 'IBM Plex Mono', monospace", color: 'var(--text3)', marginTop: 5 }}>EXPECTED PTS</div>
+                {e.seedLabel && <Badge variant="secondary">{e.seedLabel}</Badge>}
+                <div className="text-right shrink-0 min-w-16">
+                  <div className="font-display font-extrabold text-base text-primary">{e.expected != null ? `~${e.expected}` : '—'}</div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Expected pts</div>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {weakestStroke && (
-        <div className="pcd-rec-card">
-          <div className="pcd-rec-top">
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div className="pcd-rec-tags">
-                <span className="pcd-rec-tag" style={{ background: 'rgba(79,195,232,.14)', color: 'var(--info)' }}>TRAINING FOCUS</span>
-                <span className="pcd-rec-priority">PRIORITY 2</span>
-              </div>
-              <div className="pcd-rec-title">{weakestStroke.stroke} is your weakest tracked shot</div>
-              <div className="pcd-rec-why">
-                {weakestStroke.winRate}% win rate across {weakestStroke.total} tracked points this segment — log some {weakestStroke.stroke.toLowerCase()} drills in the Training tab and see if it moves.
-              </div>
-            </div>
+        <Card className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Badge className="bg-blue-400/10 text-blue-400 border-transparent">Training focus</Badge>
+            <span className="text-xs font-bold text-muted-foreground">Priority 2</span>
+          </div>
+          <div className="font-bold text-sm">{weakestStroke.stroke} is your weakest tracked shot</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {weakestStroke.winRate}% win rate across {weakestStroke.total} tracked points this segment — log some {weakestStroke.stroke.toLowerCase()} drills in the Training tab and see if it moves.
           </div>
           {coachLink && (
-            <div className="pcd-rec-section">
-              <div className="pcd-rec-section-label">From your coach's library</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="mt-4">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">From your coach's library</div>
+              <div className="flex flex-wrap gap-2">
                 {placeholderDrills(weakestStroke.stroke).map(d => (
-                  <div key={d.name} className="pcd-drill-chip">
-                    <div style={{ font: "600 13px/1.2 'Archivo', sans-serif" }}>{d.name}</div>
-                    <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 7 }}>{d.meta}</div>
+                  <div key={d.name} className="rounded-sm border border-border bg-secondary/50 p-2.5">
+                    <div className="text-sm font-semibold">{d.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{d.meta}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      <div className="pcd-rec-card">
-        <div className="pcd-rec-top">
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <div className="pcd-rec-tags">
-              <span className="pcd-rec-tag" style={{ background: 'var(--bg3)', color: 'var(--text2)' }}>TOURNAMENT PACE</span>
-              <span className="pcd-rec-priority">PRIORITY 3</span>
-            </div>
-            <div className="pcd-rec-title">{recentEntries90d} {circuit.category} {circuit.subcategory} entr{recentEntries90d === 1 ? 'y' : 'ies'} in the last 90 days</div>
-            <div className="pcd-rec-why">
-              {recentEntries90d === 0
-                ? 'No recent entries in this segment — ranking points only come from tournaments you actually enter, so consider signing up for one.'
-                : 'Keep entering regularly — rankings in this segment only reflect the events you actually play.'}
-            </div>
-          </div>
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant="secondary">Tournament pace</Badge>
+          <span className="text-xs font-bold text-muted-foreground">Priority 3</span>
         </div>
-      </div>
+        <div className="font-bold text-sm">{recentEntries90d} {circuit.category} {circuit.subcategory} entr{recentEntries90d === 1 ? 'y' : 'ies'} in the last 90 days</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          {recentEntries90d === 0
+            ? 'No recent entries in this segment — ranking points only come from tournaments you actually enter, so consider signing up for one.'
+            : 'Keep entering regularly — rankings in this segment only reflect the events you actually play.'}
+        </div>
+      </Card>
 
       {!weakestStroke && tracked.length === 0 && (
-        <div className="history-empty">Track a few matches in this segment to unlock training-focus recommendations.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          Track a few matches in this segment to unlock training-focus recommendations.
+        </div>
       )}
     </div>
   );

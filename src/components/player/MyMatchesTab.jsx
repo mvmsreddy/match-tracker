@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import * as api from '../../api';
 import { computeStats, computeServeStats, computeReturnStats, replayMatchAnalytics } from '../../lib/analytics';
 import MatchDetailModal from './MatchDetailModal';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -43,9 +46,7 @@ function buildComparisonRows(matches) {
 // segment-scoped by design (a player's tracked matches span every category
 // they've played), unlike every other tab here. Uses `playerId` throughout
 // (not the logged-in user directly) so this also works correctly when a
-// coach is viewing a linked player's dashboard — the old pages always read
-// `user.id`, which would have silently shown the COACH's own matches (or
-// nothing) instead of the viewed player's.
+// coach is viewing a linked player's dashboard.
 export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
   const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
@@ -115,86 +116,90 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
   const selectedMatches = selectedIds.map(id => compareDetails[id]).filter(Boolean);
   const comparisonRows = useMemo(() => (selectedMatches.length > 0 ? buildComparisonRows(selectedMatches) : []), [selectedMatches]);
 
-  if (matches === null) return <div className="history-empty">Loading match history…</div>;
+  if (matches === null) return <div className="text-sm text-muted-foreground">Loading match history…</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div className="t-info-item">{matches.length} saved match{matches.length === 1 ? '' : 'es'} &amp; practice sessions</div>
+    <div className="space-y-4">
+      <div className="text-xs text-muted-foreground">{matches.length} saved match{matches.length === 1 ? '' : 'es'} &amp; practice sessions</div>
 
-      {error && <div className="history-empty">{error}</div>}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
 
       {matches.length === 0 && (
-        <div className="history-empty">No matches saved yet. Generate a PDF report from the Tracker page to save a match here.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          No matches saved yet. Generate a PDF report from the Tracker page to save a match here.
+        </div>
       )}
 
       {matches.length > 0 && (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="space-y-2">
             {matches.map(m => {
               const hasResult = m.winner === 'self' || m.winner === 'opp';
               return (
-                <div key={m.id} className="pcd-result-row" style={{ cursor: hasResult ? 'pointer' : 'default' }} onClick={() => hasResult && openMatch(m)}>
+                <div
+                  key={m.id}
+                  className={`flex items-center gap-3 p-3 rounded-sm border border-border bg-card ${hasResult ? 'cursor-pointer hover:border-primary' : ''}`}
+                  onClick={() => hasResult && openMatch(m)}
+                >
                   <input
                     type="checkbox"
+                    className="accent-primary w-4 h-4 shrink-0"
                     checked={selectedIds.includes(m.id)}
                     onClick={e => e.stopPropagation()}
                     onChange={() => toggleSelect(m.id)}
                   />
-                  <div className={`pcd-result-badge ${m.winner === 'self' ? 'win' : m.winner === 'opp' ? 'loss' : ''}`}>
+                  <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${m.winner === 'self' ? 'bg-primary/10 text-primary' : m.winner === 'opp' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
                     {m.winner === 'self' ? 'W' : m.winner === 'opp' ? 'L' : (m.sessionType === 'practice' ? 'PR' : '–')}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 150 }}>
-                    <div style={{ font: "600 14px/1.2 'Archivo', sans-serif" }}>{m.selfName} vs {m.oppName}</div>
-                    <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 5 }}>
+                  </span>
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">{m.selfName} vs {m.oppName}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
                       {m.tournament ? `${m.tournament} · ` : ''}{formatDate(m.date)}{m.sessionType === 'practice' ? ' · Practice' : ''}
                     </div>
                   </div>
-                  <div className="pcd-result-score">{m.scoreSummary || '—'}</div>
+                  <div className="text-sm font-bold shrink-0">{m.scoreSummary || '—'}</div>
                   {isOwnDashboard && (
-                    <button
-                      className="pcd-btn-secondary"
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
                       onClick={e => { e.stopPropagation(); handleDelete(m.id); }}
                     >
                       Delete
-                    </button>
+                    </Button>
                   )}
-                  {hasResult && <div className="pcd-result-arrow">{openingId === m.id ? '…' : '→'}</div>}
+                  {hasResult && <div className="text-muted-foreground shrink-0">{openingId === m.id ? '…' : '→'}</div>}
                 </div>
               );
             })}
           </div>
 
-          <button
-            className="pcd-btn-primary"
-            style={{ alignSelf: 'flex-start' }}
-            disabled={selectedIds.length < 2 || comparing}
-            onClick={loadComparison}
-          >
+          <Button size="sm" disabled={selectedIds.length < 2 || comparing} onClick={loadComparison}>
             {comparing ? 'Loading…' : `Compare selected (${selectedIds.length})`}
-          </button>
+          </Button>
         </>
       )}
 
       {selectedMatches.length > 0 && (
-        <div className="pcd-card" style={{ overflowX: 'auto' }}>
-          <div className="pcd-card-title" style={{ marginBottom: 14 }}>Side-by-side ({selectedMatches[0].selfName}'s performance)</div>
-          <table className="stat-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                {selectedMatches.map(m => <th key={m.id} className="self-col">{m.oppName} · {formatDate(m.date)}</th>)}
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="p-4 sm:p-6 overflow-x-auto">
+          <div className="font-bold text-sm mb-3">Side-by-side ({selectedMatches[0].selfName}'s performance)</div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Metric</TableHead>
+                {selectedMatches.map(m => <TableHead key={m.id}>{m.oppName} &middot; {formatDate(m.date)}</TableHead>)}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {comparisonRows.map(row => (
-                <tr key={row.label}>
-                  <td>{row.label}</td>
-                  {row.values.map((v, i) => <td key={i} className="self-col">{v}</td>)}
-                </tr>
+                <TableRow key={row.label}>
+                  <TableCell className="font-semibold">{row.label}</TableCell>
+                  {row.values.map((v, i) => <TableCell key={i}>{v}</TableCell>)}
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {modalMatch && <MatchDetailModal match={modalMatch} selfName={modalMatch.selfName || 'You'} onClose={() => setModalMatch(null)} />}

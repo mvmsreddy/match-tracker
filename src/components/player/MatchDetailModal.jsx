@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { computeServeStats, computeStrokeBreakdown, computeRallyBreakdown, computeBreakPointEvents } from '../../lib/analytics';
 import { strokeWinRates } from '../../lib/segmentAnalytics';
+import { Button } from '@/components/primitives/button';
 
-const RALLY_COLORS = ['var(--accent)', 'var(--accent)', 'var(--info)', 'var(--text3)', 'var(--text3)', 'var(--text3)', 'var(--text3)'];
+const RALLY_COLORS = ['bg-primary', 'bg-primary', 'bg-blue-400', 'bg-muted-foreground', 'bg-muted-foreground', 'bg-muted-foreground', 'bg-muted-foreground'];
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -27,10 +28,10 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
     const winners = points.filter(pt => pt.endedBy === 'self' && pt.reason === 'Winner').length;
     const unforced = points.filter(pt => pt.endedBy === 'self' && pt.reason === 'UnforcedError').length;
     return [
-      { label: '1st serve in', value: `${Math.round(serve.firstPct)}%`, color: 'var(--text)' },
-      { label: 'Aces / DF', value: `${serve.aces} / ${serve.dfs}`, color: 'var(--accent)' },
-      { label: 'Winners', value: String(winners), color: 'var(--accent)' },
-      { label: 'Unforced', value: String(unforced), color: 'var(--opp)' },
+      { label: '1st serve in', value: `${Math.round(serve.firstPct)}%`, cls: 'text-foreground' },
+      { label: 'Aces / DF', value: `${serve.aces} / ${serve.dfs}`, cls: 'text-primary' },
+      { label: 'Winners', value: String(winners), cls: 'text-primary' },
+      { label: 'Unforced', value: String(unforced), cls: 'text-destructive' },
     ];
   }, [tm, points]);
 
@@ -48,7 +49,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
       label: label === '7+' ? '7+' : `${label} shot${label === '1' ? '' : 's'}`,
       pct: `${Math.round((totals[i] / sum) * 100)}%`,
       h: `${Math.max(4, Math.round((totals[i] / max) * 100))}%`,
-      color: RALLY_COLORS[i] || 'var(--text3)',
+      colorCls: RALLY_COLORS[i] || 'bg-muted-foreground',
     })).filter((_, i) => totals[i] > 0 || i < 4);
   }, [tm, points]);
 
@@ -57,7 +58,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
     const rates = strokeWinRates(computeStrokeBreakdown(points, 'self'), 3);
     return rates
       .filter(r => ['Forehand', 'Backhand', 'Serve'].includes(r.stroke) && r.winRate !== null)
-      .map(r => ({ name: r.stroke, value: `${r.winRate}%`, w: `${r.winRate}%`, color: r.winRate >= 55 ? 'var(--accent)' : 'var(--info)' }));
+      .map(r => ({ name: r.stroke, value: `${r.winRate}%`, w: `${r.winRate}%`, positive: r.winRate >= 55 }));
   }, [tm, points]);
 
   const breaks = useMemo(() => {
@@ -68,77 +69,84 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
   const metaParts = [match.tournamentName, match.round, match.grade].filter(Boolean);
 
   return (
-    <div className="pcd-modal-overlay" onClick={onClose}>
-      <div className="pcd-modal" onClick={e => e.stopPropagation()}>
-        <div className="pcd-modal-head">
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div className="pcd-modal-result" style={{ color: match.won ? 'var(--accent)' : 'var(--opp)' }}>
-              {match.won ? 'WON' : 'LOST'}
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-sm max-w-lg w-full max-h-[90vh] overflow-y-auto p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-48">
+            <div className={`text-xs font-bold uppercase tracking-wider ${match.won ? 'text-primary' : 'text-destructive'}`}>
+              {match.won ? 'Won' : 'Lost'}
             </div>
-            <div className="pcd-modal-headline">
+            <div className="font-display font-extrabold text-lg tracking-tighter mt-1">
               {match.won ? `${selfName} d. ${match.opponentName}` : `${match.opponentName} d. ${selfName}`}
             </div>
-            <div className="pcd-modal-meta">{metaParts.join(' · ')}{match.date ? ` · ${formatDate(match.date)}` : ''}</div>
+            <div className="text-xs text-muted-foreground mt-1">{metaParts.join(' · ')}{match.date ? ` · ${formatDate(match.date)}` : ''}</div>
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 'none' }}>
-            <div className="pcd-modal-score" style={{ color: match.won ? 'var(--accent)' : 'var(--opp)' }}>{match.score || '—'}</div>
-            <button className="pcd-modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className={`font-display font-extrabold text-base ${match.won ? 'text-primary' : 'text-destructive'}`}>{match.score || '—'}</div>
+            <button className="w-7 h-7 rounded-sm hover:bg-secondary flex items-center justify-center" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
 
         {tm ? (
-          <div className="pcd-modal-body">
+          <div className="space-y-5 mt-5">
             <div>
-              <div className="pcd-modal-section-label">Serve and error profile</div>
-              <div className="pcd-kpi-grid">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Serve and error profile</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {kpis.map(k => (
-                  <div key={k.label} className="pcd-kpi-tile">
-                    <div className="pcd-kpi-label">{k.label}</div>
-                    <div className="pcd-kpi-value" style={{ color: k.color }}>{k.value}</div>
+                  <div key={k.label} className="rounded-sm border border-border bg-secondary/50 p-2.5">
+                    <div className="text-[10px] text-muted-foreground">{k.label}</div>
+                    <div className={`font-display font-extrabold text-base ${k.cls}`}>{k.value}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <div className="pcd-modal-section-label">Rally length distribution</div>
-              <div className="pcd-rally-bars">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Rally length distribution</div>
+              <div className="flex items-end gap-2 h-20">
                 {rally.map((b, i) => (
-                  <div key={i} className="pcd-rally-bar-col">
-                    <div className="pcd-rally-pct" style={{ color: b.color }}>{b.pct}</div>
-                    <div className="pcd-rally-fill" style={{ height: b.h, background: b.color }} />
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+                    <div className="text-[10px] font-bold">{b.pct}</div>
+                    <div className={`w-full rounded-sm ${b.colorCls}`} style={{ height: b.h }} />
                   </div>
                 ))}
               </div>
-              <div className="pcd-rally-labels">
-                {rally.map((b, i) => <div key={i} className="pcd-rally-label">{b.label}</div>)}
+              <div className="flex gap-2 mt-1">
+                {rally.map((b, i) => <div key={i} className="flex-1 text-[9px] text-muted-foreground text-center">{b.label}</div>)}
               </div>
             </div>
 
             {wings.length > 0 && (
               <div>
-                <div className="pcd-modal-section-label">Wing &amp; serve win rates</div>
-                {wings.map(w => (
-                  <div key={w.name} className="pcd-wing-row">
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <div style={{ font: "600 13px/1 'Archivo', sans-serif" }}>{w.name}</div>
-                      <div style={{ font: "600 13px/1 'IBM Plex Mono', monospace", color: w.color }}>{w.value}</div>
+                <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Wing &amp; serve win rates</div>
+                <div className="space-y-2">
+                  {wings.map(w => (
+                    <div key={w.name}>
+                      <div className="flex items-baseline justify-between mb-1">
+                        <div className="text-sm font-semibold">{w.name}</div>
+                        <div className={`text-sm font-bold ${w.positive ? 'text-primary' : 'text-blue-400'}`}>{w.value}</div>
+                      </div>
+                      <div className="h-2 rounded-sm bg-muted">
+                        <div className={`h-full rounded-sm ${w.positive ? 'bg-primary' : 'bg-blue-400'}`} style={{ width: w.w }} />
+                      </div>
                     </div>
-                    <div className="pcd-bar-track"><div className="pcd-bar-fill" style={{ width: w.w, background: w.color }} /></div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
             {breaks.length > 0 && (
               <div>
-                <div className="pcd-modal-section-label">Break points</div>
-                <div>
+                <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Break points</div>
+                <div className="space-y-1.5">
                   {breaks.map((b, i) => (
-                    <div key={i} className="pcd-bp-row">
-                      <div className="pcd-bp-dot" style={{ background: b.outcome === 'missed' ? 'var(--opp)' : 'var(--accent)' }} />
-                      <div className="pcd-bp-text">{b.text}</div>
-                      <div className="pcd-bp-at">{b.at}</div>
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.outcome === 'missed' ? 'bg-destructive' : 'bg-primary'}`} />
+                      <span className="flex-1">{b.text}</span>
+                      <span className="text-muted-foreground">{b.at}</span>
                     </div>
                   ))}
                 </div>
@@ -146,16 +154,16 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
             )}
           </div>
         ) : (
-          <div className="pcd-modal-empty">
-            <div className="pcd-modal-empty-title">Official score only</div>
-            <div className="pcd-modal-empty-body">
+          <div className="mt-5 border border-dashed border-border rounded-sm p-6 text-center">
+            <div className="font-bold text-sm">Official score only</div>
+            <div className="text-xs text-muted-foreground mt-1">
               No tracker data was recorded for this match. Launch the tracker from a scheduled match to link point-by-point data automatically.
             </div>
           </div>
         )}
 
-        <div className="pcd-modal-footer">
-          <button className="pcd-btn-secondary" onClick={onClose}>Close</button>
+        <div className="mt-6">
+          <Button variant="outline" onClick={onClose}>Close</Button>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { normalizeEventSegment } from '../../lib/governingBodies';
 import { roundToken } from '../../utils/aitaGradeRules';
 import LogMatchButton from '../tournaments/LogMatchButton';
 import MatchDetailModal from './MatchDetailModal';
+import { Badge } from '@/components/primitives/badge';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -19,11 +20,10 @@ function entryName(entry) {
 }
 
 // Expandable per-tournament match list — matches by round, each with a
-// "Track this match" button (Phase 4) for untracked rounds, or opens
-// MatchDetailModal (real per-match analytics) for completed rounds. Kept
-// separate from the entries list above so opponent resolution (a second
-// fetch, getDrawEntries) only happens for a tournament the player actually
-// opens, not for every entry up front.
+// "Track this match" button for untracked rounds, or opens MatchDetailModal
+// (real per-match analytics) for completed rounds. Kept separate from the
+// entries list above so opponent resolution (a second fetch, getDrawEntries)
+// only happens for a tournament the player actually opens.
 function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, isOwnDashboard }) {
   const [matches, setMatches] = useState(null);
   const [entryMap, setEntryMap] = useState(null);
@@ -41,11 +41,11 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, i
     return () => { cancelled = true; };
   }, [entry.eventId, entry.drawType, entry.id]);
 
-  if (matches === null) return <div className="history-empty">Loading matches…</div>;
-  if (matches.length === 0) return <div className="history-empty">No matches recorded yet for this entry.</div>;
+  if (matches === null) return <div className="text-sm text-muted-foreground py-2">Loading matches…</div>;
+  if (matches.length === 0) return <div className="text-sm text-muted-foreground py-2">No matches recorded yet for this entry.</div>;
 
   return (
-    <div style={{ padding: '10px 0' }}>
+    <div className="space-y-2 py-2">
       {matches.map(m => {
         const opp = entryMap.get(m.entry1Id === entry.id ? m.entry2Id : m.entry1Id);
         const won = m.status === 'complete' && m.winnerEntryId === entry.id;
@@ -54,27 +54,30 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, i
         const tracked = trackedByEventMatch.get(m.id) || null;
         const opponentName = entryName(opp);
 
-        const row = complete ? (
-          <button
-            key={m.id}
-            className="pcd-match-row"
-            onClick={() => onOpenMatch({
-              opponentName, tournamentName: entry.event.week?.name, round, grade: entry.event.week?.grade,
-              date: entry.event.week?.startDate, score: m.score, won, tracked: !!tracked, trackedMatch: tracked,
-            })}
-          >
-            <div className="pcd-match-round">{round}</div>
-            <div className={`pcd-match-wl ${won ? 'win' : 'loss'}`}>{won ? 'W' : 'L'}</div>
-            <div className="pcd-match-opp">{opponentName}</div>
-            <div style={{ font: "600 13px/1 'IBM Plex Mono', monospace", color: won ? 'var(--accent)' : 'var(--opp)', whiteSpace: 'nowrap' }}>{m.score || '—'}</div>
-            <div className="pcd-match-date">{formatDate(entry.event.week?.startDate)}</div>
-            <span className={`pcd-badge sm pcd-match-tag ${tracked ? 'win' : ''}`}>{tracked ? 'FULL STATS' : 'SCORE ONLY'}</span>
-          </button>
-        ) : (
-          <div key={m.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--bg4)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', width: 80 }}>{round}</div>
-            <div style={{ flex: 1, minWidth: 160, fontWeight: 600 }}>{opponentName}</div>
-            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{m.status || 'scheduled'}</div>
+        if (complete) {
+          return (
+            <button
+              key={m.id}
+              className="w-full flex flex-wrap items-center gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary text-left"
+              onClick={() => onOpenMatch({
+                opponentName, tournamentName: entry.event.week?.name, round, grade: entry.event.week?.grade,
+                date: entry.event.week?.startDate, score: m.score, won, tracked: !!tracked, trackedMatch: tracked,
+              })}
+            >
+              <div className="text-xs text-muted-foreground w-12 shrink-0">{round}</div>
+              <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${won ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{won ? 'W' : 'L'}</span>
+              <div className="flex-1 min-w-32 text-sm font-semibold">{opponentName}</div>
+              <div className={`text-sm font-bold shrink-0 ${won ? 'text-primary' : 'text-destructive'}`}>{m.score || '—'}</div>
+              <div className="text-xs text-muted-foreground shrink-0">{formatDate(entry.event.week?.startDate)}</div>
+              <Badge variant={tracked ? 'default' : 'secondary'} className="shrink-0">{tracked ? 'Full stats' : 'Score only'}</Badge>
+            </button>
+          );
+        }
+        return (
+          <div key={m.id} className="flex flex-wrap items-center gap-3 p-3 rounded-sm bg-secondary/50">
+            <div className="text-xs text-muted-foreground w-12 shrink-0">{round}</div>
+            <div className="flex-1 min-w-32 text-sm font-semibold">{opponentName}</div>
+            <div className="text-xs text-muted-foreground">{m.status || 'scheduled'}</div>
             {isOwnDashboard && (
               <LogMatchButton
                 match={m}
@@ -84,12 +87,11 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, i
                 round={round}
                 category={circuit.category}
                 subcategory={circuit.subcategory}
-                className="pcd-btn-secondary"
+                className="rounded-sm border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
               />
             )}
           </div>
         );
-        return row;
       })}
     </div>
   );
@@ -97,8 +99,7 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, i
 
 // Segment-filtered tournament history. Each entry expands to its matches
 // (fetched on demand) rather than eagerly loading every entry's matches up
-// front — the entries list itself is the fast path, matching this design's
-// intent of scanning a season at a glance before drilling into one event.
+// front.
 export default function TournamentsTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You' }) {
   const [entries, setEntries] = useState(null);
   const [trackedMatches, setTrackedMatches] = useState(null);
@@ -139,40 +140,42 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
   }, [entries, circuit]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="t-info-item">{segmentEntries.length} {circuit.category} {circuit.subcategory} entr{segmentEntries.length === 1 ? 'y' : 'ies'}</div>
+    <div className="space-y-3">
+      <div className="text-xs text-muted-foreground">{segmentEntries.length} {circuit.category} {circuit.subcategory} entr{segmentEntries.length === 1 ? 'y' : 'ies'}</div>
 
-      {error && <div className="history-empty">{error}</div>}
-      {entries === null && !error && <div className="history-empty">Loading…</div>}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
+      {entries === null && !error && <div className="text-sm text-muted-foreground">Loading…</div>}
       {entries !== null && segmentEntries.length === 0 && (
-        <div className="history-empty">No {circuit.category} {circuit.subcategory} tournament entries found yet.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          No {circuit.category} {circuit.subcategory} tournament entries found yet.
+        </div>
       )}
 
       {segmentEntries.map(e => (
-        <div key={e.id} className={`pcd-accordion${openId === e.id ? ' open' : ''}`}>
+        <div key={e.id} className="rounded-sm border border-border bg-card overflow-hidden">
           <button
             onClick={() => setOpenId(openId === e.id ? null : e.id)}
-            className="pcd-accordion-head"
+            className="w-full flex items-center gap-3 p-3 text-left hover:bg-secondary/50"
           >
-            <div className="pcd-accordion-caret">{openId === e.id ? '▾' : '▸'}</div>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ font: "700 16px/1.2 'Archivo', sans-serif" }}>{e.event.week?.name || 'Unnamed tournament'}</div>
-              <div style={{ color: 'var(--text2)', fontSize: 12, marginTop: 6 }}>
-                {formatDate(e.event.week?.startDate)} · {e.event.week?.city}, {e.event.week?.stateAbbr} · {e.event.week?.grade}
+            <div className="text-muted-foreground shrink-0">{openId === e.id ? '▾' : '▸'}</div>
+            <div className="flex-1 min-w-48">
+              <div className="text-sm font-bold">{e.event.week?.name || 'Unnamed tournament'}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatDate(e.event.week?.startDate)} &middot; {e.event.week?.city}, {e.event.week?.stateAbbr} &middot; {e.event.week?.grade}
               </div>
             </div>
-            {e.seed && <span className="pcd-badge info">SEED {e.seed}</span>}
-            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{e.drawType === 'doubles' ? 'Doubles' : 'Singles'}</div>
+            {e.seed && <Badge variant="secondary">Seed {e.seed}</Badge>}
+            <div className="text-xs text-muted-foreground shrink-0">{e.drawType === 'doubles' ? 'Doubles' : 'Singles'}</div>
           </button>
           {openId === e.id && (
-            <div className="pcd-accordion-body">
+            <div className="px-3 pb-3 border-t border-border">
               <TournamentMatches entry={e} circuit={circuit} trackedByEventMatch={trackedByEventMatch} onOpenMatch={setModalMatch} isOwnDashboard={isOwnDashboard} />
             </div>
           )}
         </div>
       ))}
 
-      <Link to="/tournaments" className="dashboard-view-all">Browse the full tournament calendar →</Link>
+      <Link to="/tournaments" className="inline-block text-sm font-semibold text-primary hover:underline">Browse the full tournament calendar &rarr;</Link>
 
       {modalMatch && <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />}
     </div>

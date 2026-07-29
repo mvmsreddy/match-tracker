@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import * as api from '../api';
-import { useTheme } from '../context/ThemeContext';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import AitaTournamentFactsheet from '../components/AitaTournamentFactsheet';
 
 function timeAgo(iso) {
@@ -20,7 +17,6 @@ function timeAgo(iso) {
 
 export default function AitaTournamentFactsheetPage() {
   const { id } = useParams();
-  const { theme } = useTheme();
   const [t, setT] = useState(null);
   const [error, setError] = useState('');
 
@@ -34,50 +30,36 @@ export default function AitaTournamentFactsheetPage() {
 
   if (error) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
-        <div className="history-empty">{error}</div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-4xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
       </div>
     );
   }
 
   if (!t) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
-        <div className="history-empty">Loading fact sheet…</div>
+      <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-4xl mx-auto">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading fact sheet…</div>
       </div>
     );
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="calendar" /> : <TopNav />}
-
-      <div className="header">
-        <div className="title-row">
-          <div>
-            <div className="t-breadcrumb">
-              <Link to="/aita-calendar">AITA Calendar</Link>
-              <span> / </span>
-              <span>{t.name}</span>
-            </div>
-            <h1 className="title">{t.name}</h1>
-          </div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-4xl mx-auto space-y-6">
+      <div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+          <Link to="/aita-calendar" className="hover:text-foreground">AITA Calendar</Link>
+          <span>/</span>
+          <span className="text-foreground">{t.name}</span>
         </div>
+        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{t.name}</h1>
       </div>
 
-      <div className="page-scroll">
-        <div style={{ padding: '10px 16px 0' }}>
-          <AitaTournamentFactsheet t={t} />
-        </div>
+      <AitaTournamentFactsheet t={t} />
 
-        {t.lastChangedAt && (
-          <div className="history-empty" style={{ padding: '0 16px 16px', textAlign: 'left' }}>
-            Last updated: {timeAgo(t.lastChangedAt)}
-          </div>
-        )}
-      </div>
+      {t.lastChangedAt && (
+        <div className="text-xs text-muted-foreground">Last updated: {timeAgo(t.lastChangedAt)}</div>
+      )}
     </div>
   );
 }

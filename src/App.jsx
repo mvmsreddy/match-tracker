@@ -35,21 +35,21 @@ export default function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/history" element={<MatchHistoryPage />} />
                 <Route path="/compare" element={<ComparePage />} />
+                <Route path="/player-dashboard" element={<PlayerDashboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/my-players" element={<CoachIntelligencePage />} />
+                <Route path="/my-coaches" element={<CoachPlayersPage />} />
+                <Route path="/coach/players/:playerId/dashboard" element={<PlayerDashboardPage />} />
+                <Route path="/aita-calendar" element={<AitaCalendarPage />} />
+                <Route path="/aita-calendar/:id" element={<AitaTournamentFactsheetPage />} />
+                <Route path="/aita-rankings" element={<AitaRankingsPage />} />
               </Route>
-              <Route path="/player-dashboard" element={<ProtectedRoute><PlayerDashboardPage /></ProtectedRoute>} />
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
               <Route path="/history/:matchId" element={<ProtectedRoute><MatchDetailPage /></ProtectedRoute>} />
               <Route path="/tournaments" element={<ProtectedRoute><TournamentsListPage /></ProtectedRoute>} />
               <Route path="/tournaments/:id" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
               <Route path="/tournaments/:id/events/:eventId" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
               <Route path="/tournaments/:id/oop" element={<ProtectedRoute><OrderOfPlayPage /></ProtectedRoute>} />
-              <Route path="/aita-calendar" element={<ProtectedRoute><AitaCalendarPage /></ProtectedRoute>} />
-              <Route path="/aita-calendar/:id" element={<ProtectedRoute><AitaTournamentFactsheetPage /></ProtectedRoute>} />
-              <Route path="/aita-rankings" element={<ProtectedRoute><AitaRankingsPage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/my-players" element={<ProtectedRoute><CoachIntelligencePage /></ProtectedRoute>} />
-              <Route path="/my-coaches" element={<ProtectedRoute><CoachPlayersPage /></ProtectedRoute>} />
-              <Route path="/coach/players/:playerId/dashboard" element={<ProtectedRoute><PlayerDashboardPage /></ProtectedRoute>} />
               <Route path="/video-analysis-test" element={<ProtectedRoute><VideoAnalysisTestPage /></ProtectedRoute>} />
             </Routes>
           </SegmentProvider>

@@ -26,8 +26,8 @@ export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
 
 // Profile module — Supabase only
-export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async () => null;
-export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async () => {};
+export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async (userId) => JSON.parse(localStorage.getItem('__verify_profile_' + userId) || 'null');
+export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async (userId, data) => { localStorage.setItem('__verify_profile_' + userId, JSON.stringify({ ...data, roleConfirmed: true })); };
 export const searchPlayers = hasSupabaseConfig ? supabaseApi.searchPlayers : async () => [];
 export const sendCoachRequest = hasSupabaseConfig ? supabaseApi.sendCoachRequest : async () => {};
 export const getCoachLinks = hasSupabaseConfig ? supabaseApi.getCoachLinks : async () => [];

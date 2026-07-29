@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { other } from '../../lib/engine';
 
-// Quick Mode — the "Navy" design system's fast point-entry flow: two huge
-// WON THE POINT buttons + a row of quick-tag chips, alongside (not replacing)
-// the existing step-by-step Wizard. Optionally tap a chip first to tag *why*
-// the point ended (Winner/Forced/Unforced/Net cord highlight, no commit yet),
-// then tap WON THE POINT to commit — or skip the chip entirely for the
-// fastest possible one-tap entry. Ace/Double fault commit immediately since
-// who wins is never ambiguous for those two.
+// Quick Mode — the fast point-entry flow: two huge WON THE POINT buttons + a
+// row of quick-tag chips, alongside (not replacing) the existing step-by-step
+// Wizard. Optionally tap a chip first to tag *why* the point ended
+// (Winner/Forced/Unforced/Net cord highlight, no commit yet), then tap WON
+// THE POINT to commit — or skip the chip entirely for the fastest possible
+// one-tap entry. Ace/Double fault commit immediately since who wins is never
+// ambiguous for those two.
 //
 // Produces the same point-entry shape src/lib/wizardLogic.js's buildPointEntry
 // does, so it feeds the exact same engine/analytics pipeline as the Wizard —
@@ -25,6 +25,11 @@ function baseEntry(server, overrides) {
     ...overrides,
   };
 }
+
+const chipCls = (active) =>
+  `cursor-pointer border font-tt-display font-semibold text-sm px-2 py-3 rounded-tt min-h-[46px] ${
+    active ? 'border-tt-brand bg-tt-brand/15 text-tt-brand' : 'border-tt-border bg-tt-surface-2 text-tt-foreground'
+  }`;
 
 export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onEndMatch }) {
   const [pendingTag, setPendingTag] = useState(null);
@@ -60,37 +65,50 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
   }
 
   return (
-    <div className="qm-panel">
-      <div className="qm-step-label">Tap a tag to describe the point, then who won it — or skip straight to WON THE POINT</div>
+    <div className="flex flex-col gap-3 bg-tt-surface border border-tt-border rounded-tt p-4">
+      <div className="font-tt-mono text-[0.66rem] tracking-wide uppercase text-tt-muted-foreground">
+        Tap a tag to describe the point, then who won it — or skip straight to WON THE POINT
+      </div>
 
-      <div className="qm-win-grid">
-        <button className="qm-win-btn qm-win-self" onClick={() => wonThePoint('self')}>
+      <div className="grid grid-cols-2 gap-2.5">
+        <button onClick={() => wonThePoint('self')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-brand text-tt-background">
           {selfName}
-          <div className="qm-win-sub">WON THE POINT</div>
+          <div className="font-tt-mono font-medium text-[0.62rem] tracking-[0.1em] mt-2 opacity-75">Won the point</div>
         </button>
-        <button className="qm-win-btn qm-win-opp" onClick={() => wonThePoint('opp')}>
+        <button onClick={() => wonThePoint('opp')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-surface-2 text-tt-foreground">
           {oppName}
-          <div className="qm-win-sub">WON THE POINT</div>
+          <div className="font-tt-mono font-medium text-[0.62rem] tracking-[0.1em] mt-2 opacity-75">Won the point</div>
         </button>
       </div>
 
-      <div className="qm-chip-row">
-        <button className="qm-chip" onClick={commitAce}>Ace</button>
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))' }}>
+        <button onClick={commitAce} className={chipCls(false)}>Ace</button>
         {QUICK_TAGS.map(tag => (
           <button
             key={tag}
-            className={`qm-chip${pendingTag === tag ? ' active' : ''}`}
+            className={chipCls(pendingTag === tag)}
             onClick={() => setPendingTag(prev => (prev === tag ? null : tag))}
           >
             {tag}
           </button>
         ))}
-        <button className="qm-chip" onClick={commitDoubleFault}>Double fault</button>
+        <button onClick={commitDoubleFault} className={chipCls(false)}>Double fault</button>
       </div>
 
-      <div className="qm-footer-row">
-        <button className="qm-footer-btn" onClick={onUndo} disabled={!canUndo}>Undo last point</button>
-        <button className="qm-footer-btn qm-footer-danger" onClick={handleEndMatch}>End match</button>
+      <div className="flex gap-2">
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="flex-1 cursor-pointer border border-tt-border bg-transparent text-tt-muted-foreground font-tt-display font-semibold text-sm p-3 rounded-tt min-h-[46px] disabled:opacity-40 disabled:cursor-default"
+        >
+          Undo last point
+        </button>
+        <button
+          onClick={handleEndMatch}
+          className="flex-1 cursor-pointer border border-tt-destructive bg-tt-destructive-bg text-tt-destructive font-tt-display font-semibold text-sm p-3 rounded-tt min-h-[46px]"
+        >
+          End match
+        </button>
       </div>
     </div>
   );

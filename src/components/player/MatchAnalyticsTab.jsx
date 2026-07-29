@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, aggregateBreakPoints, aggregateServeStats, strokeWinRates } from '../../lib/segmentAnalytics';
+import { Card } from '@/components/primitives/card';
 
 // Rule-based trend detection: splits the segment's tracked matches (oldest
 // first) into an earlier and a more-recent half and compares real aggregated
@@ -27,7 +28,7 @@ function buildTrends(tracked) {
       title: `${r.stroke} win rate ${delta > 0 ? 'improving' : 'slipping'} recently`,
       evidence: `${r.winRate}% across your ${recent.length} most recent tracked matches, vs ${e.winRate}% in the ${early.length} before that.`,
       stat: `${delta > 0 ? '+' : ''}${delta}`,
-      accent: delta > 0 ? 'var(--accent)' : 'var(--opp)',
+      positive: delta > 0,
       focus: `${r.stroke} consistency reps`,
     });
   }
@@ -41,7 +42,7 @@ function buildTrends(tracked) {
         title: `Break-point conversion ${delta > 0 ? 'trending up' : 'trending down'}`,
         evidence: `Converted ${recentBp.wonReturning}/${recentBp.facedReturning} recently vs ${earlyBp.wonReturning}/${earlyBp.facedReturning} earlier this segment.`,
         stat: `${delta > 0 ? '+' : ''}${delta}`,
-        accent: delta > 0 ? 'var(--accent)' : 'var(--opp)',
+        positive: delta > 0,
         focus: 'Break-point simulation drills',
       });
     }
@@ -50,8 +51,8 @@ function buildTrends(tracked) {
   return trends.slice(0, 3);
 }
 
-// Real, segment-aggregated insight cards (Phase 5) — "Forehand Dominance: 78%
-// win rate" style cards computed from every tracked match in this segment
+// Real, segment-aggregated insight cards — "Forehand Dominance: 78% win rate"
+// style cards computed from every tracked match in this segment
 // (src/lib/segmentAnalytics.js), not fabricated. Cards only render when
 // there's enough sample size (see strokeWinRates' minSample) to say
 // something meaningful — an empty/low-data segment shows the empty state
@@ -86,7 +87,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         title: `${w.stroke} ${w.winRate >= 60 ? 'Dominance' : 'Consistency'}`,
         value: `${w.winRate}%`,
         body: `${w.winRate}% win rate on ${w.stroke.toLowerCase()} shots across ${w.total} tracked points this segment.`,
-        accent: w.winRate >= 60 ? 'var(--accent)' : 'var(--opp)',
+        positive: w.winRate >= 60,
       });
     }
     if (bp.facedServing >= 5) {
@@ -95,7 +96,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         title: 'Break Point Saves',
         value: `${bp.saveRate}%`,
         body: `Saved ${bp.savedServing} of ${bp.facedServing} break points faced while serving.`,
-        accent: bp.saveRate >= 60 ? 'var(--accent)' : 'var(--opp)',
+        positive: bp.saveRate >= 60,
       });
     }
     if (bp.facedReturning >= 5) {
@@ -104,7 +105,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         title: 'Break Point Conversion',
         value: `${bp.convertRate}%`,
         body: `Converted ${bp.wonReturning} of ${bp.facedReturning} break point chances while returning.`,
-        accent: bp.convertRate >= 40 ? 'var(--accent)' : 'var(--opp)',
+        positive: bp.convertRate >= 40,
       });
     }
     if (serve.totalServicePts >= 20) {
@@ -113,7 +114,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         title: 'First Serve Rate',
         value: `${Math.round(serve.firstPct)}%`,
         body: `${Math.round(serve.firstPct)}% first serves in across ${serve.totalServicePts} service points, ${serve.aces} aces.`,
-        accent: serve.firstPct >= 60 ? 'var(--accent)' : 'var(--opp)',
+        positive: serve.firstPct >= 60,
       });
     }
     return cards;
@@ -121,62 +122,60 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
 
   const trends = useMemo(() => buildTrends(tracked), [tracked]);
 
-  if (matches === null) return <div className="history-empty">Loading match analytics…</div>;
-  if (error) return <div className="history-empty">{error}</div>;
+  if (matches === null) return <div className="text-sm text-muted-foreground">Loading match analytics…</div>;
+  if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div className="t-info-item">
+    <div className="space-y-4">
+      <div className="text-xs text-muted-foreground">
         Across {tracked.length} tracked match{tracked.length === 1 ? '' : 'es'} in {circuit.category} {circuit.subcategory}
         {matches.length > tracked.length ? ` (${matches.length - tracked.length} without tracker data)` : ''}
       </div>
 
       {tracked.length === 0 && (
-        <div className="history-empty">
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
           No tracked matches yet for this segment. Use "Track this match" from a tournament entry in the Tournaments tab to start building analytics here.
         </div>
       )}
 
       {insights.length === 0 && tracked.length > 0 && (
-        <div className="history-empty">Not enough tracked points yet for a reliable insight — keep tracking matches.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          Not enough tracked points yet for a reliable insight — keep tracking matches.
+        </div>
       )}
 
       {insights.length > 0 && (
-        <div className="pcd-stat-grid n2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {insights.map((i, idx) => (
-            <div key={idx} className="pcd-insight-card" style={{ borderTopColor: i.accent }}>
-              <div className="pcd-insight-head">
-                <div className="pcd-insight-kind" style={{ color: i.accent }}>{i.kind}</div>
-              </div>
-              <div className="pcd-insight-title">{i.title}</div>
-              <div className="pcd-insight-value-row">
-                <div className="pcd-insight-value" style={{ color: i.accent }}>{i.value}</div>
-              </div>
-              <div className="pcd-insight-body">{i.body}</div>
-            </div>
+            <Card key={idx} className={`p-4 border-t-4 ${i.positive ? 'border-t-primary' : 'border-t-destructive'}`}>
+              <div className={`text-xs font-bold uppercase tracking-wider ${i.positive ? 'text-primary' : 'text-destructive'}`}>{i.kind}</div>
+              <div className="text-sm font-bold mt-1">{i.title}</div>
+              <div className={`font-display font-extrabold text-2xl tracking-tighter mt-1 ${i.positive ? 'text-primary' : 'text-destructive'}`}>{i.value}</div>
+              <div className="text-xs text-muted-foreground mt-2">{i.body}</div>
+            </Card>
           ))}
         </div>
       )}
 
       {trends.length > 0 && (
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Trends worth acting on</div>
-          <div className="pcd-card-sub" style={{ marginBottom: 18 }}>Comparing your earlier vs. more recent tracked matches this segment</div>
-          {trends.map((t, i) => (
-            <div key={i} className="pcd-trend-row" style={{ borderLeftColor: t.accent }}>
-              <div className="pcd-trend-top">
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <div className="pcd-trend-title">{t.title}</div>
-                  <div className="pcd-trend-evidence">{t.evidence}</div>
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm mb-1">Trends worth acting on</div>
+          <div className="text-xs text-muted-foreground mb-4">Comparing your earlier vs. more recent tracked matches this segment</div>
+          <div className="space-y-3">
+            {trends.map((t, i) => (
+              <div key={i} className={`border-l-4 ${t.positive ? 'border-primary' : 'border-destructive'} pl-3 py-1`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-48">
+                    <div className="text-sm font-bold">{t.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{t.evidence}</div>
+                  </div>
+                  <div className={`font-display font-extrabold text-lg ${t.positive ? 'text-primary' : 'text-destructive'}`}>{t.stat}</div>
                 </div>
-                <div className="pcd-trend-stat" style={{ color: t.accent }}>{t.stat}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold mt-2">Focus &middot; {t.focus}</div>
               </div>
-              <div className="pcd-trend-foot">
-                <div className="pcd-trend-drill">FOCUS · {t.focus}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   );

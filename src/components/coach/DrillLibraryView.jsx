@@ -3,14 +3,29 @@ import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { computeDrillCorrelation } from '../../lib/coachAnalytics';
 import { SKILL_LABELS } from './SkillGroupsView';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Textarea } from '@/components/primitives/textarea';
+import { Badge } from '@/components/primitives/badge';
 
 const STROKES = ['Forehand', 'Backhand', 'Serve', 'Volley', 'Smash', 'Other'];
 const SKILL_KEYS = ['Forehand', 'Backhand', 'Serve', 'Volley', 'Smash', 'BreakPointConversion', 'SecondServe', 'RallyTolerance', 'ServeUnderFatigue'];
 
-// Drill library — the Phase 31 table plus Phase 32's spec fields, with a
-// real "success rate" pulled from computeDrillCorrelation (this drill's own
-// completed assignments) rather than a fabricated number. A drill with no
-// completed assignments yet shows "not yet measured", not a guess.
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9';
+
+// Drill library — a real "success rate" pulled from computeDrillCorrelation
+// (this drill's own completed assignments) rather than a fabricated number.
+// A drill with no completed assignments yet shows "not yet measured".
 export default function DrillLibraryView() {
   const { user } = useAuth();
   const [drills, setDrills] = useState(null);
@@ -72,110 +87,96 @@ export default function DrillLibraryView() {
     }
   }
 
-  if (drills === null) return <div className="history-empty">Loading…</div>;
+  if (drills === null) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div>
-        <button className="pcd-btn-primary" onClick={() => setCreating(v => !v)}>{creating ? 'Cancel' : '+ New drill'}</button>
-      </div>
+    <div className="space-y-4">
+      <Button size="sm" onClick={() => setCreating(v => !v)}>{creating ? 'Cancel' : '+ New drill'}</Button>
 
-      {error && <div className="history-empty">{error}</div>}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
 
       {creating && (
-        <div className="pcd-card">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', flex: 1, minWidth: 200 }}>
-              Title
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Focus stroke (display)
-              <select value={form.focusStroke} onChange={e => setForm(f => ({ ...f, focusStroke: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}>
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-52">
+              <Field label="Title">
+                <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              </Field>
+            </div>
+            <Field label="Focus stroke (display)">
+              <select className={selectCls} value={form.focusStroke} onChange={e => setForm(f => ({ ...f, focusStroke: e.target.value }))}>
                 {STROKES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Skill group it targets
-              <select value={form.skillKey} onChange={e => setForm(f => ({ ...f, skillKey: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}>
+            </Field>
+            <Field label="Skill group it targets">
+              <select className={selectCls} value={form.skillKey} onChange={e => setForm(f => ({ ...f, skillKey: e.target.value }))}>
                 {SKILL_KEYS.map(k => <option key={k} value={k}>{SKILL_LABELS[k] || k}</option>)}
               </select>
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Difficulty
-              <select value={form.difficulty} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}>
+            </Field>
+            <Field label="Difficulty">
+              <select className={selectCls} value={form.difficulty} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}>
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
               </select>
-            </label>
+            </Field>
           </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', marginTop: 12 }}>
-            Description
-            <textarea rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', resize: 'vertical' }} />
-          </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Volume (display)
-              <input placeholder="e.g. 1,000 balls" value={form.defaultVolume} onChange={e => setForm(f => ({ ...f, defaultVolume: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Default frequency/week
-              <input type="number" value={form.defaultFrequencyPerWeek} onChange={e => setForm(f => ({ ...f, defaultFrequencyPerWeek: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', width: 90 }} />
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-              Default duration (weeks)
-              <input type="number" value={form.defaultDurationWeeks} onChange={e => setForm(f => ({ ...f, defaultDurationWeeks: e.target.value }))}
-                style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', width: 90 }} />
-            </label>
+          <div className="mt-3">
+            <Field label="Description">
+              <Textarea rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+            </Field>
           </div>
-          <button className="pcd-btn-primary" style={{ marginTop: 14 }} disabled={saving || !form.title.trim()} onClick={handleCreate}>{saving ? 'Saving…' : 'Save drill'}</button>
-        </div>
+          <div className="flex flex-wrap gap-3 mt-3">
+            <Field label="Volume (display)">
+              <Input placeholder="e.g. 1,000 balls" value={form.defaultVolume} onChange={e => setForm(f => ({ ...f, defaultVolume: e.target.value }))} />
+            </Field>
+            <Field label="Default frequency/week">
+              <Input type="number" value={form.defaultFrequencyPerWeek} onChange={e => setForm(f => ({ ...f, defaultFrequencyPerWeek: e.target.value }))} className="w-24" />
+            </Field>
+            <Field label="Default duration (weeks)">
+              <Input type="number" value={form.defaultDurationWeeks} onChange={e => setForm(f => ({ ...f, defaultDurationWeeks: e.target.value }))} className="w-24" />
+            </Field>
+          </div>
+          <Button className="mt-4" disabled={saving || !form.title.trim()} onClick={handleCreate}>{saving ? 'Saving…' : 'Save drill'}</Button>
+        </Card>
       )}
 
-      {drills.length === 0 && <div className="history-empty">No drills yet — add the first one above.</div>}
+      {drills.length === 0 && <div className="text-sm text-muted-foreground">No drills yet — add the first one above.</div>}
 
       {drills.length > 0 && (
-        <div className="pcd-stat-grid n2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {drills.map(d => {
             const stat = statsByDrill.get(d.id);
             const avgRate = stat ? Math.round(stat.rates.reduce((s, r) => s + r, 0) / stat.rates.length) : null;
             const on = !!favs[d.id];
             return (
-              <div key={d.id} className="pcd-card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--info)' }}>{SKILL_LABELS[d.skillKey] || d.skillKey || d.focusStroke || 'General'}</div>
-                    <div style={{ font: "700 17px/1.25 'Archivo', sans-serif", letterSpacing: '-.02em', marginTop: 11 }}>{d.title}</div>
+              <Card key={d.id} className="p-4 flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold uppercase tracking-wider text-blue-400">{SKILL_LABELS[d.skillKey] || d.skillKey || d.focusStroke || 'General'}</div>
+                    <div className="font-display font-extrabold text-base tracking-tighter mt-2">{d.title}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button className={`pcd-fav-btn${on ? ' active' : ''}`} onClick={() => setFavs(f => ({ ...f, [d.id]: !on }))}>★</button>
-                    <button className="pcd-fav-btn" onClick={() => handleDelete(d.id)} title="Delete">✕</button>
+                  <div className="flex gap-1 shrink-0">
+                    <button className={`w-7 h-7 rounded-sm flex items-center justify-center hover:bg-secondary ${on ? 'text-primary' : 'text-muted-foreground'}`} onClick={() => setFavs(f => ({ ...f, [d.id]: !on }))}>★</button>
+                    <button className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-destructive" onClick={() => handleDelete(d.id)} title="Delete">✕</button>
                   </div>
                 </div>
-                {d.description && <div style={{ font: "400 13px/1.55 'Archivo', sans-serif", color: 'var(--text2)' }}>{d.description}</div>}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {[d.defaultVolume, d.defaultFrequencyPerWeek && `${d.defaultFrequencyPerWeek}×/WEEK`, d.defaultDurationWeeks && `${d.defaultDurationWeeks} WEEKS`, d.difficulty?.toUpperCase()].filter(Boolean).map((tag, i) => (
-                    <span key={i} className="pcd-badge sm">{tag}</span>
+                {d.description && <div className="text-sm text-muted-foreground">{d.description}</div>}
+                <div className="flex flex-wrap gap-2">
+                  {[d.defaultVolume, d.defaultFrequencyPerWeek && `${d.defaultFrequencyPerWeek}×/week`, d.defaultDurationWeeks && `${d.defaultDurationWeeks} weeks`, d.difficulty].filter(Boolean).map((tag, i) => (
+                    <Badge key={i} variant="secondary">{tag}</Badge>
                   ))}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', paddingTop: 14, borderTop: '1px solid var(--border2)', marginTop: 'auto' }}>
-                  <div style={{ flex: 1, minWidth: 130 }}>
-                    <div style={{ font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: '.1em', color: 'var(--text2)' }}>SUCCESS RATE</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginTop: 9 }}>
-                      <div style={{ font: "700 20px/1 'IBM Plex Mono', monospace", color: avgRate == null ? 'var(--text3)' : (avgRate >= 60 ? 'var(--accent)' : 'var(--opp)') }}>{avgRate == null ? '—' : `${avgRate}%`}</div>
-                      <div style={{ font: "400 10px/1 'IBM Plex Mono', monospace", color: 'var(--text3)' }}>{stat ? `${stat.sampleImproved} OF ${stat.sampleTotal} IMPROVED` : 'NOT YET MEASURED'}</div>
+                <div className="flex items-center gap-3 pt-3 border-t border-border mt-auto">
+                  <div className="flex-1 min-w-32">
+                    <div className="text-xs text-muted-foreground">Success rate</div>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <div className={`font-display font-extrabold text-xl ${avgRate == null ? 'text-muted-foreground' : (avgRate >= 60 ? 'text-primary' : 'text-destructive')}`}>{avgRate == null ? '—' : `${avgRate}%`}</div>
+                      <div className="text-[10px] text-muted-foreground">{stat ? `${stat.sampleImproved} of ${stat.sampleTotal} improved` : 'Not yet measured'}</div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

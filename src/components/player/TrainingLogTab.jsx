@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as api from '../../api';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Textarea } from '@/components/primitives/textarea';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -13,13 +17,22 @@ const PERIODS = [
   { id: '1y', label: '1 Year', days: 365 },
 ];
 
-const BAR_COLORS = ['var(--accent)', 'var(--info)', 'var(--win)', 'var(--forced)', 'var(--opp)'];
+const BAR_COLORS = ['bg-primary', 'bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-destructive'];
 
-// Training log — real training_sessions data (Phase 3), segment-scoped.
-// Volume-by-focus-area is a simple count of sessions tagging each free-form
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+// Training log — real training_sessions data, segment-scoped. Volume-by-
+// focus-area is a simple count of sessions tagging each free-form
 // focus_areas string within the selected period; there's no fixed shot-type
-// taxonomy until drill_library (Phase 6) exists, so this counts whatever tags
-// the player/coach actually logged rather than assuming a fixed stroke list.
+// taxonomy until a drill library exists, so this counts whatever tags the
+// player/coach actually logged rather than assuming a fixed stroke list.
 export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = true }) {
   const [sessions, setSessions] = useState(null);
   const [error, setError] = useState('');
@@ -53,7 +66,7 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
     const max = Math.max(1, ...counts.values());
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([name, count], i) => ({ name, count, pct: Math.round((count / max) * 100), color: BAR_COLORS[i % BAR_COLORS.length] }));
+      .map(([name, count], i) => ({ name, count, pct: Math.round((count / max) * 100), colorCls: BAR_COLORS[i % BAR_COLORS.length] }));
   }, [inPeriod]);
 
   async function handleLog() {
@@ -77,103 +90,110 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
     }
   }
 
-  if (sessions === null) return <div className="history-empty">Loading training log…</div>;
+  if (sessions === null) return <div className="text-sm text-muted-foreground">Loading training log…</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div className="pcd-pill-row" style={{ width: 'fit-content' }}>
+    <div className="space-y-4">
+      <div className="inline-flex border border-border rounded-sm p-1 bg-card gap-1 w-fit">
         {PERIODS.map(p => (
-          <button key={p.id} className={`pcd-pill${period === p.id ? ' active' : ''}`} onClick={() => setPeriod(p.id)}>{p.label}</button>
+          <button
+            key={p.id}
+            className={`px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors ${period === p.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setPeriod(p.id)}
+          >
+            {p.label}
+          </button>
         ))}
       </div>
 
-      {error && <div className="history-empty">{error}</div>}
+      {error && <div className="text-sm text-muted-foreground">{error}</div>}
 
-      <div className="pcd-stat-grid n4">
-        <div className="pcd-stat-card">
-          <div className="pcd-stat-card-label">Sessions</div>
-          <div className="pcd-stat-card-value">{inPeriod.length}</div>
-          <div className="pcd-stat-card-trend neutral">{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
-        </div>
-        <div className="pcd-stat-card">
-          <div className="pcd-stat-card-label">Focus areas logged</div>
-          <div className="pcd-stat-card-value">{volumeByFocus.length}</div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Sessions</div>
+          <div className="font-display font-extrabold text-xl">{inPeriod.length}</div>
+          <div className="text-xs text-muted-foreground mt-1">{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Focus areas logged</div>
+          <div className="font-display font-extrabold text-xl">{volumeByFocus.length}</div>
+        </Card>
       </div>
 
-      <div className="pcd-card">
-        <div className="pcd-card-title">Log a session</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Date
-            <input type="date" value={form.sessionDate} onChange={e => setForm(f => ({ ...f, sessionDate: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Duration (min)
-            <input type="number" value={form.durationMinutes} onChange={e => setForm(f => ({ ...f, durationMinutes: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', width: 100 }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', flex: 1, minWidth: 180 }}>
-            Focus areas (comma-separated)
-            <input type="text" placeholder="forehand, serve" value={form.focusAreas} onChange={e => setForm(f => ({ ...f, focusAreas: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Intensity
-            <select value={form.intensity} onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}>
-              <option value="light">Light</option>
-              <option value="moderate">Moderate</option>
-              <option value="high">High</option>
-            </select>
-          </label>
-        </div>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)', marginTop: 12 }}>
-          Notes
-          <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-            style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', resize: 'vertical' }} />
-        </label>
-        <button className="pcd-btn-primary" style={{ marginTop: 14 }} disabled={saving} onClick={handleLog}>{saving ? 'Saving…' : 'Log session'}</button>
-      </div>
-
-      <div className="pcd-stat-grid n2">
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Volume by focus area</div>
-          <div className="pcd-card-sub" style={{ marginBottom: 22 }}>{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
-          {volumeByFocus.length === 0 && <div className="history-empty">No sessions logged with focus areas in this period.</div>}
-          {volumeByFocus.map(v => (
-            <div key={v.name} className="pcd-bar-row">
-              <div className="pcd-bar-head">
-                <span className="pcd-bar-name">{v.name}</span>
-                <span className="pcd-bar-value" style={{ color: v.color }}>{v.count}</span>
-              </div>
-              <div className="pcd-bar-track"><div className="pcd-bar-fill" style={{ width: `${v.pct}%`, background: v.color }} /></div>
+      {isOwnDashboard && (
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm">Log a session</div>
+          <div className="flex flex-wrap gap-3 mt-3">
+            <Field label="Date">
+              <Input type="date" value={form.sessionDate} onChange={e => setForm(f => ({ ...f, sessionDate: e.target.value }))} className="w-40" />
+            </Field>
+            <Field label="Duration (min)">
+              <Input type="number" value={form.durationMinutes} onChange={e => setForm(f => ({ ...f, durationMinutes: e.target.value }))} className="w-24" />
+            </Field>
+            <div className="flex-1 min-w-44">
+              <Field label="Focus areas (comma-separated)">
+                <Input type="text" placeholder="forehand, serve" value={form.focusAreas} onChange={e => setForm(f => ({ ...f, focusAreas: e.target.value }))} />
+              </Field>
             </div>
-          ))}
-        </div>
+            <Field label="Intensity">
+              <select
+                className="rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9"
+                value={form.intensity}
+                onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
+              >
+                <option value="light">Light</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
+            </Field>
+          </div>
+          <div className="mt-3">
+            <Field label="Notes">
+              <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            </Field>
+          </div>
+          <Button className="mt-3" disabled={saving} onClick={handleLog}>{saving ? 'Saving…' : 'Log session'}</Button>
+        </Card>
+      )}
 
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Session log</div>
-          <div className="pcd-card-sub" style={{ marginBottom: 20 }}>Most recent first</div>
-          {inPeriod.length === 0 && <div className="history-empty">No sessions in this period.</div>}
-          {inPeriod.map(s => (
-            <div key={s.id} className="pcd-timeline-row">
-              <div className="pcd-timeline-date-col">
-                <div className="pcd-timeline-date">{formatDate(s.sessionDate)}</div>
-                {s.durationMinutes && <div className="pcd-timeline-dur">{s.durationMinutes} min</div>}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm">Volume by focus area</div>
+          <div className="text-xs text-muted-foreground mb-4">{PERIODS.find(p => p.id === period).label.toLowerCase()}</div>
+          {volumeByFocus.length === 0 && <div className="text-sm text-muted-foreground">No sessions logged with focus areas in this period.</div>}
+          <div className="space-y-3">
+            {volumeByFocus.map(v => (
+              <div key={v.name}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-semibold">{v.name}</span>
+                  <span className="font-bold">{v.count}</span>
+                </div>
+                <div className="h-2 rounded-sm bg-muted"><div className={`h-full rounded-sm ${v.colorCls}`} style={{ width: `${v.pct}%` }} /></div>
               </div>
-              <div className="pcd-timeline-rail">
-                <div className="pcd-timeline-dot" style={{ background: 'var(--accent)' }} />
-                <div className="pcd-timeline-line" />
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm">Session log</div>
+          <div className="text-xs text-muted-foreground mb-4">Most recent first</div>
+          {inPeriod.length === 0 && <div className="text-sm text-muted-foreground">No sessions in this period.</div>}
+          <div className="space-y-3">
+            {inPeriod.map(s => (
+              <div key={s.id} className="flex gap-3">
+                <div className="w-16 shrink-0 text-right">
+                  <div className="text-xs font-bold">{formatDate(s.sessionDate)}</div>
+                  {s.durationMinutes && <div className="text-[10px] text-muted-foreground">{s.durationMinutes} min</div>}
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">{(s.focusAreas || []).join(', ') || 'General session'}</div>
+                  {s.notes && <div className="text-xs text-muted-foreground mt-0.5">{s.notes}</div>}
+                </div>
               </div>
-              <div className="pcd-timeline-body">
-                <div className="pcd-timeline-title">{(s.focusAreas || []).join(', ') || 'General session'}</div>
-                {s.notes && <div className="pcd-timeline-note">{s.notes}</div>}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Card>
       </div>
     </div>
   );

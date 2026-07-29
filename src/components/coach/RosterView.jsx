@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as api from '../../api';
-const ROSTER_COLS = 'minmax(140px,1fr) 60px 60px 128px 84px 118px 130px';
 import { useAuth } from '../../context/AuthContext';
 import { computeRankProgress } from '../../lib/segments';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Badge } from '@/components/primitives/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
 function initials(name) {
   if (!name) return '?';
@@ -15,7 +19,7 @@ function initials(name) {
 // (small roster sizes, same "each component owns its slice" pattern the
 // player-side tabs already use) rather than one giant fan-out at the top.
 function RosterRow({ player }) {
-  const seg = player.segments[0]; // most-recently-updated segment (segments.js sorts most-recent-first)
+  const seg = player.segments[0]; // most-recently-updated segment
   const [recent, setRecent] = useState(null);
   const [goal, setGoal] = useState(null);
   const [hours30d, setHours30d] = useState(null);
@@ -53,43 +57,43 @@ function RosterRow({ player }) {
           paceOn = progress >= elapsedPct - 3;
         }
       }
-      paceLabel = paceOn ? 'ON PACE' : 'BEHIND';
+      paceLabel = paceOn ? 'On pace' : 'Behind';
     }
   }
 
   return (
-    <div className="pcd-grid-body-row" style={{ gridTemplateColumns: ROSTER_COLS, minWidth: 820 }}>
-      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 11 }}>
-        <span style={{ width: 32, height: 32, borderRadius: 9, flex: 'none', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: "600 11px/1 'IBM Plex Mono', monospace", color: 'var(--info)' }}>{initials(player.displayName)}</span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ font: "600 14px/1.2 'Archivo', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.displayName}</div>
-          <div style={{ font: "400 10px/1.3 'IBM Plex Mono', monospace", color: 'var(--text3)', marginTop: 5, whiteSpace: 'nowrap' }}>{seg ? `${seg.category} ${seg.subcategory}` : 'NO SEGMENT'}</div>
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center text-xs font-bold shrink-0">{initials(player.displayName)}</span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">{player.displayName}</div>
+            <div className="text-[10px] text-muted-foreground whitespace-nowrap">{seg ? `${seg.category} ${seg.subcategory}` : 'No segment'}</div>
+          </div>
         </div>
-      </div>
-      <div style={{ textAlign: 'right', font: "700 15px/1 'IBM Plex Mono', monospace" }}>{seg ? seg.latest.rank : '—'}</div>
-      <div style={{ textAlign: 'right', font: "500 13px/1 'IBM Plex Mono', monospace", color: 'var(--text2)' }}>{goal?.targetRank ?? '—'}</div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {recent === null ? <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: 'var(--text3)' }}>…</span> :
-          recent.length === 0 ? <span style={{ font: "400 11px/1 'IBM Plex Mono', monospace", color: 'var(--text3)' }}>—</span> :
-          recent.map((won, i) => (
-            <span key={i} style={{ width: 20, height: 20, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', font: "700 10px/1 'IBM Plex Mono', monospace", background: won ? 'rgba(198,226,61,.16)' : 'rgba(255,107,90,.16)', color: won ? 'var(--accent)' : 'var(--opp)' }}>{won ? 'W' : 'L'}</span>
-          ))}
-      </div>
-      <div style={{ textAlign: 'right', font: "500 12px/1 'IBM Plex Mono', monospace", color: 'var(--text2)' }}>{hours30d == null ? '—' : `${hours30d}h`}</div>
-      <div style={{ textAlign: 'right', font: "600 11px/1 'IBM Plex Mono', monospace", letterSpacing: '.06em', color: paceOn == null ? 'var(--text3)' : (paceOn ? 'var(--accent)' : 'var(--opp)') }}>{paceLabel}</div>
-      <div style={{ justifySelf: 'end' }}>
-        <Link to={`/coach/players/${player.id}/dashboard`} className="pcd-btn-secondary" style={{ display: 'inline-block', fontSize: 11, letterSpacing: '.06em' }}>DASHBOARD →</Link>
-      </div>
-    </div>
+      </TableCell>
+      <TableCell className="text-right font-bold">{seg ? seg.latest.rank : '—'}</TableCell>
+      <TableCell className="text-right text-muted-foreground">{goal?.targetRank ?? '—'}</TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          {recent === null ? <span className="text-xs text-muted-foreground">…</span> :
+            recent.length === 0 ? <span className="text-xs text-muted-foreground">—</span> :
+            recent.map((won, i) => (
+              <span key={i} className={`w-5 h-5 rounded-sm flex items-center justify-center text-[10px] font-bold ${won ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{won ? 'W' : 'L'}</span>
+            ))}
+        </div>
+      </TableCell>
+      <TableCell className="text-right text-muted-foreground">{hours30d == null ? '—' : `${hours30d}h`}</TableCell>
+      <TableCell className={`text-right text-xs font-bold ${paceOn == null ? 'text-muted-foreground' : (paceOn ? 'text-primary' : 'text-destructive')}`}>{paceLabel}</TableCell>
+      <TableCell className="text-right">
+        <Link to={`/coach/players/${player.id}/dashboard`} className="text-xs font-semibold text-primary hover:underline whitespace-nowrap">Dashboard &rarr;</Link>
+      </TableCell>
+    </TableRow>
   );
 }
 
-// Roster + the real link-management flow (search/send/accept/decline/unlink
-// — unchanged from the old CoachPlayersPage, just relocated here since a
-// coach's landing page is now this one, not that one). Each row links to
-// the real Player Coaching Dashboard (/coach/players/:id/dashboard) — the
-// same Overview/Tournaments/Training/Analytics/Recommendations/Progress a
-// player sees for themselves, per the design's own claim.
+// Roster + the real link-management flow (search/send/accept/decline/unlink).
+// Each row links to the real Player Coaching Dashboard.
 export default function RosterView({ roster }) {
   const { user } = useAuth();
   const [links, setLinks] = useState(null);
@@ -144,67 +148,83 @@ export default function RosterView({ roster }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-        <button className="pcd-btn-secondary" onClick={() => setShowSearch(v => !v)}>{showSearch ? 'Close' : '+ Find a player'}</button>
-        {pending.length > 0 && <div className="pcd-badge info">{pending.length} PENDING</div>}
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" variant="outline" onClick={() => setShowSearch(v => !v)}>{showSearch ? 'Close' : '+ Find a player'}</Button>
+        {pending.length > 0 && <Badge variant="secondary">{pending.length} pending</Badge>}
       </div>
 
-      {actionError && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{actionError}</div>}
+      {actionError && <div className="text-destructive text-xs">{actionError}</div>}
 
       {showSearch && (
-        <div className="pcd-card">
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <input
+        <Card className="p-4 sm:p-6">
+          <div className="flex gap-2 flex-wrap">
+            <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="Search by name or AITA reg…"
-              style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }}
+              className="flex-1 min-w-52"
             />
-            <button className="pcd-btn-primary" onClick={handleSearch} disabled={searching || !searchQuery.trim()}>{searching ? 'Searching…' : 'Search'}</button>
+            <Button onClick={handleSearch} disabled={searching || !searchQuery.trim()}>{searching ? 'Searching…' : 'Search'}</Button>
           </div>
           {searchResults.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+            <div className="space-y-2 mt-4">
               {searchResults.map(p => (
-                <div key={p.id} className="pcd-entry-row">
-                  <div style={{ flex: 1, minWidth: 180 }}>
-                    <div style={{ font: "600 14px/1.2 'Archivo', sans-serif" }}>{p.displayName}</div>
-                    <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 6 }}>
+                <div key={p.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50">
+                  <div className="flex-1 min-w-40">
+                    <div className="text-sm font-semibold">{p.displayName}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
                       {[p.aitaReg, p.stateAbbr, p.ranking && `Rank ${p.ranking}`, p.clubName].filter(Boolean).join(' · ')}
                     </div>
                   </div>
-                  <button className="pcd-btn-primary" onClick={() => handleSendRequest(p.id)}>Send request</button>
+                  <Button size="sm" onClick={() => handleSendRequest(p.id)}>Send request</Button>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {pending.length > 0 && (
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 12 }}>Sent requests</div>
-          {pending.map(l => (
-            <div key={l.id} className="pcd-entry-row">
-              <div style={{ flex: 1, font: "600 14px/1.2 'Archivo', sans-serif" }}>{l.player?.displayName || '—'}</div>
-              <div className="pcd-badge">AWAITING RESPONSE</div>
-              <button className="pcd-btn-secondary" onClick={() => handleUnlink(l.id)}>Cancel</button>
-            </div>
-          ))}
-        </div>
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm mb-3">Sent requests</div>
+          <div className="space-y-2">
+            {pending.map(l => (
+              <div key={l.id} className="flex items-center gap-3 p-3 rounded-sm border border-border bg-secondary/50">
+                <div className="flex-1 text-sm font-semibold">{l.player?.displayName || '—'}</div>
+                <Badge variant="secondary">Awaiting response</Badge>
+                <Button size="sm" variant="outline" onClick={() => handleUnlink(l.id)}>Cancel</Button>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
-      <div className="pcd-hscroll-table">
-        <div className="pcd-grid-head-row" style={{ gridTemplateColumns: ROSTER_COLS, minWidth: 820 }}>
-          <div>Player</div><div style={{ textAlign: 'right' }}>Rank</div><div style={{ textAlign: 'right' }}>Goal</div>
-          <div>Recent form</div><div style={{ textAlign: 'right' }}>Training</div><div style={{ textAlign: 'right' }}>Pace</div><div />
-        </div>
-        {roster.length === 0 && <div className="history-empty">No players linked yet — use "Find a player" above.</div>}
-        {roster.map(p => <RosterRow key={p.id} player={p} />)}
-      </div>
+      <Card className="p-4 sm:p-6 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Player</TableHead>
+              <TableHead className="text-right">Rank</TableHead>
+              <TableHead className="text-right">Goal</TableHead>
+              <TableHead>Recent form</TableHead>
+              <TableHead className="text-right">Training</TableHead>
+              <TableHead className="text-right">Pace</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roster.length === 0 ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No players linked yet — use "Find a player" above.</TableCell></TableRow>
+            ) : (
+              roster.map(p => <RosterRow key={p.id} player={p} />)
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
-      <div style={{ font: "400 12px/1.5 'Archivo', sans-serif", color: 'var(--text3)', maxWidth: '76ch' }}>
+      <div className="text-xs text-muted-foreground max-w-prose">
         Opening a player's dashboard gives you their full Overview, Tournaments, Training, Analytics, Recommendations
         and Progress — the same view they see, read-only.
       </div>

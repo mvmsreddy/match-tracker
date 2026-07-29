@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
 import { minEligibleAgeGroup } from '../utils/eligibility';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Textarea } from '@/components/primitives/textarea';
+import { Badge } from '@/components/primitives/badge';
 
 // AITA Rules KB — Annual Tournament Limits (junior circuit only; count is
 // combined across all age groups a player enters, per §2). Adult ("Open")
@@ -49,16 +51,26 @@ function getAge(dob) {
 
 function Row({ label, value }) {
   return (
-    <div className="profile-row">
-      <span className="profile-row-label">{label}</span>
-      <span className="profile-row-value">{value || value === 0 ? value : '—'}</span>
+    <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold text-right">{value || value === 0 ? value : '—'}</span>
     </div>
   );
 }
 
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9';
+
 export default function ProfilePage() {
   const { user, refreshProfile } = useAuth();
-  const { theme } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState('bio');
@@ -171,7 +183,7 @@ export default function ProfilePage() {
   const isOrganizer = form.role === 'organizer';
   const age = getAge(form.dateOfBirth);
 
-  // "Navy" design system — annual entry allowance (real count, not decorative)
+  // Annual entry allowance (real count, not decorative)
   const [entryCount, setEntryCount] = useState(null);
   useEffect(() => {
     if (!isPlayer || !user.aitaReg) return;
@@ -195,461 +207,291 @@ export default function ProfilePage() {
     : [];
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="profile" /> : <TopNav />}
-
-      <div className="page-scroll">
-        <div className="profile-card">
-          <div className="profile-avatar-lg">{getInitials(form.displayName)}</div>
-          <div className="profile-card-info">
-            <h1 className="profile-name">{form.displayName || 'Unnamed Player'}</h1>
-            <div className="profile-meta-row">
-              <span className={`role-badge role-badge-${form.role}`}>
-                {ROLE_LABELS[form.role] || form.role}
-              </span>
-              {user.isVerified && <span className="profile-verified-chip">✓ Verified</span>}
-            </div>
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto space-y-4">
+      <Card className="p-4 sm:p-6 flex flex-wrap items-center gap-4">
+        <span className="w-16 h-16 rounded-sm bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold text-xl shrink-0">
+          {getInitials(form.displayName)}
+        </span>
+        <div className="flex-1 min-w-40">
+          <h1 className="font-display font-extrabold text-xl tracking-tighter">{form.displayName || 'Unnamed Player'}</h1>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Badge variant="secondary">{ROLE_LABELS[form.role] || form.role}</Badge>
+            {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent">&#10003; Verified</Badge>}
           </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => (editing ? handleCancel() : setEditing(true))}>
+          {editing ? 'Cancel' : '✎ Edit'}
+        </Button>
+      </Card>
+
+      {missingPlayerFields.length > 0 && (
+        <div className="flex items-center gap-2.5 rounded-sm border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
+          <span className="text-lg shrink-0">⚠</span>
+          <span>
+            Complete your profile to enter tournaments.
+            Missing: <strong>{missingPlayerFields.join(', ')}</strong>.
+          </span>
+        </div>
+      )}
+
+      {!editing && isPlayer && ageGroup && entryCap != null && entryCount !== null && (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Annual Entry Allowance</div>
+          <div className="flex items-baseline gap-2 mt-2">
+            <div className="font-display font-extrabold text-2xl">{entryCount}</div>
+            <div className="text-xs text-muted-foreground">of {entryCap} {ageGroup} tournaments used this year</div>
+          </div>
+          <div className="h-2 rounded-sm bg-muted mt-3">
+            <div className="h-full rounded-sm bg-primary" style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }} />
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            {Math.max(0, entryCap - entryCount)} entr{entryCap - entryCount === 1 ? 'y' : 'ies'} remain. Two age groups at
+            one venue count as two tournaments — this is advisory and doesn't block entry.
+          </div>
+        </Card>
+      )}
+
+      {!editing && (
+        <div className="inline-flex border border-border rounded-sm p-1 bg-card gap-1">
           <button
             type="button"
-            className="action-btn profile-edit-btn"
-            onClick={() => editing ? handleCancel() : setEditing(true)}
+            className={`px-4 py-1.5 rounded-sm text-xs font-semibold transition-colors ${tab === 'bio' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setTab('bio')}
           >
-            {editing ? 'Cancel' : '✎ Edit'}
+            Bio
+          </button>
+          <button
+            type="button"
+            className={`px-4 py-1.5 rounded-sm text-xs font-semibold transition-colors ${tab === 'ratings' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setTab('ratings')}
+          >
+            Ratings
           </button>
         </div>
+      )}
 
-        {missingPlayerFields.length > 0 && (
-          <div style={{
-            background: '#7c3a00', color: '#ffd9b0',
-            borderRadius: 8, padding: '10px 14px',
-            margin: '0 16px 12px', fontSize: 13,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ fontSize: 18 }}>⚠</span>
-            <span>
-              Complete your profile to enter tournaments.
-              Missing: <strong>{missingPlayerFields.join(', ')}</strong>.
-            </span>
-          </div>
-        )}
-
-        {!editing && isPlayer && ageGroup && entryCap != null && entryCount !== null && (
-          <div className="entry-allowance-card">
-            <div className="dashboard-section-title">Annual Entry Allowance</div>
-            <div className="entry-allowance-figure">
-              <div className="entry-allowance-value">{entryCount}</div>
-              <div className="entry-allowance-sub">of {entryCap} {ageGroup} tournaments used this year</div>
-            </div>
-            <div className="entry-allowance-track">
-              <div
-                className="entry-allowance-fill"
-                style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }}
-              />
-            </div>
-            <div className="entry-allowance-note">
-              {Math.max(0, entryCap - entryCount)} entr{entryCap - entryCount === 1 ? 'y' : 'ies'} remain. Two age groups at
-              one venue count as two tournaments — this is advisory and doesn't block entry.
-            </div>
-          </div>
-        )}
-
-        {!editing && (
-          <div className="profile-tabs">
-            <button
-              type="button"
-              className={'profile-tab-btn' + (tab === 'bio' ? ' active' : '')}
-              onClick={() => setTab('bio')}
-            >
-              Bio
-            </button>
-            <button
-              type="button"
-              className={'profile-tab-btn' + (tab === 'ratings' ? ' active' : '')}
-              onClick={() => setTab('ratings')}
-            >
-              Ratings
-            </button>
-          </div>
-        )}
-
-        {editing ? (
-          <form onSubmit={handleSave} className="profile-form">
-
-            {/* Basic Info */}
-            <div className="profile-section">
-              <div className="profile-section-label">Basic Info</div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Display Name *</label>
-                  <input
-                    value={form.displayName}
-                    onChange={e => handleChange('displayName', e.target.value)}
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div className="field">
-                  <label>Role</label>
-                  <div className="profile-role-row">
-                    {['player', 'coach', 'organizer'].map(r => (
-                      <button
-                        key={r}
-                        type="button"
-                        className={'profile-role-btn' + (form.role === r ? ' active' : '')}
-                        onClick={() => handleChange('role', r)}
-                      >
-                        {ROLE_LABELS[r]}
-                      </button>
-                    ))}
-                  </div>
+      {editing ? (
+        <form onSubmit={handleSave} className="space-y-4">
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Basic Info</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Display Name *">
+                <Input value={form.displayName} onChange={e => handleChange('displayName', e.target.value)} placeholder="Your full name" />
+              </Field>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Role</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {['player', 'coach', 'organizer'].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`px-2 py-1.5 rounded-sm text-xs font-semibold border ${form.role === r ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                      onClick={() => handleChange('role', r)}
+                    >
+                      {ROLE_LABELS[r]}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
+          </Card>
 
-            {/* Contact & Location */}
-            <div className="profile-section">
-              <div className="profile-section-label">Contact & Location</div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Phone</label>
-                  <input
-                    value={form.phone}
-                    onChange={e => handleChange('phone', e.target.value)}
-                    placeholder="Phone number"
-                  />
-                </div>
-                <div className="field">
-                  <label>Home Court</label>
-                  <input
-                    value={form.homeCourt}
-                    onChange={e => handleChange('homeCourt', e.target.value)}
-                    placeholder="e.g. SLTA Academy Courts"
-                  />
-                </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Nationality</label>
-                  <input
-                    value={form.nationality}
-                    onChange={e => handleChange('nationality', e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>Country</label>
-                  <input
-                    value={form.country}
-                    onChange={e => handleChange('country', e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>City</label>
-                  <input
-                    value={form.city}
-                    onChange={e => handleChange('city', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="t-form-row">
-                <div className="field">
-                  <label>Region</label>
-                  <input
-                    value={form.region}
-                    onChange={e => handleChange('region', e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>Postal Code</label>
-                  <input
-                    value={form.postalCode}
-                    onChange={e => handleChange('postalCode', e.target.value)}
-                  />
-                </div>
-              </div>
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Contact &amp; Location</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Phone"><Input value={form.phone} onChange={e => handleChange('phone', e.target.value)} placeholder="Phone number" /></Field>
+              <Field label="Home Court"><Input value={form.homeCourt} onChange={e => handleChange('homeCourt', e.target.value)} placeholder="e.g. SLTA Academy Courts" /></Field>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+              <Field label="Nationality"><Input value={form.nationality} onChange={e => handleChange('nationality', e.target.value)} /></Field>
+              <Field label="Country"><Input value={form.country} onChange={e => handleChange('country', e.target.value)} /></Field>
+              <Field label="City"><Input value={form.city} onChange={e => handleChange('city', e.target.value)} /></Field>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <Field label="Region"><Input value={form.region} onChange={e => handleChange('region', e.target.value)} /></Field>
+              <Field label="Postal Code"><Input value={form.postalCode} onChange={e => handleChange('postalCode', e.target.value)} /></Field>
+            </div>
+          </Card>
 
-            {/* Player Fields */}
-            {(isPlayer || isCoach) && (
-              <div className="profile-section">
-                <div className="profile-section-label">
-                  {isPlayer ? 'Player Details' : 'Coaching Details'}
+          {(isPlayer || isCoach) && (
+            <Card className="p-4 sm:p-6">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">
+                {isPlayer ? 'Player Details' : 'Coaching Details'}
+              </div>
+              {isPlayer && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="AITA Registration No."><Input value={form.aitaReg} onChange={e => handleChange('aitaReg', e.target.value)} placeholder="e.g. 442320" /></Field>
+                  <Field label="Current AITA Ranking"><Input type="number" value={form.ranking} onChange={e => handleChange('ranking', e.target.value)} placeholder="e.g. 17" min="1" /></Field>
                 </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <Field label="State">
+                  <select className={selectCls} value={form.stateAbbr} onChange={e => handleChange('stateAbbr', e.target.value)}>
+                    <option value="">Select state…</option>
+                    {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </Field>
                 {isPlayer && (
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>AITA Registration No.</label>
-                      <input
-                        value={form.aitaReg}
-                        onChange={e => handleChange('aitaReg', e.target.value)}
-                        placeholder="e.g. 442320"
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Current AITA Ranking</label>
-                      <input
-                        type="number"
-                        value={form.ranking}
-                        onChange={e => handleChange('ranking', e.target.value)}
-                        placeholder="e.g. 17"
-                        min="1"
-                      />
-                    </div>
-                  </div>
+                  <Field label="Date of Birth">
+                    <Input type="date" value={form.dateOfBirth} onChange={e => handleChange('dateOfBirth', e.target.value)} />
+                  </Field>
                 )}
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>State</label>
-                    <select value={form.stateAbbr} onChange={e => handleChange('stateAbbr', e.target.value)}>
-                      <option value="">Select state…</option>
-                      {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  {isPlayer && (
-                    <div className="field">
-                      <label>Date of Birth</label>
-                      <input
-                        type="date"
-                        value={form.dateOfBirth}
-                        onChange={e => handleChange('dateOfBirth', e.target.value)}
-                      />
-                    </div>
-                  )}
-                  {isPlayer && (
-                    <div className="field">
-                      <label>Gender</label>
-                      <select value={form.gender} onChange={e => handleChange('gender', e.target.value)}>
-                        <option value="">Select…</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                      </select>
-                    </div>
-                  )}
-                  {isCoach && (
-                    <div className="field">
-                      <label>Club / Academy</label>
-                      <input
-                        value={form.clubName}
-                        onChange={e => handleChange('clubName', e.target.value)}
-                        placeholder="Club or academy name"
-                      />
-                    </div>
-                  )}
-                </div>
                 {isPlayer && (
-                  <div className="t-form-row">
-                    <div className="field">
-                      <label>Height</label>
-                      <input
-                        value={form.height}
-                        onChange={e => handleChange('height', e.target.value)}
-                        placeholder={'e.g. 5\'11" or 180 cm'}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Plays</label>
-                      <select value={form.plays} onChange={e => handleChange('plays', e.target.value)}>
-                        <option value="">Select…</option>
-                        <option value="R">Right-handed</option>
-                        <option value="L">Left-handed</option>
-                      </select>
-                    </div>
-                    <div className="field">
-                      <label>Backhand</label>
-                      <select value={form.backhand} onChange={e => handleChange('backhand', e.target.value)}>
-                        <option value="">Select…</option>
-                        <option value="1H">One-handed</option>
-                        <option value="2H">Two-handed</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Organizer Fields */}
-            {isOrganizer && (
-              <div className="profile-section">
-                <div className="profile-section-label">Organizer Details</div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Club / Organisation Name</label>
-                    <input
-                      value={form.clubName}
-                      onChange={e => handleChange('clubName', e.target.value)}
-                      placeholder="e.g. SLTA Academy"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>State</label>
-                    <select value={form.stateAbbr} onChange={e => handleChange('stateAbbr', e.target.value)}>
-                      <option value="">Select state…</option>
-                      {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  <Field label="Gender">
+                    <select className={selectCls} value={form.gender} onChange={e => handleChange('gender', e.target.value)}>
+                      <option value="">Select…</option>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
                     </select>
-                  </div>
-                </div>
-                {user.isVerified && (
-                  <div className="profile-verified-badge">
-                    Verified Organizer
-                  </div>
+                  </Field>
+                )}
+                {isCoach && (
+                  <Field label="Club / Academy">
+                    <Input value={form.clubName} onChange={e => handleChange('clubName', e.target.value)} placeholder="Club or academy name" />
+                  </Field>
                 )}
               </div>
-            )}
+              {isPlayer && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <Field label="Height"><Input value={form.height} onChange={e => handleChange('height', e.target.value)} placeholder={'e.g. 5\'11" or 180 cm'} /></Field>
+                  <Field label="Plays">
+                    <select className={selectCls} value={form.plays} onChange={e => handleChange('plays', e.target.value)}>
+                      <option value="">Select…</option>
+                      <option value="R">Right-handed</option>
+                      <option value="L">Left-handed</option>
+                    </select>
+                  </Field>
+                  <Field label="Backhand">
+                    <select className={selectCls} value={form.backhand} onChange={e => handleChange('backhand', e.target.value)}>
+                      <option value="">Select…</option>
+                      <option value="1H">One-handed</option>
+                      <option value="2H">Two-handed</option>
+                    </select>
+                  </Field>
+                </div>
+              )}
+            </Card>
+          )}
 
-            {/* Equipment */}
-            {(isPlayer || isCoach) && (
-              <div className="profile-section">
-                <div className="profile-section-label">Equipment</div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Racquet Brand</label>
-                    <input value={form.racquetBrand} onChange={e => handleChange('racquetBrand', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>Racquet Name</label>
-                    <input value={form.racquetName} onChange={e => handleChange('racquetName', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>Racquet Year</label>
-                    <input type="number" value={form.racquetYear} onChange={e => handleChange('racquetYear', e.target.value)} />
-                  </div>
-                </div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>String Brand</label>
-                    <input value={form.stringBrand} onChange={e => handleChange('stringBrand', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>String Name</label>
-                    <input value={form.stringName} onChange={e => handleChange('stringName', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>String Tension</label>
-                    <input value={form.stringTension} onChange={e => handleChange('stringTension', e.target.value)} placeholder="e.g. 52 lbs" />
-                  </div>
-                </div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Shoe Brand</label>
-                    <input value={form.shoeBrand} onChange={e => handleChange('shoeBrand', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>Shoe Name</label>
-                    <input value={form.shoeName} onChange={e => handleChange('shoeName', e.target.value)} />
-                  </div>
-                </div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Bag Brand</label>
-                    <input value={form.bagBrand} onChange={e => handleChange('bagBrand', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>Bag Name</label>
-                    <input value={form.bagName} onChange={e => handleChange('bagName', e.target.value)} />
-                  </div>
-                </div>
-                <div className="t-form-row">
-                  <div className="field">
-                    <label>Grip Brand</label>
-                    <input value={form.gripBrand} onChange={e => handleChange('gripBrand', e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label>Grip Name</label>
-                    <input value={form.gripName} onChange={e => handleChange('gripName', e.target.value)} />
-                  </div>
-                </div>
+          {isOrganizer && (
+            <Card className="p-4 sm:p-6">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Organizer Details</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Club / Organisation Name"><Input value={form.clubName} onChange={e => handleChange('clubName', e.target.value)} placeholder="e.g. SLTA Academy" /></Field>
+                <Field label="State">
+                  <select className={selectCls} value={form.stateAbbr} onChange={e => handleChange('stateAbbr', e.target.value)}>
+                    <option value="">Select state…</option>
+                    {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </Field>
               </div>
-            )}
+              {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent mt-3">Verified Organizer</Badge>}
+            </Card>
+          )}
 
-            {/* Bio */}
-            <div className="profile-section">
-              <div className="profile-section-label">About</div>
-              <div className="field">
-                <textarea
-                  className="profile-bio"
-                  value={form.bio}
-                  onChange={e => handleChange('bio', e.target.value)}
-                  placeholder="A short bio (optional)"
-                  rows={3}
-                />
+          {(isPlayer || isCoach) && (
+            <Card className="p-4 sm:p-6">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Equipment</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field label="Racquet Brand"><Input value={form.racquetBrand} onChange={e => handleChange('racquetBrand', e.target.value)} /></Field>
+                <Field label="Racquet Name"><Input value={form.racquetName} onChange={e => handleChange('racquetName', e.target.value)} /></Field>
+                <Field label="Racquet Year"><Input type="number" value={form.racquetYear} onChange={e => handleChange('racquetYear', e.target.value)} /></Field>
               </div>
-            </div>
-
-            {error && <div className="login-error" style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px' }}>{error}</div>}
-
-            <div className="profile-actions">
-              <button type="submit" className="action-btn primary" disabled={saving}>
-                {saving ? 'Saving…' : 'Save Profile'}
-              </button>
-              {saved && <span className="status-msg">Saved!</span>}
-            </div>
-
-          </form>
-        ) : tab === 'bio' ? (
-          <div className="profile-view">
-            <div className="profile-section">
-              <div className="profile-section-label">Contact</div>
-              <Row label="Email" value={user.email} />
-              <Row label="Phone" value={form.phone} />
-            </div>
-
-            <div className="profile-section">
-              <div className="profile-section-label">Location</div>
-              <Row label="Home Court" value={form.homeCourt} />
-              <Row label="Nationality" value={form.nationality} />
-              <Row label="Country" value={form.country} />
-              <Row label="City" value={form.city} />
-              <Row label="Region" value={form.region} />
-              <Row label="Postal Code" value={form.postalCode} />
-            </div>
-
-            {isPlayer && (
-              <div className="profile-section">
-                <div className="profile-section-label">Physical</div>
-                <Row label="Age" value={age} />
-                <Row label="Gender" value={GENDER_LABELS[form.gender]} />
-                <Row label="Height" value={form.height} />
-                <Row label="Plays" value={PLAYS_LABELS[form.plays]} />
-                <Row label="Backhand" value={BACKHAND_LABELS[form.backhand]} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <Field label="String Brand"><Input value={form.stringBrand} onChange={e => handleChange('stringBrand', e.target.value)} /></Field>
+                <Field label="String Name"><Input value={form.stringName} onChange={e => handleChange('stringName', e.target.value)} /></Field>
+                <Field label="String Tension"><Input value={form.stringTension} onChange={e => handleChange('stringTension', e.target.value)} placeholder="e.g. 52 lbs" /></Field>
               </div>
-            )}
-
-            <div className="profile-section">
-              <div className="profile-section-label">About</div>
-              <div className="profile-about-text">{form.bio || '—'}</div>
-            </div>
-
-            {(isPlayer || isCoach) && (
-              <div className="profile-section">
-                <div className="profile-section-label">Equipment</div>
-                <Row label="Racquet Brand" value={form.racquetBrand} />
-                <Row label="Racquet Name" value={form.racquetName} />
-                <Row label="Racquet Year" value={form.racquetYear} />
-                <Row label="String Brand" value={form.stringBrand} />
-                <Row label="String Name" value={form.stringName} />
-                <Row label="String Tension" value={form.stringTension} />
-                <Row label="Shoe Brand" value={form.shoeBrand} />
-                <Row label="Shoe Name" value={form.shoeName} />
-                <Row label="Bag Brand" value={form.bagBrand} />
-                <Row label="Bag Name" value={form.bagName} />
-                <Row label="Grip Brand" value={form.gripBrand} />
-                <Row label="Grip Name" value={form.gripName} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <Field label="Shoe Brand"><Input value={form.shoeBrand} onChange={e => handleChange('shoeBrand', e.target.value)} /></Field>
+                <Field label="Shoe Name"><Input value={form.shoeName} onChange={e => handleChange('shoeName', e.target.value)} /></Field>
               </div>
-            )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <Field label="Bag Brand"><Input value={form.bagBrand} onChange={e => handleChange('bagBrand', e.target.value)} /></Field>
+                <Field label="Bag Name"><Input value={form.bagName} onChange={e => handleChange('bagName', e.target.value)} /></Field>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <Field label="Grip Brand"><Input value={form.gripBrand} onChange={e => handleChange('gripBrand', e.target.value)} /></Field>
+                <Field label="Grip Name"><Input value={form.gripName} onChange={e => handleChange('gripName', e.target.value)} /></Field>
+              </div>
+            </Card>
+          )}
+
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">About</div>
+            <Textarea value={form.bio} onChange={e => handleChange('bio', e.target.value)} placeholder="A short bio (optional)" rows={3} />
+          </Card>
+
+          {error && <div className="text-destructive text-sm">{error}</div>}
+
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Profile'}</Button>
+            {saved && <span className="text-sm text-primary font-semibold">Saved!</span>}
           </div>
-        ) : (
-          <div className="profile-view">
-            <div className="profile-section">
-              <div className="profile-section-label">Ranking & Status</div>
-              <Row label="Role" value={ROLE_LABELS[form.role] || form.role} />
-              <Row label="Verified" value={user.isVerified ? 'Yes' : 'No'} />
-              {isPlayer && <Row label="AITA Registration No." value={form.aitaReg} />}
-              {isPlayer && <Row label="Current AITA Ranking" value={form.ranking} />}
-              <Row label="State" value={form.stateAbbr} />
-              {(isCoach || isOrganizer) && <Row label="Club / Academy" value={form.clubName} />}
-            </div>
-          </div>
-        )}
-      </div>
+        </form>
+      ) : tab === 'bio' ? (
+        <div className="space-y-4">
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Contact</div>
+            <Row label="Email" value={user.email} />
+            <Row label="Phone" value={form.phone} />
+          </Card>
+
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Location</div>
+            <Row label="Home Court" value={form.homeCourt} />
+            <Row label="Nationality" value={form.nationality} />
+            <Row label="Country" value={form.country} />
+            <Row label="City" value={form.city} />
+            <Row label="Region" value={form.region} />
+            <Row label="Postal Code" value={form.postalCode} />
+          </Card>
+
+          {isPlayer && (
+            <Card className="p-4 sm:p-6">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Physical</div>
+              <Row label="Age" value={age} />
+              <Row label="Gender" value={GENDER_LABELS[form.gender]} />
+              <Row label="Height" value={form.height} />
+              <Row label="Plays" value={PLAYS_LABELS[form.plays]} />
+              <Row label="Backhand" value={BACKHAND_LABELS[form.backhand]} />
+            </Card>
+          )}
+
+          <Card className="p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">About</div>
+            <div className="text-sm">{form.bio || '—'}</div>
+          </Card>
+
+          {(isPlayer || isCoach) && (
+            <Card className="p-4 sm:p-6">
+              <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Equipment</div>
+              <Row label="Racquet Brand" value={form.racquetBrand} />
+              <Row label="Racquet Name" value={form.racquetName} />
+              <Row label="Racquet Year" value={form.racquetYear} />
+              <Row label="String Brand" value={form.stringBrand} />
+              <Row label="String Name" value={form.stringName} />
+              <Row label="String Tension" value={form.stringTension} />
+              <Row label="Shoe Brand" value={form.shoeBrand} />
+              <Row label="Shoe Name" value={form.shoeName} />
+              <Row label="Bag Brand" value={form.bagBrand} />
+              <Row label="Bag Name" value={form.bagName} />
+              <Row label="Grip Brand" value={form.gripBrand} />
+              <Row label="Grip Name" value={form.gripName} />
+            </Card>
+          )}
+        </div>
+      ) : (
+        <Card className="p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Ranking &amp; Status</div>
+          <Row label="Role" value={ROLE_LABELS[form.role] || form.role} />
+          <Row label="Verified" value={user.isVerified ? 'Yes' : 'No'} />
+          {isPlayer && <Row label="AITA Registration No." value={form.aitaReg} />}
+          {isPlayer && <Row label="Current AITA Ranking" value={form.ranking} />}
+          <Row label="State" value={form.stateAbbr} />
+          {(isCoach || isOrganizer) && <Row label="Club / Academy" value={form.clubName} />}
+        </Card>
+      )}
     </div>
   );
 }

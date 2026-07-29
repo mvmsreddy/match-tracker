@@ -2,17 +2,27 @@ import { useEffect, useMemo, useState } from 'react';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { SKILL_LABELS } from './SkillGroupsView';
+import { Card } from '@/components/primitives/card';
+import { Button } from '@/components/primitives/button';
+import { Input } from '@/components/primitives/input';
+import { Textarea } from '@/components/primitives/textarea';
 
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 function daysAgoIso(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); }
 
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
 // Bulk session logging — real training_sessions writes, one row per
 // (present player × checked drill) pair actually on that drill's
-// assignment, matching the mockup's own "session rows written = drills
-// completed × players present" framing exactly. Checklist and present-
-// player list are built from this coach's real active drill_assignments +
-// roster, not a fixed daily schedule (none exists in this data model — see
-// Missing Systems).
+// assignment. Checklist and present-player list are built from this coach's
+// real active drill_assignments + roster, not a fixed daily schedule.
 export default function LogSessionView({ roster }) {
   const { user } = useAuth();
   const [assignments, setAssignments] = useState(null);
@@ -83,52 +93,48 @@ export default function LogSessionView({ roster }) {
     }
   }
 
-  if (assignments === null) return <div className="history-empty">Loading assigned blocks…</div>;
+  if (assignments === null) return <div className="text-sm text-muted-foreground">Loading assigned blocks…</div>;
 
   const unloggedList = (assignments || []).filter(a => unloggedFlags[a.id]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: 16, alignItems: 'start' }}>
-      <div className="pcd-card" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
+      <Card className="p-4 sm:p-6 space-y-5">
         <div>
-          <div className="pcd-card-title">What happened on court</div>
-          <div className="pcd-card-sub">From your active assigned blocks — check what was actually completed</div>
+          <div className="font-bold text-sm">What happened on court</div>
+          <div className="text-xs text-muted-foreground">From your active assigned blocks — check what was actually completed</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Date
-            <input type="date" value={date} onChange={e => { setDate(e.target.value); setSaved(false); }}
-              style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Duration (min)
-            <input type="number" value={duration} onChange={e => { setDuration(e.target.value); setSaved(false); }}
-              style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-            Court
-            <input value={court} onChange={e => setCourt(e.target.value)} placeholder="Court 2 · hard"
-              style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit' }} />
-          </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Field label="Date">
+            <Input type="date" value={date} onChange={e => { setDate(e.target.value); setSaved(false); }} />
+          </Field>
+          <Field label="Duration (min)">
+            <Input type="number" value={duration} onChange={e => { setDuration(e.target.value); setSaved(false); }} />
+          </Field>
+          <Field label="Court">
+            <Input value={court} onChange={e => setCourt(e.target.value)} placeholder="Court 2 · hard" />
+          </Field>
         </div>
 
         <div>
-          <div style={{ font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text2)', marginBottom: 10 }}>Drills completed</div>
-          {(assignments || []).length === 0 && <div className="history-empty">No active assigned blocks — assign a routine from a Skill Group first.</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Drills completed</div>
+          {(assignments || []).length === 0 && <div className="text-sm text-muted-foreground">No active assigned blocks — assign a routine from a Skill Group first.</div>}
+          <div className="space-y-2">
             {(assignments || []).map(a => {
               const on = !!checkedAssignments[a.id];
               return (
-                <button key={a.id} className={`pcd-check-row${on ? ' active' : ''}`} onClick={() => { setCheckedAssignments(c => ({ ...c, [a.id]: !on })); setSaved(false); }}>
-                  <div className={`pcd-check-box${on ? ' active' : ''}`}>{on ? '✓' : ''}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ font: "600 14px/1.2 'Archivo', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.drillTitle}</div>
-                    <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text3)', marginTop: 5 }}>
-                      {a.category} {a.subcategory} · {SKILL_LABELS[a.skillKey] || a.skillKey}
-                    </div>
+                <button
+                  key={a.id}
+                  className={`w-full flex items-center gap-3 p-3 rounded-sm border text-left ${on ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+                  onClick={() => { setCheckedAssignments(c => ({ ...c, [a.id]: !on })); setSaved(false); }}
+                >
+                  <div className={`w-5 h-5 rounded-sm border flex items-center justify-center text-xs shrink-0 ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-input'}`}>{on ? '✓' : ''}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold truncate">{a.drillTitle}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{a.category} {a.subcategory} &middot; {SKILL_LABELS[a.skillKey] || a.skillKey}</div>
                   </div>
-                  <div style={{ justifySelf: 'end', font: "600 13px/1 'IBM Plex Mono', monospace", color: on ? 'var(--accent)' : 'var(--text3)' }}>{a.playerIds.length} players</div>
+                  <div className={`text-xs font-bold shrink-0 ${on ? 'text-primary' : 'text-muted-foreground'}`}>{a.playerIds.length} players</div>
                 </button>
               );
             })}
@@ -136,66 +142,68 @@ export default function LogSessionView({ roster }) {
         </div>
 
         <div>
-          <div style={{ font: "500 10px/1 'IBM Plex Mono', monospace", letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text2)', marginBottom: 10 }}>Players present</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Players present</div>
+          <div className="flex flex-wrap gap-2">
             {(roster || []).map(p => {
               const on = !!presentPlayers[p.id];
               return (
-                <button key={p.id} className={`pcd-chip-toggle${on ? ' active' : ''}`}
-                  onClick={() => { setPresentPlayers(pr => ({ ...pr, [p.id]: !on })); setSaved(false); }}>{p.displayName}</button>
+                <button
+                  key={p.id}
+                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold border ${on ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                  onClick={() => { setPresentPlayers(pr => ({ ...pr, [p.id]: !on })); setSaved(false); }}
+                >
+                  {p.displayName}
+                </button>
               );
             })}
           </div>
         </div>
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--text2)' }}>
-          Notes · visible to the player
-          <textarea rows={3} value={notes} onChange={e => { setNotes(e.target.value); setSaved(false); }}
-            style={{ padding: '12px 14px', borderRadius: 11, border: '1px solid var(--border)', background: 'var(--bg4)', color: 'inherit', resize: 'vertical' }} />
-        </label>
+        <Field label="Notes · visible to the player">
+          <Textarea rows={3} value={notes} onChange={e => { setNotes(e.target.value); setSaved(false); }} />
+        </Field>
 
-        {error && <div style={{ color: 'var(--danger)', fontSize: 12 }}>{error}</div>}
+        {error && <div className="text-destructive text-xs">{error}</div>}
 
-        <button className="pcd-btn-primary" disabled={saving || doneAssignments.length === 0 || presentIds.length === 0} onClick={handleSave}>
+        <Button disabled={saving || doneAssignments.length === 0 || presentIds.length === 0} onClick={handleSave}>
           {saved ? 'Session logged ✓' : (saving ? 'Saving…' : 'Log session')}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 4 }}>Session summary</div>
-          <div className="pcd-card-sub" style={{ marginBottom: 18 }}>Attributed to every selected player</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: 14, borderRadius: 11, background: 'var(--bg4)' }}>
-              <div style={{ font: "500 12px/1.3 'IBM Plex Mono', monospace", letterSpacing: '.08em', color: 'var(--text2)', textTransform: 'uppercase' }}>Blocks completed</div>
-              <div style={{ font: "700 16px/1 'IBM Plex Mono', monospace" }}>{doneAssignments.length}</div>
+      <div className="space-y-4">
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm mb-4">Session summary</div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3 p-3 rounded-sm bg-secondary/50">
+              <div className="text-xs text-muted-foreground">Blocks completed</div>
+              <div className="font-bold text-sm">{doneAssignments.length}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: 14, borderRadius: 11, background: 'var(--bg4)' }}>
-              <div style={{ font: "500 12px/1.3 'IBM Plex Mono', monospace", letterSpacing: '.08em', color: 'var(--text2)', textTransform: 'uppercase' }}>Players present</div>
-              <div style={{ font: "700 16px/1 'IBM Plex Mono', monospace", color: presentIds.length ? 'var(--accent)' : 'var(--opp)' }}>{presentIds.length}</div>
+            <div className="flex items-center justify-between gap-3 p-3 rounded-sm bg-secondary/50">
+              <div className="text-xs text-muted-foreground">Players present</div>
+              <div className={`font-bold text-sm ${presentIds.length ? 'text-primary' : 'text-destructive'}`}>{presentIds.length}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: 14, borderRadius: 11, background: 'var(--bg4)' }}>
-              <div style={{ font: "500 12px/1.3 'IBM Plex Mono', monospace", letterSpacing: '.08em', color: 'var(--text2)', textTransform: 'uppercase' }}>Session rows to write</div>
-              <div style={{ font: "700 16px/1 'IBM Plex Mono', monospace" }}>{plannedRows}</div>
+            <div className="flex items-center justify-between gap-3 p-3 rounded-sm bg-secondary/50">
+              <div className="text-xs text-muted-foreground">Session rows to write</div>
+              <div className="font-bold text-sm">{plannedRows}</div>
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="pcd-card">
-          <div className="pcd-card-title" style={{ marginBottom: 18 }}>Unlogged this week</div>
-          {unloggedList.length === 0 && <div className="history-empty">Every active block has a session logged in the last 7 days.</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Card className="p-4 sm:p-6">
+          <div className="font-bold text-sm mb-3">Unlogged this week</div>
+          {unloggedList.length === 0 && <div className="text-sm text-muted-foreground">Every active block has a session logged in the last 7 days.</div>}
+          <div className="space-y-2">
             {unloggedList.map(a => (
-              <div key={a.id} className="pcd-row" style={{ borderLeftColor: 'var(--opp)' }}>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <div style={{ font: "600 13px/1.2 'Archivo', sans-serif" }}>{a.drillTitle}</div>
-                  <div style={{ font: "400 11px/1.3 'IBM Plex Mono', monospace", color: 'var(--text2)', marginTop: 5 }}>{a.playerIds.length} players · no session in 7 days</div>
+              <div key={a.id} className="flex items-center gap-3 p-3 rounded-sm border-l-4 border-destructive bg-secondary/50">
+                <div className="flex-1 min-w-32">
+                  <div className="text-sm font-semibold">{a.drillTitle}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{a.playerIds.length} players &middot; no session in 7 days</div>
                 </div>
-                <button className="pcd-btn-secondary" onClick={() => setCheckedAssignments(c => ({ ...c, [a.id]: true }))}>Log</button>
+                <Button size="sm" variant="outline" onClick={() => setCheckedAssignments(c => ({ ...c, [a.id]: true }))}>Log</Button>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
