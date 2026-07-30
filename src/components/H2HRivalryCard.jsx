@@ -52,11 +52,11 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
       style={{ background: 'linear-gradient(120deg, rgba(245,158,11,0.05) 0%, transparent 60%)' }}
     >
       <div className="flex items-start gap-3">
-        <div className="w-11 h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
-          <Swords className="w-5 h-5 text-amber-700" strokeWidth={2.2} />
+        <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0">
+          <Swords className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-700">Rivalry Alert</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500">Rivalry Alert</div>
           <div className="text-sm font-bold mt-0.5 truncate">
             You've faced {opponentName(next)} before
           </div>
@@ -91,7 +91,7 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
           </div>
 
           {/* Tactical hint */}
-          <div className="mt-3 text-xs text-slate-700 italic leading-relaxed">
+          <div className="mt-3 text-xs italic leading-relaxed text-foreground/80">
             "{hint}"
           </div>
         </div>

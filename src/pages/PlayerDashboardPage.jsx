@@ -22,9 +22,9 @@ import ProgressTab from '../components/player/ProgressTab';
 // category/subcategory circuit) is selected via SegmentContext; segments are
 // fully independent, never merged (see src/lib/segments.js) — no cascading
 // points logic anywhere in this feature, see the plan doc's Context section.
-// My Performance is the one exception — it deliberately reads/browses
-// outside the selected segment (see MyPerformanceTab.jsx), replacing the old
-// Dashboard page's embedded PerformanceTab + rankings-browser link.
+// (The full-performance-browse capability that used to live here as a
+// separate tab was folded into the main Dashboard's inline
+// PerformanceSummarySection — segments are switchable there directly.)
 //
 // Also reused, read-mostly, by the Coach Intelligence System's Roster
 // "DASHBOARD →" link (route /coach/players/:playerId/dashboard) — the exact
@@ -43,7 +43,9 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circuits, selectedKey]);
 
-  const activeTab = searchParams.get('tab') || 'overview';
+  const VALID_TABS = new Set(['overview', 'tournaments', 'matches', 'training', 'analytics', 'recommendations', 'progress']);
+  const rawTab = searchParams.get('tab') || 'overview';
+  const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'overview';
   function setActiveTab(tabId) {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);

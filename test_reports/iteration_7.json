@@ -1,0 +1,36 @@
+{
+  "summary": "Frontend-only retest of all 7 fixes from iteration_6 on the public preview URL at 390x844 mobile (dark + light theme). Verified: (1) demo player login (demo-player-btn -> login-submit-btn) works, dashboard renders with momentum-meter; (2) NavDrawer player list now has exactly the 12 expected items (dashboard, track, drills, video-analysis, tournaments, compare, nutrition, messages, my-coaches, my-parents, calendar, profile) with NO performance entry and no /player-dashboard?tab=performance href; (3) manual navigation to /player-dashboard?tab=performance now silently falls back to Overview and renders full Overview content (goal card, 3 stat tiles, Ranking Growth chart, 7 tab buttons present) instead of a blank page; (4) NextMilestoneCard headline now reads '13 ranks to break top-50 / U16 Doubles - You're #63' (nearest-boundary fix confirmed); (5) PerformanceSummarySection defaults to the STRONGEST circuit U16 Doubles (header 'U16 Doubles - AITA', RANK #63 up32, POINTS 293 +10, BEST RANK #63, BEST PTS 293) and manual pill switching to U18 Singles still updates all values (#393 / 260 / #376); (6) AchievementsReel is now theme-aware: unlocked tile uses amber-500/10 bg with white(dark)/near-black(light) title, locked tiles rgb(152,164,179) on dark and rgb(101,117,139) on light - clearly readable in both themes, no hardcoded slate-*/amber-50 left in AchievementsReel/H2HRivalryCard/NextMilestoneCard/DailyMissionCard (code-verified); (7) rank-climber achievement is now UNLOCKED for the demo player (data-testid='ach-rank-climber' present with NEW ribbon, reel shows '1 of 15 unlocked / 7%'); (8) MyPerformanceTab.jsx deleted with zero remaining imports (grep clean) and no route breakage; (9) WeeklyGoalRings hydration ring reads '0L / 2.5L / day' with caption 'HYDRATION (AVG/DAY)'; (10) Login inactive toggle label is slate-600 oklch(0.446 0.043 257.281) on the off-white pill - contrast improved; (11) DailyMission Mark-done still transitions to 'Nailed it - come back tomorrow...' with mission-streak '1d'. Zero console errors across every flow. One remaining MEDIUM defect: the milestone progress bar computes 98.63% width for a 13-rank gap because the prevBoundary lookup still uses reverse().find().",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "NextMilestoneCard / motivation.js computeNextMilestone",
+        "issue": "Progress bar is misleading: for rank #63 with nextBoundary=50 the bar renders width 98.6316% (measured on '.h-full.bg-amber-500' inline style), i.e. visually 'basically there' while the copy says 13 ranks still to go. Cause: `const prevBoundary = [...boundaries].reverse().find(b => b > rank)` returns the LARGEST boundary above the rank (1000) instead of the nearest one (100). span=950, done=937 -> 98.6%. With the nearest boundary it should be (100-63)/(100-50)=74%. Fix: `const prevBoundary = boundaries.find(b => b > rank) || rank + 100;` (ascending find is correct for the upper bound).",
+        "selector": "[data-testid=\"next-milestone\"]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      { "screen": "Player Dashboard - Trophy Cabinet (dark + light)", "issues": ["Readability fixed. Locked tile titles now #98A4B3 on the dark card and #65758B on light; unlocked tile uses amber-500/10 fill + amber-500/40 border and white/near-black title. No grey-on-grey remains."] },
+      { "screen": "Login (mobile 390x844)", "issues": ["Inactive Sign In/Sign Up label now slate-600 - contrast acceptable. No issues."] }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "MEDIUM: Fix prevBoundary lookup in computeNextMilestone (motivation.js ~line 219) so the progress bar reflects the nearest boundary above the rank instead of 1000 (currently 98.6% for a 13-rank gap)."
+  ],
+  "critical_code_review_comments": [
+    "motivation.js computeNextMilestone: the nextBoundary fix (filter().pop()) is correct, but the progress denominator still uses reverse().find() and picks the far boundary - same class of bug as the original, just moved into the progress IIFE.",
+    "H2HRivalryCard positive path remains untested at runtime (needs seeded tournament draw + matching opponent); its colours were verified theme-aware by code inspection only.",
+    "DashboardPage.jsx is still ~790 lines; NextMilestoneAutowire / PlayerMotivationCluster would be cleaner in src/components/motivation/."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (frontend-only; localStorage mock backend)", "frontend": "92% (11/12 verification points fully pass; 1 MEDIUM progress-bar math defect)" },
+  "seed_data_creation": "None persisted. Only the daily-mission 'mark done' action was performed on the demo player (localStorage-only, resets on clear).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "player@matchtracker.app / player123 (auto-seeded, verified working via demo-player-btn tap-to-fill)",
+  "context_for_next_testing_agent": "All 7 iteration_6 action items are resolved except the milestone progress-bar percentage. Login: goto /login -> click [data-testid=demo-player-btn] -> [data-testid=login-submit-btn] -> wait [data-testid=momentum-meter]. Mock ranking generator is deterministic: U18 Singles #393, U16 Doubles #63 (strongest, now the default), U16 Singles #116. Player dashboard tabs: player-tab-{overview|tournaments|matches|training|analytics|recommendations|progress}. Unknown ?tab values now fall back to overview (URL param is left uncorrected, content is correct). H2HRivalryCard positive path still needs a seeded tournament draw to exercise.",
+  "rca_of_the_issue": "Milestone progress bar: computeNextMilestone derives the lower edge of the progress span with `[...boundaries].reverse().find(b => b > rank)`. Reversing makes find() return the first (i.e. largest) boundary greater than the rank, so for rank 63 it picks 1000 rather than 100, inflating the completed fraction to 937/950 = 98.6%. Repro: login as demo player, read the Next Milestone card bar width. Mitigation: use ascending `boundaries.find(b => b > rank)`."
+}

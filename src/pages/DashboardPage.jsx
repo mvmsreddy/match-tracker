@@ -22,7 +22,7 @@ import DailyMissionCard from '@/components/motivation/DailyMissionCard';
 import AchievementsReel from '@/components/motivation/AchievementsReel';
 import NextMilestoneCard from '@/components/motivation/NextMilestoneCard';
 import H2HRivalryCard from '@/components/H2HRivalryCard';
-import { SegmentProvider, useSegment } from '../context/SegmentContext';
+import { SegmentProvider, useSegment, useOptionalSegment } from '../context/SegmentContext';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -385,6 +385,11 @@ function CoachTournamentSections({ loading, error, todayMatches, recentResults, 
 function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
   const [nutritionLogs, setNutritionLogs] = useState([]);
   const [missionTick, setMissionTick] = useState(0); // force refresh after complete
+  // Pull rank history if we're inside a SegmentProvider — that's the case
+  // for players with an aitaReg. Falls back to null (rank-climber badge just
+  // stays locked) for players without one.
+  const seg = useOptionalSegment();
+  const rankHistory = seg?.rankingHistory || null;
 
   useEffect(() => {
     let cancelled = false;
@@ -398,7 +403,7 @@ function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
   const drillCount = listDrills(user.id).length;
   const momentum = computeMomentum({ matches, streak, ratings });
   const rings = computeWeeklyRings({ matches, nutritionLogs });
-  const achievements = computeAchievements({ matches, streak, drillCount, ratings });
+  const achievements = computeAchievements({ matches, streak, drillCount, ratings, rankHistory });
   const mission = getDailyMission(user.id);
   const missionStreak = getMissionStreak(user.id);
 
@@ -425,10 +430,13 @@ function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
 }
 
 // Renders the Next Milestone card inside the SegmentProvider so it can pull
-// the player's active circuit + best rank.
+// the player's active circuit + best rank. Selects the player's STRONGEST
+// circuit (lowest best-ever rank) as the primary so the milestone is
+// concretely close, not "383 ranks to top-10".
 function NextMilestoneAutowire({ user, matches, streak }) {
   const { circuits } = useSegment();
-  const milestone = computeNextMilestone({ circuits, matches, streak });
+  const orderedCircuits = [...(circuits || [])].sort((a, b) => a.bestRank - b.bestRank);
+  const milestone = computeNextMilestone({ circuits: orderedCircuits, matches, streak });
   if (!milestone) return null;
   return <NextMilestoneCard milestone={milestone} />;
 }
@@ -543,22 +551,27 @@ export default function DashboardPage() {
       {role !== 'organizer' && streak && <StreakCard streak={streak} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
 
-      {/* ═════════ Player motivation cluster ═════════ */}
+      {/* ═════════ Player motivation cluster + performance snapshot ═════════ */}
       {role === 'player' && matches && (
-        <PlayerMotivationCluster
-          user={user}
-          matches={matches}
-          streak={streak?.current || 0}
-          upcomingMatches={activity.todayMatches}
-        />
-      )}
-
-      {/* Player: Ranking & Points Performance snapshot (merged from Performance tab) */}
-      {role === 'player' && user.aitaReg && (
-        <SegmentProvider>
-          <PerformanceSummarySection />
-          <NextMilestoneAutowire user={user} matches={matches || []} streak={streak?.current || 0} />
-        </SegmentProvider>
+        user.aitaReg ? (
+          <SegmentProvider>
+            <PlayerMotivationCluster
+              user={user}
+              matches={matches}
+              streak={streak?.current || 0}
+              upcomingMatches={activity.todayMatches}
+            />
+            <PerformanceSummarySection />
+            <NextMilestoneAutowire user={user} matches={matches || []} streak={streak?.current || 0} />
+          </SegmentProvider>
+        ) : (
+          <PlayerMotivationCluster
+            user={user}
+            matches={matches}
+            streak={streak?.current || 0}
+            upcomingMatches={activity.todayMatches}
+          />
+        )
       )}
 
       {/* Skill Radar + Digest Preview (player only) */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line,
   CartesianGrid, XAxis, YAxis, Tooltip,
@@ -24,19 +24,33 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 }
 
 /**
- * PerformanceSummarySection — condensed version of MyPerformanceTab for the
- * Dashboard. Shows the player's primary circuit summary + a switchable
- * mini chart (points ↕ rank). Collapsible on mobile to save space.
- * Deep-links to /player-dashboard?tab=performance for full browse.
+ * PerformanceSummarySection — inline ranking + points snapshot on the
+ * player Dashboard. Shows the player's PRIMARY circuit (their strongest
+ * by best-ever rank) by default, with pills to switch between other
+ * circuits they're ranked in and a toggle to swap between points-growth
+ * and rank-progress charts. Fully replaces the old "View My Performance"
+ * standalone tab — all functionality is available here.
  */
 export default function PerformanceSummarySection() {
   const { circuits, body, loading } = useSegment();
   const [chartMode, setChartMode] = useState('points'); // 'points' | 'rank'
-  const [activeIdx, setActiveIdx] = useState(0);
+  // Default to the player's STRONGEST circuit (lowest best-ever rank) — this
+  // is the segment they identify with most and want to see first. Fall back
+  // to the most recently active circuit if best ranks tie.
+  const primaryIdx = useMemo(() => {
+    if (!circuits || circuits.length === 0) return 0;
+    let bestIdx = 0;
+    for (let i = 1; i < circuits.length; i++) {
+      if (circuits[i].bestRank < circuits[bestIdx].bestRank) bestIdx = i;
+    }
+    return bestIdx;
+  }, [circuits]);
+  const [activeIdx, setActiveIdx] = useState(null); // null = auto (use primary)
+  const effectiveIdx = activeIdx == null ? primaryIdx : activeIdx;
 
   if (loading || !circuits || circuits.length === 0) return null;
 
-  const active = circuits[activeIdx] || circuits[0];
+  const active = circuits[effectiveIdx] || circuits[0];
   const rankDelta = active.previous ? active.previous.rank - active.latest.rank : 0;
   const pointsDelta = active.previous ? active.latest.totalPoints - active.previous.totalPoints : 0;
 
@@ -63,7 +77,7 @@ export default function PerformanceSummarySection() {
               key={c.key}
               onClick={() => setActiveIdx(i)}
               className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                i === activeIdx
+                i === effectiveIdx
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
               }`}

@@ -50,12 +50,14 @@ export function computeWeeklyRings({ matches = [], nutritionLogs = [] }) {
 
   const matchGoal = 3;
   const practiceGoal = 4;
-  const waterGoal = 7 * 2500; // 2.5L/day * 7
+  const dailyWaterGoal = 2500; // 2.5L/day
+  const waterGoal = 7 * dailyWaterGoal;
+  const dailyAvgLitres = Math.round((waterMlThisWk / 7) / 100) / 10;
 
   return {
     match: { done: matchesThisWk, goal: matchGoal, pct: matchesThisWk / matchGoal, unit: 'matches' },
     practice: { done: practicesThisWk, goal: practiceGoal, pct: practicesThisWk / practiceGoal, unit: 'practices' },
-    water: { done: Math.round(waterMlThisWk / 1000 * 10) / 10, goal: waterGoal / 1000, pct: waterMlThisWk / waterGoal, unit: 'litres' },
+    water: { done: dailyAvgLitres, goal: dailyWaterGoal / 1000, pct: waterMlThisWk / waterGoal, unit: 'L / day avg' },
   };
 }
 
@@ -202,13 +204,22 @@ export function computeNextMilestone({ circuits = [], matches = [], streak = 0 }
   if (circuits.length > 0) {
     const active = circuits[0];
     const rank = active.latest.rank;
-    const nextBoundary = [10, 25, 50, 100, 150, 200, 300, 500, 1000].find(b => rank > b);
+    // Nearest boundary the player is CLOSE to (largest boundary below rank)
+    const boundaries = [10, 25, 50, 100, 150, 200, 300, 500, 1000];
+    const nextBoundary = boundaries.filter(b => rank > b).pop();
     if (nextBoundary) {
+      const gap = rank - nextBoundary;
       return {
         icon: 'trophy',
-        headline: `${rank - nextBoundary} rank${rank - nextBoundary === 1 ? '' : 's'} to break top-${nextBoundary}`,
+        headline: `${gap} rank${gap === 1 ? '' : 's'} to break top-${nextBoundary}`,
         sub: `${active.category} ${active.subcategory} · You're #${rank}`,
-        progress: 1 - ((rank - nextBoundary) / rank),
+        // Progress = how close from the PREVIOUS boundary (or start) to nextBoundary
+        progress: (() => {
+          const prevBoundary = [...boundaries].reverse().find(b => b > rank) || rank + 100;
+          const span = prevBoundary - nextBoundary;
+          const done = prevBoundary - rank;
+          return Math.max(0.02, Math.min(1, done / span));
+        })(),
       };
     }
     // Best-ever chase

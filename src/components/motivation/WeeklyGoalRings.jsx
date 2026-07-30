@@ -88,13 +88,13 @@ export default function WeeklyGoalRings({ rings }) {
           color="#3b82f6"
           Icon={Droplet}
           doneLabel={water.done + 'L'}
-          goalLabel={water.goal + 'L'}
+          goalLabel={water.goal + 'L / day'}
         />
       </div>
       <div className="grid grid-cols-3 gap-3 mt-3 text-center">
         <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Matches</div>
         <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Practice</div>
-        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Hydration</div>
+        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Hydration (avg/day)</div>
       </div>
     </Card>
   );

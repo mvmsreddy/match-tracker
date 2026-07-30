@@ -65,7 +65,7 @@ export default function AchievementsReel({ achievements }) {
             return (
               <div
                 key={a.id}
-                className="relative snap-start shrink-0 w-24 p-3 rounded-xl border border-amber-200 bg-gradient-to-b from-amber-50 to-white"
+                className="relative snap-start shrink-0 w-24 p-3 rounded-xl border border-amber-500/40 bg-amber-500/10"
                 data-testid={`ach-${a.id}`}
               >
                 {badgeNew && (
@@ -73,10 +73,10 @@ export default function AchievementsReel({ achievements }) {
                     New
                   </div>
                 )}
-                <div className="w-10 h-10 mx-auto rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-amber-700" strokeWidth={2.2} />
+                <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
                 </div>
-                <div className="text-[11px] font-bold text-center mt-2 leading-tight text-slate-900">
+                <div className="text-[11px] font-bold text-center mt-2 leading-tight text-foreground">
                   {a.title}
                 </div>
               </div>
@@ -89,14 +89,14 @@ export default function AchievementsReel({ achievements }) {
             return (
               <div
                 key={a.id}
-                className="snap-start shrink-0 w-24 p-3 rounded-xl border border-slate-200 bg-slate-50/60 opacity-70"
+                className="snap-start shrink-0 w-24 p-3 rounded-xl border border-border bg-muted/40"
                 data-testid={`ach-locked-${a.id}`}
                 title={a.desc}
               >
-                <div className="w-10 h-10 mx-auto rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-slate-400" strokeWidth={2.2} />
+                <div className="w-10 h-10 mx-auto rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-muted-foreground" strokeWidth={2.2} />
                 </div>
-                <div className="text-[11px] font-semibold text-center mt-2 leading-tight text-slate-500">
+                <div className="text-[11px] font-semibold text-center mt-2 leading-tight text-muted-foreground">
                   {a.title}
                 </div>
               </div>

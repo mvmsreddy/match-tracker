@@ -26,7 +26,7 @@ export default function DailyMissionCard({ mission, missionStreak, userId, onCom
       data-testid="daily-mission"
     >
       <div className="flex items-start gap-3">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${done ? 'bg-primary text-primary-foreground' : 'bg-amber-100 text-amber-700'}`}>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${done ? 'bg-primary text-primary-foreground' : 'bg-amber-500/15 text-amber-500'}`}>
           {done ? <Check className="w-5 h-5" strokeWidth={2.6} /> : <Target className="w-5 h-5" strokeWidth={2.2} />}
         </div>
         <div className="min-w-0 flex-1">
@@ -35,7 +35,7 @@ export default function DailyMissionCard({ mission, missionStreak, userId, onCom
               Daily Mission
             </div>
             {missionStreak > 0 && (
-              <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600" data-testid="mission-streak">
+              <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-500" data-testid="mission-streak">
                 <Flame className="w-3 h-3" strokeWidth={2.5} />
                 {missionStreak}d
               </div>
@@ -47,10 +47,10 @@ export default function DailyMissionCard({ mission, missionStreak, userId, onCom
           {!done ? (
             <button
               onClick={handleComplete}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800 active:scale-[0.97] transition-all"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-xs font-bold hover:opacity-90 active:scale-[0.97] transition-all"
               data-testid="mission-complete-btn"
             >
-              Mark done <span className="text-amber-300">+{local.xp} XP</span>
+              Mark done <span className="opacity-90">+{local.xp} XP</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           ) : (

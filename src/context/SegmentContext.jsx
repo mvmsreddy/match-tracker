@@ -62,6 +62,7 @@ export function SegmentProvider({ children, overrideAitaReg = null }) {
     bodyId, setBodyId, body,
     circuits, loading: history === null, error,
     selectedKey, setSelectedKey, selectedCircuit,
+    rankingHistory: history || [],
   };
 
   return <SegmentContext.Provider value={value}>{children}</SegmentContext.Provider>;
@@ -71,4 +72,11 @@ export function useSegment() {
   const ctx = useContext(SegmentContext);
   if (!ctx) throw new Error('useSegment must be used within a SegmentProvider');
   return ctx;
+}
+
+// Non-throwing variant for components rendered EITHER inside or outside a
+// SegmentProvider (e.g. motivation widgets that appear regardless of whether
+// the player has an aitaReg). Returns null when outside.
+export function useOptionalSegment() {
+  return useContext(SegmentContext);
 }

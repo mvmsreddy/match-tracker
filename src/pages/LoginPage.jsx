@@ -254,7 +254,7 @@ export default function LoginPage() {
                   className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                     mode === 'signin'
                       ? 'bg-slate-900 text-white shadow-md'
-                      : 'text-slate-500 hover:text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                   onClick={() => switchMode('signin')}
                   data-testid="mode-signin-btn"
@@ -266,7 +266,7 @@ export default function LoginPage() {
                   className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                     mode === 'signup'
                       ? 'bg-slate-900 text-white shadow-md'
-                      : 'text-slate-500 hover:text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                   onClick={() => switchMode('signup')}
                   data-testid="mode-signup-btn"
