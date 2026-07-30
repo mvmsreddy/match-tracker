@@ -6,6 +6,10 @@ import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Textarea } from '@/components/primitives/textarea';
 import { MacroDonut, WaterTracker, WeeklyAverageCard } from '@/components/NutritionWidgets';
+import {
+  ComplianceHero, AiMealSuggester, PeriMatchFuelTimer,
+  WeeklyReportCard, GiTriggerCard, WellnessQuickLog, DietitianChatCard,
+} from '@/components/NutritionCoachingPanel';
 import { Apple, Plus } from 'lucide-react';
 
 const MEAL_TYPES = [
@@ -150,6 +154,23 @@ export default function NutritionPage() {
       </div>
 
       {error && <div className="text-destructive text-sm">{error}</div>}
+
+      {/* Compliance hero — day-type picker + color-coded compliance bars */}
+      <ComplianceHero athleteId={user.id} logs={logs || []} />
+
+      {/* AI Meal Suggester + Peri-Match Fuel Timer side by side on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <AiMealSuggester athleteId={user.id} />
+        <PeriMatchFuelTimer athleteId={user.id} />
+      </div>
+
+      {/* Weekly report card + GI trigger + wellness log */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <WeeklyReportCard athleteId={user.id} logs={logs || []} />
+        <WellnessQuickLog athleteId={user.id} onLogged={() => api.getNutritionLogs(user.id).then(setLogs)} />
+      </div>
+      <GiTriggerCard logs={logs || []} />
+      <DietitianChatCard athleteId={user.id} />
 
       {/* Today's macros + water tracker side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

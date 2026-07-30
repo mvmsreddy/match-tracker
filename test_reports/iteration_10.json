@@ -1,0 +1,80 @@
+{
+  "summary": "Full-stack test of the nutritionist module (17 features). BACKEND: extended /app/backend/tests/backend_test.py with a TestNutritionSuggest class; pytest 10/10 PASS — POST /api/nutrition/suggest returns text/event-stream, emits many `data:` frames, ends with `event: done` + [DONE], honours allergens/preferences (dairy-free veg suggestions), 422 on missing `context`, post-match minimal body OK; /api/health 200 and advisor/digest regressions still pass. FRONTEND (390x844 mobile, public preview URL, localStorage cleared): nutritionist@matchtracker.app login lands on nutritionist-dashboard; all 6 tabs render (ids are roster/plan/protocols/templates/body/messages); roster tile roster-athlete-u_player shows name+email+5 mini bars and switching selects the athlete ('EDITING PLAN FOR Aarav Sharma'); Plan tab renders exactly 42 plan-cell inputs (7 day types x 6 macros), edit+Save persists to tt.nutrition.targets and survives reload (2999 read back), allergen-dairy toggles and persists, 5 micronutrient inputs present; Protocols tab has all 7 protocol-* inputs and protocol-electrolyteMlPerHour persists on blur (777 in tt.nutrition.profile); Templates create/list/delete works; Body tab save shows summary row + history (56.5kg, 2026-07-30); Messages send renders right-aligned and is visible to the player as an incoming message (cross-role sync verified). PLAYER: /nutrition renders compliance-hero (7 day-type options), ai-meal-suggester (4 presets + real streaming LLM output ~361 chars, no literal \\n leakage), fuel-timer (6 checkpoints T-2h..T+30, fuel-check-t-30 toggles, End session hides), weekly-report-card (5 hit%, avg energy 9/10, cramp count 1), wellness-log (range sliders, cramp checkbox, notes; stored as mealType 'wellness' with courtEnergy/gutComfort/crampFlag), gi-trigger-card with gi-trigger-cheese + gi-trigger-dairy (2x each) after seeding the 3 prescribed logs, dietitian-chat-card opens and player message renders on the RIGHT. Compliance bands verified numerically: 95%->green(var(--color-primary) -> rgb(51,112,255)), 85%->amber #f59e0b, 75%->orange #f97316, 50%->red #ef4444; switching day type recalculates (2660/2200 = 121% orange) and persists to tt.nutrition.activeDayType. Signup shows role-nutritionist-btn (plus organizer). Dashboard Trophy Cabinet now '2 of 22 unlocked' with ach-nut-first-log merged in and the reel horizontally scrollable (scrollWidth 626 > clientWidth 324). Zero console errors in every flow (aside from the known Vite dev 429 when reloading too fast).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ui/Input + native select (shadcn variant) on all new nutrition screens",
+        "issue": "HIGH: input/select TEXT IS INVISIBLE in dark mode — computed color is rgb(0,0,0) on a near-black background. Verified on plan-cell-* (value 2200 present in DOM but unreadable), micronutrient inputs, protocol-* inputs, template form, body-weight, message-input, player day-type-select and fuel-timer-mins. RCA: the shadcn Input class list has no text colour utility ('flex h-9 w-full ... bg-transparent px-3 py-1 text-base ...') so it inherits `color` from the ancestor chain, and index.css never sets a `color` on body/:root for the dark theme (getComputedStyle(document.body).color === rgb(0,0,0)). A control test div with class text-tt-foreground resolves to white, so the token CSS is loaded — only the inherited colour is wrong. Fix: add `text-foreground` (or text-tt-foreground) to the Input/select components, or set `color: hsl(var(--app-foreground))` on the app shell wrapper.",
+        "selector": "[data-testid=\"plan-cell-rest-calories\"], [data-testid=\"day-type-select\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "NutritionistDashboardPage — day-type macro grid",
+        "issue": "MEDIUM: at 390px the 42 number inputs are only 29-34px wide (measured), so 4-digit targets like 2800/3200/1800 are clipped and un-editable in practice. The wrapper has overflow-x-auto but `table w-full` forces the columns to squeeze instead of scrolling. Give the table/cells a min-width so the horizontal scroll actually engages.",
+        "selector": "[data-testid=\"nutritionist-plan\"] table",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "NutritionCoachingPanel — AI meal suggester output",
+        "issue": "MEDIUM: the LLM returns markdown (the system prompt asks for it) but suggest-output renders it as raw text — users see '## Pre-Match Snack', '**Macros:**', '---'. Render with a markdown component (or strip the syntax).",
+        "selector": "[data-testid=\"suggest-output\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "AchievementsReel next-up tiles",
+        "issue": "LOW: nutrition badges are counted in the total (22) but the locked preview is `locked.slice(0, 4)`, which is always the 4 first base-achievement locks — so Hydration Hero / Protein Pro / Gut Detective never surface as 'next up'. Interleave or reserve slots for nutrition locks.",
+        "selector": "[data-testid=\"achievements-reel\"]",
+        "priority": "LOW"
+      },
+      {
+        "component": "Nutritionist Messages bubble timestamp",
+        "issue": "LOW: timestamp inside the blue outgoing bubble is too dim to read (blue-on-blue).",
+        "selector": "[data-testid=\"nutritionist-messages\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Player /nutrition — hydration double source of truth",
+        "issue": "MEDIUM: with a log containing hydrationMl: 3100, compliance-hero shows 'Water 3100 / 2500ml · 124%' while the legacy Hydration widget on the SAME page shows '0 / 2500 ml · 0%' (and '7-day avg: 0ml'). The two widgets read water from different places, so the page contradicts itself.",
+        "affected_selectors": ["[data-testid=\"compliance-bar-hydrationMl\"]"]
+      },
+      {
+        "flow": "Test-id naming vs spec",
+        "issue": "LOW: the Athletes tab test id is `nutritionist-tab-roster` (not `nutritionist-tab-athletes` as stated in the request). Not a defect, but keep future test scripts/spec aligned.",
+        "affected_selectors": ["[data-testid=\"nutritionist-tab-roster\"]"]
+      }
+    ],
+    "design_issues": [
+      {"screen": "Nutritionist Plan tab (390x844)", "issues": ["Macro grid looks completely empty because of the black-on-black input text (HIGH bug above)", "Micronutrient values also unreadable", "Grid columns too narrow for 4-digit numbers"]},
+      {"screen": "Player /nutrition compliance hero", "issues": ["day-type dropdown label unreadable (black text)", "otherwise band colours, spacing and hierarchy are good"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "HIGH: fix invisible input/select text — add text-foreground to the shadcn Input/select or set a foreground colour on the app shell (affects every new nutrition form; the module is effectively unusable in dark mode until fixed).",
+    "MEDIUM: give the day-type macro grid min column widths so it scrolls horizontally on mobile instead of clipping 4-digit values.",
+    "MEDIUM: render the AI suggester output as markdown.",
+    "MEDIUM: unify hydration source between compliance-hero and the WaterTracker widget (currently 3100ml vs 0ml on the same page).",
+    "LOW: surface locked nutrition badges in the trophy reel next-up strip; fix blue-on-blue message timestamp."
+  ],
+  "critical_code_review_comments": [
+    "components/ui Input has no explicit text colour; every consumer depends on an inherited colour that the dark theme never sets. Set it once in the component instead of per-page.",
+    "COMPLIANCE_BANDS.green.color uses 'var(--color-primary)' while the other bands are hex — it happens to resolve (rgb(51,112,255)), but mixing token and literal colours in one map is fragile; also 'green' band showing the brand blue contradicts the 🟢 emoji/label.",
+    "NutritionistDashboardPage.jsx is 527 lines with 6 tab components inline — split each tab into src/components/nutritionist/*.jsx.",
+    "detectGiTriggers does substring-free word matching, so 'dairy' and 'cheese' both surface from the same sentence; consider a food-keyword dictionary to avoid noisy tokens.",
+    "AchievementsReel next-up slice ignores merged domains (see LOW issue) — take a stratified slice once more achievement sources are merged."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (10/10 pytest)", "frontend": "~90% — all 17 feature flows render and function; 1 HIGH styling defect makes form values invisible, plus 3 MEDIUM issues"},
+  "seed_data_creation": "localStorage only, for u_player: tt.nutrition.logs seeded with TEST_* logs (band test 2660kcal/93P/285C/40F/3100ml; GI set: 'cheese sandwich pre-match dairy' + gutComfort 3, 'dairy latte with lunch cheese' + gutComfort 4, 'plain rice dal' + gutComfort 9); TEST_ template, TEST_ body entry 56.5kg, TEST_ messages both directions. No backend/DB writes.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "nutritionist@matchtracker.app / nutri123 via [data-testid=demo-nutritionist-btn]; player@matchtracker.app / player123 via [data-testid=demo-player-btn]; then [data-testid=login-submit-btn]",
+  "context_for_next_testing_agent": "Backend: pytest /app/backend/tests/backend_test.py (10 tests incl. TestNutritionSuggest SSE). Frontend gotchas: (1) the Vite dev server behind the preview ingress returns 429 on module requests if you reload more than ~4-5 times per minute -> blank page; space reloads or sleep 75s. (2) Nutritionist Athletes tab id is 'roster'. (3) Day-type ids use hyphens: rest/light/training/heavy/match/tournament-prep/travel, so plan cells are e.g. plan-cell-tournament-prep-calories. (4) Nutrition logs live in localStorage key tt.nutrition.logs as {userId:[{id,createdAt,logDate,mealType,description,calories,proteinG,carbsG,fatsG,hydrationMl,sodiumMg,courtEnergy,gutComfort,crampFlag,notes}]}; nutritionist prescriptions in tt.nutrition.targets/profile/messages/bodyLog/templates/athletes/activeDayType/fuelSessions. (5) Verify input text colour after the HIGH fix by reading getComputedStyle(el).color on plan-cell-* and day-type-select (must not be rgb(0,0,0)).",
+  "rca_of_the_issue": "Invisible form text: shadcn Input/select markup carries no text-colour utility and index.css defines the dark palette only as --app-* custom properties consumed by utility classes; nothing sets `color` on body/:root, so document.body computed color is rgb(0,0,0) and every uncoloured input inherits black on a #0a0a0a surface. Values are correctly present in the DOM and persist to localStorage — purely a rendering/contrast defect, but it blocks real use of the whole nutritionist plan/protocol/body forms."
+}

@@ -119,6 +119,97 @@ async def advisor_tip(req: AdvisorRequest):
 
 
 # ============================================================================
+# AI Meal Suggester — LLM-powered nutrition recommendations
+# ============================================================================
+
+class MealSuggestRequest(BaseModel):
+    session_id: str
+    context: str                        # "pre-match in 45 min" / "post-match recovery" / "morning of match"
+    minutes_until_match: Optional[int] = None
+    day_type: Optional[str] = "training"
+    target_macros: Optional[dict] = None
+    already_eaten: Optional[list[str]] = None
+    allergens: Optional[list[str]] = None
+    preferences: Optional[list[str]] = None  # ['vegetarian', 'halal']
+    weight_kg: Optional[float] = None
+
+
+@app.post("/api/nutrition/suggest")
+async def suggest_meal(req: MealSuggestRequest):
+    """Return 2-3 concrete meal/snack options with macros, streamed via SSE.
+
+    The frontend calls this from the Nutrition page or the peri-match timer.
+    Meal suggestions are opinionated (India-context defaults, real macros,
+    tennis-specific timing rules) and deliberately short — 2-3 options with
+    the "why" for each.
+    """
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+
+    system_prompt = (
+        "You are a sports dietitian who specialises in competitive junior tennis players "
+        "in India. Give practical, culturally-relevant meal/snack suggestions using foods "
+        "commonly available (rice/roti/dal/curd/paneer/eggs/banana/upma etc). "
+        "Rules: "
+        "1) Suggest 2-3 options max. "
+        "2) For each: name, macros (Cal / P / C / F), one-line 'why now'. "
+        "3) Honor allergens/preferences strictly. "
+        "4) Match the timing context — if pre-match in <60 min, prefer easy-digesting carbs & low fibre; "
+        "if post-match, 3:1 carb:protein within 30-min window. "
+        "Format as clean markdown with bold names and short bullets. Do not preamble."
+    )
+
+    parts = [f"Context: {req.context}."]
+    if req.minutes_until_match is not None:
+        parts.append(f"Time until next match: {req.minutes_until_match} minutes.")
+    if req.day_type:
+        parts.append(f"Day type: {req.day_type}.")
+    if req.target_macros:
+        parts.append(f"Daily macro targets: {req.target_macros}.")
+    if req.already_eaten:
+        parts.append(f"Already eaten today: {', '.join(req.already_eaten)}.")
+    if req.allergens:
+        parts.append(f"AVOID (allergens): {', '.join(req.allergens)}.")
+    if req.preferences:
+        parts.append(f"Preferences: {', '.join(req.preferences)}.")
+    if req.weight_kg:
+        parts.append(f"Athlete weight: {req.weight_kg} kg.")
+
+    prompt = " ".join(parts) + " Suggest specific meals/snacks now."
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=req.session_id,
+        system_message=system_prompt,
+    ).with_model("anthropic", "claude-sonnet-4-6")
+
+    async def event_stream():
+        try:
+            async for event in chat.stream_message(UserMessage(text=prompt)):
+                if isinstance(event, TextDelta):
+                    # Preserve newlines through SSE by base64/JSON-safe encoding.
+                    # Simple approach: replace newlines with a sentinel that the
+                    # frontend converts back. Prevents SSE frame breakage.
+                    safe = event.content.replace("\n", "\\n")
+                    yield f"data: {safe}\n\n"
+                elif isinstance(event, StreamDone):
+                    yield "event: done\ndata: [DONE]\n\n"
+                    break
+        except Exception as e:  # noqa: BLE001
+            logger.exception("Meal suggest stream failed")
+            yield f"event: error\ndata: {str(e)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ============================================================================
 # Weekly Digest Email — Resend
 # ============================================================================
 

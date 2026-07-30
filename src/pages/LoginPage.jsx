@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import {
-  Trophy, Mail, Lock, Eye, EyeOff, User, Users, Heart, Calendar,
+  Trophy, Mail, Lock, Eye, EyeOff, User, Users, Heart, Calendar, Apple,
   ArrowRight, Loader2, Sparkles,
 } from 'lucide-react';
 
@@ -14,6 +14,7 @@ const ROLES = [
   { id: 'player', label: 'Player', desc: 'I compete', icon: User },
   { id: 'coach', label: 'Coach', desc: 'I train players', icon: Users },
   { id: 'parent', label: 'Parent', desc: 'My child plays', icon: Heart },
+  { id: 'nutritionist', label: 'Nutritionist', desc: 'I plan meals', icon: Apple },
   { id: 'organizer', label: 'Organizer', desc: 'I host events', icon: Calendar },
 ];
 
@@ -329,7 +330,7 @@ export default function LoginPage() {
                             key={r.id}
                             type="button"
                             onClick={() => setRole(r.id)}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-all ${
                               role === r.id
                                 ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
                                 : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'

@@ -6,6 +6,7 @@ import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
 import { autoProtectStreak, getTokenState } from '../lib/streakTokens';
 import { avgSkillRatings, listDrills } from '../lib/localStore';
+import { computeNutritionAchievements } from '../lib/nutritionCompliance';
 import { getNutritionLogs } from '../api/nutritionMock';
 import {
   computeMomentum, computeWeeklyRings, computeAchievements,
@@ -449,6 +450,22 @@ function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
   const momentum = computeMomentum({ matches, streak, ratings });
   const rings = computeWeeklyRings({ matches, nutritionLogs });
   const achievements = computeAchievements({ matches, streak, drillCount, ratings, rankHistory });
+  // Merge in nutrition-side achievements so both live in the same trophy cabinet.
+  const [nutritionLogsAll, setNutritionLogsAll] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    getNutritionLogs(user.id)
+      .then(l => { if (!cancelled) setNutritionLogsAll(l || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user.id]);
+  const nutritionAch = computeNutritionAchievements(nutritionLogsAll, user.id);
+  const mergedAchievements = {
+    unlocked: [...achievements.unlocked, ...nutritionAch.unlocked],
+    locked:   [...achievements.locked,   ...nutritionAch.locked],
+    unlockedCount: achievements.unlockedCount + nutritionAch.unlockedCount,
+    totalCount:    achievements.totalCount    + nutritionAch.totalCount,
+  };
   const mission = getDailyMission(user.id);
   const missionStreak = getMissionStreak(user.id);
 
@@ -469,7 +486,7 @@ function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
         />
       </div>
 
-      <AchievementsReel achievements={achievements} playerName={user.displayName || user.name} />
+      <AchievementsReel achievements={mergedAchievements} playerName={user.displayName || user.name} />
     </>
   );
 }

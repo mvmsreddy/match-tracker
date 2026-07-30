@@ -108,3 +108,53 @@ class TestDigest:
     def test_digest_missing_body_returns_422(self, api_client):
         r = api_client.post(f"{BASE_URL}/api/digest/send", json={}, timeout=30)
         assert r.status_code == 422
+
+
+# --- AI Meal Suggester (SSE) ---------------------------------------------
+class TestNutritionSuggest:
+    """POST /api/nutrition/suggest — streaming LLM meal suggestions."""
+
+    def _stream(self, payload, timeout=120):
+        r = requests.post(
+            f"{BASE_URL}/api/nutrition/suggest",
+            json=payload,
+            stream=True,
+            timeout=timeout,
+            headers={"Accept": "text/event-stream"},
+        )
+        lines = [raw if raw is not None else "" for raw in r.iter_lines(decode_unicode=True)]
+        return r, "\n".join(lines)
+
+    def test_suggest_stream_pre_match(self):
+        payload = {
+            "session_id": "TEST_nutrition_1",
+            "context": "pre-match in 45 min",
+            "minutes_until_match": 45,
+            "day_type": "match",
+            "allergens": ["dairy"],
+            "preferences": ["vegetarian"],
+        }
+        r, body = self._stream(payload)
+        assert r.status_code == 200, body[:300]
+        assert "text/event-stream" in r.headers.get("content-type", "")
+        assert "event: error" not in body, f"stream error: {body[:500]}"
+        assert "event: done" in body and "[DONE]" in body, body[:800]
+
+        frames = [l for l in body.split("\n") if l.startswith("data: ") and l.strip() != "data: [DONE]"]
+        assert len(frames) > 3, f"expected multiple data frames, got {len(frames)}"
+
+        text = "".join(f[len("data: "):] for f in frames).replace("\\n", "\n")
+        assert len(text) > 100, f"suggestion too short: {text!r}"
+        # allergen honoured (no dairy-only foods explicitly recommended)
+        lowered = text.lower()
+        assert any(k in lowered for k in ["banana", "rice", "roti", "upma", "dal", "poha", "toast", "date"]), text[:500]
+
+    def test_suggest_missing_required_fields_returns_422(self, api_client):
+        r = api_client.post(f"{BASE_URL}/api/nutrition/suggest", json={"session_id": "TEST_n2"}, timeout=30)
+        assert r.status_code == 422, r.text[:300]
+
+    def test_suggest_post_match_minimal(self):
+        r, body = self._stream({"session_id": "TEST_nutrition_3", "context": "post-match recovery"})
+        assert r.status_code == 200
+        assert "event: done" in body
+        assert "event: error" not in body, body[:500]

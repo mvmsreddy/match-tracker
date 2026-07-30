@@ -7,6 +7,7 @@ import AppShell from './components/AppShell';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ParentDashboardPage from './pages/ParentDashboardPage';
+import NutritionistDashboardPage from './pages/NutritionistDashboardPage';
 import PlayerDashboardPage from './pages/PlayerDashboardPage';
 import TrackerPage from './pages/TrackerPage';
 import MatchHistoryPage from './pages/MatchHistoryPage';
@@ -30,10 +31,13 @@ import MessagesPage from './pages/MessagesPage';
 
 // Parent's home experience (linked-player list) is different enough from
 // DashboardPage's player/coach/organizer branches that it's routed here
-// instead of adding a 4th branch to that already-large component.
+// instead of adding a 4th branch to that already-large component. The
+// nutritionist has an entirely separate command centre — same story.
 function HomeRoute() {
   const { user } = useAuth();
-  return user?.role === 'parent' ? <ParentDashboardPage /> : <DashboardPage />;
+  if (user?.role === 'parent') return <ParentDashboardPage />;
+  if (user?.role === 'nutritionist') return <NutritionistDashboardPage />;
+  return <DashboardPage />;
 }
 
 export default function App() {
@@ -54,6 +58,8 @@ export default function App() {
                 <Route path="/my-coaches" element={<CoachPlayersPage />} />
                 <Route path="/my-parents" element={<ParentPlayersPage />} />
                 <Route path="/nutrition" element={<NutritionPage />} />
+                <Route path="/nutritionist" element={<NutritionistDashboardPage />} />
+                <Route path="/nutritionist/athlete/:athleteId" element={<NutritionistDashboardPage />} />
                 <Route path="/drills" element={<DrillsPage />} />
                 <Route path="/messages" element={<MessagesPage />} />
                 <Route path="/coach/players/:playerId/dashboard" element={<PlayerDashboardPage />} />

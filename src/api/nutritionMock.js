@@ -39,6 +39,12 @@ export async function createNutritionLog(userId, payload) {
     carbsG: Number(payload.carbsG) || 0,
     fatsG: Number(payload.fatsG) || 0,
     hydrationMl: Number(payload.hydrationMl) || 0,
+    sodiumMg: Number(payload.sodiumMg) || 0,
+    // Subjective inputs a player can attach to any log (or a standalone
+    // wellness entry with mealType='wellness')
+    courtEnergy: payload.courtEnergy != null ? Number(payload.courtEnergy) : null, // 1-10
+    gutComfort:  payload.gutComfort  != null ? Number(payload.gutComfort)  : null, // 1-10
+    crampFlag:   !!payload.crampFlag,
     notes: payload.notes || '',
   };
   const list = read(userId);

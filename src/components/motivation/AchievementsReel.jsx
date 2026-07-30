@@ -2,22 +2,14 @@ import { useState } from 'react';
 import { Card } from '@/components/primitives/card';
 import {
   Trophy, Award, Zap, Flame, Shield, Target, Star, Crown,
-  Dumbbell, Sparkles, TrendingUp, Lock, Share2,
+  Dumbbell, Sparkles, TrendingUp, Lock, Share2, Droplet,
 } from 'lucide-react';
 import ShareBadgeModal from './ShareBadgeModal';
 
 const ICONS = {
-  trophy: Trophy,
-  award: Award,
-  zap: Zap,
-  flame: Flame,
-  shield: Shield,
-  target: Target,
-  star: Star,
-  crown: Crown,
-  dumbbell: Dumbbell,
-  sparkles: Sparkles,
-  'trending-up': TrendingUp,
+  trophy: Trophy, award: Award, zap: Zap, flame: Flame, shield: Shield,
+  target: Target, star: Star, crown: Crown, dumbbell: Dumbbell,
+  sparkles: Sparkles, 'trending-up': TrendingUp, droplet: Droplet,
 };
 
 function isNew(iso) {

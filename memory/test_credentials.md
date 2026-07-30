@@ -4,11 +4,12 @@ Tennis Tracker Pro uses a **mock localStorage backend** (Supabase not configured
 
 ## Demo Accounts (Auto-seeded)
 
-| Role     | Email                       | Password    |
-|----------|-----------------------------|-------------|
-| Player   | player@matchtracker.app     | player123   |
-| Coach    | coach@matchtracker.app      | coach123    |
-| Parent   | parent@matchtracker.app     | parent123   |
+| Role         | Email                             | Password    |
+|--------------|-----------------------------------|-------------|
+| Player       | player@matchtracker.app           | player123   |
+| Coach        | coach@matchtracker.app            | coach123    |
+| Parent       | parent@matchtracker.app           | parent123   |
+| Nutritionist | nutritionist@matchtracker.app     | nutri123    |
 
 ## Preview URL
 https://0e360100-eae9-4867-811b-c1ce9b3f6a38.preview.emergentagent.com
