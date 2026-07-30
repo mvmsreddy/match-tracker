@@ -249,7 +249,7 @@ function PlanConfigTab({ athleteId }) {
           <Button size="sm" onClick={persist} data-testid="plan-save-btn">{saved ? 'Saved ✓' : 'Save plan'}</Button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full min-w-[560px] text-xs">
             <thead>
               <tr className="text-muted-foreground border-b border-border">
                 <th className="text-left py-2 pr-3 font-bold">Day Type</th>
@@ -261,7 +261,7 @@ function PlanConfigTab({ athleteId }) {
                 <tr key={dt.id} className="border-b border-border/50">
                   <td className="py-2 pr-3 font-semibold">{dt.label}</td>
                   {macros.map(m => (
-                    <td key={m.k} className="py-1 px-1">
+                    <td key={m.k} className="py-1 px-1 min-w-[80px]">
                       <Input
                         type="number"
                         value={targets[dt.id]?.[m.k] ?? 0}
@@ -396,7 +396,7 @@ function MealTemplatesTab({ nutritionistId }) {
           <Input type="number" placeholder="Protein (g)" value={draft.proteinG} onChange={e => setDraft({ ...draft, proteinG: Number(e.target.value) || 0 })} />
           <Input type="number" placeholder="Carbs (g)" value={draft.carbsG} onChange={e => setDraft({ ...draft, carbsG: Number(e.target.value) || 0 })} />
           <Input type="number" placeholder="Fat (g)" value={draft.fatsG} onChange={e => setDraft({ ...draft, fatsG: Number(e.target.value) || 0 })} />
-          <select value={draft.tag} onChange={e => setDraft({ ...draft, tag: e.target.value })} className="col-span-2 h-9 rounded-md border border-border bg-background text-sm px-3">
+          <select value={draft.tag} onChange={e => setDraft({ ...draft, tag: e.target.value })} className="col-span-2 h-9 rounded-md border border-border bg-background text-foreground text-sm px-3">
             {['pre-match', 'post-match', 'breakfast', 'lunch', 'dinner', 'snack', 'recovery'].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>

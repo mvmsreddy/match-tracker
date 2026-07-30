@@ -46,7 +46,7 @@ export function ComplianceHero({ athleteId, logs }) {
         <select
           value={dayType}
           onChange={e => change(e.target.value)}
-          className="h-9 rounded-full border border-border bg-background px-3 text-xs font-bold cursor-pointer"
+          className="h-9 rounded-full border border-border bg-background text-foreground px-3 text-xs font-bold cursor-pointer"
           data-testid="day-type-select"
         >
           {listDayTypes().map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
@@ -176,13 +176,58 @@ export function AiMealSuggester({ athleteId }) {
       </Button>
 
       {(tip || state === 'streaming') && (
-        <div className="mt-3 pt-3 border-t border-primary/15 text-sm whitespace-pre-wrap leading-relaxed" data-testid="suggest-output">
-          {tip || '…'}
+        <div className="mt-3 pt-3 border-t border-primary/15 text-sm leading-relaxed" data-testid="suggest-output">
+          <TinyMarkdown text={tip || '…'} />
         </div>
       )}
       {error && <div className="mt-3 text-xs text-destructive font-semibold">{error}</div>}
     </Card>
   );
+}
+
+// Minimal markdown renderer for LLM output — bold, headings, bullet lists,
+// paragraphs. Kept inline to avoid adding a dep for a 30-line feature.
+function TinyMarkdown({ text }) {
+  const lines = text.split('\n');
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    // Heading levels
+    if (/^###\s+/.test(l))      { out.push(<div key={i} className="font-bold text-sm mt-2">{renderInline(l.replace(/^###\s+/, ''))}</div>); i++; continue; }
+    if (/^##\s+/.test(l))       { out.push(<div key={i} className="font-display font-extrabold text-base mt-3 tracking-tight">{renderInline(l.replace(/^##\s+/, ''))}</div>); i++; continue; }
+    if (/^#\s+/.test(l))        { out.push(<div key={i} className="font-display font-extrabold text-lg mt-3 tracking-tight">{renderInline(l.replace(/^#\s+/, ''))}</div>); i++; continue; }
+    // Bullet list run
+    if (/^[-*]\s+/.test(l)) {
+      const bullets = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+        bullets.push(lines[i].replace(/^[-*]\s+/, ''));
+        i++;
+      }
+      out.push(
+        <ul key={`ul-${i}`} className="list-disc pl-5 space-y-0.5 my-1">
+          {bullets.map((b, k) => <li key={k}>{renderInline(b)}</li>)}
+        </ul>
+      );
+      continue;
+    }
+    // Blank
+    if (l.trim() === '') { out.push(<div key={`br-${i}`} className="h-1" />); i++; continue; }
+    // Paragraph
+    out.push(<div key={i} className="my-0.5">{renderInline(l)}</div>);
+    i++;
+  }
+  return <>{out}</>;
+}
+
+function renderInline(text) {
+  // **bold** → <strong>
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, k) => (
+    /^\*\*[^*]+\*\*$/.test(p)
+      ? <strong key={k} className="font-bold text-foreground">{p.slice(2, -2)}</strong>
+      : <span key={k}>{p}</span>
+  ));
 }
 
 // ─── Peri-Match Fueling Timer ──────────────────────────────────────────────
