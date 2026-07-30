@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { minEligibleAgeGroup } from '../utils/eligibility';
 import { isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
+import { getInitials } from '../lib/initials';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
@@ -30,14 +31,6 @@ const ROLE_LABELS = {
 const GENDER_LABELS   = { M: 'Male', F: 'Female' };
 const PLAYS_LABELS    = { R: 'Right-handed', L: 'Left-handed' };
 const BACKHAND_LABELS = { '1H': 'One-handed', '2H': 'Two-handed' };
-
-function getInitials(name) {
-  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  const first = parts[0][0];
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-  return (first + last).toUpperCase();
-}
 
 function getAge(dob) {
   if (!dob) return null;
@@ -209,28 +202,64 @@ function StreakFreezeCard({ userId }) {
   }
 
   return (
-    <Card className="p-4 sm:p-6">
-      <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Streak Freeze</div>
-      <div className="text-xs text-muted-foreground mt-1">
-        Mark travel or rest days so they don't break your logging streak.
+    <Card className="p-4 sm:p-6 shadow-sm">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold">Streak Freeze</div>
+          <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            Mark travel or rest days so they don't break your logging streak.
+          </div>
+        </div>
       </div>
-      <div className="flex gap-2 mt-3 flex-wrap">
-        <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-auto" />
-        <Button size="sm" onClick={handleAdd} disabled={!date}>+ Add freeze day</Button>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          className="flex-1"
+          data-testid="freeze-day-date-input"
+        />
+        <Button size="sm" onClick={handleAdd} disabled={!date} data-testid="freeze-day-add-btn">
+          + Add freeze day
+        </Button>
       </div>
       {error && <div className="text-destructive text-xs mt-2">{error}</div>}
       {freezes === null ? (
-        <div className="text-xs text-muted-foreground mt-3">Loading…</div>
+        <div className="text-xs text-muted-foreground mt-4">Loading…</div>
       ) : freezes.length === 0 ? (
-        <div className="text-xs text-muted-foreground mt-3">No freeze days set.</div>
+        <div className="text-xs text-muted-foreground mt-4 italic">No freeze days set.</div>
       ) : (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {freezes.map(f => (
-            <span key={f.id} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-sm px-2 py-1 bg-secondary">
-              {f.freezeDate}
-              <button onClick={() => handleRemove(f.id)} className="text-muted-foreground hover:text-destructive" title="Remove">✕</button>
-            </span>
-          ))}
+        <div className="mt-4">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
+            Frozen dates ({freezes.length})
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {freezes.map(f => (
+              <span
+                key={f.id}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5 bg-primary/10 text-primary border border-primary/20"
+                data-testid={`freeze-day-${f.id}`}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
+                </svg>
+                {f.freezeDate}
+                <button
+                  onClick={() => handleRemove(f.id)}
+                  className="ml-0.5 -mr-1 w-5 h-5 flex items-center justify-center rounded-full hover:bg-destructive hover:text-white transition-colors text-primary"
+                  title="Remove"
+                  aria-label={`Remove freeze day ${f.freezeDate}`}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </Card>

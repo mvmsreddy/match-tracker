@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
+import { getInitials } from '../lib/initials';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Users, ChevronRight, UserPlus } from 'lucide-react';
@@ -62,7 +63,7 @@ export default function ParentDashboardPage() {
           </div>
           <div className="space-y-2.5">
             {activePlayers.map(p => {
-              const initials = (p.displayName || '').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+              const initials = getInitials(p.displayName);
               return (
                 <Link
                   key={p.id}
@@ -70,7 +71,7 @@ export default function ParentDashboardPage() {
                   className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:border-primary hover:shadow-md transition-all group"
                 >
                   <div className="shrink-0 w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                    {initials || '?'}
+                    {initials}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-bold truncate">{p.displayName}</div>

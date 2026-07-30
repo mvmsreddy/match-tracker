@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Menu, Trophy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { getInitials } from '@/lib/initials';
 import NavDrawer from './NavDrawer';
 import NotificationsBell from './NotificationsBell';
 
@@ -14,15 +15,7 @@ export default function TopNav() {
   const { theme, toggle } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = user?.displayName || user?.name || '?';
-  const initials = displayName
-    .trim()
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '?';
+  const initials = getInitials(displayName);
 
   return (
     <>

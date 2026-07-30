@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { getInitials } from '@/lib/initials';
 import NotificationsBell from '@/components/NotificationsBell';
 import NavDrawer from '@/components/NavDrawer';
 import { Trophy, Sun, Moon, LogOut, Menu, User } from 'lucide-react';
@@ -13,15 +14,7 @@ export default function AppShell() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = user?.displayName || user?.name || '?';
-  const initials = displayName
-    .trim()
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '?';
+  const initials = getInitials(displayName);
 
   const userMenuRef = useRef(null);
   useEffect(() => {
