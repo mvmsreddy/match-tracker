@@ -114,10 +114,14 @@ export async function renderHighlightReelStory(data) {
 
   let cursor = recapTop + 60;
   const recapMaxLines = 6;
+  // Inner horizontal padding so text never sits directly on the decorative
+  // court border drawn at x=80 → x=W-80.
+  const textX = 110;
+  const textMaxW = W - 220;
   if (data.recap) {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'italic 34px Georgia, serif';
-    cursor = drawWrap(ctx, `"${data.recap.trim()}"`, 80, cursor, W - 160, 46, recapMaxLines);
+    cursor = drawWrap(ctx, `"${data.recap.trim()}"`, textX, cursor, textMaxW, 46, recapMaxLines);
   }
 
   // ─── Coach tips (optional filler for short recaps) ──────────────────────
@@ -126,13 +130,15 @@ export async function renderHighlightReelStory(data) {
     cursor += 30;
     ctx.fillStyle = '#f59e0b';
     ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('COACH WHISPERED', 80, cursor);
+    ctx.fillText('COACH WHISPERED', textX, cursor);
     cursor += 34;
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.font = '26px Georgia, serif';
     for (const tip of data.tips) {
       if (cursor + 40 > tipsBottomLimit) break;
-      cursor = drawWrap(ctx, `• ${String(tip.text || '').trim()}`, 80, cursor, W - 160, 36, 2);
+      const remaining = Math.max(1, Math.floor((tipsBottomLimit - cursor) / 36));
+      const allowed = Math.min(3, remaining);
+      cursor = drawWrap(ctx, `• ${String(tip.text || '').trim()}`, textX, cursor, textMaxW, 36, allowed);
       cursor += 8;
     }
   }
@@ -176,10 +182,20 @@ function drawWrap(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
       if (lines >= maxLines - 1) {
         // last line — draw with ellipsis if remaining wouldn't fit
         let tail = line + ' ' + words.slice(i + 1).join(' ');
-        while (ctx.measureText(tail + '…').width > maxWidth && tail.length > 0) {
-          tail = tail.slice(0, -1);
+        const alreadyPunctuated = /[.!?…]"?\s*$/.test(tail);
+        const fitsCleanly = ctx.measureText(tail).width <= maxWidth;
+        if (fitsCleanly || alreadyPunctuated) {
+          // Trim to fit without adding an ellipsis after existing punctuation
+          while (ctx.measureText(tail).width > maxWidth && tail.length > 0) {
+            tail = tail.slice(0, -1);
+          }
+          ctx.fillText(tail, x, y);
+        } else {
+          while (ctx.measureText(tail + '…').width > maxWidth && tail.length > 0) {
+            tail = tail.slice(0, -1);
+          }
+          ctx.fillText(tail + (words.length - i > 1 ? '…' : ''), x, y);
         }
-        ctx.fillText(tail + (words.length - i > 1 ? '…' : ''), x, y);
         return y + lineHeight;
       }
     } else {

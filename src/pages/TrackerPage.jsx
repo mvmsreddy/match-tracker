@@ -68,6 +68,26 @@ const ROUNDS = [
   'Quarterfinal', 'Semifinal', 'Final',
 ];
 
+// Short round tokens ('R32', 'QF', 'SF', 'F') — used by tournament data and
+// TodaysMatchHero prefill — mapped to the exact <option> labels above so the
+// prefill actually selects the right round instead of silently blanking it.
+const ROUND_TOKEN_TO_LABEL = {
+  Q1: 'Qualifying Round 1',
+  Q2: 'Qualifying Round 2',
+  QF_Q: 'Qualifying Final',
+  R64: 'Round of 64',
+  R32: 'Round of 32',
+  R16: 'Round of 16',
+  QF: 'Quarterfinal',
+  SF: 'Semifinal',
+  F: 'Final',
+};
+function normalizeRoundPrefill(round) {
+  if (!round) return round;
+  if (ROUNDS.includes(round)) return round;
+  return ROUND_TOKEN_TO_LABEL[round] || round;
+}
+
 // AITA calendar "grade" text → our Circuit dropdown labels. The synced `grade`
 // column is inconsistent by nature of where it came from: once a tournament's
 // factsheet PDF has been parsed it's the full descriptive category, e.g.
@@ -134,7 +154,8 @@ export default function TrackerPage() {
   useEffect(() => {
     const prefill = location.state?.trackerPrefill;
     if (prefill) {
-      t.updateHeader(prefill);
+      const normalized = { ...prefill, round: normalizeRoundPrefill(prefill.round) };
+      t.updateHeader(normalized);
       navigate(location.pathname, { replace: true, state: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

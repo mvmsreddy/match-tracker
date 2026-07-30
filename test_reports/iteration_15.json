@@ -1,0 +1,71 @@
+{
+  "summary": "Iteration 15 verification of the iteration-14 taxonomy blocker fixes. BACKEND: /app/backend/tests/test_serve_placement.py -> 7/7 PASS (junit: /app/test_reports/pytest/iter15_backend.xml). FRONTEND (preview URL, player@matchtracker.app): ALL five requested items now VERIFIED FIXED. (1) TodaysMatchHero MOUNTS on /player-dashboard Overview (URL auto-resolves to ?segment=Boys%7CU-18): data-testid='todays-match-hero' present, shows 'MATCH TODAY / BOYS · U-18 / vs Iyer, Neel / Deccan Open Under-18 · QF · CS-7'. Upcoming-matches card also shows Today/QF/Iyer, Neel. (2) Tournaments tab: data-testid='tournaments-history-filter' MOUNTS, header reads '5 Boys U-18 entries'; chips filter-all/this-year(3 of 5)/last-12m(3 of 5)/year-2026(3)/year-2025(1)/year-2024(1) plus month chips 2026-07/06/04, 2025-06, 2024-06 all present and functional; filter-range -> filter-range-inputs (2 date inputs) works, 2019-01-01..2019-06-30 correctly renders data-testid='tournaments-empty-filtered' ('No tournaments match this filter. Clear filter'), a 2026 range restores 3 of 5, Clear dates/All restores 5. (3) End-to-end launch: todays-match-launch-btn -> /track with Opponent='Iyer, Neel', Tournament='Deccan Open Under-18', Round select='Quarterfinal', Date=2026-07-30 (today) — all four prefills correct (round token->label map works). Started the match in Quick mode, played a full short-set match (32 points, 4-0 4-0) with the prefilled context in the header, advisor tip requested mid-match, highlight reel rendered, AI recap streamed 297 chars. (4) Story PNG: exported story-Aarav_Sharma-vs-Iyer,_Neel.png = 1080x1920, 232KB; recap + 'COACH WHISPERED' text is now clearly inset (~30px) from the amber court rect on both sides and the single short tip ends with 'net.' with NO trailing ellipsis. (5) No regressions: wake-lock spy (wrapping the real navigator.wakeLock.request) recorded exactly 1 request across a full match (0 releases mid-match); court-side chip switches DEUCE->AD->DEUCE->AD across points; phone-sized viewport (390x844) renders the mobile tracker without landscape overlay leakage.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "useMatchTracker.js:9 (SetupForm 'Your name')",
+        "issue": "LOW: selfName defaults to the hardcoded demo string 'Kundanapriya' instead of the logged-in profile name ('Aarav Sharma'). When launching from TodaysMatchHero the opponent/tournament/round/date are prefilled from the profile-linked draw, but the player's own name is a hardcoded stranger's name — confusing and likely to be saved as-is.",
+        "selector": "input[placeholder='Your name']",
+        "priority": "LOW"
+      },
+      {
+        "component": "TodaysMatchHero -> TrackerPage prefill (Circuit / Age Group selects)",
+        "issue": "LOW/MEDIUM: the hero knows the segment (Boys · U-18) yet the tracker's CIRCUIT and AGE GROUP selects stay 'Not specified' after the launch prefill, so the match saved from this flow cannot be normalized back into the Boys|U-18 segment by normalizeTrackerSegment(). Prefill ageGroup='Under 18' (and circuit) alongside the other four fields.",
+        "selector": "select (Circuit), select (Age Group) on /track",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "TournamentsTab entry rows / SetupForm fields",
+        "issue": "LOW (testability): tournament history rows have no data-testid (had to count via text), and the setup-form inputs (opponent/tournament/round/date) have no data-testid — tests must rely on placeholders and DOM order. Add data-testid to entry rows (e.g. tournament-entry-<id>) and the four prefill fields.",
+        "selector": "n/a",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Player dashboard Overview stat cards",
+        "issues": [
+          "Data inconsistency: 'UPCOMING TOURNAMENTS 0' and 'MATCHES THIS MONTH 0' / 'AVG POINTS PER MATCH —' are shown even though the same segment has a live tournament running today and recent results dated 28-29 Jul 2026 (current month). Either count the seeded entries or relabel the cards so the hero and the cards don't contradict each other."
+        ]
+      },
+      {
+        "screen": "Tournaments tab custom range inputs",
+        "issues": [
+          "Native <input type=date> values/placeholders render very low-contrast (dark grey on near-black) — the From/To fields are hard to read until focused. Raise text/placeholder contrast."
+        ]
+      },
+      {
+        "screen": "Story PNG (1080x1920)",
+        "issues": [
+          "Padding + ellipsis nits from iteration 14 are FIXED. Remaining cosmetic nit: with only one coach tip there is a ~250px empty band at the bottom of the court rect; consider shrinking the rect or vertically centring the recap+tips block."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_serve_placement.py",
+    "/app/test_reports/pytest/iter15_backend.xml"
+  ],
+  "action_items": [
+    "LOW/MEDIUM: prefill Circuit + Age Group (Boys / Under 18) from the hero segment so the tracked match maps back to the segment.",
+    "LOW: replace the hardcoded 'Kundanapriya' default selfName with the logged-in profile name.",
+    "LOW: reconcile Overview 'UPCOMING TOURNAMENTS' / 'MATCHES THIS MONTH' counters with the seeded segment data (both show 0 next to a live-today hero).",
+    "LOW: add data-testid to tournament history rows and the four setup-form prefill fields.",
+    "LOW: raise contrast on the custom-range date inputs."
+  ],
+  "critical_code_review_comments": [
+    "Taxonomy is now unified (mockRankingHistory CIRCUITS Boys/U-14|U-16|U-18 == normalizeEventSegment('Boys Singles','U18') -> {Boys, U-18}) and round indices are 1-based, matching roundToken(). Recommend locking this in with a unit test over normalizeEventSegment/buildCircuits/roundToken so a third regression of this class is impossible — there is still no test file guarding it.",
+    "TrackerPage ROUND_TOKEN_TO_LABEL is a second string-mapping table living next to normalizeTrackerSegment; consider co-locating all taxonomy/token bridges in governingBodies.js so they are discoverable and testable together.",
+    "highlightReelStory drawWrap: the 3-line allowance (Math.min(3, remaining)) plus terminal-punctuation ellipsis suppression is correct; verified against a real export."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (7/7 pytest)", "frontend": "100% of requested items verified (hero, tournaments filter incl. empty-filtered, end-to-end prefill + match play, story PNG padding/ellipsis, wake-lock + court-side no-regression); only LOW-priority polish items remain" },
+  "seed_data_creation": "None persisted server-side. Three Quick-mode matches played in the tracker (localStorage only). Story export saved to /app/.screenshots/i15_story.png.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "player@matchtracker.app / player123 (from /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "Iteration 14's CRITICAL taxonomy blocker is CLOSED — hero + tournaments filter both render on the same run at /player-dashboard (auto-redirects to ?segment=Boys%7CU-18). Fast paths: login via [data-testid=login-email-input|login-password-input|login-submit-btn]; hero = [data-testid=todays-match-hero] / launch = [data-testid=todays-match-launch-btn]; tournaments = [data-testid=player-tab-tournaments] then filter-all / filter-this-year / filter-last-12m / filter-range (+ filter-range-inputs 2 date inputs) / filter-year-2026|2025|2024 / filter-month-YYYY-MM / tournaments-empty-filtered. Tracker: the tracking-detail buttons render uppercase via CSS so get_by_role(name='QUICK', exact=True) FAILS — use page.locator('button', has_text='QUICK'). Quick-mode loop: [data-testid=serve-first-self-btn] then [data-testid=quick-win-self-btn] with 'Next Game'/'Continue'/'Next Set' transitions; shortsets4 finishes in ~32 points/40 loops. Wake-lock spy must wrap the EXISTING navigator.wakeLock.request via Object.defineProperty (replacing navigator.wakeLock wholesale is ignored) — headless returns NotAllowedError but the call count is still observable (expected 1).",
+  "rca_of_the_issue": "No new defects. Iteration 14 RCA confirmed resolved: events now use category='Boys Singles'/ageGroup='U18' so normalizeEventSegment returns {Boys, U-18}, which equals the buildCircuits() circuit shape; EVENT_MATCHES.round is 1-based so roundToken(3,32)='QF'; TrackerPage normalizeRoundPrefill maps 'QF'->'Quarterfinal' so the Round select resolves; toLocalIso() keeps the seeded 'today' aligned with todayLocalIso()."
+}

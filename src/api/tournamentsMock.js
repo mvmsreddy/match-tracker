@@ -8,24 +8,26 @@
 //     multiple months so year/month/last-12m/range chips are all meaningful
 //   • Segment schedule hook — round tokens, opponents and dates all resolve
 //
-// Every function returns a Promise so the surface matches supabaseApi.js's.
+// All strings deliberately follow the SAME taxonomy the rest of the app uses:
+//   • events.category  → 'Boys Singles' | 'Girls Singles' | ...
+//   • events.age_group → 'U14' | 'U16' | 'U18' | 'Open'
+// so normalizeEventSegment() maps them onto the Boys/U-18 shape that
+// buildCircuits() also emits (see /app/src/lib/mockRankingHistory.js).
+//
+// EVENT_MATCHES.round is a 1-based ROUND INDEX (1 = R32, 2 = R16, 3 = QF,
+// 4 = SF, 5 = F) as roundToken(matchRound, drawSize, won) expects.
 // ---------------------------------------------------------------------------
 
+import { toLocalIso } from '../lib/dates';
+
 // Rolling anchor dates so seeds stay "today-relative" no matter when the demo
-// user visits. All dates are ISO YYYY-MM-DD.
-function isoDaysAgo(n) {
+// user visits. All dates are wall-clock local, not UTC.
+function daysAgo(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return toLocalIso(d);
 }
-function isoDaysAhead(n) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-const TODAY = isoDaysAgo(0);
-const YESTERDAY = isoDaysAgo(1);
-const TOMORROW = isoDaysAhead(1);
+function daysAhead(n) { return daysAgo(-n); }
 
 // ---------------------------------------------------------------------------
 // Seed data
@@ -36,8 +38,8 @@ const TOURNAMENTS = [
   {
     id: 'w-live-2026',
     name: 'Deccan Open Under-18',
-    startDate: isoDaysAgo(2),  // ran R32 two days ago, R16 yesterday, QF today
-    endDate: isoDaysAhead(3),
+    startDate: daysAgo(2),
+    endDate: daysAhead(3),
     city: 'Pune',
     stateAbbr: 'MH',
     grade: 'CS-7',
@@ -46,8 +48,8 @@ const TOURNAMENTS = [
   {
     id: 'w-recent-1',
     name: 'Baroda Junior Championships',
-    startDate: isoDaysAgo(30),
-    endDate: isoDaysAgo(26),
+    startDate: daysAgo(30),
+    endDate: daysAgo(26),
     city: 'Vadodara',
     stateAbbr: 'GJ',
     grade: 'CS-5',
@@ -56,46 +58,46 @@ const TOURNAMENTS = [
   {
     id: 'w-this-year',
     name: 'MSLTA State Ranking',
-    startDate: isoDaysAgo(120),
-    endDate: isoDaysAgo(116),
+    startDate: daysAgo(120),
+    endDate: daysAgo(116),
     city: 'Mumbai',
     stateAbbr: 'MH',
     grade: 'AITA Talent Series',
   },
-  // Last year — powers year filter chips
+  // Last calendar year — powers year filter chips
   {
     id: 'w-last-year',
     name: 'All India Nationals Qualifier',
-    startDate: isoDaysAgo(300),
-    endDate: isoDaysAgo(296),
+    startDate: daysAgo(400),
+    endDate: daysAgo(396),
     city: 'Bengaluru',
     stateAbbr: 'KA',
     grade: 'CS-7',
   },
-  // Two years back
+  // Two years back — powers older year chip
   {
     id: 'w-two-years',
     name: 'Delhi State Open',
-    startDate: isoDaysAgo(560),
-    endDate: isoDaysAgo(556),
+    startDate: daysAgo(760),
+    endDate: daysAgo(756),
     city: 'New Delhi',
     stateAbbr: 'DL',
     grade: 'CS-3',
   },
 ];
 
-// One event (a specific age-group draw) per tournament. Category/ageGroup here
-// must feed normalizeEventSegment() and yield {category:'U18', subcategory:'Singles'}
-// for the demo player's default segment.
+// One event (a specific age-group draw) per tournament. All events use the
+// events-schema strings so normalizeEventSegment() resolves cleanly. All
+// five events sit in the BOYS/U-18 segment (the demo player's dashboard
+// default) so the hero + filter both have plenty of data to show.
 const EVENTS = [
-  { id: 'e-live-u18s',      weekId: 'w-live-2026',    category: 'BS',   ageGroup: 'U-18', drawSize: 32, drawType: 'singles' },
-  { id: 'e-recent-u18s',    weekId: 'w-recent-1',     category: 'BS',   ageGroup: 'U-18', drawSize: 32, drawType: 'singles' },
-  { id: 'e-this-year-u18s', weekId: 'w-this-year',    category: 'BS',   ageGroup: 'U-18', drawSize: 32, drawType: 'singles' },
-  { id: 'e-last-year-u18s', weekId: 'w-last-year',    category: 'BS',   ageGroup: 'U-16', drawSize: 32, drawType: 'singles' },
-  { id: 'e-two-yr-u16s',    weekId: 'w-two-years',    category: 'BS',   ageGroup: 'U-16', drawSize: 32, drawType: 'singles' },
+  { id: 'e-live-u18s',      weekId: 'w-live-2026',    category: 'Boys Singles', ageGroup: 'U18', drawSize: 32, drawType: 'singles' },
+  { id: 'e-recent-u18s',    weekId: 'w-recent-1',     category: 'Boys Singles', ageGroup: 'U18', drawSize: 32, drawType: 'singles' },
+  { id: 'e-this-year-u18s', weekId: 'w-this-year',    category: 'Boys Singles', ageGroup: 'U18', drawSize: 32, drawType: 'singles' },
+  { id: 'e-last-year-u18s', weekId: 'w-last-year',    category: 'Boys Singles', ageGroup: 'U18', drawSize: 32, drawType: 'singles' },
+  { id: 'e-two-yr-u18s',    weekId: 'w-two-years',    category: 'Boys Singles', ageGroup: 'U18', drawSize: 32, drawType: 'singles' },
 ];
 
-// The demo player is entry #101 in every event; opponents are #201, #202, #203.
 const OWN_ENTRY_ID_PREFIX = 'entry-me-';
 
 const DRAW_ENTRIES = {
@@ -112,41 +114,42 @@ const DRAW_ENTRIES = {
   ],
   'e-this-year-u18s': [
     { id: 'entry-me-ty', firstName: 'Aarav', familyName: 'Sharma', isBye: false },
-    { id: 'entry-opp-ty1', firstName: 'Yash', familyName: 'Kulkarni', isBye: false },
-    { id: 'entry-opp-ty2', firstName: 'Ishaan', familyName: 'Nair', isBye: false, seed: 2 },
+    { id: 'entry-opp-ty1', firstName: 'Yash',   familyName: 'Kulkarni', isBye: false },
+    { id: 'entry-opp-ty2', firstName: 'Ishaan', familyName: 'Nair',     isBye: false, seed: 2 },
   ],
   'e-last-year-u18s': [
     { id: 'entry-me-ly', firstName: 'Aarav', familyName: 'Sharma', isBye: false, seed: 8 },
     { id: 'entry-opp-ly1', firstName: 'Karan', familyName: 'Verma', isBye: false },
+    { id: 'entry-opp-ly2', firstName: 'Dhruv', familyName: 'Kapoor', isBye: false, seed: 4 },
   ],
-  'e-two-yr-u16s': [
+  'e-two-yr-u18s': [
     { id: 'entry-me-2y', firstName: 'Aarav', familyName: 'Sharma', isBye: false },
     { id: 'entry-opp-2y1', firstName: 'Sameer', familyName: 'Chopra', isBye: false, seed: 5 },
   ],
 };
 
-// Matches per event.  dayNumber=1 == first day of the tournament, etc.  The
-// LIVE tournament has today == startDate+2, so we mark dayNumber=3 as the
-// active "today" match (status='scheduled' so the tracker can pick it up).
+// round is a 1-BASED INDEX (1=R32, 2=R16, 3=QF, 4=SF, 5=F).
+// dayNumber is 1-based tournament day (1 = startDate).
 const EVENT_MATCHES = {
   'e-live-u18s': [
-    { id: 'm-live-r32', round: 32, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-1', winnerEntryId: 'entry-me-live', score: '6-3 6-4' },
-    { id: 'm-live-r16', round: 16, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-2', winnerEntryId: 'entry-me-live', score: '7-5 6-2' },
-    { id: 'm-live-qf',  round: 8,  dayNumber: 3, status: 'scheduled', entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-3', winnerEntryId: null, score: null },
+    { id: 'm-live-r32', round: 1, dayNumber: 1, status: 'complete',  entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-1', winnerEntryId: 'entry-me-live', score: '6-3 6-4' },
+    { id: 'm-live-r16', round: 2, dayNumber: 2, status: 'complete',  entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-2', winnerEntryId: 'entry-me-live', score: '7-5 6-2' },
+    { id: 'm-live-qf',  round: 3, dayNumber: 3, status: 'scheduled', entry1Id: 'entry-me-live', entry2Id: 'entry-opp-live-3', winnerEntryId: null,           score: null },
   ],
   'e-recent-u18s': [
-    { id: 'm-r-r32', round: 32, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-recent', entry2Id: 'entry-opp-r1', winnerEntryId: 'entry-me-recent', score: '6-2 6-4' },
-    { id: 'm-r-r16', round: 16, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-recent', entry2Id: 'entry-opp-r2', winnerEntryId: 'entry-opp-r2', score: '4-6 5-7' },
+    { id: 'm-r-r32', round: 1, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-recent', entry2Id: 'entry-opp-r1', winnerEntryId: 'entry-me-recent', score: '6-2 6-4' },
+    { id: 'm-r-r16', round: 2, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-recent', entry2Id: 'entry-opp-r2', winnerEntryId: 'entry-opp-r2',    score: '4-6 5-7' },
   ],
   'e-this-year-u18s': [
-    { id: 'm-ty-r32', round: 32, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-ty', entry2Id: 'entry-opp-ty1', winnerEntryId: 'entry-me-ty', score: '6-1 6-2' },
-    { id: 'm-ty-r16', round: 16, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-ty', entry2Id: 'entry-opp-ty2', winnerEntryId: 'entry-opp-ty2', score: '3-6 4-6' },
+    { id: 'm-ty-r32', round: 1, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-ty', entry2Id: 'entry-opp-ty1', winnerEntryId: 'entry-me-ty',      score: '6-1 6-2' },
+    { id: 'm-ty-r16', round: 2, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-ty', entry2Id: 'entry-opp-ty2', winnerEntryId: 'entry-opp-ty2',    score: '3-6 4-6' },
   ],
   'e-last-year-u18s': [
-    { id: 'm-ly-r32', round: 32, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-ly', entry2Id: 'entry-opp-ly1', winnerEntryId: 'entry-opp-ly1', score: '2-6 6-4 3-6' },
+    { id: 'm-ly-r32', round: 1, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-ly', entry2Id: 'entry-opp-ly1', winnerEntryId: 'entry-me-ly',   score: '6-4 6-3' },
+    { id: 'm-ly-r16', round: 2, dayNumber: 2, status: 'complete', entry1Id: 'entry-me-ly', entry2Id: 'entry-opp-ly2', winnerEntryId: 'entry-opp-ly2', score: '2-6 6-4 3-6' },
   ],
-  'e-two-yr-u16s': [
-    { id: 'm-2y-r32', round: 32, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-2y', entry2Id: 'entry-opp-2y1', winnerEntryId: 'entry-me-2y', score: '6-4 6-3' },
+  'e-two-yr-u18s': [
+    { id: 'm-2y-r32', round: 1, dayNumber: 1, status: 'complete', entry1Id: 'entry-me-2y', entry2Id: 'entry-opp-2y1', winnerEntryId: 'entry-me-2y', score: '6-4 6-3' },
   ],
 };
 

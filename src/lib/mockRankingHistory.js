@@ -6,10 +6,15 @@
 // Shape matches supabaseApi.getPlayerAitaRankingHistory rows:
 //   { category, subcategory, date, rank, totalPoints }
 
+// One circuit per {gender, age-group}. Juniors are non-cascading and the
+// events schema doesn't split Singles vs Doubles for juniors either
+// (normalizeEventSegment folds both into the same category/subcategory), so
+// separate Singles/Doubles circuits here would create keys that no incoming
+// event could ever match. Stay aligned with the events taxonomy.
 const CIRCUITS = [
-  { category: 'U16', subcategory: 'Singles', startRank: 245, startPts: 78 },
-  { category: 'U16', subcategory: 'Doubles', startRank: 168, startPts: 112 },
-  { category: 'U18', subcategory: 'Singles', startRank: 402, startPts: 34 },
+  { category: 'Boys', subcategory: 'U-14', startRank: 320, startPts: 42 },
+  { category: 'Boys', subcategory: 'U-16', startRank: 245, startPts: 78 },
+  { category: 'Boys', subcategory: 'U-18', startRank: 402, startPts: 34 },
 ];
 
 function isoDate(daysAgo) {
