@@ -506,17 +506,13 @@ export default function DashboardPage() {
       {role !== 'organizer' && (
         <div>
           <SectionTitle>My Stats</SectionTitle>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/track"><Button>+ Track New Match</Button></Link>
-            <Link to="/video-analysis-test"><Button variant="outline">Video Analysis (Beta)</Button></Link>
-          </div>
 
-          {error && <div className="mt-4"><EmptyState>{error}</EmptyState></div>}
-          {matches === null && !error && <div className="mt-4"><EmptyState>Loading…</EmptyState></div>}
+          {error && <EmptyState>{error}</EmptyState>}
+          {matches === null && !error && <EmptyState>Loading…</EmptyState>}
 
           {matches !== null && (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <Card className="p-4">
                   <div className="text-2xl font-display font-extrabold tracking-tighter">{matchesOnly.length}</div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Matches</div>

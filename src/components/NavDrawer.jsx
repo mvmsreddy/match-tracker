@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { downloadAppGuide } from '@/lib/appGuidePdf';
 import {
   LayoutDashboard, Activity, Trophy, GitCompare, User, Users,
-  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown,
+  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown, Video,
 } from 'lucide-react';
 
 // Single canonical hamburger-menu drawer for the whole app. AppShell (every
@@ -12,6 +12,7 @@ import {
 function getNavItems(role) {
   const dashboard = { id: 'dashboard', label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true };
   const track = { id: 'track', label: 'Track', to: '/track', icon: Activity };
+  const videoAnalysis = { id: 'video-analysis', label: 'Video Analysis (Beta)', to: '/video-analysis-test', icon: Video };
   const performance = { id: 'performance', label: 'View My Performance', to: '/player-dashboard?tab=performance', icon: TrendingUp };
   const tournaments = { id: 'tournaments', label: 'Tournaments', to: '/tournaments', icon: Trophy };
   const compare = { id: 'compare', label: 'Compare', to: '/compare', icon: GitCompare };
@@ -25,9 +26,9 @@ function getNavItems(role) {
     return [dashboard, tournaments, calendar, rankings, profile];
   }
   if (role === 'coach') {
-    return [dashboard, track, myPlayers, compare, tournaments, calendar, rankings, profile];
+    return [dashboard, track, videoAnalysis, myPlayers, compare, tournaments, calendar, rankings, profile];
   }
-  return [dashboard, track, performance, tournaments, compare, myCoaches, calendar, profile];
+  return [dashboard, track, videoAnalysis, performance, tournaments, compare, myCoaches, calendar, profile];
 }
 
 function NavItem({ item, className }) {
