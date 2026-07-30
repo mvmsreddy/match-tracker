@@ -83,6 +83,32 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 - No console errors; benign Supabase-not-configured warnings only (mock-mode expected)
 - Signup mode renders correctly with role selector and confirm-password field
 
+## Iteration 7 — Performance-tab kill, Motivation engine, H2H rivalry, mock ranking (Feb 2026)
+
+### What shipped
+- **Performance tab fully removed** from PlayerDashboardPage nav strip AND from the app-wide NavDrawer. Manual navigation to `/player-dashboard?tab=performance` now silently falls back to Overview (whitelist-based validation). `MyPerformanceTab.jsx` deleted; all functionality is now inline on the main Dashboard.
+- **Mock AITA ranking history generator** (`/app/src/lib/mockRankingHistory.js`) — deterministic per-aitaReg trajectory across 3 circuits (U16 Singles, U16 Doubles, U18 Singles) with 10-13 fortnightly snapshots each. Rising-but-realistic arc so the Performance Snapshot shows meaningful charts in demo mode. New demo Player user added (player@matchtracker.app / player123 with aitaReg=AITA2019X4021).
+- **Motivation engine** (`/app/src/lib/motivation.js`) — pure functions for:
+  - **Momentum Meter (0-100)** — blends recent form / activity / streak / skill self-rating into one headline score with tone (On fire / Climbing / Holding / Cooling / Slow start) + 4-bar breakdown.
+  - **Weekly Goal Rings** — Apple-Watch-style rings for Matches / Practice / Hydration (per-day framing), with a "Perfect Week" badge when all 3 close.
+  - **Daily Mission** — rotating tap-to-complete challenge (rate match / log water / drill / notes / etc). Deterministic day-of-year seed. Mission streak flame.
+  - **Achievements** — 15 badges across firsts / streaks / wins / practice / self-awareness / rank-climb. Unlocks stamped with timestamp; NEW ribbon within 48h. Rank-climber achievement now correctly wired to real rank history via SegmentProvider.
+  - **Next Milestone** — nearest-boundary top-N goal ("13 ranks to break top-50") with proportional progress bar. Falls through to wins → streak targets when the player has no ranking data.
+- **H2HRivalryCard** — spotlight card that appears when the player has an upcoming/today match against an opponent they've faced before. Shows W-L, dominance bar, last-result marker, and a tactical hint. Zero-render when there's no prior history.
+- **PerformanceSummarySection upgraded** — now defaults to the player's STRONGEST circuit (lowest best-ever rank) instead of most-recent, so the dashboard headline shows their pride segment.
+- **New motivation cluster on Dashboard**: Momentum → H2H Alert → Rings + Mission side-by-side → Achievements Reel, then the Performance Snapshot and Next Milestone. Everything else on Dashboard preserved.
+- **All motivation components are theme-aware** — no hardcoded slate-*/amber-50 classes; uses amber-500/N opacity + border-border + text-foreground/muted-foreground.
+
+### Testing
+- iteration_6.json: 13/14 pass, 6 issues surfaced
+- iteration_7.json: 11/12 pass (92%), 1 progress-bar math bug — fixed post-report
+- Regression: no console errors on any flow
+
+## Iteration 8 — Backend for Live Advisor + Weekly Digest via Resend (planned next)
+- Stand up minimal FastAPI backend at /app/backend
+- POST /api/advisor/tip — real-time AI shot suggestions during a tracked match using Emergent LLM key (no user key needed)
+- POST /api/digest/send + weekly cron — Weekly digest email via Resend (needs user's Resend API key + verified sender domain)
+
 ## Deferred from PRD v2.0 (needs separate decisions)
 - Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance
 - Device integrations (Pocket Radar, Babolat, HR wearables) — blocked on vendor API keys

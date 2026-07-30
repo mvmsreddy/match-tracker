@@ -215,7 +215,10 @@ export function computeNextMilestone({ circuits = [], matches = [], streak = 0 }
         sub: `${active.category} ${active.subcategory} · You're #${rank}`,
         // Progress = how close from the PREVIOUS boundary (or start) to nextBoundary
         progress: (() => {
-          const prevBoundary = [...boundaries].reverse().find(b => b > rank) || rank + 100;
+          // Smallest boundary ABOVE current rank = the "starting line" for
+          // this milestone. Progress is how far the player has closed the gap
+          // between that starting line and nextBoundary.
+          const prevBoundary = boundaries.find(b => b > rank) || rank + 100;
           const span = prevBoundary - nextBoundary;
           const done = prevBoundary - rank;
           return Math.max(0.02, Math.min(1, done / span));
