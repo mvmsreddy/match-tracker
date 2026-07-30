@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend-only Playwright testing (390x844 mobile) of the new LiveMatchCommandCenter on /track as player@matchtracker.app. Verified: command center renders after server pick, score hero (live-game-score 0-0 → 15-0 → 30-0 → 40-0), sets/games pill (Set 1 · 0-0), server chip (both 'Kundanapriya serves' and 'Rahul serves'), momentum strip dot count/colors (blue self, red opp), streak indicator ('3 in a row', resets on opponent point, '4 in a row' persists across game), commit flash overlay (bg rgb(51,112,255) present ~120ms after commit, gone by 800ms), floating undo pill (appears on commit, undoes point 40-0→30-0, auto-dismisses after 5s), AI Coach SSE (POST /api/advisor/tip → 200, real streamed tip 'Serve wide to the deuce court, then attack the open court with your forehand.', 'New' produces a different tip), distraction-free mode (toggle on/off, minimal score card + winner buttons only), break-point amber badge at 0-40 with opponent serving, and full QuickMode regression (Ace, tagged Winner, Double fault, QuickMode Undo, End match → back to setup form). Zero console/page errors on every flow including SSE.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LiveMatchCommandCenter — changeover timer", "issue": "data-testid='changeover-timer' NEVER appears. Reproduced twice: won a game (0-40 self receiving → 1-0 games, an odd-game boundary). Root cause: when a game ends TrackerPage swaps the whole command center for the GameTransitionCard, so LiveMatchCommandCenter unmounts; on remount after 'Next game →' the prevGamesTotal ref re-initialises to the already-incremented total (1), so the `total > prevGamesTotal.current` condition never fires. Fix by lifting changeover detection out of component-local refs (derive from games total in tracker state / persist last-seen total).", "selector": "[data-testid=\"changeover-timer\"]", "priority": "HIGH"},
+      {"component": "LiveMatchCommandCenter — match duration", "issue": "data-testid='match-duration' is effectively frozen: setInterval is 30_000ms, so it displayed '0:00' while the app's own header clock already showed 0:05. It only refreshes on unrelated re-renders (point commits). Use a 1s interval for an mm:ss counter.", "selector": "[data-testid=\"match-duration\"]", "priority": "MEDIUM"},
+      {"component": "LiveMatchCommandCenter — state loss on game boundary", "issue": "Because the component unmounts during the GameTransitionCard, all local state is lost: advisor panel/tip closes, distraction-free-independent flash/undo window is dropped, and the floating undo pill never appears for the game-winning point. Also the score hero + duration disappear entirely during the transition card, breaking the 'persistent context bar' promise.", "selector": "[data-testid=\"live-command-center\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Live Track (mobile 390x844)", "issues": ["Floating undo pill (fixed bottom-20) visually overlaps the bottom of the QuickMode card, sitting immediately below the card's own 'Undo last point' button — two identical 'Undo last point' controls visible at once is confusing (click-blocking was verified as NOT happening: elementFromPoint over both QuickMode Undo and End match returns the buttons themselves).", "In distraction-free mode there is no duration/server info and no floating undo pill; only the QuickMode inline undo remains (acceptable but worth confirming intent)."]},
+      {"screen": "Match setup form", "issues": ["Date field uses the native browser date picker (mm/dd/yyyy) instead of the shadcn calendar component."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix changeover timer: derive the odd-game-boundary trigger from persisted tracker state (or keep the command center mounted through the GameTransitionCard) so data-testid='changeover-timer' actually renders at 1-0/3-0/etc.",
+    "Change the duration setInterval from 30_000ms to 1000ms so match-duration ticks every second.",
+    "Keep LiveMatchCommandCenter mounted during the game/set transition cards so score hero, advisor panel and undo pill survive game boundaries.",
+    "Consider hiding the QuickMode inline 'Undo last point' button while the floating undo pill is visible (or reposition the pill) to avoid duplicate controls at the bottom of the mobile viewport.",
+    "Add data-testid attributes to the server-picker buttons, opponent input, Start Match button, tracking-mode buttons and QuickMode controls — none exist today, tests had to rely on text selectors."
+  ],
+  "critical_code_review_comments": [
+    "LiveMatchCommandCenter: changeover/momentum/advisor state is component-local while the component is conditionally unmounted by the parent on every game boundary — move durable state up to useMatchTracker.",
+    "fetchAdvisor(): `res.body.getReader()` is used without checking res.ok; a non-2xx JSON error response would fall into the generic catch and only show 'Advisor unavailable' with no diagnostics.",
+    "CommitFlash uses `key={winner + Date.now()}` inside render — recreates the node on every parent re-render (flash can restart on unrelated renders); key should be tied to the committed point index.",
+    "Env fallback `window.location.origin` for the backend URL masks a missing VITE_REACT_APP_BACKEND_URL; it happens to work here but should fail loudly.",
+    "TrackerPage.jsx is 1002 lines — should be split into setup form / live track / stats modules."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only request; /api/advisor/tip verified 200 + streaming)", "frontend": "83% (10/12 scenarios pass; changeover timer fails, duration counter stale)"},
+  "seed_data_creation": "Live matches created in localStorage under the demo player account (opponent 'Rahul'); last one ended via 'End match'.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 (from /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "IMPORTANT: the preview Vite dev server returns 429 for /@vite/client, /src/main.jsx on rapid navigations → blank page. Use a robust_goto retry helper (5 tries, 15s backoff) and do at most 2 page.goto per script; avoid page.reload/localStorage.clear (clearing localStorage also wipes the seeded demo accounts and the auth session, and each browser session starts fresh so you must log in every run). Default tracking mode is 'expert' (Wizard) — click the 'Quick' button in the Tracking Detail section of the setup form to get the QuickMode two-big-buttons UI the review describes. Server picker buttons are plain role=button with the player names. To reach the changeover boundary you must click 'Next game →' on the GameTransitionCard.",
+  "rca_of_the_issue": "Changeover timer: LiveMatchCommandCenter is rendered only in the live-point-entry branch of TrackerPage; when a game completes, TrackerPage renders GameTransitionCard instead, unmounting the command center. The changeover effect compares gamesSelf+gamesOpp against a useRef initialised at mount, so after remount prevGamesTotal already equals the new total and the odd-boundary condition never becomes true. Duration: useEffect sets a 30_000ms interval, so the mm:ss label only updates twice a minute (and appeared frozen at 0:00 during a 5s+ observation)."
+}

@@ -16,6 +16,7 @@ import MomentumGraph from '../components/MomentumGraph';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import AiReviewModal from '../components/AiReviewModal';
 import LiveMatchAdvisor from '../components/LiveMatchAdvisor';
+import LiveMatchCommandCenter from '../components/tracker/LiveMatchCommandCenter';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { cn } from '../lib/utils';
 import '../styles/tracker-tailwind.css';
@@ -106,6 +107,7 @@ export default function TrackerPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
+  const [distractionFree, setDistractionFree] = useState(false);
 
   // When match ends / resets, always return to Match tab
   useEffect(() => {
@@ -220,22 +222,36 @@ export default function TrackerPage() {
                 />
               )}
               {t.serverExplicitlyChosen ? (
-                t.trackingMode === 'quick' ? (
-                  <QuickMode
-                    nextServer={t.nextServer}
-                    onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
-                    selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-                    onEndMatch={t.resetMatch}
-                  />
-                ) : (
-                  <Wizard
-                    nextServer={t.nextServer}
-                    onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
-                    selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-                    onDelete={t.resetMatch}
-                    trackingMode={t.trackingMode}
-                  />
-                )
+                <LiveMatchCommandCenter
+                  engine={t.engine}
+                  points={t.points}
+                  header={t.header}
+                  sessionType={t.sessionType}
+                  formatPreset={t.formatPreset}
+                  pointTarget={t.pointTarget}
+                  matchStartTime={t.matchStartTime}
+                  nextServer={t.nextServer}
+                  onUndo={t.undoLast}
+                  distractionFree={distractionFree}
+                  onToggleDistractionFree={() => setDistractionFree(v => !v)}
+                >
+                  {t.trackingMode === 'quick' ? (
+                    <QuickMode
+                      nextServer={t.nextServer}
+                      onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                      selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                      onEndMatch={t.resetMatch}
+                    />
+                  ) : (
+                    <Wizard
+                      nextServer={t.nextServer}
+                      onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                      selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
+                      onDelete={t.resetMatch}
+                      trackingMode={t.trackingMode}
+                    />
+                  )}
+                </LiveMatchCommandCenter>
               ) : (
                 <div className="py-8 text-center text-sm text-tt-muted-foreground">Select who serves first above to begin tracking</div>
               )}
