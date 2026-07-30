@@ -210,6 +210,91 @@ async def suggest_meal(req: MealSuggestRequest):
 
 
 # ============================================================================
+# Post-Match Highlight Reel — LLM-generated match recap
+# ============================================================================
+
+class HighlightReelRequest(BaseModel):
+    session_id: str
+    my_name: Optional[str] = "Player"
+    opponent_name: Optional[str] = "Opponent"
+    i_won: bool = False
+    final_score: Optional[str] = None
+    duration: Optional[str] = None
+    points_played: int = 0
+    longest_win_streak: int = 0
+    longest_loss_streak: int = 0
+    key_tips: Optional[list[str]] = None
+
+
+@app.post("/api/advisor/highlight-reel")
+async def highlight_reel(req: HighlightReelRequest):
+    """Return a 2-3 sentence coach's recap of the match, streamed via SSE.
+
+    Called by the front-end HighlightReelCard when a match ends. Emphasises
+    momentum swings and calls back to any tactical tips the AI whispered
+    during the match so the recap feels continuous with the live experience.
+    """
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured on server")
+
+    system_prompt = (
+        "You are a warm but incisive tennis coach summarising a match a player just finished. "
+        "Rules: reply in 2-3 short sentences, max 55 words total. "
+        "Lead with the emotional beat (belief, resilience, sharp start, tough middle...), "
+        "then name ONE tactical takeaway. Use second person ('you'). "
+        "Never repeat the score. Never list stats. No emojis. No preamble."
+    )
+
+    parts = [
+        f"Player: {req.my_name}.",
+        f"Opponent: {req.opponent_name}.",
+        f"Outcome: {'you won' if req.i_won else 'you lost'}.",
+    ]
+    if req.final_score:
+        parts.append(f"Final score: {req.final_score}.")
+    if req.duration:
+        parts.append(f"Duration: {req.duration}.")
+    if req.points_played:
+        parts.append(f"Points played: {req.points_played}.")
+    if req.longest_win_streak:
+        parts.append(f"Longest run of points won in a row: {req.longest_win_streak}.")
+    if req.longest_loss_streak:
+        parts.append(f"Longest run of points lost in a row: {req.longest_loss_streak}.")
+    if req.key_tips:
+        parts.append("Live coach tips shared during match: " + " | ".join(req.key_tips[-3:]) + ".")
+
+    prompt = " ".join(parts) + " Write the recap now."
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=req.session_id,
+        system_message=system_prompt,
+    ).with_model("anthropic", "claude-sonnet-4-6")
+
+    async def event_stream():
+        try:
+            async for event in chat.stream_message(UserMessage(text=prompt)):
+                if isinstance(event, TextDelta):
+                    safe = event.content.replace("\n", "\\n")
+                    yield f"data: {safe}\n\n"
+                elif isinstance(event, StreamDone):
+                    yield "event: done\ndata: [DONE]\n\n"
+                    break
+        except Exception as e:  # noqa: BLE001
+            logger.exception("Highlight-reel stream failed")
+            yield f"event: error\ndata: {str(e)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ============================================================================
 # Weekly Digest Email — Resend
 # ============================================================================
 

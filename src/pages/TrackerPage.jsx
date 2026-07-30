@@ -17,6 +17,7 @@ import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import AiReviewModal from '../components/AiReviewModal';
 import LiveMatchAdvisor from '../components/LiveMatchAdvisor';
 import LiveMatchCommandCenter from '../components/tracker/LiveMatchCommandCenter';
+import HighlightReelCard from '../components/tracker/HighlightReelCard';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { cn } from '../lib/utils';
 import '../styles/tracker-tailwind.css';
@@ -108,6 +109,14 @@ export default function TrackerPage() {
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
   const [distractionFree, setDistractionFree] = useState(false);
+  const [advisorHistory, setAdvisorHistory] = useState([]); // tips shown during this match, for the post-match Highlight Reel
+
+  // Reset advisor history whenever a fresh match starts / resets
+  useEffect(() => {
+    if (!t.matchStarted) setAdvisorHistory([]);
+  }, [t.matchStarted]);
+
+  const handleAdvisorTip = (tip) => setAdvisorHistory((prev) => [...prev, tip]);
 
   // When match ends / resets, always return to Match tab
   useEffect(() => {
@@ -206,6 +215,12 @@ export default function TrackerPage() {
               selfName={t.header.selfName || 'You'}
               oppName={t.header.oppName || 'Opponent'}
               winner={t.engine.matchWinner}
+              header={t.header}
+              points={t.points}
+              sets={t.engine.sets}
+              matchStartTime={t.matchStartTime}
+              matchEndTime={t.engine.matchOver ? Date.now() : null}
+              advisorHistory={advisorHistory}
               onUndo={t.undoLast}
               canUndo={t.points.length > 0}
               onGoStats={() => setActiveTab('stats')}
@@ -232,6 +247,7 @@ export default function TrackerPage() {
                   matchStartTime={t.matchStartTime}
                   nextServer={t.nextServer}
                   onUndo={t.undoLast}
+                  onAdvisorTip={handleAdvisorTip}
                   distractionFree={distractionFree}
                   onToggleDistractionFree={() => setDistractionFree(v => !v)}
                 >
@@ -831,26 +847,41 @@ function TournamentFactsPanel({ tour }) {
 }
 
 // ── Static block shown when match/session is over and wizard must be frozen ──
-function MatchOverBlock({ sessionType, selfName, oppName, winner, onUndo, canUndo, onGoStats, onGoClose }) {
+function MatchOverBlock({ sessionType, selfName, oppName, winner, header, points, sets, matchStartTime, matchEndTime, advisorHistory, onUndo, canUndo, onGoStats, onGoClose }) {
   const isPractice = sessionType === 'practice';
   const winnerName = winner === 'self' ? selfName : oppName;
   return (
-    <Card className="mx-auto my-4 max-w-lg text-center">
-      <CardContent className="space-y-4 pt-6">
-        <div className="font-tt-mono text-xs uppercase tracking-widest text-tt-muted-foreground">
-          {isPractice ? 'Session complete' : 'Match complete'}
-        </div>
-        <div className="font-tt-display text-xl font-bold uppercase tracking-tight">
-          <span className={winner === 'self' ? 'text-tt-brand' : 'text-tt-opp'}>{winnerName}</span>
-          {isPractice ? ' wins the session' : ' wins'}
-        </div>
-        <div className="flex justify-center gap-2">
-          <Button variant="outline" onClick={onGoStats}>View Stats</Button>
-          {!isPractice && <Button variant="outline" onClick={onGoClose}>Close Match</Button>}
-        </div>
-        <Button variant="ghost" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</Button>
-      </CardContent>
-    </Card>
+    <div className="mx-auto my-4 max-w-lg space-y-4">
+      <Card className="text-center">
+        <CardContent className="space-y-4 pt-6">
+          <div className="font-tt-mono text-xs uppercase tracking-widest text-tt-muted-foreground">
+            {isPractice ? 'Session complete' : 'Match complete'}
+          </div>
+          <div className="font-tt-display text-xl font-bold uppercase tracking-tight">
+            <span className={winner === 'self' ? 'text-tt-brand' : 'text-tt-opp'}>{winnerName}</span>
+            {isPractice ? ' wins the session' : ' wins'}
+          </div>
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={onGoStats}>View Stats</Button>
+            {!isPractice && <Button variant="outline" onClick={onGoClose}>Close Match</Button>}
+          </div>
+          <Button variant="ghost" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</Button>
+        </CardContent>
+      </Card>
+
+      {!isPractice && (
+        <HighlightReelCard
+          header={header}
+          points={points}
+          sets={sets}
+          winnerName={winnerName}
+          isSelfWin={winner === 'self'}
+          matchStartTime={matchStartTime}
+          matchEndTime={matchEndTime}
+          advisorHistory={advisorHistory}
+        />
+      )}
+    </div>
   );
 }
 

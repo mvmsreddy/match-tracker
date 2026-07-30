@@ -1,0 +1,57 @@
+{
+  "summary": "Validated the three P0 Live Match Tracker enhancements. Backend: new POST /api/advisor/highlight-reel SSE endpoint tested (happy path, loss variant, minimal body, 422 validation) plus regression on /api/advisor/tip, /api/nutrition/suggest and /api/health — 8/8 pytest tests pass. Frontend (preview URL, player@matchtracker.app): court-side Deuce/Ad chip alternates correctly (Deuce -> Ad -> Deuce as points are logged); landscape spectator view renders at 812x375 with giant score, court-side chip, duration and momentum strip and the exit button restores the command center; portrait restores normal UI. Full best-of-3 match played to completion (48 points, 6-0 6-0) — HighlightReelCard renders under the Match Over card with final score 6-0 6-0, Best run 48 / Tough patch 0, AI recap streamed (244 chars, coherent), Share works and Save downloads match-Rohan-vs-Aditya.txt. One HIGH issue found: landscape view also hijacks standard laptop/tablet-landscape windows.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "useOrientation / LiveMatchCommandCenter (landscape gating)",
+        "issue": "HIGH: The spectator LandscapeScoreView takes over on ordinary desktop/laptop windows. Reproduced with a live match at 1366x768, 1280x800 and 1024x768 — data-testid='landscape-score-view' renders and data-testid='live-command-center' (all point-entry UI) disappears. Root cause: useOrientation sets isMobile = Math.min(w,h) < 900, so any landscape window shorter than 900px qualifies. Most laptops (768/800px tall viewports) are affected, so a desktop user cannot log points until they click 'Exit landscape'. Suggest a much lower threshold (e.g. min side < 500-560px) and/or gate on matchMedia('(pointer: coarse)') or '(max-height: 500px) and (orientation: landscape)'.",
+        "selector": "[data-testid=\"landscape-score-view\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "HighlightReelCard duration label",
+        "issue": "MINOR: For very short matches the meta line renders '0 min · 48 points played' and the landscape duration chip shows '0:00'. Consider showing seconds (or '<1 min') so it doesn't look like missing data.",
+        "selector": "[data-testid=\"highlight-reel-card\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Landscape score view (812x375)",
+        "issues": [
+          "Layout, contrast and chip colours read well; no overflow. At >1000px wide the giant score is clamped and leaves large empty bands (cosmetic only, and only reachable because of the gating bug above)."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_highlight_reel.py",
+    "/app/test_reports/pytest/iter12_reel.xml"
+  ],
+  "action_items": [
+    "Fix landscape gating in /app/src/hooks/useOrientation.js so big-screen landscape mode only triggers on phone-sized viewports (min side < ~500-560px) or coarse pointers; today it blocks point entry on 1366x768 / 1280x800 laptops.",
+    "Optional polish: show sub-minute durations in HighlightReelCard and LandscapeScoreView instead of '0 min' / '0:00'."
+  ],
+  "critical_code_review_comments": [
+    "useOrientation isMobile threshold (min(w,h) < 900) is far too permissive — it classifies laptops and tablets as phones.",
+    "getNextServeCourtSide correctly falls back to engine-tracked tiebreakCourtSide during tiebreaks; verified tiebreakCourtSide is maintained in engine.js (not exercised end-to-end in this run — no tiebreak reached).",
+    "HighlightReelCard/LiveMatchCommandCenter fall back to window.location.origin when VITE_REACT_APP_BACKEND_URL is unset; works on preview but keep the env var authoritative to avoid silent same-origin assumptions.",
+    "QuickMode.jsx had no data-testid on its primary point buttons / End match button — added (test-only attributes)."
+  ],
+  "updated_files": [
+    "/app/src/components/tracker/QuickMode.jsx (added data-testid: quick-win-self-btn, quick-win-opp-btn, quick-end-match-btn)",
+    "/app/backend/tests/test_highlight_reel.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "90%"},
+  "seed_data_creation": "Created throwaway localStorage matches 'Rohan vs Aditya' in the browser context only; no server-side data created.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "player@matchtracker.app / player123 (from /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "Backend SSE tests live in /app/backend/tests/test_highlight_reel.py (run with pytest from /app/backend). For UI flows: after login go to BASE/track, if a match is already live click the '✕ DELETE' button to reset, then fill input[placeholder='Your name'] / 'Opponent name', click the 'Quick' pill (accessible name is exactly 'Quick', not 'QUICK'), click 'Start Match', then [data-testid=serve-first-self-btn]. Point entry: [data-testid=quick-win-self-btn]; between games/sets an interstitial appears requiring a 'NEXT GAME →' / 'NEXT SET' click. 48 self points + 12 interstitials completes a best-of-3 6-0 6-0 and renders the highlight reel.",
+  "rca_of_the_issue": "Landscape hijack: useOrientation.js returns isMobile = Math.min(window.innerWidth, window.innerHeight) < 900. LiveMatchCommandCenter short-circuits to LandscapeScoreView when isLandscape && isMobile, so any landscape window under 900px tall (typical laptop 768/800px) loses the point-entry UI entirely."
+}

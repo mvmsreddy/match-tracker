@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { formatGameScore } from '../../lib/engine';
+import { formatGameScore, getNextServeCourtSide } from '../../lib/engine';
+import { useOrientation } from '../../hooks/useOrientation';
+import LandscapeScoreView from './LandscapeScoreView';
 import {
   Undo2, Sparkles, Eye, EyeOff, Zap, Flame, TrendingUp,
   TrendingDown, Coffee, X, Loader2, RefreshCw, Timer,
@@ -23,7 +25,7 @@ import {
 export default function LiveMatchCommandCenter({
   engine, points, header, sessionType, formatPreset, pointTarget,
   matchStartTime, nextServer,
-  onUndo, onOpenAdvisor,
+  onUndo, onOpenAdvisor, onAdvisorTip,
   distractionFree, onToggleDistractionFree,
   children,
 }) {
@@ -60,6 +62,8 @@ export default function LiveMatchCommandCenter({
   const gamesSelf = engine?.setGames?.self || 0;
   const gamesOpp = engine?.setGames?.opp || 0;
   const server = engine?.currentServer || nextServer;
+  const courtSide = getNextServeCourtSide(engine); // 'deuce' | 'ad'
+  const courtLabel = courtSide === 'ad' ? 'Ad court' : 'Deuce court';
 
   // ─── Momentum ───────────────────────────────────────────────────────────
   const last8 = points.slice(-8);
@@ -106,6 +110,19 @@ export default function LiveMatchCommandCenter({
     setAdvisorOpen(true);
     setAdvisorTip('');
     setAdvisorState('streaming');
+    let accumulated = '';
+    const emitTip = () => {
+      const t = accumulated.trim();
+      if (t && onAdvisorTip) {
+        onAdvisorTip({
+          text: t,
+          at: Date.now(),
+          atPoint: points.length,
+          score: `${gameScore} / ${gamesSelf}-${gamesOpp}`,
+          side: server,
+        });
+      }
+    };
     try {
       const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL
         || import.meta.env.REACT_APP_BACKEND_URL
@@ -119,7 +136,7 @@ export default function LiveMatchCommandCenter({
           my_name: header.selfName,
           opponent_name: header.oppName,
           my_score: `${gameScore}, ${gamesSelf}-${gamesOpp} in set ${setsSelf + setsOpp + 1}`,
-          game_state: server === 'self' ? 'serving' : 'receiving',
+          game_state: `${server === 'self' ? 'serving' : 'receiving'} to the ${courtLabel.toLowerCase()}`,
           recent_form: `Last 3 points: ${recentDesc || 'none yet'}`,
           my_strengths: [header.playingStyle].filter(Boolean),
           opponent_notes: header.opponentNotes || null,
@@ -135,15 +152,17 @@ export default function LiveMatchCommandCenter({
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
-          if (line.startsWith('event: done')) { setAdvisorState('done'); return; }
+          if (line.startsWith('event: done')) { emitTip(); setAdvisorState('done'); return; }
           if (line.startsWith('event: error')) throw new Error('LLM error');
           if (line.startsWith('data: ')) {
             const chunk = line.slice(6);
-            if (chunk === '[DONE]') { setAdvisorState('done'); return; }
+            if (chunk === '[DONE]') { emitTip(); setAdvisorState('done'); return; }
+            accumulated += chunk;
             setAdvisorTip(prev => prev + chunk);
           }
         }
       }
+      emitTip();
       setAdvisorState('done');
     } catch {
       setAdvisorState('error');
@@ -151,6 +170,41 @@ export default function LiveMatchCommandCenter({
   }
 
   const isBreakPoint = detectBreakPoint(engine);
+
+  // ─── Landscape (big-screen) mode ────────────────────────────────────────
+  const { isLandscape, isMobile } = useOrientation();
+  const [landscapeDismissed, setLandscapeDismissed] = useState(false);
+  // Reset dismissal when portrait resumes so next rotation re-opens the view
+  useEffect(() => {
+    if (!isLandscape) setLandscapeDismissed(false);
+  }, [isLandscape]);
+  const showLandscape = isLandscape && isMobile && !landscapeDismissed && !distractionFree;
+
+  if (showLandscape) {
+    return (
+      <>
+        <LandscapeScoreView
+          gameScore={gameScore}
+          selfName={header.selfName}
+          oppName={header.oppName}
+          server={server}
+          courtSide={courtSide}
+          setsSelf={setsSelf}
+          setsOpp={setsOpp}
+          gamesSelf={gamesSelf}
+          gamesOpp={gamesOpp}
+          currentSetNumber={setsSelf + setsOpp + 1}
+          last8={last8}
+          streakInfo={streakInfo}
+          isBreakPoint={isBreakPoint}
+          durationLabel={durationLabel}
+          onExit={() => setLandscapeDismissed(true)}
+        />
+        {/* Hidden point-entry UI slot so state stays alive underneath */}
+        <div className="hidden">{children}</div>
+      </>
+    );
+  }
 
   // ─── Distraction-free render short-circuit ──────────────────────────────
   if (distractionFree) {
@@ -182,9 +236,20 @@ export default function LiveMatchCommandCenter({
         {flash && <CommitFlash winner={flash} />}
 
         <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`text-[10px] uppercase tracking-widest font-bold ${server === 'self' ? 'text-primary' : 'text-muted-foreground'}`}>
               ● {server === 'self' ? (header.selfName || 'You') : (header.oppName || 'Opp')} serves
+            </span>
+            <span
+              className={`text-[10px] uppercase tracking-widest font-bold rounded-full px-1.5 py-0.5 border ${
+                courtSide === 'ad'
+                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-500'
+                  : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+              }`}
+              data-testid="court-side-indicator"
+              title="Where the next serve will be played from"
+            >
+              {courtLabel}
             </span>
           </div>
           <div className="flex items-center gap-2">

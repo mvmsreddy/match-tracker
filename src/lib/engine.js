@@ -147,6 +147,19 @@ function finalizeSet(state, winner, wasTiebreak, cfg) {
   }
 }
 
+/**
+ * Which court side does the NEXT point get served from?
+ * Regular game: total points in the current game — even → Deuce court, odd → Ad court.
+ * Tiebreak (set or match): use the engine's tracked `tiebreakCourtSide`.
+ * Returns 'deuce' | 'ad'.
+ */
+export function getNextServeCourtSide(state) {
+  if (!state) return 'deuce';
+  if (state.matchTiebreakActive || state.inTiebreak) return state.tiebreakCourtSide || 'deuce';
+  const total = (state.gamePts?.self || 0) + (state.gamePts?.opp || 0);
+  return total % 2 === 0 ? 'deuce' : 'ad';
+}
+
 export function formatGameScore(state) {
   const labels = ['0', '15', '30', '40'];
   if (state.inTiebreak) return state.tiebreakPts.self + '-' + state.tiebreakPts.opp + ' (TB)';

@@ -71,11 +71,11 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <button onClick={() => wonThePoint('self')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-brand text-tt-background">
+        <button data-testid="quick-win-self-btn" onClick={() => wonThePoint('self')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-brand text-tt-background">
           {selfName}
           <div className="font-tt-mono font-medium text-[0.62rem] tracking-[0.1em] mt-2 opacity-75">Won the point</div>
         </button>
-        <button onClick={() => wonThePoint('opp')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-surface-2 text-tt-foreground">
+        <button data-testid="quick-win-opp-btn" onClick={() => wonThePoint('opp')} className="rounded-tt min-h-[88px] p-4 font-tt-display font-extrabold text-lg tracking-tight bg-tt-surface-2 text-tt-foreground">
           {oppName}
           <div className="font-tt-mono font-medium text-[0.62rem] tracking-[0.1em] mt-2 opacity-75">Won the point</div>
         </button>
@@ -104,6 +104,7 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
           Undo last point
         </button>
         <button
+          data-testid="quick-end-match-btn"
           onClick={handleEndMatch}
           className="flex-1 cursor-pointer border border-tt-destructive bg-tt-destructive-bg text-tt-destructive font-tt-display font-semibold text-sm p-3 rounded-tt min-h-[46px]"
         >
