@@ -36,7 +36,9 @@ export default function HighlightReelCard({
   const durationLabel = useMemo(() => {
     if (!matchStartTime) return '';
     const ms = (matchEndTime || Date.now()) - matchStartTime;
-    const m = Math.floor(ms / 60000);
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    if (totalSec < 60) return `${totalSec}s`;
+    const m = Math.floor(totalSec / 60);
     if (m < 60) return `${m} min`;
     return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
   }, [matchStartTime, matchEndTime]);

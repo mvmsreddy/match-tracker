@@ -11,9 +11,17 @@ export function useOrientation() {
     if (typeof window === 'undefined') return { isLandscape: false, isMobile: false };
     const w = window.innerWidth;
     const h = window.innerHeight;
+    // Coarse pointer = touch device (phones, tablets). Combined with a strict
+    // small-side threshold this reliably identifies a *phone* held sideways —
+    // NOT a laptop in landscape (which would otherwise trigger this view and
+    // hide the point-entry UI). Falls back to a very tight size threshold
+    // (< 500px on the smallest side) when matchMedia is unavailable.
+    const coarse = typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse)').matches;
+    const smallSide = Math.min(w, h);
     return {
       isLandscape: w > h,
-      isMobile: Math.min(w, h) < 900, // covers phone + small tablet in landscape
+      isMobile: coarse ? smallSide < 560 : smallSide < 500,
     };
   };
 

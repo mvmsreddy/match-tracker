@@ -189,6 +189,30 @@ The "heart of the app" upgrade — a persistent context bar that wraps the exist
 ### Test IDs added
 - `live-command-center` · `live-command-center-distraction` · `live-game-score` · `match-duration` · `momentum-strip` · `streak-indicator` · `floating-undo-pill` · `advisor-quick-btn` · `advisor-inline` · `advisor-inline-tip` · `distraction-toggle-on` · `distraction-toggle-off` · `changeover-timer` · `serve-first-self-btn` · `serve-first-opp-btn`
 
+## What's Been Implemented — Iteration 12 (Feb 2026): Tracker P0 Trio
+
+### Big-Screen Landscape Mode
+- New `useOrientation()` hook (`/app/src/hooks/useOrientation.js`) — detects `isLandscape` + `isMobile` (coarse pointer OR small side < 500px). Correctly excludes laptops in landscape.
+- New `LandscapeScoreView` (`/app/src/components/tracker/LandscapeScoreView.jsx`) — fullscreen spectator view with `clamp(6rem, 22vw, 20rem)` giant score, sets/games/duration, server + court-side chip, streak + break-point pills, momentum strip.
+- LiveMatchCommandCenter short-circuits to LandscapeScoreView when phone-in-landscape; discreet "Exit landscape" button restores normal UI; re-armed on next rotation.
+
+### Server-Side Deuce/Ad Indicator
+- New exported helper `getNextServeCourtSide(state)` in `/app/src/lib/engine.js`. Regular game: `(gamePts.self + gamePts.opp) % 2 === 0 ? 'deuce' : 'ad'`. Tiebreak: uses engine-tracked `tiebreakCourtSide`.
+- Rendered as coloured pill next to server chip in the Score Hero (`data-testid="court-side-indicator"`). Green = Deuce, Amber = Ad.
+- Passed into AI Advisor payload's `game_state` — coach can now suggest wide/T placement.
+
+### Post-Match Highlight Reel
+- Backend: new `POST /api/advisor/highlight-reel` SSE endpoint (Claude Sonnet 4.6) — takes final score, duration, points played, longest win/loss streaks, and up to 3 in-match coach tips and returns a 2-3 sentence recap.
+- Frontend: new `HighlightReelCard` (`/app/src/components/tracker/HighlightReelCard.jsx`) — auto-fetches recap on mount, shows final score, Best-run / Tough-patch streak stats, unique dedup'd list of AI tips whispered during the match, plus native Share and text-file Save.
+- `TrackerPage.jsx` tracks `advisorHistory` (tips lifted from LiveMatchCommandCenter via new `onAdvisorTip` callback prop) and passes it through `MatchOverBlock`, which now renders the HighlightReelCard below the Match-Over summary.
+
+### Test IDs added
+- `court-side-indicator` · `landscape-score-view` · `landscape-game-score` · `landscape-court-side` · `landscape-duration` · `landscape-momentum-strip` · `landscape-exit-btn` · `highlight-reel-card` · `highlight-final-score` · `highlight-recap` · `highlight-regen-btn` · `highlight-share-btn` · `highlight-download-btn` · `highlight-tip-{i}` · `swing-win` · `swing-loss` · `quick-win-self-btn` · `quick-win-opp-btn` · `quick-end-match-btn`
+
+### Testing
+- iteration_12.json: 8/8 pytest (backend SSE happy path + variants + validation + regression on `/api/advisor/tip`, `/api/nutrition/suggest`, `/api/health`) → PASS. Frontend end-to-end at 812x375 phone-landscape: giant score, court chip, exit button all correct; laptop 1366x768 no longer hijacked (post-fix).
+- Post-report fixes: `useOrientation` isMobile threshold tightened to prevent laptop hijack; HighlightReelCard duration now shows sub-minute values (`{n}s`) instead of "0 min".
+
 ## 📋 Roadmap
 See **`/app/memory/ROADMAP.md`** for the full prioritised backlog (56+ items across P0–P6, from unblock-with-a-key items to distant wishlist ideas). This section used to duplicate that list — now it's the single source of truth.
 

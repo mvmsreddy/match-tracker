@@ -155,7 +155,9 @@ Phase 1 dashboard + Nutritionist module iterations shipped these — kept here s
 
 Dashboard: Skill Radar · Quick-Add tiles · Nutrition macro donut · water tap-to-log · weekly avg · Compare page · Head-to-Head · Drills · Match skill rating · Streak Card · Form bars · Momentum Meter · Weekly Goal Rings · Daily Mission · Trophy Cabinet · Next Milestone · H2H Rivalry Card · Streak Freeze Tokens · Shareable Badge Cards (Instagram Story format) · Login page editorial redesign · Performance Snapshot merged inline · mock AITA ranking data
 
-Backend: FastAPI at `/app/backend` · `/api/health` · `/api/advisor/tip` (Live Match Advisor SSE) · `/api/nutrition/suggest` (AI Meal Suggester SSE) · `/api/digest/send` (Resend, awaiting keys)
+Tracker (iteration 11 + 12): LiveMatchCommandCenter shell · Score Hero · Momentum Strip · Streak/break-point burst · Changeover countdown · Floating Undo · AI Coach inline SSE · Distraction-Free / Focus mode · **Big-Screen Landscape Mode (phone-only gating)** · **Server-Side Deuce/Ad Indicator (regular + tiebreak)** · **Post-Match Highlight Reel (AI recap card with streaks, tips list, share/save)**
+
+Backend: FastAPI at `/app/backend` · `/api/health` · `/api/advisor/tip` (Live Match Advisor SSE) · `/api/nutrition/suggest` (AI Meal Suggester SSE) · `/api/advisor/highlight-reel` (Post-match AI recap SSE) · `/api/digest/send` (Resend, awaiting keys)
 
 Nutritionist Module: New role · 6-tab command center · Day-type macro grid · Supplemental protocols · Meal templates · Body composition · Athlete roster with compliance flags · Nutritionist ↔ player messaging · Allergen/preference tags · Micronutrient targets · Compliance color bands (±10/20/30%) · Weekly report card · GI trigger detection · Wellness quick log · Peri-match fuel timer · AI meal suggester · Dietitian chat card · Nutrition achievements merged into Trophy Cabinet
 
