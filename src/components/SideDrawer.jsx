@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { LogOut, X } from 'lucide-react';
 import { downloadAppGuide } from '../lib/appGuidePdf';
 
@@ -13,6 +13,8 @@ function linkClass({ isActive }) {
 // app opens something that looks the same.
 export default function SideDrawer({ open, onClose, user, logout }) {
   const role = user?.role || 'player';
+  const { pathname } = useLocation();
+  const onTrackPage = pathname === '/track';
 
   function handleLogout() {
     onClose();
@@ -35,7 +37,7 @@ export default function SideDrawer({ open, onClose, user, logout }) {
         <nav className="space-y-1" onClick={onClose}>
           <NavLink to="/" end className={linkClass}>Dashboard</NavLink>
 
-          {(role === 'player' || role === 'coach') && (
+          {(role === 'player' || role === 'coach') && !onTrackPage && (
             <NavLink to="/track" className="flex items-center px-3 py-2.5 rounded-sm text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90">
               + Track Match
             </NavLink>
