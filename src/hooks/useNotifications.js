@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import * as api from '../api';
 
 const POLL_MS = 60000;
 
-// No Supabase Realtime subscriptions exist anywhere in this app — poll on an
-// interval instead, same fetch-on-mount pattern as useTournamentActivity.
+// Phase 38 — Supabase Realtime subscription (see supabase/
+// phase38_realtime_notifications.sql) delivers new/updated notifications
+// within ~1s instead of waiting up to POLL_MS. The poll stays as a fallback
+// (network hiccups, tab was backgrounded when the realtime socket dropped,
+// mock-mode/no-Supabase-config where `supabase` is null) rather than being
+// replaced outright.
 export function useNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
@@ -35,6 +40,19 @@ export function useNotifications() {
     const interval = setInterval(() => { if (!cancelled) refresh(); }, POLL_MS);
     return () => { cancelled = true; clearInterval(interval); };
   }, [refresh]);
+
+  useEffect(() => {
+    if (!user || !supabase) return;
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, refresh]);
 
   async function markRead(id) {
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, isRead: true } : n)));

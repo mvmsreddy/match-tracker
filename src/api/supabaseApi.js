@@ -7,7 +7,7 @@ import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
 import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
 import { buildCircuits } from '../lib/segments';
-import { computeServeStats } from '../lib/analytics';
+import { computeStats, computeServeStats } from '../lib/analytics';
 import { computeStreak } from '../lib/streaks';
 
 // ---------------------------------------------------------------------------
@@ -1489,6 +1489,15 @@ function rowToProfile(row) {
     bagName: row.bag_name,
     gripBrand: row.grip_brand,
     gripName: row.grip_name,
+
+    kcalGoal: row.kcal_goal,
+    waterGoalMl: row.water_goal_ml,
+    proteinGoalG: row.protein_goal_g,
+
+    reminderEnabled: row.reminder_enabled || false,
+    reminderTime: row.reminder_time,
+    reminderTimezone: row.reminder_timezone,
+    weeklyDigest: row.weekly_digest || false,
   };
 }
 
@@ -1550,6 +1559,79 @@ export async function upsertProfile(userId, profile) {
     .single();
   if (error) throw new Error(error.message);
   return rowToProfile(data);
+}
+
+// Phase 41 — reminder/digest prefs, same targeted-update rationale as
+// updateNutritionGoals below.
+export async function updateReminderPrefs(userId, { reminderEnabled, reminderTime, weeklyDigest }) {
+  const patch = {};
+  if (reminderEnabled !== undefined) patch.reminder_enabled = reminderEnabled;
+  if (reminderTime !== undefined) patch.reminder_time = reminderTime;
+  if (weeklyDigest !== undefined) patch.weekly_digest = weeklyDigest;
+  const { data, error } = await supabase.from('user_profiles').update(patch).eq('id', userId).select().single();
+  if (error) throw new Error(error.message);
+  return rowToProfile(data);
+}
+
+// Phase 36 — nutrition goals live on user_profiles but are edited from
+// NutritionPage.jsx, not the main profile editor. A targeted .update()
+// (not upsertProfile's full-row .upsert()) so saving a goal can never
+// clobber unrelated profile fields the nutrition form doesn't know about.
+export async function updateNutritionGoals(userId, { kcalGoal, waterGoalMl, proteinGoalG }) {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .update({ kcal_goal: kcalGoal ?? null, water_goal_ml: waterGoalMl ?? null, protein_goal_g: proteinGoalG ?? null })
+    .eq('id', userId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToProfile(data);
+}
+
+function rowToNutritionLog(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    logDate: row.log_date,
+    mealType: row.meal_type,
+    foodItems: row.food_items,
+    calories: row.calories,
+    proteinG: row.protein_g,
+    carbsG: row.carbs_g,
+    fatsG: row.fats_g,
+    hydrationMl: row.hydration_ml,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getNutritionLogs(userId, sinceDate = null) {
+  let query = supabase.from('nutrition_logs').select('*').eq('user_id', userId);
+  if (sinceDate) query = query.gte('log_date', sinceDate);
+  const { data, error } = await query.order('log_date', { ascending: false }).order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToNutritionLog);
+}
+
+export async function createNutritionLog(userId, { logDate, mealType, foodItems, calories, proteinG, carbsG, fatsG, hydrationMl, notes }) {
+  const { data, error } = await supabase
+    .from('nutrition_logs')
+    .insert({
+      user_id: userId, log_date: logDate, meal_type: mealType,
+      food_items: foodItems || null, calories: calories ?? null,
+      protein_g: proteinG ?? null, carbs_g: carbsG ?? null, fats_g: fatsG ?? null,
+      hydration_ml: hydrationMl ?? null, notes: notes || null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToNutritionLog(data);
+}
+
+export async function deleteNutritionLog(logId) {
+  const { error } = await supabase.from('nutrition_logs').delete().eq('id', logId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 export async function searchPlayers(query, ageGroup = null, gender = null) {
@@ -2540,6 +2622,52 @@ export async function sendNotificationEmails(userIds, { subject, html }) {
   }
 }
 
+// Phase 41 — generic "email arbitrary addresses" (tournament share dialog
+// and anything else that needs to reach a non-platform-user email).
+export async function sendEmail({ to, subject, html, replyTo }) {
+  const { data, error } = await supabase.functions.invoke('send-email', { body: { to, subject, html, replyTo } });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Phase 39 — Web Push subscriptions + send trigger (mirrors
+// sendNotificationEmails's best-effort/non-blocking shape exactly).
+export async function savePushSubscription(userId, { endpoint, keys }) {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .upsert({ user_id: userId, endpoint, keys }, { onConflict: 'endpoint' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: data.id, userId: data.user_id, endpoint: data.endpoint };
+}
+
+export async function deletePushSubscription(endpoint) {
+  const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+export async function sendPushNotifications(userIds, { title, body, link }) {
+  const ids = [...new Set(userIds)].filter(Boolean);
+  if (ids.length === 0) return { ok: true, skipped: true };
+  try {
+    const { error } = await supabase.functions.invoke('send-push', {
+      body: { userIds: ids, title, body, link },
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Push send failed:', error.message);
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('Push send failed:', err.message);
+    return { ok: false };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // AITA Calendar — mirrored tournaments + fact sheets (phase 25)
 // Read-only from the client; the sync-aita-calendar Edge Function (cron +
@@ -2841,6 +2969,9 @@ function rowToTrainingSession(row) {
     intensity: row.intensity,
     notes: row.notes,
     createdAt: row.created_at,
+    videoPath: row.video_path,
+    thumbnailPath: row.thumbnail_path,
+    durationSec: row.duration_sec,
   };
 }
 
@@ -2871,6 +3002,41 @@ export async function logTrainingSession(playerId, { category, subcategory, sess
 export async function deleteTrainingSession(sessionId) {
   const { error } = await supabase.from('training_sessions').delete().eq('id', sessionId);
   if (error) throw new Error(error.message);
+}
+
+// Phase 42 — video attached to a training session. Uploaded to
+// `<playerId>/<sessionId>-<name>` so storage.objects RLS (phase42_
+// training_video_storage.sql) can key off the folder name; thumbnail
+// capture itself is client-side (src/lib/video.js), this just uploads both
+// blobs and records their paths on the session row.
+const TRAINING_VIDEO_BUCKET = 'training-videos';
+
+export async function uploadTrainingVideo(playerId, sessionId, videoFile, thumbnailBlob, durationSec) {
+  const videoPath = `${playerId}/${sessionId}-video.${(videoFile.name.split('.').pop() || 'mp4')}`;
+  const thumbPath = `${playerId}/${sessionId}-thumb.jpg`;
+
+  const [videoUp, thumbUp] = await Promise.all([
+    supabase.storage.from(TRAINING_VIDEO_BUCKET).upload(videoPath, videoFile, { upsert: true, contentType: videoFile.type }),
+    supabase.storage.from(TRAINING_VIDEO_BUCKET).upload(thumbPath, thumbnailBlob, { upsert: true, contentType: 'image/jpeg' }),
+  ]);
+  if (videoUp.error) throw new Error(videoUp.error.message);
+  if (thumbUp.error) throw new Error(thumbUp.error.message);
+
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .update({ video_path: videoPath, thumbnail_path: thumbPath, duration_sec: durationSec || null })
+    .eq('id', sessionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToTrainingSession(data);
+}
+
+export async function getTrainingVideoUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from(TRAINING_VIDEO_BUCKET).createSignedUrl(path, 3600);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
 }
 
 // Coach Intelligence System sidebar's real "this week" count — every
@@ -3023,7 +3189,7 @@ export async function getRosterWithSegments(coachId) {
 }
 
 function rowToPlayerSummary(p) {
-  return { id: p.id, displayName: p.display_name, aitaReg: p.aita_reg, stateAbbr: p.state_abbr, ranking: p.ranking, clubName: p.club_name };
+  return { id: p.id, displayName: p.display_name, aitaReg: p.aita_reg, stateAbbr: p.state_abbr, ranking: p.ranking, clubName: p.club_name, role: p.role };
 }
 
 // Phase 34 — Coach roster leaderboard (CoachIntelligenceShell's Leaderboard
@@ -3062,4 +3228,200 @@ export async function getRosterLeaderboard(coachId) {
 
     return { ...rowToPlayerSummary(p), wins, aces, drillMinutes, sessionCount: sessions.length, streak };
   }));
+}
+
+// Phase 37 — player-vs-player Compare (ComparePage.jsx's coach-only
+// "Players" mode). Scoped to a coach's own roster — two players don't have
+// a link to each other directly, so this reuses the coach's existing RLS
+// read access to each linked player's matches (phase30) rather than
+// inventing a player-to-player link table.
+const COMPARE_RANGE_DAYS = { week: 7, month: 30, quarter: 90, all: null };
+
+export async function getLinkedPlayersForCompare(coachId) {
+  const { data, error } = await supabase
+    .from('coach_player_links')
+    .select('player:user_profiles!coach_player_links_player_id_fkey(id, display_name, aita_reg, club_name)')
+    .eq('coach_id', coachId)
+    .eq('status', 'active');
+  if (error) throw new Error(error.message);
+  return (data || []).map(l => l.player).filter(Boolean).map(rowToPlayerSummary);
+}
+
+async function summarizePlayerForCompare(playerId, cutoffIso) {
+  let matchQuery = supabase.from('matches').select('winner, points, match_date').eq('user_id', playerId);
+  if (cutoffIso) matchQuery = matchQuery.gte('match_date', cutoffIso);
+  const [matchesRes, sessionsRes] = await Promise.all([
+    matchQuery,
+    supabase.from('training_sessions').select('duration_minutes, session_date').eq('player_id', playerId).gte('session_date', cutoffIso || '1900-01-01'),
+  ]);
+  const matches = matchesRes.data || [];
+  const sessions = sessionsRes.data || [];
+
+  const wins = matches.filter(m => m.winner === 'self').length;
+  const losses = matches.filter(m => m.winner === 'opp').length;
+  let wfe = 0, ue = 0, aces = 0;
+  for (const m of matches) {
+    const s = computeStats(m.points || []).self;
+    wfe += s.wfe; ue += s.ue;
+    aces += computeServeStats(m.points || [], 'self').aces;
+  }
+  const drillMinutes = sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+
+  return { matchCount: matches.length, wins, losses, wfe, ue, aces, drillMinutes };
+}
+
+export async function getPlayerComparison(playerAId, playerBId, range = 'month') {
+  const days = COMPARE_RANGE_DAYS[range] ?? COMPARE_RANGE_DAYS.month;
+  let cutoffIso = null;
+  if (days != null) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    cutoffIso = cutoff.toISOString().slice(0, 10);
+  }
+  const [a, b] = await Promise.all([
+    summarizePlayerForCompare(playerAId, cutoffIso),
+    summarizePlayerForCompare(playerBId, cutoffIso),
+  ]);
+  return { range, a, b };
+}
+
+function rowToSavedCompare(row) {
+  return { id: row.id, ownerId: row.owner_id, name: row.name, playerAId: row.player_a_id, playerBId: row.player_b_id, range: row.range, createdAt: row.created_at };
+}
+
+export async function getSavedCompares(ownerId) {
+  const { data, error } = await supabase
+    .from('saved_compares')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToSavedCompare);
+}
+
+export async function createSavedCompare(ownerId, { name, playerAId, playerBId, range }) {
+  const { data, error } = await supabase
+    .from('saved_compares')
+    .insert({ owner_id: ownerId, name, player_a_id: playerAId, player_b_id: playerBId, range })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToSavedCompare(data);
+}
+
+export async function deleteSavedCompare(id) {
+  const { error } = await supabase.from('saved_compares').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 40 — Messaging (one thread per player, shared by every coach/parent
+// linked to them — see phase40_messaging.sql's header comment).
+// ---------------------------------------------------------------------------
+
+function rowToMessage(row) {
+  return {
+    id: row.id,
+    threadId: row.thread_id,
+    senderId: row.sender_id,
+    body: row.body,
+    createdAt: row.created_at,
+    sender: row.sender ? rowToPlayerSummary(row.sender) : null,
+  };
+}
+
+// Every player_id the current user can message about: themself (if a
+// player) plus every actively-linked player (if a coach/parent).
+async function messagablePlayerIds(userId, role) {
+  if (role !== 'coach' && role !== 'parent') return [userId];
+  const table = role === 'coach' ? 'coach_player_links' : 'parent_player_links';
+  const ownerCol = role === 'coach' ? 'coach_id' : 'parent_id';
+  const { data, error } = await supabase.from(table).select('player_id').eq(ownerCol, userId).eq('status', 'active');
+  if (error) throw new Error(error.message);
+  return (data || []).map(r => r.player_id);
+}
+
+export async function getMyThreads(userId, role) {
+  const playerIds = await messagablePlayerIds(userId, role);
+  if (playerIds.length === 0) return [];
+
+  const { data: threads, error } = await supabase
+    .from('message_threads')
+    .select('id, player_id, created_at, player:user_profiles!message_threads_player_id_fkey(id, display_name, aita_reg, club_name)')
+    .in('player_id', playerIds);
+  if (error) throw new Error(error.message);
+
+  const results = await Promise.all((threads || []).map(async (t) => {
+    const { data: last } = await supabase
+      .from('messages')
+      .select('body, created_at, sender_id')
+      .eq('thread_id', t.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { count } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('thread_id', t.id);
+    return {
+      id: t.id,
+      playerId: t.player_id,
+      player: t.player ? rowToPlayerSummary(t.player) : null,
+      isSelf: t.player_id === userId,
+      lastMessage: last ? { body: last.body, createdAt: last.created_at, senderId: last.sender_id } : null,
+      messageCount: count || 0,
+    };
+  }));
+
+  // Players who have no thread yet (no message sent about them so far)
+  // still show up as an empty, message-able entry.
+  const existingPlayerIds = new Set(results.map(r => r.playerId));
+  const missing = playerIds.filter(id => !existingPlayerIds.has(id));
+  if (missing.length > 0) {
+    const { data: profiles } = await supabase.from('user_profiles').select('id, display_name, aita_reg, club_name').in('id', missing);
+    for (const p of (profiles || [])) {
+      results.push({ id: null, playerId: p.id, player: rowToPlayerSummary(p), isSelf: p.id === userId, lastMessage: null, messageCount: 0 });
+    }
+  }
+
+  return results.sort((a, b) => {
+    const at = a.lastMessage?.createdAt || '';
+    const bt = b.lastMessage?.createdAt || '';
+    return bt.localeCompare(at);
+  });
+}
+
+async function getOrCreateThread(playerId) {
+  const { data: existing, error: findErr } = await supabase
+    .from('message_threads').select('id').eq('player_id', playerId).maybeSingle();
+  if (findErr) throw new Error(findErr.message);
+  if (existing) return existing.id;
+
+  const { data: created, error: createErr } = await supabase
+    .from('message_threads').insert({ player_id: playerId }).select('id').single();
+  if (createErr) throw new Error(createErr.message);
+  return created.id;
+}
+
+export async function getThreadMessages(playerId) {
+  const threadId = await getOrCreateThread(playerId);
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*, sender:user_profiles!messages_sender_id_fkey(id, display_name, role)')
+    .eq('thread_id', threadId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return { threadId, messages: data.map(rowToMessage) };
+}
+
+export async function sendMessage(playerId, senderId, body) {
+  const threadId = await getOrCreateThread(playerId);
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ thread_id: threadId, sender_id: senderId, body })
+    .select('*, sender:user_profiles!messages_sender_id_fkey(id, display_name, role)')
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToMessage(data);
 }

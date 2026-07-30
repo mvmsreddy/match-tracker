@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as api from '../../api';
+import { captureVideoThumbnail } from '../../lib/video';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
@@ -24,6 +25,79 @@ function Field({ label, children }) {
     <label className="flex flex-col gap-1 text-xs text-muted-foreground">
       {label}
       {children}
+    </label>
+  );
+}
+
+function fmtDuration(sec) {
+  if (!sec) return '';
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Video attach/playback (Phase 4, item 11) — thumbnail is captured
+// client-side (src/lib/video.js) before upload so there's something to show
+// immediately; both thumbnail and video are served via short-lived signed
+// URLs since the storage bucket is private (phase42_training_video_storage.sql).
+function SessionVideo({ session, onAttached }) {
+  const [thumbUrl, setThumbUrl] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!session.thumbnailPath) return;
+    let cancelled = false;
+    api.getTrainingVideoUrl(session.thumbnailPath).then(url => { if (!cancelled) setThumbUrl(url); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [session.thumbnailPath]);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    try {
+      const { thumbnailBlob, durationSec } = await captureVideoThumbnail(file);
+      const updated = await api.uploadTrainingVideo(session.playerId, session.id, file, thumbnailBlob, durationSec);
+      onAttached(updated);
+    } catch (err) {
+      setError(err.message || 'Could not attach video');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handlePlay() {
+    if (!session.videoPath) return;
+    const url = await api.getTrainingVideoUrl(session.videoPath).catch(() => null);
+    if (url) { setVideoUrl(url); setPlaying(true); }
+  }
+
+  if (session.videoPath) {
+    return (
+      <>
+        <button onClick={handlePlay} className="relative w-16 h-10 rounded-sm overflow-hidden bg-muted shrink-0 group">
+          {thumbUrl && <img src={thumbUrl} alt="" className="w-full h-full object-cover" />}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-xs group-hover:bg-black/50">▶</span>
+          {session.durationSec ? <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] px-1">{fmtDuration(session.durationSec)}</span> : null}
+        </button>
+        {playing && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPlaying(false)}>
+            <video src={videoUrl} controls autoPlay className="max-w-full max-h-full rounded-sm" onClick={e => e.stopPropagation()} />
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <label className="text-[10px] font-semibold text-primary hover:underline cursor-pointer shrink-0">
+      {uploading ? 'Uploading…' : '+ Video'}
+      <input type="file" accept="video/*" className="hidden" onChange={handleFile} disabled={uploading} />
+      {error && <div className="text-destructive text-[10px]">{error}</div>}
     </label>
   );
 }
@@ -88,6 +162,10 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleVideoAttached(updated) {
+    setSessions(prev => prev.map(s => (s.id === updated.id ? updated : s)));
   }
 
   if (sessions === null) return <div className="text-sm text-muted-foreground">Loading training log…</div>;
@@ -180,7 +258,7 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
           {inPeriod.length === 0 && <div className="text-sm text-muted-foreground">No sessions in this period.</div>}
           <div className="space-y-3">
             {inPeriod.map(s => (
-              <div key={s.id} className="flex gap-3">
+              <div key={s.id} className="flex gap-3 items-start">
                 <div className="w-16 shrink-0 text-right">
                   <div className="text-xs font-bold">{formatDate(s.sessionDate)}</div>
                   {s.durationMinutes && <div className="text-[10px] text-muted-foreground">{s.durationMinutes} min</div>}
@@ -190,6 +268,7 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
                   <div className="text-sm font-semibold">{(s.focusAreas || []).join(', ') || 'General session'}</div>
                   {s.notes && <div className="text-xs text-muted-foreground mt-0.5">{s.notes}</div>}
                 </div>
+                {isOwnDashboard && <SessionVideo session={{ ...s, playerId }} onAttached={handleVideoAttached} />}
               </div>
             ))}
           </div>

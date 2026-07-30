@@ -34,9 +34,30 @@ export const addStreakFreeze = hasSupabaseConfig ? supabaseApi.addStreakFreeze :
 export const deleteStreakFreeze = hasSupabaseConfig ? supabaseApi.deleteStreakFreeze : async () => {};
 export const getRosterLeaderboard = hasSupabaseConfig ? supabaseApi.getRosterLeaderboard : async () => [];
 
+// Phase 37 — player-vs-player Compare + Saved Compare Views
+export const getLinkedPlayersForCompare = hasSupabaseConfig ? supabaseApi.getLinkedPlayersForCompare : async () => [];
+export const getPlayerComparison = hasSupabaseConfig ? supabaseApi.getPlayerComparison : async () => null;
+export const getSavedCompares = hasSupabaseConfig ? supabaseApi.getSavedCompares : async () => [];
+export const createSavedCompare = hasSupabaseConfig ? supabaseApi.createSavedCompare : async () => {};
+export const deleteSavedCompare = hasSupabaseConfig ? supabaseApi.deleteSavedCompare : async () => {};
+
+// Phase 40 — Messaging
+export const getMyThreads = hasSupabaseConfig ? supabaseApi.getMyThreads : async () => [];
+export const getThreadMessages = hasSupabaseConfig ? supabaseApi.getThreadMessages : async () => ({ threadId: null, messages: [] });
+export const sendMessage = hasSupabaseConfig ? supabaseApi.sendMessage : async () => {};
+
 // Profile module — Supabase only
 export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async () => null;
 export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async () => {};
+
+// Phase 36 — Nutrition
+export const updateNutritionGoals = hasSupabaseConfig ? supabaseApi.updateNutritionGoals : async () => {};
+
+// Phase 41 — reminder / weekly digest preferences
+export const updateReminderPrefs = hasSupabaseConfig ? supabaseApi.updateReminderPrefs : async () => {};
+export const getNutritionLogs = hasSupabaseConfig ? supabaseApi.getNutritionLogs : async () => [];
+export const createNutritionLog = hasSupabaseConfig ? supabaseApi.createNutritionLog : async () => {};
+export const deleteNutritionLog = hasSupabaseConfig ? supabaseApi.deleteNutritionLog : async () => {};
 export const searchPlayers = hasSupabaseConfig ? supabaseApi.searchPlayers : async () => [];
 export const sendCoachRequest = hasSupabaseConfig ? supabaseApi.sendCoachRequest : async () => {};
 export const getCoachLinks = hasSupabaseConfig ? supabaseApi.getCoachLinks : async () => [];
@@ -99,6 +120,14 @@ export const markNotificationRead        = hasSupabaseConfig ? supabaseApi.markN
 export const markAllNotificationsRead    = hasSupabaseConfig ? supabaseApi.markAllNotificationsRead    : async () => ({ ok: true });
 export const sendNotificationEmails      = hasSupabaseConfig ? supabaseApi.sendNotificationEmails      : async () => ({ ok: true, skipped: true });
 
+// Phase 41 — generic email send
+export const sendEmail = hasSupabaseConfig ? supabaseApi.sendEmail : async () => ({ ok: true, skipped: true });
+
+// Phase 39 — Web Push
+export const savePushSubscription   = hasSupabaseConfig ? supabaseApi.savePushSubscription   : async () => {};
+export const deletePushSubscription = hasSupabaseConfig ? supabaseApi.deletePushSubscription : async () => {};
+export const sendPushNotifications  = hasSupabaseConfig ? supabaseApi.sendPushNotifications  : async () => ({ ok: true, skipped: true });
+
 // Phase 10 — Withdrawals & Alternates (+ Lucky Losers)
 export const setEntryWithdrawn      = hasSupabaseConfig ? supabaseApi.setEntryWithdrawn      : noSupabase;
 export const bulkSetWithdrawn       = hasSupabaseConfig ? supabaseApi.bulkSetWithdrawn       : noSupabase;
@@ -159,6 +188,10 @@ export const deleteRankingGoal    = hasSupabaseConfig ? supabaseApi.deleteRankin
 export const getTrainingSessions  = hasSupabaseConfig ? supabaseApi.getTrainingSessions  : async () => [];
 export const logTrainingSession   = hasSupabaseConfig ? supabaseApi.logTrainingSession   : noSupabase;
 export const deleteTrainingSession = hasSupabaseConfig ? supabaseApi.deleteTrainingSession : noSupabase;
+
+// Phase 42 — training video upload
+export const uploadTrainingVideo = hasSupabaseConfig ? supabaseApi.uploadTrainingVideo : noSupabase;
+export const getTrainingVideoUrl = hasSupabaseConfig ? supabaseApi.getTrainingVideoUrl : async () => null;
 export const getTrainingSessionsLoggedByCoach = hasSupabaseConfig ? supabaseApi.getTrainingSessionsLoggedByCoach : async () => [];
 
 // Phase 30 — tracker/tournament linking

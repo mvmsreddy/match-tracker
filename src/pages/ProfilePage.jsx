@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { minEligibleAgeGroup } from '../utils/eligibility';
+import { isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush } from '../lib/push';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
@@ -69,6 +70,104 @@ function Field({ label, children }) {
 }
 
 const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9';
+
+// Phase 41 — daily reminder + weekly coach digest email toggles.
+function ReminderPrefsCard({ user, refreshProfile }) {
+  const [reminderEnabled, setReminderEnabled] = useState(user.reminderEnabled || false);
+  const [reminderTime, setReminderTime] = useState(user.reminderTime?.slice(0, 5) || '18:00');
+  const [weeklyDigest, setWeeklyDigest] = useState(user.weeklyDigest || false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isCoach = user.role === 'coach';
+
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateReminderPrefs(user.id, { reminderEnabled, reminderTime, weeklyDigest: isCoach ? weeklyDigest : undefined });
+      await refreshProfile();
+    } catch (e) {
+      setError(e.message || 'Could not save preferences');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-4 sm:p-6">
+      <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Email Reminders</div>
+      <label className="flex items-center gap-2 mt-3 text-sm">
+        <input type="checkbox" className="accent-primary w-4 h-4" checked={reminderEnabled} onChange={e => setReminderEnabled(e.target.checked)} />
+        Remind me if I haven't logged anything today
+      </label>
+      {reminderEnabled && (
+        <div className="mt-2 ml-6">
+          <Field label="Reminder time">
+            <Input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className="w-32" />
+          </Field>
+        </div>
+      )}
+      {isCoach && (
+        <label className="flex items-center gap-2 mt-3 text-sm">
+          <input type="checkbox" className="accent-primary w-4 h-4" checked={weeklyDigest} onChange={e => setWeeklyDigest(e.target.checked)} />
+          Send me a weekly roster digest every Monday
+        </label>
+      )}
+      {error && <div className="text-destructive text-xs mt-2">{error}</div>}
+      <Button size="sm" className="mt-3" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+    </Card>
+  );
+}
+
+// Phase 39 — Web Push toggle. Self-contained: owns its own
+// support-check/status/subscribe/unsubscribe rather than threading through
+// the profile `form` state, since the subscription lives in the browser
+// (Push API + service worker), not as a field on the profile record.
+function PushToggleCard({ userId }) {
+  const [status, setStatus] = useState('checking'); // 'checking' | 'unsupported' | 'subscribed' | 'unsubscribed'
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isPushSupported()) { setStatus('unsupported'); return; }
+    getPushSubscriptionStatus().then(setStatus).catch(() => setStatus('unsubscribed'));
+  }, []);
+
+  async function handleToggle() {
+    setBusy(true);
+    setError('');
+    try {
+      if (status === 'subscribed') {
+        await unsubscribeFromPush();
+        setStatus('unsubscribed');
+      } else {
+        await subscribeToPush(userId);
+        setStatus('subscribed');
+      }
+    } catch (e) {
+      setError(e.message || 'Could not update push notifications');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (status === 'unsupported') return null;
+
+  return (
+    <Card className="p-4 sm:p-6 flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Push Notifications</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          {status === 'subscribed' ? 'Enabled on this device' : 'Get notified here even when the app is closed'}
+        </div>
+        {error && <div className="text-destructive text-xs mt-1">{error}</div>}
+      </div>
+      <Button size="sm" variant={status === 'subscribed' ? 'outline' : 'default'} onClick={handleToggle} disabled={busy || status === 'checking'}>
+        {busy ? 'Updating…' : status === 'subscribed' ? 'Turn off' : 'Turn on'}
+      </Button>
+    </Card>
+  );
+}
 
 // Phase 34 — user-declared streak freeze days (travel/rest dates that count
 // as neither logged nor missed — src/lib/streaks.js). Self-contained: owns
@@ -320,6 +419,8 @@ export default function ProfilePage() {
         </Card>
       )}
 
+      {!editing && <PushToggleCard userId={user.id} />}
+      {!editing && !isOrganizer && <ReminderPrefsCard user={user} refreshProfile={refreshProfile} />}
       {!editing && !isOrganizer && <StreakFreezeCard userId={user.id} />}
 
       {!editing && (

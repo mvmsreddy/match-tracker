@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { downloadAppGuide } from '@/lib/appGuidePdf';
 import {
   LayoutDashboard, Activity, Trophy, GitCompare, User, Users,
-  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown, Video,
+  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown, Video, Apple, MessageCircle,
 } from 'lucide-react';
 
 // Single canonical hamburger-menu drawer for the whole app. AppShell (every
@@ -23,17 +23,19 @@ function getNavItems(role) {
   const myCoaches = { id: 'my-coaches', label: 'My Coaches', to: '/my-coaches', icon: Users };
   const myParentPlayers = { id: 'my-parent-players', label: 'My Players', to: '/my-parents', icon: Users };
   const myParents = { id: 'my-parents', label: 'My Parents', to: '/my-parents', icon: Users };
+  const nutrition = { id: 'nutrition', label: 'Nutrition', to: '/nutrition', icon: Apple };
+  const messages = { id: 'messages', label: 'Messages', to: '/messages', icon: MessageCircle };
 
   if (role === 'organizer') {
     return [dashboard, tournaments, calendar, rankings, profile];
   }
   if (role === 'coach') {
-    return [dashboard, track, videoAnalysis, myPlayers, compare, tournaments, calendar, rankings, profile];
+    return [dashboard, track, videoAnalysis, myPlayers, compare, nutrition, messages, tournaments, calendar, rankings, profile];
   }
   if (role === 'parent') {
-    return [dashboard, myParentPlayers, tournaments, calendar, profile];
+    return [dashboard, myParentPlayers, messages, tournaments, calendar, profile];
   }
-  return [dashboard, track, videoAnalysis, performance, tournaments, compare, myCoaches, myParents, calendar, profile];
+  return [dashboard, track, videoAnalysis, performance, tournaments, compare, nutrition, messages, myCoaches, myParents, calendar, profile];
 }
 
 function NavItem({ item, className }) {

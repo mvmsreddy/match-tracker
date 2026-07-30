@@ -2063,6 +2063,7 @@ export default function EventDetailPage() {
     try {
       await api.createNotificationsForUsers(userIds, { type, title, body, tournamentWeekId: weekId, eventId });
       await api.sendNotificationEmails(userIds, { subject: title, html: html || `<p>${body || title}</p>` });
+      await api.sendPushNotifications(userIds, { title, body, link: `/tournaments/${weekId}/events/${eventId}` });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('Notification failed:', err.message);

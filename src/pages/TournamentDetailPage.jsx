@@ -7,6 +7,77 @@ import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { cn } from '../lib/utils';
 
+// Phase 41 — tournament email-sharing (PRD §2.10). Simplified from ACE
+// Tracker's version: emails an HTML summary (name/dates/events/entry
+// counts) rather than a generated PDF snippet — building a server-side PDF
+// renderer in Deno was out of scope for this pass; the existing PDF exports
+// in this app (drawPdf.js/oopPdf.js) are client-side jsPDF, not directly
+// reusable from an Edge Function. Reply-to defaults to the sender's own
+// email so a reply reaches them, not the shared Resend sender address.
+function ShareTournamentDialog({ week, events, user, onClose }) {
+  const [recipients, setRecipients] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
+
+  async function handleSend() {
+    const emails = recipients.split(',').map(s => s.trim()).filter(Boolean);
+    if (emails.length === 0) { setError('Add at least one email address'); return; }
+    setSending(true);
+    setError('');
+    try {
+      const eventLines = (events || []).map(ev => `<li>${ev.category} ${ev.ageGroup}${ev.grade ? ` · ${ev.grade}` : ''}</li>`).join('');
+      const html = `
+        <p>${(user.displayName || user.name || 'Someone')} shared a tournament with you${message ? ':' : '.'}</p>
+        ${message ? `<p>${message}</p>` : ''}
+        <h3>${week.name}</h3>
+        <p>${[week.location, week.city, week.stateAbbr].filter(Boolean).join(', ')}${week.startDate ? ` · ${week.startDate}${week.endDate && week.endDate !== week.startDate ? ` – ${week.endDate}` : ''}` : ''}</p>
+        ${eventLines ? `<ul>${eventLines}</ul>` : ''}
+      `;
+      await api.sendEmail({ to: emails, subject: `Tournament: ${week.name}`, html, replyTo: user.email });
+      setSent(true);
+    } catch (e) {
+      setError(e.message || 'Could not send email');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background border border-border rounded-sm w-full max-w-md p-4 sm:p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-display font-extrabold text-lg tracking-tighter">Share Tournament</div>
+          <button onClick={onClose} className="w-8 h-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground">✕</button>
+        </div>
+        {sent ? (
+          <div className="text-sm text-primary">Sent!</div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Recipient emails (comma-separated)</div>
+                <Input value={recipients} onChange={e => setRecipients(e.target.value)} placeholder="coach@example.com, parent@example.com" />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Message (optional)</div>
+                <textarea
+                  className="w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm resize-none h-20"
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                />
+              </div>
+            </div>
+            {error && <div className="text-destructive text-xs mt-2">{error}</div>}
+            <Button className="mt-4 w-full" onClick={handleSend} disabled={sending}>{sending ? 'Sending…' : 'Send'}</Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -174,6 +245,7 @@ export default function TournamentDetailPage() {
   const [events, setEvents] = useState([]);
   const [error, setError] = useState('');
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showDetails, setShowDetails] = useState(false); // factsheet panel collapsed by default
   const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [saving, setSaving] = useState(false);
@@ -370,13 +442,20 @@ export default function TournamentDetailPage() {
           <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{week.name}</h1>
           {week.subtitle && <div className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{week.subtitle}</div>}
         </div>
-        {isOwner && (
-          <div className="flex gap-2">
-            <Button onClick={() => { setShowAddEvent(true); setSaveError(''); }}>+ Add Event</Button>
-            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleDeleteWeek}>Delete Week</Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowShare(true)}>Share</Button>
+          {isOwner && (
+            <>
+              <Button onClick={() => { setShowAddEvent(true); setSaveError(''); }}>+ Add Event</Button>
+              <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleDeleteWeek}>Delete Week</Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {showShare && (
+        <ShareTournamentDialog week={week} events={events} user={user} onClose={() => setShowShare(false)} />
+      )}
 
       {/* Week Info Bar */}
       <div className="flex flex-wrap items-center gap-2">
