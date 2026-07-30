@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { roundToken } from '../../utils/aitaGradeRules';
+import { todayLocalIso, toLocalIso } from '../../lib/dates';
 import LogMatchButton from '../tournaments/LogMatchButton';
 import MatchDetailModal from './MatchDetailModal';
 import { Badge } from '@/components/primitives/badge';
@@ -162,11 +163,11 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
   const filteredEntries = useMemo(() => {
     if (filter === 'all') return segmentEntries;
     const today = new Date();
-    const todayIso = today.toISOString().slice(0, 10);
+    const todayIso = todayLocalIso();
     const thisYear = String(today.getFullYear());
     const twelveMonthsAgo = new Date(today);
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-    const twelveMonthsAgoIso = twelveMonthsAgo.toISOString().slice(0, 10);
+    const twelveMonthsAgoIso = toLocalIso(twelveMonthsAgo);
 
     return segmentEntries.filter((e) => {
       const d = e.event.week?.startDate;

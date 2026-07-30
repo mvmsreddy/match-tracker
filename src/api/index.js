@@ -1,6 +1,7 @@
 import * as mockApi from './mockApi';
 import * as supabaseApi from './supabaseApi';
 import * as nutritionMock from './nutritionMock';
+import * as tournamentsMock from './tournamentsMock';
 import { generateMockRankingHistory } from '../lib/mockRankingHistory';
 
 const hasSupabaseConfig = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -90,7 +91,7 @@ export const updateEvent = hasSupabaseConfig ? supabaseApi.updateEvent : noSupab
 export const deleteEvent = hasSupabaseConfig ? supabaseApi.deleteEvent : async () => {};
 
 // Draw Entries
-export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : async () => [];
+export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : tournamentsMock.getDrawEntries;
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];
 export const addDrawEntry = hasSupabaseConfig ? supabaseApi.addDrawEntry : noSupabase;
 export const updateDrawEntry = hasSupabaseConfig ? supabaseApi.updateDrawEntry : noSupabase;
@@ -101,7 +102,7 @@ export const bulkAddDrawEntries = hasSupabaseConfig ? supabaseApi.bulkAddDrawEnt
 export const getPlayerWeekParticipation = hasSupabaseConfig ? supabaseApi.getPlayerWeekParticipation : async () => [];
 
 // Event Matches
-export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : async () => [];
+export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : tournamentsMock.getEventMatches;
 export const initializeEventMatches = hasSupabaseConfig ? supabaseApi.initializeEventMatches : async () => [];
 export const updateMatchScore = hasSupabaseConfig ? supabaseApi.updateMatchScore : async () => {};
 export const advanceWinner = hasSupabaseConfig ? supabaseApi.advanceWinner : async () => {};
@@ -148,7 +149,7 @@ export const getMyEventEntry           = hasSupabaseConfig ? supabaseApi.getMyEv
 export const computeSelfEntryPlacement = hasSupabaseConfig ? supabaseApi.computeSelfEntryPlacement : noSupabase;
 export const selfEnterSingles          = hasSupabaseConfig ? supabaseApi.selfEnterSingles          : noSupabase;
 export const withdrawFromEvent         = hasSupabaseConfig ? supabaseApi.withdrawFromEvent         : noSupabase;
-export const getMyEntries              = hasSupabaseConfig ? supabaseApi.getMyEntries              : async () => [];
+export const getMyEntries              = hasSupabaseConfig ? supabaseApi.getMyEntries              : tournamentsMock.getMyEntries;
 
 // Phase 19 — Doubles invitations
 export const searchDoublesPartners     = hasSupabaseConfig ? supabaseApi.searchDoublesPartners     : async () => [];

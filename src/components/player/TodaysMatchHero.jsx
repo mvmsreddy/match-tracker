@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Zap, ChevronRight } from 'lucide-react';
+import { todayLocalIso } from '../../lib/dates';
 
 /**
  * TodaysMatchHero — the one place a player never has to hunt for.
@@ -16,7 +17,7 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
   const navigate = useNavigate();
   if (!isOwnDashboard) return null;
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayLocalIso();
   const todaysMatches = (upcoming || []).filter((m) => m.date === todayIso && m.hasDay);
   if (todaysMatches.length === 0) return null;
 

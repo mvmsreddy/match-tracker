@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMatchTracker } from '../hooks/useMatchTracker';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { getWeatherString } from '../lib/weather';
 import * as api from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -117,6 +118,10 @@ export default function TrackerPage() {
   }, [t.matchStarted]);
 
   const handleAdvisorTip = (tip) => setAdvisorHistory((prev) => [...prev, tip]);
+
+  // Keep the screen awake for the entire live match — held once here so the
+  // lock survives every game/set transition unmount inside the command center.
+  useWakeLock(!!t.matchStarted && !t.engine?.matchOver);
 
   // When match ends / resets, always return to Match tab
   useEffect(() => {

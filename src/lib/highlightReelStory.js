@@ -28,14 +28,11 @@ export async function renderHighlightReelStory(data) {
   ctx.fillStyle = '#050914';
   ctx.fillRect(0, 0, W, H);
 
-  // Faint decorative court lines
+  // Faint decorative court border only — no centre line so it can't slice
+  // through the score row or the recap text below.
   ctx.strokeStyle = 'rgba(245, 158, 11, 0.08)';
   ctx.lineWidth = 2;
   ctx.strokeRect(80, 480, W - 160, H - 720);
-  ctx.beginPath();
-  ctx.moveTo(W / 2, 480);
-  ctx.lineTo(W / 2, H - 240);
-  ctx.stroke();
 
   // ─── Brand strip ────────────────────────────────────────────────────────
   ctx.fillStyle = '#f59e0b';
@@ -115,10 +112,29 @@ export async function renderHighlightReelStory(data) {
   ctx.textAlign = 'left';
   ctx.fillText('AI COACH RECAP', 80, recapTop);
 
+  let cursor = recapTop + 60;
+  const recapMaxLines = 6;
   if (data.recap) {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'italic 34px Georgia, serif';
-    drawWrap(ctx, `"${data.recap.trim()}"`, 80, recapTop + 60, W - 160, 46, 8);
+    cursor = drawWrap(ctx, `"${data.recap.trim()}"`, 80, cursor, W - 160, 46, recapMaxLines);
+  }
+
+  // ─── Coach tips (optional filler for short recaps) ──────────────────────
+  const tipsBottomLimit = H - 150; // leave room for the watermark
+  if (Array.isArray(data.tips) && data.tips.length > 0 && cursor + 100 < tipsBottomLimit) {
+    cursor += 30;
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('COACH WHISPERED', 80, cursor);
+    cursor += 34;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '26px Georgia, serif';
+    for (const tip of data.tips) {
+      if (cursor + 40 > tipsBottomLimit) break;
+      cursor = drawWrap(ctx, `• ${String(tip.text || '').trim()}`, 80, cursor, W - 160, 36, 2);
+      cursor += 8;
+    }
   }
 
   // ─── Watermark ──────────────────────────────────────────────────────────
@@ -164,13 +180,17 @@ function drawWrap(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
           tail = tail.slice(0, -1);
         }
         ctx.fillText(tail + (words.length - i > 1 ? '…' : ''), x, y);
-        return;
+        return y + lineHeight;
       }
     } else {
       line = test;
     }
   }
-  if (line) ctx.fillText(line, x, y);
+  if (line) {
+    ctx.fillText(line, x, y);
+    return y + lineHeight;
+  }
+  return y;
 }
 
 function fitFontSize(ctx, text, maxWidth, startSize, weight, family) {

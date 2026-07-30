@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import * as api from '../api';
 import { normalizeEventSegment } from '../lib/governingBodies';
 import { roundToken } from '../utils/aitaGradeRules';
+import { todayLocalIso, toLocalIso } from '../lib/dates';
 
 function entryName(entry) {
   if (!entry) return 'TBD';
@@ -13,7 +14,7 @@ function addDays(iso, n) {
   if (!iso) return null;
   const d = new Date(iso + 'T00:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return toLocalIso(d);
 }
 
 // Most tournament entries this hook will eagerly resolve into per-match rows —
@@ -87,7 +88,7 @@ export function useSegmentMatchSchedule(userId, circuit) {
 
         if (cancelled) return;
         const all = resolved.flat();
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayLocalIso();
 
         const recent = all
           .filter(m => m.status === 'complete')

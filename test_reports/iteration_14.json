@@ -1,0 +1,85 @@
+{
+  "summary": "Iteration 14 follow-up testing. BACKEND: /app/backend/tests/test_serve_placement.py re-run → 7/7 PASS (serve placement zone for deuce+ad court, receiving tip, 422 validation, /api/health advisor_ready, highlight-reel stream, nutrition stream). FRONTEND (preview URL, player@matchtracker.app): (1) WAKE LOCK HOIST — VERIFIED FIXED: spied navigator.wakeLock.request via add_init_script; a full Quick-mode match (Rohan 4-0 4-0 Aditya, 32 points, 8 game transitions + 1 set transition) produced exactly 1 request (was 16 in iteration 13), 0 releases mid-match, 0 console errors. Reproduced twice, 1 request both times. (2) STORY PNG DESIGN — VERIFIED FIXED: exported story-Rohan-vs-Aditya.png 1080x1920, 221,556 bytes with a completed 234-char AI recap and 2 real advisor tips. The vertical court centre line is GONE (only the faint outer court rect remains, no line through the score row/recap). COACH WHISPERED section now renders below the recap in the lower half and fills the previously-empty ~300px band with the 2 coach tips. A second export taken while the recap was still streaming (122KB) also rendered correctly (empty recap area, no crash). (3) TIMEZONE — no regression: browser TZ offset is 0 (UTC) as expected, todayLocalIso() == UTC date here so the fix is neutral; dates.js logic reviewed and correct. (4) TodaysMatchHero — STILL NOT RENDERING (iteration 13 blocker NOT fixed). (5) Tournaments historical filter — STILL NOT MOUNTING. Root cause found and proven (see rca_of_the_issue): tournamentsMock seeds event category='BS'/ageGroup='U-18', but normalizeEventSegment() requires category='Boys Singles' and ageGroup='U18' (regex /^U(\\d+)$/) and returns {category:'Boys', subcategory:'U-18'} — which can never equal the dashboard circuit {category:'U18', subcategory:'Singles'} built from mockRankingHistory. All 3 segments still show '0 <segment> entries' and 'No upcoming ... matches found in your entered draws'. Consequently the launch-tracker prefill flow (opponent/tournament/round/date into the tracker header) could NOT be tested at all.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "tournamentsMock.js + normalizeEventSegment (TodaysMatchHero / TournamentsTab)",
+        "issue": "CRITICAL (iteration-13 blocker NOT fixed): the new seed never matches any dashboard segment, so data-testid='todays-match-hero' and data-testid='tournaments-history-filter' still never render. Two independent defects: (a) seed uses category:'BS' and ageGroup:'U-18' while normalizeEventSegment() needs 'Boys Singles' + 'U18' (verified in node: normalizeEventSegment('BS','U-18')=null, ('Boys Singles','U-18')=null, ('Boys Singles','U18')={category:'Boys',subcategory:'U-16/18'}); (b) even with correct event strings the returned segment {category:'Boys', subcategory:'U-18'} is a DIFFERENT taxonomy from the dashboard circuit {category:'U18', subcategory:'Singles'} produced by buildCircuits() over mockRankingHistory, so the equality check in useSegmentMatchSchedule.js:54 and TournamentsTab.jsx:142 can never be true. Both mock sources must use one taxonomy.",
+        "selector": "[data-testid=\"todays-match-hero\"], [data-testid=\"tournaments-history-filter\"]",
+        "priority": "CRITICAL"
+      },
+      {
+        "component": "tournamentsMock.js EVENT_MATCHES.round",
+        "issue": "HIGH (will bite immediately after the segment fix): the seed uses draw-size semantics (round: 32 / 16 / 8) but roundToken(matchRound, drawSize, won) expects a 1-based round INDEX. Verified in node: roundToken(32,32)=null, roundToken(16,32)=null, roundToken(8,32)=null; the correct values are 1→R32, 2→R16, 3→QF, 4→SF, 5→F. So the hero header would show no 'QF' token and the tracker prefill round would be '' — exactly the assertion in the test request.",
+        "selector": "n/a (data seed)",
+        "priority": "HIGH"
+      },
+      {
+        "component": "TrackerPage SetupForm Round field",
+        "issue": "MEDIUM: Round is a <select> whose options are 'Round of 32'|'Quarterfinal'|... but the prefill from TodaysMatchHero passes roundToken output ('QF'/'R16'/'SF'). A prefilled 'QF' matches no <option>, so the select will silently show blank and the round is lost when the match is saved. Needs a token→label map (or add token options).",
+        "selector": "select (Round field, TrackerPage.jsx:545)",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "tournamentsMock seed coverage vs test expectation",
+        "issue": "LOW/INFO: the request states '5 seeded entries in the segment', but only 3 of the 5 seeded events are U-18 (e-last-year-u18s is ageGroup 'U-16' and e-two-yr-u16s is U-16). Once the taxonomy is fixed the U18 segment will have 3 entries all dated inside the current calendar year (today, -30d, -120d) — so no 'last year' filter-year chip will exist in that segment. Move the last-year/two-year events into the same age group (or add year-spanning U-18 events) if the year-chip scenario should be demoable.",
+        "selector": "[data-testid=\"filter-year-YYYY\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "TodaysMatchHero → /track prefill",
+        "issue": "UNTESTABLE — hero never renders (see CRITICAL above), so navigate('/track', {state:{trackerPrefill}}) and the header prefill (opponent 'Iyer, Neel', tournament 'Deccan Open Under-18', round QF, date today) could not be exercised end-to-end. Must be retested after the segment/taxonomy fix.",
+        "affected_selectors": ["[data-testid=\"todays-match-launch-btn\"]", "input[placeholder=\"Opponent name\"]", "input[placeholder=\"e.g. Club Championship\"]"]
+      },
+      {
+        "flow": "Tournaments historical filter chips",
+        "issue": "UNTESTABLE — tournaments-history-filter is gated behind segmentEntries.length > 0 which is still 0. filter-this-year / filter-year-YYYY / filter-last-12m / filter-range / filter-range-inputs / tournaments-empty-filtered were all unreachable. Filter logic was code-reviewed instead and looks correct (local-date helpers used, inclusive range, empty-filtered state present).",
+        "affected_selectors": ["[data-testid=\"tournaments-history-filter\"]", "[data-testid=\"filter-range-inputs\"]", "[data-testid=\"tournaments-empty-filtered\"]"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Story PNG export (1080x1920)",
+        "issues": [
+          "FIXED: centre line removed; FIXED: COACH WHISPERED block now fills the lower half for short recaps.",
+          "Remaining nit: recap + tips text is drawn at x=80 with maxWidth W-160, i.e. exactly on the decorative court rect drawn at strokeRect(80,480,W-160,...). Long tip lines touch/appear to overflow the border — give the text ~30px inner padding (x=110, maxWidth W-220).",
+          "Remaining nit: each tip is hard-capped at 2 lines, so the 2nd tip renders as 'open forehand side.…' (ellipsis directly after a full stop) even though ~40px of vertical space was still free below. Consider allowing 3 lines when space permits, or dropping the ellipsis when the text already ends in punctuation."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_serve_placement.py",
+    "/app/test_reports/pytest/iter14_backend.xml"
+  ],
+  "action_items": [
+    "CRITICAL: unify the mock segment taxonomy. Either (a) change mockRankingHistory CIRCUITS to {category:'Boys', subcategory:'U-18'|'U-16'} and tournamentsMock EVENTS to category:'Boys Singles', ageGroup:'U18'/'U16', or (b) make normalizeEventSegment output the U18|Singles shape. Today normalizeEventSegment() returns null for every seeded event AND its output shape can never equal the dashboard circuit shape — so TodaysMatchHero and tournaments-history-filter remain dead code.",
+    "HIGH: fix EVENT_MATCHES.round in tournamentsMock to 1-based round indices (1=R32, 2=R16, 3=QF) so roundToken() resolves; currently every round token is null.",
+    "MEDIUM: map the prefilled round token ('QF') to a valid Round <select> option ('Quarterfinal') in TrackerPage, else the prefill silently drops the round.",
+    "LOW: add year-spanning U-18 events to the seed if the filter-year-<lastyear> chip should be demoable in the default segment.",
+    "LOW: Story PNG — add inner horizontal padding for recap/tips so text does not sit on the court border; relax the 2-line tip cap when space remains."
+  ],
+  "critical_code_review_comments": [
+    "Two competing segment taxonomies exist in the codebase: buildCircuits/circuitKey over ranking rows ('U18'|'Singles') vs normalizeEventSegment over events ('Boys'|'U-18'). Any comparison across them (useSegmentMatchSchedule.js:54, TournamentsTab.jsx:142) is dead logic. Add a single canonical segment type + converters and unit-test them — this is the second iteration lost to the same class of bug.",
+    "tournamentsMock.js still builds its rolling anchor dates with new Date().toISOString().slice(0,10) (UTC) while the consumers now use todayLocalIso() (local). For a UTC+ user after 00:00 the seed's TODAY is one day behind the consumer's today, re-breaking the 'match today' hero. Use toLocalIso() in the mock too.",
+    "highlightReelStory.drawWrap returning the y cursor and the tips-space guard (cursor + 100 < tipsBottomLimit) are correct and defensive — good.",
+    "useWakeLock hoisted to TrackerPage with a boolean dep is correct: exactly 1 request per match, released on unmount/match end."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (7/7 pytest)",
+    "frontend": "60% (3 of 5: Wake Lock hoist FIXED, Story PNG design FIXED, timezone no-regression confirmed; TodaysMatchHero and Tournaments historical filter STILL BLOCKED — 0 segment entries)"
+  },
+  "seed_data_creation": "None persisted. Two Quick-mode matches played in the tracker (localStorage only). Story exports saved to /app/.screenshots/i14_story.png and i14_story2.png.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 (from /app/memory/test_credentials.md). Login: fill [data-testid='login-email-input'] / [data-testid='login-password-input'] then click [data-testid='login-submit-btn'].",
+  "context_for_next_testing_agent": "Dashboard is /player-dashboard?segment=U18%7CSingles (tabs: player-tab-overview / player-tab-tournaments). Verify the taxonomy fix FIRST with a quick check: open the Tournaments tab and read the '<N> U18 Singles entries' line — if it still says 0, both new features are still unreachable and there is no point scripting the hero/filter assertions. Wake-lock spy: page.add_init_script wrapping navigator.wakeLock.request, then read window.__wakeCalls; expected 1 per match. Tracker fast path: /track → fill input[placeholder='Your name'] / input[placeholder='Opponent name'] → select option 'shortsets4' on the format select → click 'Quick' → 'Start Match' → [data-testid='serve-first-self-btn'] → loop [data-testid='quick-win-self-btn'] + transition buttons ('Next Game'/'Continue'/'Next Set') until [data-testid='highlight-reel-card'] (~32 points). For a story PNG with COACH WHISPERED you must click [data-testid='advisor-quick-btn'] 1-2 times mid-match (wait ~6s each) AND wait for [data-testid='highlight-recap'] to finish streaming before clicking [data-testid='highlight-story-btn'].",
+  "rca_of_the_issue": "TodaysMatchHero + tournaments-history-filter: proven with a node harness against the real modules. normalizeEventSegment(rawCategory, rawAgeGroup) requires rawCategory to start with Boys|Girls|Men|Women and rawAgeGroup to match /^U(\\d+)$/. tournamentsMock seeds category:'BS' and ageGroup:'U-18' → both regexes fail → returns null for all 5 entries → segmentEntries=[] in TournamentsTab (filter block gated on length>0) and upcoming=[] in useSegmentMatchSchedule (hero returns null). Even after fixing the strings, the function returns {category:'Boys', subcategory:'U-18'} whereas the selected circuit from buildCircuits(mockRankingHistory) is {category:'U18', subcategory:'Singles'} — the strict equality on category+subcategory can never pass. Reproduced in the UI across all three segments ('0 U18 Singles entries', '0 U16 Doubles entries', '0 U16 Singles entries'), zero console errors. Secondary: roundToken(m.round=8, drawSize=32) returns null because it expects a 1-based round index, so round tokens/prefill would still be empty after the taxonomy fix."
+}

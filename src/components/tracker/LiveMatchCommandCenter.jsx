@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatGameScore, getNextServeCourtSide } from '../../lib/engine';
 import { useOrientation } from '../../hooks/useOrientation';
-import { useWakeLock } from '../../hooks/useWakeLock';
 import LandscapeScoreView from './LandscapeScoreView';
 import {
   Undo2, Sparkles, Eye, EyeOff, Zap, Flame, TrendingUp,
@@ -65,10 +64,6 @@ export default function LiveMatchCommandCenter({
   const server = engine?.currentServer || nextServer;
   const courtSide = getNextServeCourtSide(engine); // 'deuce' | 'ad'
   const courtLabel = courtSide === 'ad' ? 'Ad court' : 'Deuce court';
-
-  // Keep the screen awake for the entire live-tracking session — dark tennis
-  // courts + long changeovers cause the display to sleep in minutes otherwise.
-  useWakeLock(true);
 
   // ─── Momentum ───────────────────────────────────────────────────────────
   const last8 = points.slice(-8);
