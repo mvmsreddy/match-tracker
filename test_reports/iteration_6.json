@@ -1,0 +1,83 @@
+{
+  "summary": "Frontend-only E2E test of the Tennis Analytics dashboard motivation cluster, mock AITA ranking wiring, redesigned Login page, and Performance-tab removal. Tested on mobile (390x844) and desktop (1440x900) against the public preview URL with fresh localStorage. 13 of 14 requested scenarios pass. Verified: elegant Login (desktop navy hero with rotating brand stats confirmed rotating, mobile compact brand header, signup role picker with 4 pills and dark-navy selected state oklch(0.208 0.042 265.755)), demo tap-to-fill + successful sign-in as player@matchtracker.app, MomentumMeter (29/'Cooling' fresh; 73/'Climbing' after seeding 6 matches) with 4-bar form/active/streak/skill breakdown, H2H card correctly absent for the fresh player, WeeklyGoalRings (3 rings + done/goal labels + Matches/Practice/Hydration captions), DailyMission Mark-done -> 'Nailed it' + mission-streak '1d', AchievementsReel '0 of 15 unlocked' 0% empty state and '4 of 15 / 27%' after seeding, PerformanceSummarySection with 3 circuit pills, real Rank/Points/BestRank/BestPts numbers (#393 / 260 / #376 / 260), area chart, Points<->Rank toggle (recharts-area -> recharts-line + 'Lower is better' subtitle), circuit switching updating all values (U18S #393, U16D #63, U16S #116), NextMilestoneCard with progress bar, and /player-dashboard tab bar reduced to exactly 7 tabs with 'My Performance' removed and all 7 tabs rendering content. Zero console errors across every flow. One HIGH bug found: the nav drawer still links to the deleted Performance tab and renders a completely blank page.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "NavDrawer + PlayerDashboardPage",
+        "issue": "Player nav drawer still contains the 'View My Performance' item pointing at /player-dashboard?tab=performance. Since the tab was deleted, clicking it navigates to /player-dashboard?tab=performance&segment=U18|Singles and renders a COMPLETELY BLANK page: no tab is highlighted in the strip and no tab body is rendered (dead end, user must use browser back). Fix both: remove the `performance` entry from getNavItems() player list (NavDrawer.jsx line 18/40) AND make PlayerDashboardPage fall back to 'overview' for any unknown ?tab value.",
+        "selector": "[data-testid=\"nav-item-performance\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "AchievementsReel (dark theme)",
+        "issue": "Hardcoded light-palette Tailwind classes are not theme-aware. Locked 'next up' tiles use bg-slate-50/60 + text-slate-500, which in the app's dark theme renders as grey-on-grey (labels 'Week Warrior', 'Ironclad', 'Match Regular', 'Grinder' are barely legible). Unlocked tiles use from-amber-50 to-white + text-slate-900, which reads but looks pasted-on-light against the dark card. Use dark:-variants or CSS vars.",
+        "selector": "[data-testid^=\"ach-locked-\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "H2HRivalryCard",
+        "issue": "Tactical-hint line uses hardcoded `text-slate-700` (line 94) on a card with theme background — in dark mode this will be dark-grey text on a dark card (very low contrast). Not visually confirmed because the card's positive path needs seeded tournament draw matches; flagged from code review.",
+        "selector": "[data-testid=\"h2h-rivalry-card\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "WeeklyGoalRings",
+        "issue": "Hydration ring shows '0L / 17.5L' — a weekly aggregate goal displayed next to a 'HYDRATION' caption reads confusingly (players think in litres/day). Consider '0 / 17.5L this week' or a daily-average framing.",
+        "selector": "[data-testid=\"weekly-rings\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Next Milestone calculation",
+        "issue": "computeNextMilestone (motivation.js line 205) does `[10,25,50,100,150,200,300,500,1000].find(b => rank > b)` on an ASCENDING array, so it always returns the SMALLEST boundary instead of the nearest one. For the demo player at rank #393 it renders '383 ranks to break top-10' with a 2.5% progress bar — the exact opposite of motivating. It should pick the nearest boundary below the current rank (300 -> '93 ranks to break top-300'). Fix: `[...boundaries].reverse().find(b => rank > b)` or `boundaries.filter(b => rank > b).pop()`.",
+        "affected_selectors": ["[data-testid=\"next-milestone\"]"]
+      },
+      {
+        "flow": "Primary circuit selection",
+        "issue": "PerformanceSummarySection and NextMilestoneAutowire both blindly use circuits[0], which for the demo player is U18 Singles (#393, the worst circuit) while U16 Doubles is #63. The dashboard headline therefore shows the player's weakest segment by default. Order circuits by best rank / most recent snapshot, or persist a user-selected primary.",
+        "affected_selectors": ["[data-testid=\"performance-summary\"]", "[data-testid=\"next-milestone\"]"]
+      },
+      {
+        "flow": "Achievements",
+        "issue": "DashboardPage PlayerMotivationCluster calls computeAchievements({matches, streak, drillCount, ratings}) WITHOUT rankHistory, so maxRankImprovement is always 0 and the 'rank-climber' badge (1 of the 15) is permanently unreachable even though mock rank history exists and shows >20 rank improvement. Pass the SegmentContext rank history in.",
+        "affected_selectors": ["[data-testid=\"achievements-reel\"]"]
+      },
+      {
+        "flow": "Full performance browse",
+        "issue": "With the Performance tab removed there is no longer any route to the full performance browse. PerformanceSummarySection's JSDoc still claims it 'Deep-links to /player-dashboard?tab=performance' but no such link/CTA exists — stale comment plus a lost capability (MyPerformanceTab.jsx is now dead code). Decide: delete MyPerformanceTab.jsx or expose a 'View all' CTA.",
+        "affected_selectors": ["[data-testid=\"performance-summary\"]"]
+      }
+    ],
+    "design_issues": [
+      { "screen": "Login (desktop 1440x900)", "issues": ["Renders correctly: navy hero left half with rotating stat carousel + dot indicators, warm off-white form panel right. No issues found."] },
+      { "screen": "Login (mobile 390x844)", "issues": ["Hero correctly collapses to a compact brand header above the form card. The inactive 'Sign In'/'Sign Up' toggle label is a light grey on off-white pill — contrast is borderline (~3:1); consider darkening the inactive label."] },
+      { "screen": "Player Dashboard (dark theme)", "issues": ["Trophy Cabinet locked tiles low contrast (see ui_bugs).", "Momentum/Rings/Mission/Performance cards all align and space correctly at 390px and 1440px; no overflow or clipping observed."] }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "HIGH: Remove 'View My Performance' from NavDrawer getNavItems() player list and add an unknown-?tab -> 'overview' fallback in PlayerDashboardPage (currently renders a blank page).",
+    "Fix computeNextMilestone nearest-boundary bug (reverse the boundary lookup) — '383 ranks to break top-10' is demotivating and wrong.",
+    "Make circuit selection prefer the player's strongest/most-recent circuit instead of circuits[0].",
+    "Replace hardcoded slate-*/amber-50/white classes in AchievementsReel and H2HRivalryCard with theme-aware (dark:) variants.",
+    "Pass rankHistory into computeAchievements so the 'rank-climber' badge is achievable.",
+    "Clean up stale JSDoc + dead MyPerformanceTab.jsx, or re-expose a full-performance route."
+  ],
+  "critical_code_review_comments": [
+    "motivation.js:205 — ascending Array.find on boundary list always yields the smallest boundary; nearest-boundary logic required.",
+    "DashboardPage.jsx:401 — computeAchievements invoked without rankHistory, silently disabling one achievement.",
+    "AchievementsReel.jsx / H2HRivalryCard.jsx — hardcoded light-only Tailwind colour classes break dark-mode contrast; the rest of the codebase correctly uses CSS vars (var(--color-*)).",
+    "PlayerDashboardShell.jsx — tab buttons had no data-testid; added `player-tab-{id}` (only change I made).",
+    "DashboardPage.jsx is 786 lines — approaching the 700-line split threshold; PlayerMotivationCluster/NextMilestoneAutowire could move to src/components/motivation/."
+  ],
+  "updated_files": ["/app/src/components/player/PlayerDashboardShell.jsx"],
+  "success_rate": { "backend": "N/A (frontend-only request; all APIs mocked via localStorage)", "frontend": "93% (13/14 scenarios pass; 1 HIGH blank-page bug)" },
+  "seed_data_creation": "Injected 6 synthetic matches (oppName 'Verma, Rohit', 4W/2L, sessionType 'match') into localStorage key mtp_mock_matches_v1 for user u_player to verify Momentum/Rings/Achievements recompute. This is browser-session-only and disappears on localStorage clear; no persistent data created.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 (auto-seeded on /login load; verified working). Coach/Parent demo rows also present.",
+  "context_for_next_testing_agent": "Login flow: goto /login, wait_for_selector [data-testid=\"demo-player-btn\"], click it, then [data-testid=\"login-submit-btn\"], then wait_for_selector [data-testid=\"momentum-meter\"]. Avoid localStorage.clear() + page.reload() — one run produced a fully blank white login page after that sequence (not reproducible on retry; possible unguarded localStorage read during boot — worth a second look). Player dashboard tabs now have data-testid=\"player-tab-{overview|tournaments|matches|training|analytics|recommendations|progress}\". H2HRivalryCard's POSITIVE path is still UNTESTED: it needs activity.todayMatches from useTournamentActivity (real tournament + draw entries), which cannot be seeded via plain localStorage match rows — seed a tournament with a draw containing an opponent whose normalized name matches an existing match's oppName. The mock ranking generator is deterministic per aitaReg, so the demo player always shows U18 Singles #393 / U16 Doubles #63 / U16 Singles #116.",
+  "rca_of_the_issue": "Blank Performance page: the Performance tab was removed from PlayerDashboardShell's TABS constant and from PlayerDashboardPage's render switch, but the NavDrawer entry (NavDrawer.jsx line 18, included in the player list on line 40) that deep-links to ?tab=performance was not removed. PlayerDashboardPage reads ?tab straight from the query string with no whitelist validation and no default fallback, so activeTab='performance' matches no tab button (nothing highlighted) and no branch of the tab renderer, producing an empty content area. Repro: login as player -> open hamburger drawer -> click 'View My Performance'. Mitigation: whitelist ?tab against PLAYER_DASHBOARD_TABS ids and default to 'overview', plus delete the drawer entry."
+}

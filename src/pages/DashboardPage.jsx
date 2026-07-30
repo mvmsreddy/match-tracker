@@ -4,14 +4,25 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
-import { avgSkillRatings } from '../lib/localStore';
+import { avgSkillRatings, listDrills } from '../lib/localStore';
+import { getNutritionLogs } from '../api/nutritionMock';
+import {
+  computeMomentum, computeWeeklyRings, computeAchievements,
+  computeNextMilestone, getDailyMission, getMissionStreak,
+} from '../lib/motivation';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
 import { LogTodayReminder, QuickAddGrid, Recent5Strip, DigestPreviewCard } from '@/components/DashboardExtras';
 import SkillRadarCard from '@/components/SkillRadarCard';
 import PerformanceSummarySection from '@/components/PerformanceSummarySection';
-import { SegmentProvider } from '../context/SegmentContext';
+import MomentumMeter from '@/components/motivation/MomentumMeter';
+import WeeklyGoalRings from '@/components/motivation/WeeklyGoalRings';
+import DailyMissionCard from '@/components/motivation/DailyMissionCard';
+import AchievementsReel from '@/components/motivation/AchievementsReel';
+import NextMilestoneCard from '@/components/motivation/NextMilestoneCard';
+import H2HRivalryCard from '@/components/H2HRivalryCard';
+import { SegmentProvider, useSegment } from '../context/SegmentContext';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -368,6 +379,60 @@ function CoachTournamentSections({ loading, error, todayMatches, recentResults, 
 // Main Dashboard
 // ---------------------------------------------------------------------------
 
+// Bundles the four motivation widgets (Momentum, Weekly Rings, Daily Mission,
+// Achievements) into a single reactive cluster. Kept co-located so all
+// derived motivation state comes from one recompute pass.
+function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
+  const [nutritionLogs, setNutritionLogs] = useState([]);
+  const [missionTick, setMissionTick] = useState(0); // force refresh after complete
+
+  useEffect(() => {
+    let cancelled = false;
+    getNutritionLogs(user.id)
+      .then(logs => { if (!cancelled) setNutritionLogs(logs || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  const ratings = avgSkillRatings(user.id, 5);
+  const drillCount = listDrills(user.id).length;
+  const momentum = computeMomentum({ matches, streak, ratings });
+  const rings = computeWeeklyRings({ matches, nutritionLogs });
+  const achievements = computeAchievements({ matches, streak, drillCount, ratings });
+  const mission = getDailyMission(user.id);
+  const missionStreak = getMissionStreak(user.id);
+
+  return (
+    <>
+      <MomentumMeter momentum={momentum} />
+
+      <H2HRivalryCard upcomingMatches={upcomingMatches || []} history={matches} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <WeeklyGoalRings rings={rings} />
+        <DailyMissionCard
+          mission={mission}
+          missionStreak={missionStreak}
+          userId={user.id}
+          onComplete={() => setMissionTick(t => t + 1)}
+          key={missionTick}
+        />
+      </div>
+
+      <AchievementsReel achievements={achievements} />
+    </>
+  );
+}
+
+// Renders the Next Milestone card inside the SegmentProvider so it can pull
+// the player's active circuit + best rank.
+function NextMilestoneAutowire({ user, matches, streak }) {
+  const { circuits } = useSegment();
+  const milestone = computeNextMilestone({ circuits, matches, streak });
+  if (!milestone) return null;
+  return <NextMilestoneCard milestone={milestone} />;
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const role = user?.role || 'player';
@@ -478,10 +543,21 @@ export default function DashboardPage() {
       {role !== 'organizer' && streak && <StreakCard streak={streak} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
 
+      {/* ═════════ Player motivation cluster ═════════ */}
+      {role === 'player' && matches && (
+        <PlayerMotivationCluster
+          user={user}
+          matches={matches}
+          streak={streak?.current || 0}
+          upcomingMatches={activity.todayMatches}
+        />
+      )}
+
       {/* Player: Ranking & Points Performance snapshot (merged from Performance tab) */}
       {role === 'player' && user.aitaReg && (
         <SegmentProvider>
           <PerformanceSummarySection />
+          <NextMilestoneAutowire user={user} matches={matches || []} streak={streak?.current || 0} />
         </SegmentProvider>
       )}
 

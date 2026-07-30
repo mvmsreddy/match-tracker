@@ -1,6 +1,7 @@
 import * as mockApi from './mockApi';
 import * as supabaseApi from './supabaseApi';
 import * as nutritionMock from './nutritionMock';
+import { generateMockRankingHistory } from '../lib/mockRankingHistory';
 
 const hasSupabaseConfig = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
@@ -175,8 +176,12 @@ export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRan
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
 export const triggerAitaRankingsSync = hasSupabaseConfig ? supabaseApi.triggerAitaRankingsSync : noSupabase;
 
-// Player Performance tab — auto-discovers every circuit a reg_no is ranked in
-export const getPlayerAitaRankingHistory = hasSupabaseConfig ? supabaseApi.getPlayerAitaRankingHistory : async () => [];
+// Player Performance tab — auto-discovers every circuit a reg_no is ranked in.
+// In mock mode we synthesise a deterministic multi-circuit trajectory per
+// aitaReg so the Dashboard's Performance Snapshot has data in demo mode.
+export const getPlayerAitaRankingHistory = hasSupabaseConfig
+  ? supabaseApi.getPlayerAitaRankingHistory
+  : async (aitaReg) => generateMockRankingHistory(aitaReg || 'DEMO');
 
 // "Navy" design system — Profile annual entry allowance
 export const getMyTournamentEntryCountThisYear = hasSupabaseConfig ? supabaseApi.getMyTournamentEntryCountThisYear : async () => 0;

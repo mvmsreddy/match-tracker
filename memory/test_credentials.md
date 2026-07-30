@@ -6,6 +6,7 @@ Tennis Tracker Pro uses a **mock localStorage backend** (Supabase not configured
 
 | Role     | Email                       | Password    |
 |----------|-----------------------------|-------------|
+| Player   | player@matchtracker.app     | player123   |
 | Coach    | coach@matchtracker.app      | coach123    |
 | Parent   | parent@matchtracker.app     | parent123   |
 

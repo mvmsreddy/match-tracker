@@ -9,7 +9,6 @@ import { Button } from '@/components/primitives/button';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'performance', label: 'My Performance' },
   { id: 'tournaments', label: 'My Tournaments' },
   { id: 'matches', label: 'My Matches' },
   { id: 'training', label: 'Training' },
@@ -181,6 +180,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
             onClick={() => onTabChange(t.id)}
+            data-testid={`player-tab-${t.id}`}
           >
             {t.label}
           </button>
