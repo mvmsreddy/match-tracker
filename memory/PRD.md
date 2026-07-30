@@ -129,6 +129,43 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 - iteration_9.json: All 4 targeted fixes verified. Backend 7/7 pytest pass. 2 new MEDIUM design issues (streak semantics + token efficiency) — resolved by updating streaks.js to count frozen days.
 - Rank ##180 double-hash typo on profile — fixed by stripping the prefix from seed data.
 
+## Iteration 10 — Complete Nutritionist Module (Feb 2026)
+
+### New role
+- **Nutritionist** added as a 4th role in signup + demo credentials (`nutritionist@matchtracker.app / nutri123`, "Dt. Priya"). `HomeRoute` branches to `NutritionistDashboardPage` for this role.
+
+### Nutritionist Command Center (`/nutritionist`)
+6-tab console:
+1. **Athletes** — roster with weekly-compliance mini-bar snapshot per player + amber flag when GI triggers / red-flag macro / cramps surface. Click-through selects an athlete for the rest of the tabs.
+2. **Plan** — 7×6 day-type macro grid (Rest / Light / Training / Heavy / Match / Tournament-Prep / Travel × Cal/P/C/F/H₂O/Na). Editable, persists to `tt.nutrition.targets`. Below: allergen chips (dairy/nuts/gluten/eggs/soy/shellfish/sesame), preference chips (veg/vegan/halal/jain/gluten-free/high-carb), 5 micronutrient targets (iron/Mg/Ca/Vit D/K).
+3. **Protocols** — 7 supplemental-protocol inputs (electrolyte ml/h, sodium mg/h, pre-match caffeine, post-match protein+carb, carb-loading days, g/kg body weight).
+4. **Meal Templates** — reusable library (name / description / macros / tag) with add + delete.
+5. **Body Composition** — weight / body fat % / hydration % log with trend indicator (▲/▼).
+6. **Messages** — chat thread with the selected athlete (mirrors to the player-side DietitianChatCard).
+
+### Player-side coaching layer (injected atop `/nutrition`)
+- **ComplianceHero** — day-type dropdown + color-coded compliance bars using bands: ±10% 🟢 / ±20% 🟡 / ±30% 🟠 / beyond 🔴.
+- **AI Meal Suggester** — POST `/api/nutrition/suggest` SSE endpoint (Claude Sonnet 4.6, India-context system prompt, allergen-aware, timing-aware). 4 preset contexts (pre-match 45m / 2h / post / T-day). Output renders as markdown via inline `TinyMarkdown` (bold, bullets, headings).
+- **PeriMatchFuelTimer** — 6 timeline checkpoints (T-2h → T+30) with tap-to-check. Persists session in localStorage.
+- **WeeklyReportCard** — 5 hit% metrics, avg energy, cramp count, "focus" callout for worst-missed macro.
+- **WellnessQuickLog** — 1-10 sliders for court energy + gut comfort + cramp checkbox + notes.
+- **GiTriggerCard** — pattern-detects foods eaten in 6h before ≤5/10 gut reports. Shows word candidates with incident counts.
+- **DietitianChatCard** — collapsible thread with unread badge, syncs with nutritionist's Messages tab.
+
+### Cross-module
+- 7 nutrition badges (First Fuel / Hydration Hero / Protein Pro / Perfect Prep Week / Bounce Back / Gut Detective / Body Data Nerd) merged into the main Dashboard Trophy Cabinet (unlockedCount + locked "next up" reel expanded to 6).
+- Backend `/api/nutrition/suggest` — pytest 10/10 green.
+
+### Fixes shipped in the same iteration
+- shadcn `<Input>` was missing `text-foreground` — invisible text in dark mode fixed globally.
+- Native `<select>` in coaching panel + templates page now use `text-foreground bg-background`.
+- Plan grid uses `min-w-[560px]` + per-column min-width to scroll horizontally on mobile instead of clipping 4-digit values.
+- WaterTracker + ComplianceHero now share hydration state (water quick-logs mirror into nutrition logs; WaterTracker sums today's non-water nutrition-log hydration too).
+- Nutritionist message-thread timestamp contrast improved.
+
+### Testing
+- iteration_10.json: 10/10 backend pytest, ~90% frontend (all 17 features render + function), 1 HIGH styling defect + 3 MEDIUM + 1 LOW — all resolved.
+
 ## Deferred (needs external input)
 - **Resend integration goes live** — user needs to provide RESEND_API_KEY + SENDER_EMAIL (verified domain). Set them in `/app/backend/.env` and restart `sudo supervisorctl restart backend`. Everything else is already wired.
 - **Weekly cron for real Monday sends** — currently only manual triggering. Would need a supervisor-scheduled Python job hitting the digest endpoint for all opted-in users.

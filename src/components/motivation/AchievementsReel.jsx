@@ -27,9 +27,9 @@ export default function AchievementsReel({ achievements, playerName }) {
   if (!achievements) return null;
   const { unlocked, locked, unlockedCount, totalCount } = achievements;
 
-  // Sort unlocked by newest first, take latest 8; then show up to 4 locked as next-up
+  // Sort unlocked by newest first, take latest 8; then show up to 6 locked as next-up
   const recentUnlocked = [...unlocked].sort((a, b) => (b.unlockedAt || '').localeCompare(a.unlockedAt || '')).slice(0, 8);
-  const nextUp = locked.slice(0, 4);
+  const nextUp = locked.slice(0, 6);
 
   return (
     <Card className="p-5 sm:p-6 shadow-sm" data-testid="achievements-reel">

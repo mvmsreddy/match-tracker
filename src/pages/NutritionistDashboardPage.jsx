@@ -511,7 +511,7 @@ function MessagesTab({ athleteId, fromRole }) {
           <div key={m.id} className={`flex ${m.from === fromRole ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.from === fromRole ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
               {m.text}
-              <div className={`text-[9px] mt-0.5 ${m.from === fromRole ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+              <div className={`text-[9px] mt-0.5 ${m.from === fromRole ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                 {new Date(m.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>

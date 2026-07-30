@@ -76,13 +76,45 @@ export function WaterTracker({ userId, goalMl }) {
   const [current, setCurrent] = useState(0);
   const [pulse, setPulse] = useState(false);
 
-  useEffect(() => { setCurrent(todayWaterMl(userId)); }, [userId]);
+  useEffect(() => {
+    let cancelled = false;
+    // Combine water-widget quick logs with nutrition-log hydration so the
+    // WaterTracker + ComplianceHero share the same view of today's total.
+    (async () => {
+      const base = todayWaterMl(userId);
+      let nutTotal = 0;
+      try {
+        const { getNutritionLogs } = await import('../api/nutritionMock');
+        const logs = (await getNutritionLogs(userId)) || [];
+        const today = new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        const iso = today.toISOString().slice(0, 10);
+        // Skip 'water' mealType — those already came from this tracker and
+        // are already counted via addWaterMl above. We only add hydration
+        // that came from OTHER meal logs (e.g. juice, milk in a meal).
+        nutTotal = logs
+          .filter(l => (l.logDate || l.createdAt?.slice(0, 10)) === iso && l.mealType !== 'water')
+          .reduce((s, l) => s + (Number(l.hydrationMl) || 0), 0);
+      } catch { /* ignore */ }
+      if (!cancelled) setCurrent(base + nutTotal);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
 
   function add(ml) {
     const next = addWaterMl(userId, ml);
     setCurrent(next);
     setPulse(true);
     setTimeout(() => setPulse(false), 400);
+    // Mirror water quick-logs into the nutrition log stream so the compliance
+    // hero + weekly report see hydration without a second source of truth.
+    import('../api/nutritionMock').then(({ createNutritionLog }) => {
+      createNutritionLog(userId, {
+        mealType: 'water',
+        description: `Water · ${ml}ml`,
+        hydrationMl: ml,
+      });
+    });
   }
   function reset() {
     if (!window.confirm("Reset today's water total?")) return;
