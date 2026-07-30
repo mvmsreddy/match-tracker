@@ -15,6 +15,7 @@ import ActionButtons from '../components/ActionButtons';
 import MomentumGraph from '../components/MomentumGraph';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import AiReviewModal from '../components/AiReviewModal';
+import LiveMatchAdvisor from '../components/LiveMatchAdvisor';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { cn } from '../lib/utils';
 import '../styles/tracker-tailwind.css';
@@ -310,6 +311,16 @@ function Field({ label, children, className }) {
 
 // ── Match tab when a match IS running ────────────────────────────────────────
 function MatchRunningView({ t, onGoTrack }) {
+  const advisorContext = {
+    session_id: `${t.header.selfName || 'me'}-${t.header.oppName || 'opp'}-${t.header.startedAt || Date.now()}`,
+    my_name: t.header.selfName,
+    opponent_name: t.header.oppName,
+    game_state: t.header.currentGame || null,
+    my_score: t.header.currentScore || null,
+    my_strengths: [t.header.playingStyle].filter(Boolean),
+    opponent_notes: t.header.opponentNotes || null,
+  };
+
   return (
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-4">
@@ -351,6 +362,7 @@ function MatchRunningView({ t, onGoTrack }) {
             )}
           </div>
         </div>
+        <LiveMatchAdvisor matchContext={advisorContext} />
         <Button className="w-full" size="lg" onClick={onGoTrack}>● Go to Track</Button>
       </CardContent>
     </Card>

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
+import { autoProtectStreak, getTokenState } from '../lib/streakTokens';
 import { avgSkillRatings, listDrills } from '../lib/localStore';
 import { getNutritionLogs } from '../api/nutritionMock';
 import {
@@ -158,9 +159,13 @@ function PlayerLiveBanner({ todayMatches }) {
   );
 }
 
-function StreakCard({ streak }) {
+function StreakCard({ streak, tokenState, protection }) {
+  const tokens = tokenState?.tokens ?? 0;
+  const max = tokenState?.max ?? 3;
+  const spentToday = protection?.newSpends?.length ?? 0;
+
   return (
-    <Card className="p-5 sm:p-6 bg-card border-l-4 border-l-primary shadow-sm">
+    <Card className="p-5 sm:p-6 bg-card border-l-4 border-l-primary shadow-sm" data-testid="streak-card">
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
           <Flame className="w-7 h-7 sm:w-8 sm:h-8 text-primary" strokeWidth={2.5} />
@@ -178,6 +183,39 @@ function StreakCard({ streak }) {
           </div>
         </div>
       </div>
+
+      {/* Streak Freeze Tokens */}
+      {tokenState && (
+        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5" data-testid="freeze-token-indicator">
+              {Array.from({ length: max }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-4 h-6 rounded-sm ${i < tokens ? 'bg-blue-500' : 'bg-muted border border-border'}`}
+                  title={i < tokens ? 'Freeze token' : 'Slot empty'}
+                />
+              ))}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold">
+                {tokens} freeze token{tokens === 1 ? '' : 's'}
+              </div>
+              <div className="text-[11px] text-muted-foreground leading-tight">
+                {tokens < max
+                  ? `Next in ${tokenState.nextInDays} day${tokenState.nextInDays === 1 ? '' : 's'}`
+                  : 'Vault is full · spend or wait'}
+              </div>
+            </div>
+          </div>
+          {spentToday > 0 && (
+            <div className="text-[11px] font-bold text-blue-500 text-right leading-tight" data-testid="freeze-spent-note">
+              🛡️ Auto-protected<br />
+              {spentToday} rest day{spentToday === 1 ? '' : 's'}
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -424,7 +462,7 @@ function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
         />
       </div>
 
-      <AchievementsReel achievements={achievements} />
+      <AchievementsReel achievements={achievements} playerName={user.displayName || user.name} />
     </>
   );
 }
@@ -505,8 +543,18 @@ export default function DashboardPage() {
   const winRate     = matchesOnly.length > 0 ? Math.round((wins / matchesOnly.length) * 100) : null;
   const recent      = matches ? matches.slice(0, 5) : [];
 
+  // Auto-consume streak-freeze tokens for missed days in the last 2 weeks
+  // so a single skipped day doesn't break a long run. Idempotent per date.
+  const logDates = matches && streakInputs
+    ? [...matches.map(m => m.date), ...streakInputs.sessionDates]
+    : null;
+  const protection = (role !== 'organizer' && logDates)
+    ? autoProtectStreak(user.id, logDates, streakInputs.freezeDates || [])
+    : null;
+  const tokenState = role !== 'organizer' ? getTokenState(user.id) : null;
+
   const streak = (matches && streakInputs)
-    ? computeStreak([...matches.map(m => m.date), ...streakInputs.sessionDates], { freezeDates: streakInputs.freezeDates })
+    ? computeStreak(logDates, { freezeDates: protection ? protection.freezeDates : streakInputs.freezeDates })
     : null;
 
   // Tournament activity (player: self, coach: whole active roster)
@@ -548,7 +596,7 @@ export default function DashboardPage() {
       {/* Quick-Add tiles (player/coach) */}
       {(role === 'player' || role === 'coach') && <QuickAddGrid />}
 
-      {role !== 'organizer' && streak && <StreakCard streak={streak} />}
+      {role !== 'organizer' && streak && <StreakCard streak={streak} tokenState={tokenState} protection={protection} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
 
       {/* ═════════ Player motivation cluster + performance snapshot ═════════ */}

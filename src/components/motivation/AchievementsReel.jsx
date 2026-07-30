@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card } from '@/components/primitives/card';
 import {
   Trophy, Award, Zap, Flame, Shield, Target, Star, Crown,
-  Dumbbell, Sparkles, TrendingUp, Lock,
+  Dumbbell, Sparkles, TrendingUp, Lock, Share2,
 } from 'lucide-react';
+import ShareBadgeModal from './ShareBadgeModal';
 
 const ICONS = {
   trophy: Trophy,
@@ -28,7 +30,8 @@ function isNew(iso) {
  * greyed-out "next up" locked tiles. Gives the player a running trophy
  * cabinet + a hint at what to chase next.
  */
-export default function AchievementsReel({ achievements }) {
+export default function AchievementsReel({ achievements, playerName }) {
+  const [shareBadge, setShareBadge] = useState(null);
   if (!achievements) return null;
   const { unlocked, locked, unlockedCount, totalCount } = achievements;
 
@@ -63,23 +66,28 @@ export default function AchievementsReel({ achievements }) {
             const Icon = ICONS[a.icon] || Trophy;
             const badgeNew = isNew(a.unlockedAt);
             return (
-              <div
+              <button
                 key={a.id}
-                className="relative snap-start shrink-0 w-24 p-3 rounded-xl border border-amber-500/40 bg-amber-500/10"
+                onClick={() => setShareBadge(a)}
+                className="relative snap-start shrink-0 w-24 p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-500/60 transition-all active:scale-[0.97] group"
                 data-testid={`ach-${a.id}`}
+                title={`${a.desc} — tap to share`}
               >
                 {badgeNew && (
                   <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider">
                     New
                   </div>
                 )}
-                <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-center">
+                <div className="relative w-10 h-10 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-center">
                   <Icon className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Share2 className="w-2.5 h-2.5" strokeWidth={3} />
+                  </div>
                 </div>
                 <div className="text-[11px] font-bold text-center mt-2 leading-tight text-foreground">
                   {a.title}
                 </div>
-              </div>
+              </button>
             );
           })}
 
@@ -103,6 +111,13 @@ export default function AchievementsReel({ achievements }) {
             );
           })}
         </div>
+      )}
+      {shareBadge && (
+        <ShareBadgeModal
+          badge={shareBadge}
+          playerName={playerName}
+          onClose={() => setShareBadge(null)}
+        />
       )}
     </Card>
   );
