@@ -47,7 +47,7 @@ export default function LiveMatchCommandCenter({
   // ─── Match duration ─────────────────────────────────────────────────────
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000); // 30s refresh
+    const t = setInterval(() => setNow(Date.now()), 1000); // 1s refresh so match-duration ticks live
     return () => clearInterval(t);
   }, []);
   const durationMs = matchStartTime ? now - matchStartTime : 0;
@@ -65,19 +65,27 @@ export default function LiveMatchCommandCenter({
   const last8 = points.slice(-8);
   const streakInfo = computeStreak(points);
 
+  // Reset changeover memory whenever we're back to zero points (new match)
+  useEffect(() => {
+    if (points.length === 0) sessionStorage.setItem('mtp_last_changeover_total', '-1');
+  }, [points.length === 0]);
+
   // ─── Changeover detection ───────────────────────────────────────────────
+  // Persists across GameTransitionCard re-mounts by keeping the last-seen
+  // total-games count in sessionStorage. Fires whenever we detect a new
+  // odd-game boundary (1, 3, 5, ...) — the natural tennis changeover.
   const [changeoverActive, setChangeoverActive] = useState(false);
   const [changeoverSecs, setChangeoverSecs] = useState(90);
-  const prevGamesTotal = useRef((gamesSelf + gamesOpp));
   useEffect(() => {
-    const total = gamesSelf + gamesOpp;
-    // Trigger at odd game boundary (1, 3, 5...) — natural changeover in tennis
-    if (total > prevGamesTotal.current && total % 2 === 1 && total > 0) {
+    const total = gamesSelf + gamesOpp + setsSelf * 6 + setsOpp * 6; // rough total across sets
+    const key = 'mtp_last_changeover_total';
+    const stored = Number(sessionStorage.getItem(key) || '-1');
+    if (total > stored && total > 0 && total % 2 === 1) {
       setChangeoverActive(true);
       setChangeoverSecs(90);
     }
-    prevGamesTotal.current = total;
-  }, [gamesSelf, gamesOpp]);
+    sessionStorage.setItem(key, String(total));
+  }, [gamesSelf, gamesOpp, setsSelf, setsOpp]);
   useEffect(() => {
     if (!changeoverActive) return;
     const t = setInterval(() => {

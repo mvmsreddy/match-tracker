@@ -982,6 +982,7 @@ function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverEx
             variant={nextServer === 'self' ? 'default' : 'outline'}
             disabled={hasPoints}
             onClick={() => !hasPoints && setServerChoice('self')}
+            data-testid="serve-first-self-btn"
           >
             {selfName}
           </Button>
@@ -991,6 +992,7 @@ function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverEx
             variant={nextServer === 'opp' ? 'default' : 'outline'}
             disabled={hasPoints}
             onClick={() => !hasPoints && setServerChoice('opp')}
+            data-testid="serve-first-opp-btn"
           >
             {oppName}
           </Button>

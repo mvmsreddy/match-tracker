@@ -166,6 +166,29 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 ### Testing
 - iteration_10.json: 10/10 backend pytest, ~90% frontend (all 17 features render + function), 1 HIGH styling defect + 3 MEDIUM + 1 LOW — all resolved.
 
+## Iteration 11 — Live Match Command Center (Feb 2026)
+
+The "heart of the app" upgrade — a persistent context bar that wraps the existing point-entry UI (QuickMode/Wizard) during a live match. Purpose: keep every high-value on-court signal one glance away, so a player never leaves the Track tab mid-match.
+
+### What shipped
+- **LiveMatchCommandCenter** (`/app/src/components/tracker/LiveMatchCommandCenter.jsx`) — wraps QuickMode/Wizard on the Track tab, adds:
+  - **Score Hero** — big current-game score (font-display 4xl), server chip with pulse dot, live match duration (mm:ss ticking every 1s), sets pill, per-set games.
+  - **Momentum micro-strip** — last-8 points as W/L color dots.
+  - **Streak indicator** — "X in a row" primary/destructive pill when the last ≥2 points share a winner.
+  - **Break-point burst** — pulsing amber pill when the receiver is at 40 with server ≤ 30 or receiver holds advantage.
+  - **Commit flash overlay** — full-panel 550ms green (self) / red (opp) pulse on every point commit; instant visual acknowledgement.
+  - **Floating Undo pill** — appears bottom-center-fixed for 5s after each commit; one-tap undo without hunting.
+  - **AI Coach inline** — one-tap "Ask coach" streams a real-time tactical tip via `/api/advisor/tip` SSE (Claude Sonnet 4.6). Uses live match context (score, server, opponent, recent form). Inline card can be refreshed for new tips.
+  - **Changeover timer** — auto-triggered 90s countdown at every odd-game boundary (1, 3, 5…), persisted through GameTransitionCard remounts via `sessionStorage`. Dismissible.
+  - **Distraction-Free / Focus mode** — Eye-toggle collapses the whole shell to just a huge score card + the winner buttons.
+
+### Testing
+- iteration_11.json: 10/12 pass — Score Hero / Momentum / Streak / Break-point / Commit flash / Floating undo / AI Coach SSE (real "Serve wide to the deuce court, then attack the open court with your forehand." tip received) / Distraction-free / QuickMode regression / zero console errors → all PASS.
+- 2 fixes applied post-report: duration counter now 1s (not 30s) so it ticks live; changeover timer now uses sessionStorage to survive GameTransitionCard unmount cycles.
+
+### Test IDs added
+- `live-command-center` · `live-command-center-distraction` · `live-game-score` · `match-duration` · `momentum-strip` · `streak-indicator` · `floating-undo-pill` · `advisor-quick-btn` · `advisor-inline` · `advisor-inline-tip` · `distraction-toggle-on` · `distraction-toggle-off` · `changeover-timer` · `serve-first-self-btn` · `serve-first-opp-btn`
+
 ## 📋 Roadmap
 See **`/app/memory/ROADMAP.md`** for the full prioritised backlog (56+ items across P0–P6, from unblock-with-a-key items to distant wishlist ideas). This section used to duplicate that list — now it's the single source of truth.
 
