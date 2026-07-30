@@ -6,6 +6,7 @@ import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
+import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -572,7 +573,11 @@ export default function DashboardPage() {
           <SectionTitle>My Stats</SectionTitle>
 
           {error && <EmptyState>{error}</EmptyState>}
-          {matches === null && !error && <EmptyState>Loading…</EmptyState>}
+          {matches === null && !error && (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
+            </div>
+          )}
 
           {matches !== null && (
             <>

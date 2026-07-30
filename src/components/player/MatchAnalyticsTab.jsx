@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
+import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+} from 'recharts';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, aggregateBreakPoints, aggregateServeStats, strokeWinRates } from '../../lib/segmentAnalytics';
 import { Card } from '@/components/primitives/card';
@@ -140,6 +143,57 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
     }));
   }, [tracked]);
 
+  // Prepare radar chart data — comprehensive skill breakdown
+  const skillRadarData = useMemo(() => {
+    if (tracked.length === 0) return [];
+    const strokes = aggregateStrokeBreakdown(tracked);
+    const winRates = strokeWinRates(strokes, 3);
+    const bp = aggregateBreakPoints(tracked);
+    const serve = aggregateServeStats(tracked);
+    
+    const data = [];
+    
+    // Add stroke-based skills
+    for (const w of winRates) {
+      if (w.winRate !== null) {
+        data.push({
+          skill: w.stroke,
+          value: w.winRate,
+          fullMark: 100,
+        });
+      }
+    }
+    
+    // Add serve skill
+    if (serve.totalServicePts >= 20) {
+      data.push({
+        skill: 'Serving',
+        value: Math.round(serve.firstPct),
+        fullMark: 100,
+      });
+    }
+    
+    // Add break point saves
+    if (bp.facedServing >= 3) {
+      data.push({
+        skill: 'BP Saves',
+        value: bp.saveRate,
+        fullMark: 100,
+      });
+    }
+    
+    // Add break point conversions
+    if (bp.facedReturning >= 3) {
+      data.push({
+        skill: 'BP Convert',
+        value: bp.convertRate,
+        fullMark: 100,
+      });
+    }
+    
+    return data;
+  }, [tracked]);
+
   if (matches === null) return <div className="text-sm text-muted-foreground">Loading match analytics…</div>;
   if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
@@ -204,6 +258,45 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
                 ))}
               </Bar>
             </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Skill Radar Chart — comprehensive skills overview */}
+      {skillRadarData.length >= 3 && (
+        <Card className="p-4 sm:p-6 shadow-sm">
+          <div className="font-bold text-sm sm:text-base mb-1">Skills Breakdown</div>
+          <div className="text-xs text-muted-foreground mb-4">Your all-round performance profile</div>
+          <ResponsiveContainer width="100%" height={280}>
+            <RadarChart data={skillRadarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
+              <PolarGrid stroke="hsl(var(--color-border))" strokeDasharray="3 3" />
+              <PolarAngleAxis 
+                dataKey="skill" 
+                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 11, fontWeight: 600 }} 
+              />
+              <PolarRadiusAxis 
+                domain={[0, 100]} 
+                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 9 }}
+                axisLine={false}
+                tickCount={5}
+              />
+              <Radar 
+                name="Skills" 
+                dataKey="value" 
+                stroke="hsl(var(--color-primary))" 
+                fill="hsl(var(--color-primary))" 
+                fillOpacity={0.35} 
+                strokeWidth={2.5}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  background: 'hsl(var(--color-popover))', 
+                  border: '1px solid hsl(var(--color-border))', 
+                  borderRadius: 6 
+                }}
+                formatter={(value) => [`${value}%`, 'Score']}
+              />
+            </RadarChart>
           </ResponsiveContainer>
         </Card>
       )}

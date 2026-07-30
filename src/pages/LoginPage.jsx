@@ -265,6 +265,7 @@ export default function LoginPage() {
                     <Input
                       id="email" type="email" autoComplete="username" value={email}
                       onChange={(e) => setEmail(e.target.value)} required className="pl-9 pr-3"
+                      data-testid="login-email-input"
                     />
                   </div>
                 </div>
@@ -275,6 +276,7 @@ export default function LoginPage() {
                     <Input
                       id="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       value={password} onChange={(e) => setPassword(e.target.value)} required className="pl-9 pr-9"
+                      data-testid="login-password-input"
                     />
                     <button
                       type="button"
@@ -308,7 +310,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <Button type="submit" size="lg" className="w-full font-semibold mt-2" disabled={submitting}>
+                <Button type="submit" size="lg" className="w-full font-semibold mt-2" disabled={submitting} data-testid="login-submit-btn">
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />

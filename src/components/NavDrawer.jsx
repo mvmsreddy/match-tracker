@@ -45,8 +45,9 @@ function NavItem({ item, className }) {
       to={item.to}
       end={item.end}
       className={({ isActive }) =>
-        `${className} ${isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`
+        `${className} ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`
       }
+      data-testid={`nav-item-${item.id}`}
     >
       <Icon className="w-4 h-4 shrink-0" strokeWidth={2.5} />
       <span>{item.label}</span>
@@ -61,42 +62,78 @@ export default function NavDrawer({ open, onClose, role, theme, toggle, logout }
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border p-4 overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <span className="font-display font-extrabold text-lg tracking-tighter">Menu</span>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary">
-            <X className="w-4 h-4" />
+      <div 
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" 
+        onClick={onClose} 
+        data-testid="nav-drawer-overlay"
+      />
+      <div 
+        className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-[320px] bg-background border-r border-border overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-200"
+        data-testid="nav-drawer"
+      >
+        <div className="sticky top-0 z-10 bg-background border-b border-border flex items-center justify-between p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-accent flex items-center justify-center rounded-lg">
+              <Trophy className="w-4 h-4 text-accent-foreground" strokeWidth={2.5} />
+            </div>
+            <span className="font-display font-extrabold text-base tracking-tighter">TENNIS TRACKER</span>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-transparent hover:bg-secondary transition-colors"
+            data-testid="nav-drawer-close-btn"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="space-y-1" onClick={onClose}>
-          {items.map((item) => (
-            <NavItem key={item.id} item={item} className="flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold" />
-          ))}
-        </nav>
-        <div className="h-px bg-border my-2" />
-        <button
-          onClick={downloadAppGuide}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <FileDown className="w-4 h-4" strokeWidth={2.5} />
-          Download Guide PDF
-        </button>
-        <div className="h-px bg-border my-2" />
-        <button
-          onClick={toggle}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" strokeWidth={2.5} /> : <Moon className="w-4 h-4" strokeWidth={2.5} />}
-          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        </button>
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <LogOut className="w-4 h-4" strokeWidth={2.5} />
-          Log out
-        </button>
+        
+        <div className="p-3">
+          <div className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground mb-2 px-3">
+            Menu
+          </div>
+          <nav className="space-y-1" onClick={onClose}>
+            {items.map((item) => (
+              <NavItem key={item.id} item={item} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold transition-colors" />
+            ))}
+          </nav>
+        </div>
+        
+        <div className="mt-2 mx-3 h-px bg-border" />
+        
+        <div className="p-3 space-y-1">
+          <div className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground mb-2 px-3">
+            Preferences
+          </div>
+          <button
+            onClick={toggle}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            data-testid="drawer-theme-toggle"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" strokeWidth={2.5} /> : <Moon className="w-4 h-4" strokeWidth={2.5} />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+          <button
+            onClick={downloadAppGuide}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            data-testid="drawer-download-guide"
+          >
+            <FileDown className="w-4 h-4" strokeWidth={2.5} />
+            Download Guide PDF
+          </button>
+        </div>
+        
+        <div className="mt-2 mx-3 h-px bg-border" />
+        
+        <div className="p-3">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold bg-transparent text-destructive hover:bg-destructive/10 transition-colors"
+            data-testid="drawer-logout-btn"
+          >
+            <LogOut className="w-4 h-4" strokeWidth={2.5} />
+            Log out
+          </button>
+        </div>
       </div>
     </>
   );
