@@ -1,0 +1,72 @@
+{
+  "summary": "Retest of iteration_8 fixes on the public preview URL (390x844) + backend regression. Backend: pytest /app/backend/tests/backend_test.py 7/7 PASS (health advisor_ready:true/digest_ready:false, advisor SSE frames, digest 503/422). FIX#1 (autoProtectStreak) VERIFIED: seeded mtp_mock_matches_v1 with matches at today and today-3 for u_player plus tokens=3, reloaded -> mtp_freeze_tokens_v1 became {tokens:1, autoConsumed:['<yesterday>','<2-days-ago>']}; second/third reload did NOT double-spend (idempotent); with the default fresh state (tokens:1) exactly one gap day is frozen. FIX#2 (freeze-spent-note) VERIFIED: element present with text '(shield) Auto-protected / 2 rest days', persists across page reloads (read from persisted autoConsumed) and is correctly absent when no spend exists (today+yesterday, tokens untouched at 3). FIX#3 VERIFIED by code read: TrackerPage advisorContext now only has session_id, my_name, opponent_name, my_strengths, opponent_notes - no currentScore/currentGame references anywhere. FIX#4 VERIFIED: DashboardPage wraps logDates/protection/tokenState/streak in useMemo, no impure-render/React warnings (only pre-existing react-router v7 future-flag warnings). REGRESSION PASS: fresh login token vault = 3 slots with 1 filled + '1 freeze token / Next in 7 days'; achievements-reel with 5 tiles, ach-rank-climber opens share-badge-modal with 1080x1920 preview, Share/Save/close testids present; /profile digest-pending-state present and digest-send-now-btn absent. Zero console errors in every flow. Also ran a Node harness (/app/test_reports/streak_tokens_node_test.mjs) over 7 seed permutations of the real streakTokens.js + streaks.js - it exposed 2 remaining behavioural problems (streak count does not include protected days; tokens are burned on gaps that cannot be bridged).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/advisor/tip", "issue": "Still open from iteration_8: SSE token frames are emitted as `data: {token}` without escaping embedded newlines; a token containing \\n splits the frame."},
+      {"endpoint": "POST /api/advisor/tip", "issue": "Advisor payload now carries no score/serving state at all (FIX#3 removed the dead fields instead of wiring real ones), so tips cannot be situation-aware. Product decision needed."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "streaks.js computeStreak / StreakCard",
+        "issue": "MEDIUM: after auto-protection the displayed streak does NOT include the protected days. Seed today + today-3 with 3 tokens -> yesterday and 2-days-ago are frozen and the note says 'Auto-protected 2 rest days', but the card reads '2 DAY STREAK' (only the 2 logged days) instead of the expected 4. computeStreak only increments `current` for loggedSet days (`if (loggedSet.has(cursor)) current += 1;`) while frozen days merely bridge. Either count frozen/protected days in `current` (spec expectation from the review request) or change the UX copy so users understand a spent token does not grow the number.",
+        "selector": "[data-testid=\"streak-card\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "src/lib/streakTokens.js autoProtectStreak",
+        "issue": "MEDIUM (new): tokens are spent on gaps that cannot possibly be bridged, i.e. wasted currency. (a) Single log 5 days ago, today unlogged, 3 tokens -> spends ALL 3 tokens on -1/-2/-3 while the streak only reaches 1; this is the 'trailing inactivity' case the function's own docstring says it must NOT touch (the oldestAnchor is behind the gap, but there is no *later* logged day, so the gap is not bounded on the recent side). (b) today + today-10 with 3 tokens -> spends all 3 on -1/-2/-3, gap still broken at -4, streak stays 1 and 3 tokens are gone. Guard: only spend when the whole gap between the two anchors is coverable by the available tokens, and require a logged day on the recent side of the gap.",
+        "selector": "[data-testid=\"freeze-token-indicator\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "ProfilePage header badge",
+        "issue": "LOW: rank chip renders a doubled hash - 'Rank ##180' (literal '#' plus an already-prefixed value).",
+        "selector": "text=Rank ##180",
+        "priority": "LOW"
+      },
+      {
+        "component": "ProfilePage Streak Freeze card",
+        "issue": "LOW: uses the raw browser date input (mm/dd/yyyy native picker) instead of the shadcn calendar/date-picker used elsewhere; inconsistent and poor on mobile.",
+        "selector": "input[type=\"date\"]",
+        "priority": "LOW"
+      },
+      {
+        "component": "TrackerPage.jsx",
+        "issue": "LOW (carried over): TrackerPage still has no data-testid attributes on the setup form inputs, Start Match button or tab triggers.",
+        "selector": "input[placeholder=\"Your name\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard StreakCard (390x844)", "issues": ["freeze-spent-note is blue-500 on dark card - readable; layout of vault slots + note is fine.", "The note claims '2 rest days' protected while the big number stays at 2 - visually contradictory to a user (see MEDIUM streak-count issue)."]},
+      {"screen": "ShareBadgeModal", "issues": ["Carried over from iteration_8: the sub-line under 'TENNIS TRACKER PRO' is too dim to read at story scale."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml", "/app/test_reports/streak_tokens_node_test.mjs"],
+  "action_items": [
+    "Decide + implement streak semantics: should auto-protected (frozen) days count toward streak.current? Review request expected a 4-day streak; the app shows 2.",
+    "MEDIUM: stop autoProtectStreak from burning tokens on un-bridgeable gaps (single old log / gap larger than available tokens).",
+    "LOW: fix 'Rank ##180' double hash on ProfilePage.",
+    "LOW: replace native date input in the Streak Freeze card with the shadcn date picker.",
+    "LOW: escape newlines in advisor SSE frames; add data-testids to TrackerPage.",
+    "Consider whether the advisor should receive live score/serving context (FIX#3 removed the fields rather than wiring them)."
+  ],
+  "critical_code_review_comments": [
+    "autoProtectStreak spends tokens greedily inside the loop before knowing whether the whole gap can be covered; move to a two-pass approach (collect gap days between two *logged* anchors, spend only if gapDays <= tokens).",
+    "computeStreak counts only logged days while the freeze feature markets 'protected rest days' - the two modules disagree on what a streak is; unify the definition in one place.",
+    "localStorage writes still happen inside useMemo (a render-phase hook). It is idempotent today, but React may discard/re-run memos; an effect is the correct home for the persistence side-effect.",
+    "DashboardPage.jsx is still ~800 lines; StreakCard/FormBars belong in src/components/."
+  ],
+  "updated_files": ["/app/test_reports/streak_tokens_node_test.mjs"],
+  "success_rate": {"backend": "100% (7/7 pytest)", "frontend": "All 4 targeted fixes (autoProtectStreak, freeze-spent-note, advisorContext, useMemo purity) verified PASS; all iteration_8 regressions PASS; 2 new MEDIUM logic issues found (streak count excludes protected days, tokens wasted on un-bridgeable gaps)"},
+  "seed_data_creation": "localStorage-only seeds for u_player: mtp_mock_matches_v1 with TEST_* match ids at various day offsets and mtp_freeze_tokens_v1 with tokens 1/3; both removed at the end of the run. No backend/DB data created.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 via [data-testid=demo-player-btn] then [data-testid=login-submit-btn]",
+  "context_for_next_testing_agent": "Backend regression: pytest /app/backend/tests/backend_test.py (7 tests, all pass). Frontend: the Vite dev server behind the preview ingress rate-limits (HTTP 429 on module requests -> blank white page) if you reload more than ~4-5 times in a minute; space reloads out or wait ~75s. Cheap alternative for streak-token logic: node /app/test_reports/streak_tokens_node_test.mjs (localStorage shim + real src/lib/streakTokens.js & streaks.js, 7 seed permutations). Browser seeds: localStorage key mtp_mock_matches_v1 = [{id,userId:'u_player',date:'YYYY-MM-DD',sessionType:'match',winner:'self',oppName}], tokens in mtp_freeze_tokens_v1 = {u_player:{tokens,lastEarnedIso,autoConsumed:[]}}; fresh login gives tokens:1 so seed tokens:3 to exercise multi-day gaps. Badge modal testids: share-badge-modal / share-badge-close / share-badge-preview / share-badge-share-btn / share-badge-download-btn (note: -close, not -close-btn). Digest: digest-pending-state on /profile.",
+  "rca_of_the_issue": "The two remaining problems are semantic, not crashes. (1) autoProtectStreak's spend loop uses only the OLDEST logged/frozen day in the 14-day window as a boundary and spends a token on every missed day walking back from yesterday until tokens run out; it never checks that a logged day exists on the *recent* side of the gap nor that the gap fits inside the token budget, so with a single stale log (or a 10-day gap) it drains the vault for no streak gain. (2) computeStreak increments current only for loggedSet members, so frozen days bridge but never add to the count - hence 'today + today-3 with both gap days frozen' displays 2, not the 4 the review request expected."
+}

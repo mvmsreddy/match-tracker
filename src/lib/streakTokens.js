@@ -83,11 +83,13 @@ export function getTokenState(userId) {
   };
 }
 
-// Walks back from today looking for the most recent logged/frozen day within
-// a 14-day window. If found, every unlogged day BETWEEN that anchor and today
-// is a "would-break-my-streak" candidate — spend a token per day (oldest
-// miss first) until we run out. If there's no recent anchor, don't spend
-// anything (nothing to protect). Persists spends so we don't double-count.
+// Walks the last 14 days and spends tokens on "bounded gap" days — i.e.
+// missed days that sit BETWEEN two logged/frozen days. This is the
+// canonical streak-freeze semantic: if you logged today AND 3 days ago,
+// the missed yesterday + 2 days ago are recoverable. Trailing misses at
+// the outer edge of the walk (no earlier anchor) are NOT touched — those
+// represent inactivity, not a streak interruption. Persists spends so
+// idempotent across renders/reloads.
 export function autoProtectStreak(userId, logDates, existingFreezes = [], today = todayIso()) {
   const state = accrueTokens(userId, today);
   const already = new Set(state.autoConsumed || []);
@@ -95,24 +97,26 @@ export function autoProtectStreak(userId, logDates, existingFreezes = [], today 
   const frozen = new Set([...(existingFreezes || []), ...already]);
   let tokens = state.tokens || 0;
 
-  // Find the most recent logged/frozen anchor within the last 14 days
-  let anchor = null;
-  for (let i = 0; i <= 14; i++) {
+  // Find the OLDEST logged/frozen day within the 14-day window — that's the
+  // outer boundary of the "active" run. Walk stops here.
+  let oldestAnchor = null;
+  for (let i = 14; i >= 0; i--) {
     const day = addDays(today, -i);
-    if (logged.has(day) || frozen.has(day)) { anchor = day; break; }
+    if (logged.has(day) || frozen.has(day)) { oldestAnchor = day; break; }
   }
-  if (!anchor) {
+  if (!oldestAnchor) {
     return { freezeDates: [...frozen], newSpends: [], tokens };
   }
 
-  // Walk from yesterday back to the anchor, spending tokens on gaps.
+  // Walk from yesterday back to (but not through) oldestAnchor.
   const newSpends = [];
-  for (let d = addDays(today, -1); d > anchor && tokens > 0; d = addDays(d, -1)) {
-    if (!logged.has(d) && !frozen.has(d)) {
-      tokens -= 1;
-      frozen.add(d);
-      newSpends.push(d);
-    }
+  for (let i = 1; tokens > 0; i++) {
+    const day = addDays(today, -i);
+    if (day <= oldestAnchor) break;
+    if (logged.has(day) || frozen.has(day)) continue;
+    tokens -= 1;
+    frozen.add(day);
+    newSpends.push(day);
   }
 
   if (newSpends.length > 0) {

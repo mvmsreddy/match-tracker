@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
@@ -162,7 +162,14 @@ function PlayerLiveBanner({ todayMatches }) {
 function StreakCard({ streak, tokenState, protection }) {
   const tokens = tokenState?.tokens ?? 0;
   const max = tokenState?.max ?? 3;
-  const spentToday = protection?.newSpends?.length ?? 0;
+  // Prefer the persisted autoConsumed list (survives across renders/reloads)
+  // over the transient newSpends from this specific render.
+  const recentAutoFreezes = (() => {
+    const list = tokenState?.autoConsumed || [];
+    const cutoff = Date.now() - 8 * 86400000; // last 8 days
+    return list.filter(d => new Date(d + 'T00:00:00').getTime() >= cutoff);
+  })();
+  const protectedCount = recentAutoFreezes.length || (protection?.newSpends?.length ?? 0);
 
   return (
     <Card className="p-5 sm:p-6 bg-card border-l-4 border-l-primary shadow-sm" data-testid="streak-card">
@@ -208,10 +215,10 @@ function StreakCard({ streak, tokenState, protection }) {
               </div>
             </div>
           </div>
-          {spentToday > 0 && (
+          {protectedCount > 0 && (
             <div className="text-[11px] font-bold text-blue-500 text-right leading-tight" data-testid="freeze-spent-note">
               🛡️ Auto-protected<br />
-              {spentToday} rest day{spentToday === 1 ? '' : 's'}
+              {protectedCount} rest day{protectedCount === 1 ? '' : 's'}
             </div>
           )}
         </div>
@@ -544,18 +551,29 @@ export default function DashboardPage() {
   const recent      = matches ? matches.slice(0, 5) : [];
 
   // Auto-consume streak-freeze tokens for missed days in the last 2 weeks
-  // so a single skipped day doesn't break a long run. Idempotent per date.
-  const logDates = matches && streakInputs
-    ? [...matches.map(m => m.date), ...streakInputs.sessionDates]
-    : null;
-  const protection = (role !== 'organizer' && logDates)
-    ? autoProtectStreak(user.id, logDates, streakInputs.freezeDates || [])
-    : null;
-  const tokenState = role !== 'organizer' ? getTokenState(user.id) : null;
+  // so a single skipped day doesn't break a long run. Memoised so we don't
+  // re-touch localStorage on every render / StrictMode double-invoke.
+  const logDates = useMemo(() => (
+    matches && streakInputs
+      ? [...matches.map(m => m.date), ...streakInputs.sessionDates]
+      : null
+  ), [matches, streakInputs]);
 
-  const streak = (matches && streakInputs)
-    ? computeStreak(logDates, { freezeDates: protection ? protection.freezeDates : streakInputs.freezeDates })
-    : null;
+  const protection = useMemo(() => (
+    role !== 'organizer' && logDates
+      ? autoProtectStreak(user.id, logDates, streakInputs.freezeDates || [])
+      : null
+  ), [role, logDates, streakInputs, user.id]);
+
+  const tokenState = useMemo(() => (
+    role !== 'organizer' && logDates ? getTokenState(user.id) : null
+  ), [role, logDates, user.id, protection]);
+
+  const streak = useMemo(() => (
+    logDates
+      ? computeStreak(logDates, { freezeDates: protection ? protection.freezeDates : streakInputs.freezeDates })
+      : null
+  ), [logDates, protection, streakInputs]);
 
   // Tournament activity (player: self, coach: whole active roster)
   const activeLinks = (links || []).filter(l => l.status === 'active');

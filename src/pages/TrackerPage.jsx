@@ -311,12 +311,14 @@ function Field({ label, children, className }) {
 
 // ── Match tab when a match IS running ────────────────────────────────────────
 function MatchRunningView({ t, onGoTrack }) {
+  // Compose a stable session_id per running match so the advisor keeps a
+  // sensible chat memory across multiple tips. Only the fields we actually
+  // have from t.header are forwarded — anything else stays null and the
+  // backend will fall back to a generic "give me the next-point plan" prompt.
   const advisorContext = {
     session_id: `${t.header.selfName || 'me'}-${t.header.oppName || 'opp'}-${t.header.startedAt || Date.now()}`,
     my_name: t.header.selfName,
     opponent_name: t.header.oppName,
-    game_state: t.header.currentGame || null,
-    my_score: t.header.currentScore || null,
     my_strengths: [t.header.playingStyle].filter(Boolean),
     opponent_notes: t.header.opponentNotes || null,
   };
