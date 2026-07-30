@@ -502,14 +502,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Player: ranking performance lives on the multi-segment dashboard */}
-      {role === 'player' && (
-        <div>
-          <SectionTitle>Performance</SectionTitle>
-          <Link to="/player-dashboard?tab=performance"><Button variant="outline">View My Performance →</Button></Link>
-        </div>
-      )}
-
       {/* Player + Coach: personal tracker */}
       {role !== 'organizer' && (
         <div>
