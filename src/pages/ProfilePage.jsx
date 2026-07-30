@@ -376,25 +376,30 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto space-y-4">
-      <Card className="p-4 sm:p-6 flex flex-wrap items-center gap-4">
-        <span className="w-16 h-16 rounded-sm bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold text-xl shrink-0">
-          {getInitials(form.displayName)}
-        </span>
-        <div className="flex-1 min-w-40">
-          <h1 className="font-display font-extrabold text-xl tracking-tighter">{form.displayName || 'Unnamed Player'}</h1>
-          <div className="flex items-center gap-2 mt-1.5">
-            <Badge variant="secondary">{ROLE_LABELS[form.role] || form.role}</Badge>
-            {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent">&#10003; Verified</Badge>}
+      <Card className="p-5 sm:p-6 bg-gradient-to-br from-card via-card to-primary/5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground flex items-center justify-center font-display font-extrabold text-xl sm:text-2xl shrink-0 shadow-lg ring-4 ring-primary/10">
+            {getInitials(form.displayName)}
+          </span>
+          <div className="flex-1 min-w-40">
+            <h1 className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter">{form.displayName || 'Unnamed Player'}</h1>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge variant="secondary">{ROLE_LABELS[form.role] || form.role}</Badge>
+              {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent">✓ Verified</Badge>}
+              {isPlayer && form.ranking && (
+                <Badge className="bg-primary/10 text-primary border-transparent">Rank #{form.ranking}</Badge>
+              )}
+            </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => (editing ? handleCancel() : setEditing(true))}>
+            {editing ? 'Cancel' : '✎ Edit'}
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => (editing ? handleCancel() : setEditing(true))}>
-          {editing ? 'Cancel' : '✎ Edit'}
-        </Button>
       </Card>
 
       {missingPlayerFields.length > 0 && (
-        <div className="flex items-center gap-2.5 rounded-sm border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
-          <span className="text-lg shrink-0">⚠</span>
+        <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-600 dark:text-amber-400 shadow-sm">
+          <span className="text-2xl shrink-0">⚠</span>
           <span>
             Complete your profile to enter tournaments.
             Missing: <strong>{missingPlayerFields.join(', ')}</strong>.
@@ -403,16 +408,24 @@ export default function ProfilePage() {
       )}
 
       {!editing && isPlayer && ageGroup && entryCap != null && entryCount !== null && (
-        <Card className="p-4 sm:p-6">
-          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Annual Entry Allowance</div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <div className="font-display font-extrabold text-2xl">{entryCount}</div>
+        <Card className="p-4 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Annual Entry Allowance</div>
+            <div className="text-xs font-bold text-primary">
+              {Math.round((entryCount / entryCap) * 100)}%
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <div className="font-display font-extrabold text-3xl text-primary">{entryCount}</div>
             <div className="text-xs text-muted-foreground">of {entryCap} {ageGroup} tournaments used this year</div>
           </div>
-          <div className="h-2 rounded-sm bg-muted mt-3">
-            <div className="h-full rounded-sm bg-primary" style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }} />
+          <div className="h-2.5 rounded-full bg-muted mt-3 overflow-hidden">
+            <div 
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500" 
+              style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }} 
+            />
           </div>
-          <div className="text-xs text-muted-foreground mt-2">
+          <div className="text-xs text-muted-foreground mt-2 leading-relaxed">
             {Math.max(0, entryCap - entryCount)} entr{entryCap - entryCount === 1 ? 'y' : 'ies'} remain. Two age groups at
             one venue count as two tournaments — this is advisory and doesn't block entry.
           </div>

@@ -6,6 +6,7 @@ import * as api from '../../api';
 import { computeGoalPace } from '../../lib/segments';
 import { Card } from '@/components/primitives/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
+import { AlertTriangle, TrendingUp, Activity, Award } from 'lucide-react';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -79,61 +80,141 @@ export default function ProgressTab({ circuit, playerId }) {
   const behindPace = goalPace?.behindPace ?? false;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       {behindPace && (
-        <div className="flex items-center gap-3 rounded-sm border border-destructive/30 bg-destructive/10 p-4">
-          <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />
-          <div className="flex-1 text-sm font-bold">
+        <div className="flex items-center gap-3 rounded-lg border-2 border-destructive/30 bg-destructive/10 p-4 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <div className="flex-1 text-sm font-bold leading-relaxed">
             You're currently behind the pace needed to hit your {circuit.category} {circuit.subcategory} goal by {activeGoal.targetDate ? formatDate(activeGoal.targetDate) : 'its target date'}.
           </div>
         </div>
       )}
 
-      <Card className="p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+      <Card className="p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <div className="font-bold text-sm">Actual vs projected points</div>
+            <div className="font-bold text-sm sm:text-base mb-1">Actual vs projected points</div>
             <div className="text-xs text-muted-foreground">
               {activeGoal?.targetPoints ? 'Straight-line projection to your goal' : (activeGoal ? 'Set a points target on your goal to see a projection line' : 'Set a goal in Overview to see a projection line')}
             </div>
           </div>
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-primary" />Actual</div>
-            {activeGoal && <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-destructive" />Needed</div>}
+          <div className="flex items-center gap-3 sm:gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-sm bg-primary" />
+              <span className="font-semibold">Actual</span>
+            </div>
+            {activeGoal && (
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-sm bg-destructive" />
+                <span className="font-semibold">Needed</span>
+              </div>
+            )}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
-            <YAxis stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-            <Tooltip labelFormatter={formatDate} contentStyle={{ background: 'hsl(var(--color-popover))', border: '1px solid hsl(var(--color-border))', borderRadius: 4 }} />
-            <Area type="monotone" dataKey="actual" stroke="none" fill="hsl(var(--color-primary))" fillOpacity={0.12} legendType="none" />
-            <Line type="monotone" dataKey="actual" name="Actual" stroke="hsl(var(--color-primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-primary))' }} />
-            {activeGoal && <Line type="monotone" dataKey="needed" name="Needed" stroke="hsl(var(--color-destructive))" strokeWidth={2} strokeDasharray="5 4" dot={false} />}
+            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={formatDate} 
+              stroke="hsl(var(--color-border))" 
+              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              tickLine={false} 
+              minTickGap={40} 
+            />
+            <YAxis 
+              stroke="hsl(var(--color-border))" 
+              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              tickLine={false} 
+              axisLine={false} 
+              width={44} 
+              domain={['auto', 'auto']} 
+            />
+            <Tooltip 
+              labelFormatter={formatDate} 
+              contentStyle={{ 
+                background: 'hsl(var(--color-popover))', 
+                border: '1px solid hsl(var(--color-border))', 
+                borderRadius: 6 
+              }} 
+            />
+            <Area 
+              type="monotone" 
+              dataKey="actual" 
+              stroke="none" 
+              fill="hsl(var(--color-primary))" 
+              fillOpacity={0.15} 
+              legendType="none" 
+            />
+            <Line 
+              type="monotone" 
+              dataKey="actual" 
+              name="Actual" 
+              stroke="hsl(var(--color-primary))" 
+              strokeWidth={3} 
+              dot={false} 
+              activeDot={{ r: 6, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-primary))' }} 
+            />
+            {activeGoal && (
+              <Line 
+                type="monotone" 
+                dataKey="needed" 
+                name="Needed" 
+                stroke="hsl(var(--color-destructive))" 
+                strokeWidth={2.5} 
+                strokeDasharray="5 4" 
+                dot={false} 
+              />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </Card>
 
-      <Card className="p-0 overflow-hidden">
-        <div className="p-4 sm:p-6 pb-0"><div className="font-bold text-sm">Monthly breakdown</div></div>
+      <Card className="p-0 overflow-hidden shadow-sm">
+        <div className="p-4 sm:p-6 pb-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="w-5 h-5 text-muted-foreground" />
+            <div className="font-bold text-sm sm:text-base">Monthly breakdown</div>
+          </div>
+          <div className="text-xs text-muted-foreground">Your progress month by month</div>
+        </div>
         <div className="overflow-x-auto p-4 sm:p-6 pt-3">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead>Rank</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Training sessions</TableHead>
+                <TableHead className="font-bold">Month</TableHead>
+                <TableHead className="font-bold">Rank</TableHead>
+                <TableHead className="font-bold">Points</TableHead>
+                <TableHead className="font-bold">Training</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {monthlyRows.map(r => (
-                <TableRow key={r.month}>
-                  <TableCell>{r.month}</TableCell>
-                  <TableCell>{r.rank ?? '—'}</TableCell>
-                  <TableCell>{r.points ?? '—'}</TableCell>
-                  <TableCell>{r.training}</TableCell>
+              {monthlyRows.map((r, idx) => (
+                <TableRow key={r.month} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{r.month}</TableCell>
+                  <TableCell>
+                    {r.rank ? (
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold">{r.rank}</span>
+                        {idx < monthlyRows.length - 1 && monthlyRows[idx + 1].rank && (
+                          <span className={`text-xs ${r.rank < monthlyRows[idx + 1].rank ? 'text-primary' : 'text-destructive'}`}>
+                            {r.rank < monthlyRows[idx + 1].rank ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell className="font-semibold">{r.points ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {r.training > 0 ? (
+                        <>
+                          <span className="font-semibold">{r.training}</span>
+                          {r.training >= 10 && <Award className="w-4 h-4 text-primary" />}
+                        </>
+                      ) : '—'}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

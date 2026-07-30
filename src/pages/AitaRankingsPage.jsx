@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
+import { Card } from '@/components/primitives/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
 const PAGE_SIZE = 50;
@@ -137,39 +138,49 @@ export default function AitaRankingsPage() {
 
       {facets && facets.length > 0 && (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <select className={selectCls} value={category} onChange={e => setCategory(e.target.value)}>
-              {[...new Set(facets.map(f => f.category))].map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select className={selectCls} value={subcategory} onChange={e => setSubcategory(e.target.value)}>
-              {subcategoryOptions.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select className={selectCls} value={date} onChange={e => setDate(e.target.value)}>
-              {dates.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <Input
-              type="text"
-              placeholder="Search player name…"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              className="w-56"
-            />
+          <Card className="p-4 shadow-sm">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-3">Filters</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              <select className={selectCls + ' w-full'} value={category} onChange={e => setCategory(e.target.value)}>
+                {[...new Set(facets.map(f => f.category))].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select className={selectCls + ' w-full'} value={subcategory} onChange={e => setSubcategory(e.target.value)}>
+                {subcategoryOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select className={selectCls + ' w-full'} value={date} onChange={e => setDate(e.target.value)}>
+                {dates.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <Input
+                type="text"
+                placeholder="Search player…"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                className="w-full"
+              />
+            </div>
             {result && (
-              <span className="text-xs text-muted-foreground">{result.totalCount} player{result.totalCount === 1 ? '' : 's'}</span>
+              <div className="text-xs text-muted-foreground mt-3 font-semibold">
+                📊 {result.totalCount.toLocaleString()} player{result.totalCount === 1 ? '' : 's'} found
+              </div>
             )}
-          </div>
+          </Card>
 
           {result === null && (
-            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading rankings…</div>
+            <Card className="p-6 text-center border-2 border-dashed">
+              <div className="text-sm text-muted-foreground">Loading rankings…</div>
+            </Card>
           )}
 
           {result && result.rows.length === 0 && (
-            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No players found.</div>
+            <Card className="p-6 text-center border-2 border-dashed">
+              <div className="text-sm text-muted-foreground">No players found.</div>
+            </Card>
           )}
 
           {result && result.rows.length > 0 && (
             <>
-              <div className="rounded-sm border border-border overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block rounded-lg border border-border overflow-x-auto shadow-sm">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -186,25 +197,95 @@ export default function AitaRankingsPage() {
                   </TableHeader>
                   <TableBody>
                     {result.rows.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-bold">{r.rank}</TableCell>
+                      <TableRow key={r.id} className="hover:bg-muted/30">
+                        <TableCell className="font-bold">
+                          {r.rank <= 3 ? (
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-bold text-xs ${
+                              r.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
+                              r.rank === 2 ? 'bg-gray-400/20 text-gray-300' :
+                              'bg-orange-500/20 text-orange-500'
+                            }`}>#{r.rank}</span>
+                          ) : (
+                            <span>#{r.rank}</span>
+                          )}
+                        </TableCell>
                         <TableCell className="font-bold">{r.playerName}</TableCell>
-                        <TableCell>{r.regNo || '—'}</TableCell>
-                        <TableCell>{formatDob(r.dob)}</TableCell>
-                        <TableCell>{r.state || '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{r.regNo || '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDob(r.dob)}</TableCell>
+                        <TableCell>
+                          {r.state ? (
+                            <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-xs font-semibold">{r.state}</span>
+                          ) : '—'}
+                        </TableCell>
                         <TableCell>{r.pointsBreakdown?.singlesPts ?? '—'}</TableCell>
                         <TableCell>{r.pointsBreakdown?.doublesPts ?? '—'}</TableCell>
                         <TableCell>{r.pointsBreakdown?.best25DoublesPts ?? '—'}</TableCell>
-                        <TableCell className="font-bold">{r.totalPoints}</TableCell>
+                        <TableCell className="font-bold text-primary">{r.totalPoints}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
 
-              <div className="flex items-center justify-center gap-3">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-2.5">
+                {result.rows.map(r => (
+                  <div 
+                    key={r.id} 
+                    className={`p-4 rounded-lg border bg-card hover:border-primary transition-all ${
+                      r.rank <= 3 ? 'border-l-4' : 'border-l-4 border-l-transparent'
+                    } ${
+                      r.rank === 1 ? 'border-l-yellow-500' :
+                      r.rank === 2 ? 'border-l-gray-400' :
+                      r.rank === 3 ? 'border-l-orange-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm ${
+                          r.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
+                          r.rank === 2 ? 'bg-gray-400/20 text-gray-300' :
+                          r.rank === 3 ? 'bg-orange-500/20 text-orange-500' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          #{r.rank}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-sm truncate">{r.playerName}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-1.5 items-center">
+                            {r.regNo && <span>Reg: {r.regNo}</span>}
+                            {r.state && (
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{r.state}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-display font-extrabold text-xl tracking-tighter text-primary">{r.totalPoints}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">pts</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Singles</div>
+                        <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.singlesPts ?? '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Doubles</div>
+                        <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.doublesPts ?? '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">25% Best</div>
+                        <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.best25DoublesPts ?? '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-2">
                 <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>← Prev</Button>
-                <span className="text-xs text-muted-foreground">Page {page + 1} of {totalPages}</span>
+                <span className="text-xs text-muted-foreground font-semibold">Page {page + 1} of {totalPages}</span>
                 <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</Button>
               </div>
             </>

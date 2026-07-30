@@ -567,30 +567,36 @@ export default function TournamentsListPage() {
       )}
 
       {weeks && weeks.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {weeks.map(w => (
-            <div key={w.id} className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary">
+            <div key={w.id} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:border-primary hover:shadow-md transition-all">
               <Link to={`/tournaments/${w.id}`} className="flex-1 min-w-0">
-                <div className="text-sm font-bold truncate">{w.name}</div>
-                {w.subtitle && <div className="text-xs text-muted-foreground truncate">{w.subtitle}</div>}
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {w.surface && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{w.surface}</span>}
-                  {w.tournamentCode && <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{w.tournamentCode}</span>}
-                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-sm bg-primary/10 text-primary px-2 py-0.5 text-[0.68rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
+                <div className="text-sm sm:text-base font-bold truncate">{w.name}</div>
+                {w.subtitle && <div className="text-xs text-muted-foreground truncate mt-0.5">{w.subtitle}</div>}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {w.surface && <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.surface}</span>}
+                  {w.tournamentCode && <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.tournamentCode}</span>}
+                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
-                  {w.location && ` · ${w.location}`}
+                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 flex-wrap">
+                  {(w.city || w.stateAbbr) && (
+                    <span className="inline-flex items-center gap-1">
+                      📍 {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
+                    </span>
+                  )}
+                  {w.location && <span>· {w.location}</span>}
                 </div>
                 {(w.startDate || w.endDate) && (
-                  <div className="text-xs text-muted-foreground">{formatDateRange(w.startDate, w.endDate)}</div>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    📅 {formatDateRange(w.startDate, w.endDate)}
+                  </div>
                 )}
                 {w.numCourts && (
-                  <div className="text-xs text-muted-foreground">{w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
+                  <div className="text-xs text-muted-foreground mt-1">🎾 {w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
                 )}
               </Link>
               {w.createdBy === user?.id && (
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive shrink-0" onClick={() => handleDelete(w.id)} title="Delete tournament week">
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDelete(w.id)} title="Delete tournament week">
                   ✕
                 </Button>
               )}

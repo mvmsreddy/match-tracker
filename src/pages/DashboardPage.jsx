@@ -6,6 +6,7 @@ import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
+import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Small shared presentational helpers
@@ -142,18 +143,22 @@ function PlayerLiveBanner({ todayMatches }) {
 
 function StreakCard({ streak }) {
   return (
-    <Card className="p-4 flex items-center gap-4">
-      <div className="text-3xl shrink-0" aria-hidden="true">🔥</div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
-          <div className="font-display font-extrabold text-2xl tracking-tighter">{streak.current}</div>
-          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">day streak</div>
+    <Card className="p-5 sm:p-6 bg-gradient-to-br from-card to-card/50 border-l-4 border-l-primary shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Flame className="w-7 h-7 sm:w-8 sm:h-8 text-primary" strokeWidth={2.5} />
         </div>
-        <div className="text-xs text-muted-foreground mt-0.5">
-          Best {streak.best} {streak.best === 1 ? 'day' : 'days'}
-          {!streak.loggedToday && streak.graceAvailable && ' · Log today to keep it going'}
-          {!streak.loggedToday && !streak.graceAvailable && streak.current > 0 && ' · Grace day used — log today or lose your streak'}
-          {streak.loggedToday && ' · Logged today'}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="font-display font-extrabold text-3xl sm:text-4xl tracking-tighter text-primary">{streak.current}</div>
+            <div className="text-sm sm:text-base uppercase tracking-wider font-bold text-muted-foreground">day streak</div>
+          </div>
+          <div className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
+            Best {streak.best} {streak.best === 1 ? 'day' : 'days'}
+            {!streak.loggedToday && streak.graceAvailable && ' · Log today to keep it going'}
+            {!streak.loggedToday && !streak.graceAvailable && streak.current > 0 && ' · Grace day used — log today or lose your streak'}
+            {streak.loggedToday && ' · ✓ Logged today'}
+          </div>
         </div>
       </div>
     </Card>
@@ -164,20 +169,35 @@ function FormBars({ matches }) {
   const last10 = matches.slice(0, 10).reverse();
   if (last10.length === 0) return null;
   const wins = last10.filter(m => m.winner === 'self').length;
+  const winRate = Math.round((wins / last10.length) * 100);
+  
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Form · Last {last10.length}</div>
-        <div className="text-xs font-semibold text-muted-foreground">{wins}W · {last10.length - wins}L</div>
+    <Card className="p-5 sm:p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Recent Form</div>
+          <div className="text-sm text-muted-foreground mt-0.5">Last {last10.length} matches</div>
+        </div>
+        <div className="text-right">
+          <div className="font-display font-extrabold text-2xl tracking-tighter">{winRate}%</div>
+          <div className="text-xs font-semibold text-muted-foreground">{wins}W - {last10.length - wins}L</div>
+        </div>
       </div>
-      <div className="flex items-end gap-1 h-10 mt-3">
-        {last10.map((m, i) => (
-          <div
-            key={m.id || i}
-            className={`flex-1 rounded-sm ${m.winner === 'self' ? 'bg-primary h-full' : 'bg-muted h-2/5'}`}
-            title={`${m.selfName} vs ${m.oppName} · ${m.winner === 'self' ? 'Won' : 'Lost'}`}
-          />
-        ))}
+      <div className="flex items-end gap-1.5 sm:gap-2 h-14 sm:h-16">
+        {last10.map((m, i) => {
+          const isWin = m.winner === 'self';
+          return (
+            <div
+              key={m.id || i}
+              className={`flex-1 rounded-t-md transition-all ${
+                isWin 
+                  ? 'bg-primary h-full hover:opacity-80' 
+                  : 'bg-muted h-[40%] hover:opacity-80'
+              }`}
+              title={`${m.selfName} vs ${m.oppName} · ${isWin ? 'Won' : 'Lost'}`}
+            />
+          );
+        })}
       </div>
     </Card>
   );
@@ -556,28 +576,43 @@ export default function DashboardPage() {
 
           {matches !== null && (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                <Card className="p-4">
-                  <div className="text-2xl font-display font-extrabold tracking-tighter">{matchesOnly.length}</div>
-                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Matches</div>
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <Trophy className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{matchesOnly.length}</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Matches</div>
                 </Card>
-                <Card className="p-4">
-                  <div className="text-2xl font-display font-extrabold tracking-tighter text-primary">{wins}</div>
-                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Wins</div>
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-l-4 border-l-primary">
+                  <div className="flex items-center justify-between mb-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-primary">{wins}</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Wins</div>
                 </Card>
-                <Card className="p-4">
-                  <div className="text-2xl font-display font-extrabold tracking-tighter text-destructive">{losses}</div>
-                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Losses</div>
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-destructive/5 to-destructive/10 border-l-4 border-l-destructive">
+                  <div className="flex items-center justify-between mb-2">
+                    <TrendingDown className="w-5 h-5 text-destructive" />
+                  </div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-destructive">{losses}</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Losses</div>
                 </Card>
-                <Card className="p-4">
-                  <div className="text-2xl font-display font-extrabold tracking-tighter text-accent-foreground">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <Target className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-accent-foreground">
                     {winRate !== null ? winRate + '%' : '—'}
                   </div>
-                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Win Rate</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Win Rate</div>
                 </Card>
-                <Card className="p-4">
-                  <div className="text-2xl font-display font-extrabold tracking-tighter">{practices.length}</div>
-                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1">Practices</div>
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <Calendar className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{practices.length}</div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Practices</div>
                 </Card>
               </div>
 

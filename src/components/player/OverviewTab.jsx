@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ResponsiveContainer, LineChart, Line,
-  CartesianGrid, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, LineChart, Line, BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell,
 } from 'recharts';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
@@ -11,6 +11,7 @@ import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
+import { TrendingUp, TrendingDown, Trophy, Calendar, Target, Activity } from 'lucide-react';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -86,71 +87,210 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
     const avgPts = tracked.length ? Math.round((tracked.reduce((s, m) => s + m.pointCount, 0) / tracked.length) * 10) / 10 : null;
     const thisMonthTracked = thisMonth.filter(m => m.pointCount);
     const avgPtsThisMonth = thisMonthTracked.length ? thisMonthTracked.reduce((s, m) => s + m.pointCount, 0) / thisMonthTracked.length : null;
+    
+    // Calculate win/loss stats for visualization
+    const wins = segMatches.filter(m => m.winner === 'self').length;
+    const losses = segMatches.filter(m => m.winner === 'opp').length;
+    const winRate = segMatches.length > 0 ? Math.round((wins / segMatches.length) * 100) : 0;
+    
     return {
       matchesThisMonth: thisMonth.length,
       avgPts,
       avgPtsTrendUp: avgPts != null && avgPtsThisMonth != null ? avgPtsThisMonth >= avgPts : null,
+      wins,
+      losses,
+      winRate,
+      total: segMatches.length,
     };
   }, [segMatches]);
 
   const { latest, previous, bestRank, bestPoints, firstSeen, snapshotCount } = circuit;
   const rankDelta = previous ? previous.rank - latest.rank : 0;
+  
+  // Prepare data for win/loss pie chart
+  const pieData = monthStats ? [
+    { name: 'Wins', value: monthStats.wins, color: 'hsl(var(--color-primary))' },
+    { name: 'Losses', value: monthStats.losses, color: 'hsl(var(--color-destructive))' },
+  ].filter(d => d.value > 0) : [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Matches this month</div>
-          <div className="font-display font-extrabold text-xl">{monthStats ? monthStats.matchesThisMonth : '—'}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <div className="flex items-center justify-between mb-2">
+            <Calendar className="w-5 h-5 text-muted-foreground" />
+            {monthStats?.matchesThisMonth > 0 && (
+              <span className="text-xs font-bold text-primary">+{monthStats.matchesThisMonth}</span>
+            )}
+          </div>
+          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">
+            {monthStats ? monthStats.matchesThisMonth : '—'}
+          </div>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Matches this month</div>
         </Card>
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Avg points per match</div>
-          <div className="font-display font-extrabold text-xl">{monthStats?.avgPts ?? '—'}</div>
+        
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <div className="flex items-center justify-between mb-2">
+            <Activity className="w-5 h-5 text-muted-foreground" />
+            {monthStats?.avgPtsTrendUp != null && (
+              <span className={`text-xs font-bold ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
+                {monthStats.avgPtsTrendUp ? '↑' : '↓'}
+              </span>
+            )}
+          </div>
+          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">
+            {monthStats?.avgPts ?? '—'}
+          </div>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Avg points per match</div>
           {monthStats?.avgPtsTrendUp != null && (
-            <div className={`text-xs mt-1 ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
-              {monthStats.avgPtsTrendUp ? '▲' : '▼'} vs season average
+            <div className={`text-xs mt-1.5 font-semibold ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
+              {monthStats.avgPtsTrendUp ? '▲ Improving' : '▼ Needs work'} vs season avg
             </div>
           )}
         </Card>
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Upcoming tournaments</div>
-          <div className="font-display font-extrabold text-xl">{entries === null ? '—' : upcomingEntries.length}</div>
+        
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-l-4 border-l-primary sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between mb-2">
+            <Trophy className="w-5 h-5 text-primary" />
+            {monthStats?.winRate > 50 && (
+              <TrendingUp className="w-5 h-5 text-primary" />
+            )}
+          </div>
+          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-primary">
+            {entries === null ? '—' : upcomingEntries.length}
+          </div>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Upcoming tournaments</div>
           {upcomingEntries.length > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              next in {Math.max(0, Math.round((new Date(upcomingEntries[0].event.week.startDate) - new Date()) / 86400000))}d
+            <div className="text-xs text-muted-foreground mt-1.5">
+              Next in {Math.max(0, Math.round((new Date(upcomingEntries[0].event.week.startDate) - new Date()) / 86400000))} days
             </div>
           )}
         </Card>
       </div>
+
+      {/* Win/Loss Statistics with Pie Chart */}
+      {monthStats && monthStats.total > 0 && (
+        <Card className="p-4 sm:p-6 shadow-sm">
+          <div className="font-bold text-sm mb-4">Match Performance Overview</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex flex-col items-center justify-center">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="font-display font-extrabold text-3xl tracking-tighter mt-2 text-primary">
+                {monthStats.winRate}%
+              </div>
+              <div className="text-xs text-muted-foreground">Win Rate</div>
+            </div>
+            <div className="flex flex-col justify-center space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border-l-4 border-l-primary">
+                <div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Wins</div>
+                  <div className="font-display font-extrabold text-2xl tracking-tighter text-primary mt-0.5">
+                    {monthStats.wins}
+                  </div>
+                </div>
+                <TrendingUp className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border-l-4 border-l-destructive">
+                <div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Losses</div>
+                  <div className="font-display font-extrabold text-2xl tracking-tighter text-destructive mt-0.5">
+                    {monthStats.losses}
+                  </div>
+                </div>
+                <TrendingDown className="w-6 h-6 text-destructive" />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                <div>
+                  <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Total</div>
+                  <div className="font-display font-extrabold text-2xl tracking-tighter mt-0.5">
+                    {monthStats.total}
+                  </div>
+                </div>
+                <Target className="w-6 h-6 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Current rank isn't repeated here — it's always visible in the topbar
           right above, so this row covers what the topbar doesn't. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4"><div className="text-xs text-muted-foreground">Current points</div><div className="font-display font-extrabold text-xl">{latest.totalPoints}</div></Card>
-        <Card className="p-4"><div className="text-xs text-muted-foreground">Best rank</div><div className="font-display font-extrabold text-xl">{bestRank}</div></Card>
-        <Card className="p-4"><div className="text-xs text-muted-foreground">Best points</div><div className="font-display font-extrabold text-xl">{bestPoints}</div></Card>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow">
+          <div className="text-xs text-muted-foreground mb-1">Current points</div>
+          <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter">{latest.totalPoints}</div>
+        </Card>
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="text-xs text-muted-foreground mb-1">Best rank</div>
+          <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter text-primary">{bestRank}</div>
+        </Card>
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
+          <div className="text-xs text-muted-foreground mb-1">Best points</div>
+          <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter">{bestPoints}</div>
+        </Card>
       </div>
 
       {rankDelta !== 0 && (
-        <div className={`text-xs font-semibold ${rankDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
-          {rankDelta > 0 ? '▲' : '▼'} {Math.abs(rankDelta)} since last update &middot; first seen {formatDate(firstSeen)} &middot; {snapshotCount} snapshots
+        <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold p-3 rounded-lg ${rankDelta > 0 ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
+          {rankDelta > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+          <span>{rankDelta > 0 ? '▲' : '▼'} {Math.abs(rankDelta)} since last update · first seen {formatDate(firstSeen)} · {snapshotCount} snapshots</span>
         </div>
       )}
 
       {/* Points-over-time lives on the Progress Tracker tab (with the goal
           projection line) instead of being duplicated here. */}
-      <Card className="p-4 sm:p-6">
-        <div className="font-bold text-sm">Ranking Growth</div>
-        <div className="text-xs text-muted-foreground mb-3">Lower is better — axis is inverted</div>
-        <ResponsiveContainer width="100%" height={200}>
+      <Card className="p-4 sm:p-6 shadow-sm">
+        <div className="font-bold text-sm sm:text-base mb-1">Ranking Growth</div>
+        <div className="text-xs text-muted-foreground mb-4">Lower is better — axis is inverted</div>
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
-            <YAxis reversed stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} allowDecimals={false} />
+            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={formatDate} 
+              stroke="hsl(var(--color-border))" 
+              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              tickLine={false} 
+              minTickGap={40} 
+            />
+            <YAxis 
+              reversed 
+              stroke="hsl(var(--color-border))" 
+              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              tickLine={false} 
+              axisLine={false} 
+              width={44} 
+              domain={['auto', 'auto']} 
+              allowDecimals={false} 
+            />
             <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'hsl(var(--color-border))', strokeDasharray: '3 3' }} />
-            <Line type="monotone" dataKey="rank" stroke="hsl(var(--color-chart-3))" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-chart-3))' }} />
+            <Line 
+              type="monotone" 
+              dataKey="rank" 
+              stroke="hsl(var(--color-chart-3))" 
+              strokeWidth={2.5} 
+              dot={false} 
+              activeDot={{ r: 6, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-chart-3))' }} 
+            />
           </LineChart>
         </ResponsiveContainer>
       </Card>

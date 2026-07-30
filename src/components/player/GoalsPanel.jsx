@@ -66,11 +66,13 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
 
   if (!activeGoal && !editing) {
     return (
-      <div className="border border-dashed border-border rounded-sm p-6 text-center">
+      <Card className="border-2 border-dashed border-border p-6 text-center hover:border-primary transition-colors">
+        <div className="text-3xl mb-2">🎯</div>
         <div className="font-bold text-sm">No ranking goal set for {circuit.category} {circuit.subcategory} yet</div>
+        <div className="text-xs text-muted-foreground mt-1">Set a goal to track your progress</div>
         {error && <div className="text-destructive text-xs mt-2">{error}</div>}
-        {isOwnDashboard && <Button size="sm" className="mt-3" onClick={() => setEditing(true)}>Set a goal</Button>}
-      </div>
+        {isOwnDashboard && <Button size="sm" className="mt-4" onClick={() => setEditing(true)}>Set a goal</Button>}
+      </Card>
     );
   }
 
@@ -122,52 +124,66 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
   const pointsNeeded = activeGoal.targetPoints ? Math.max(0, activeGoal.targetPoints - latest.totalPoints) : null;
 
   return (
-    <Card className="p-4 sm:p-6 border-l-4 border-primary">
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex-1 min-w-60">
-          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Ranking goal</div>
-          <div className="font-display font-extrabold text-xl tracking-tighter mt-1">
+    <Card className="p-4 sm:p-6 border-l-4 border-l-primary bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🎯</span>
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Ranking goal</div>
+          </div>
+          <div className="font-display font-extrabold text-lg sm:text-xl tracking-tighter mt-1">
             {activeGoal.targetRank ? `Top ${activeGoal.targetRank}` : `${activeGoal.targetPoints} points`}
             {activeGoal.targetDate ? ` by ${formatDate(activeGoal.targetDate)}` : ''}
           </div>
           {paceNote && <div className="text-sm text-muted-foreground mt-1">{paceNote.charAt(0) + paceNote.slice(1).toLowerCase()}.</div>}
           {isOwnDashboard && <Button size="sm" variant="outline" className="mt-3" onClick={() => handleAbandon(activeGoal.id)}>Abandon goal</Button>}
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Current rank</div>
-            <div className="font-display font-extrabold text-lg">{latest.rank}</div>
+        <div className="grid grid-cols-2 gap-3 w-full sm:w-auto sm:flex-shrink-0">
+          <div className="text-center sm:text-left p-3 rounded-lg bg-muted/50">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Current</div>
+            <div className="font-display font-extrabold text-xl sm:text-2xl mt-0.5">#{latest.rank}</div>
           </div>
           {activeGoal.targetRank && (
-            <div>
-              <div className="text-xs text-muted-foreground">Target rank</div>
-              <div className="font-display font-extrabold text-lg text-primary">{activeGoal.targetRank}</div>
+            <div className="text-center sm:text-left p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-primary">Target</div>
+              <div className="font-display font-extrabold text-xl sm:text-2xl text-primary mt-0.5">#{activeGoal.targetRank}</div>
             </div>
           )}
           {pointsNeeded != null && (
-            <div>
-              <div className="text-xs text-muted-foreground">Points needed</div>
-              <div className="font-display font-extrabold text-lg">{pointsNeeded}</div>
+            <div className="text-center sm:text-left p-3 rounded-lg bg-muted/50">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Points needed</div>
+              <div className="font-display font-extrabold text-xl sm:text-2xl mt-0.5">{pointsNeeded}</div>
             </div>
           )}
           {monthsLeft != null && (
-            <div>
-              <div className="text-xs text-muted-foreground">Months left</div>
-              <div className="font-display font-extrabold text-lg text-destructive">{monthsLeft}</div>
+            <div className="text-center sm:text-left p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-destructive">Months left</div>
+              <div className="font-display font-extrabold text-xl sm:text-2xl text-destructive mt-0.5">{monthsLeft}</div>
             </div>
           )}
         </div>
       </div>
       {rankProgress !== null && (
-        <div className="mt-6">
-          <div className="relative h-2.5 rounded-sm bg-muted">
-            <div className="h-full rounded-sm bg-primary" style={{ width: `${rankProgress}%` }} />
+        <div className="mt-5">
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-muted-foreground font-semibold uppercase tracking-wider">Progress</span>
+            <span className="font-bold text-primary">{rankProgress}%</span>
+          </div>
+          <div className="relative h-3 rounded-full bg-muted overflow-hidden">
+            <div 
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-700" 
+              style={{ width: `${rankProgress}%` }} 
+            />
             {paceMarkPct != null && (
-              <div className="absolute top-0 h-full w-0.5 bg-foreground" style={{ left: `${paceMarkPct}%` }} />
+              <div 
+                className="absolute top-0 h-full w-0.5 bg-foreground shadow-sm" 
+                style={{ left: `${paceMarkPct}%` }} 
+                title="Expected pace"
+              />
             )}
           </div>
           {paceNote && (
-            <div className={`text-xs mt-2 ${paceNote.includes('BEHIND') ? 'text-destructive' : 'text-muted-foreground'}`}>{paceNote}</div>
+            <div className={`text-xs mt-2 font-semibold ${paceNote.includes('BEHIND') ? 'text-destructive' : 'text-muted-foreground'}`}>{paceNote}</div>
           )}
         </div>
       )}

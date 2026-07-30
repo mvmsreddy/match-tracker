@@ -125,47 +125,61 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
       {error && <div className="text-sm text-muted-foreground">{error}</div>}
 
       {matches.length === 0 && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
-          No matches saved yet. Generate a PDF report from the Tracker page to save a match here.
+        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+          <div className="text-3xl mb-3">🎾</div>
+          <div className="text-sm text-muted-foreground">
+            No matches saved yet. Generate a PDF report from the Tracker page to save a match here.
+          </div>
         </div>
       )}
 
       {matches.length > 0 && (
         <>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {matches.map(m => {
               const hasResult = m.winner === 'self' || m.winner === 'opp';
+              const isWin = m.winner === 'self';
+              const isLoss = m.winner === 'opp';
               return (
                 <div
                   key={m.id}
-                  className={`flex items-center gap-3 p-3 rounded-sm border border-border bg-card ${hasResult ? 'cursor-pointer hover:border-primary' : ''}`}
+                  className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border bg-card transition-all ${
+                    hasResult ? 'cursor-pointer hover:border-primary hover:shadow-md' : ''
+                  } ${
+                    isWin ? 'border-l-4 border-l-primary' : isLoss ? 'border-l-4 border-l-destructive' : 'border-l-4 border-l-muted'
+                  }`}
                   onClick={() => hasResult && openMatch(m)}
                 >
                   <input
                     type="checkbox"
-                    className="accent-primary w-4 h-4 shrink-0"
+                    className="accent-primary w-5 h-5 shrink-0"
                     checked={selectedIds.includes(m.id)}
                     onClick={e => e.stopPropagation()}
                     onChange={() => toggleSelect(m.id)}
                   />
-                  <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${m.winner === 'self' ? 'bg-primary/10 text-primary' : m.winner === 'opp' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
-                    {m.winner === 'self' ? 'W' : m.winner === 'opp' ? 'L' : (m.sessionType === 'practice' ? 'PR' : '–')}
-                  </span>
-                  <div className="flex-1 min-w-40">
-                    <div className="text-sm font-semibold">{m.selfName} vs {m.oppName}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                    isWin ? 'bg-primary/10 text-primary' : 
+                    isLoss ? 'bg-destructive/10 text-destructive' : 
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    {isWin ? 'W' : isLoss ? 'L' : (m.sessionType === 'practice' ? 'PR' : '–')}
+                  </div>
+                  <div className="flex-1 min-w-32">
+                    <div className="text-sm font-bold truncate">{m.selfName} vs {m.oppName}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
                       {m.tournament ? `${m.tournament} · ` : ''}{formatDate(m.date)}{m.sessionType === 'practice' ? ' · Practice' : ''}
                     </div>
                   </div>
-                  <div className="text-sm font-bold shrink-0">{m.scoreSummary || '—'}</div>
+                  <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-primary' : isLoss ? 'text-destructive' : ''}`}>{m.scoreSummary || '—'}</div>
                   {isOwnDashboard && (
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 w-9 shrink-0"
                       onClick={e => { e.stopPropagation(); handleDelete(m.id); }}
+                      title="Delete"
                     >
-                      Delete
+                      ✕
                     </Button>
                   )}
                   {hasResult && <div className="text-muted-foreground shrink-0">{openingId === m.id ? '…' : '→'}</div>}

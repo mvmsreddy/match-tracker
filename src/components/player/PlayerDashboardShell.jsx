@@ -73,27 +73,33 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="w-11 h-11 rounded-sm bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">
+          <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
             {initials(isOwnDashboard ? user?.displayName : viewPlayerName)}
           </span>
           <div className="min-w-0">
-            <div className="text-base font-bold flex items-center gap-2 flex-wrap">
+            <div className="text-base sm:text-lg font-bold flex items-center gap-2 flex-wrap">
               {isOwnDashboard ? (user?.displayName || 'Player') : (viewPlayerName || 'Player')}
               {!isOwnDashboard && <Badge variant="secondary">{viewerRole === 'parent' ? 'Parent view' : 'Coach view'}</Badge>}
             </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
-              {circuit && <span>Ranked <span className="font-bold text-foreground">{circuit.latest.rank}</span></span>}
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap mt-1">
+              {circuit && (
+                <span className="inline-flex items-center gap-1">
+                  Ranked <span className="font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">#{circuit.latest.rank}</span>
+                </span>
+              )}
               {circuit && activeGoal?.targetRank && (
                 <>
-                  <span>&rarr;</span>
-                  <span>Target <span className="font-bold text-primary">{activeGoal.targetRank}</span></span>
+                  <span>→</span>
+                  <span className="inline-flex items-center gap-1">
+                    Target <span className="font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">#{activeGoal.targetRank}</span>
+                  </span>
                 </>
               )}
               {circuit && (
                 <>
-                  <span>&middot;</span>
+                  <span>·</span>
                   <span title="AITA rankings sync periodically">Synced {syncedAgo(circuit.latest.date)}</span>
                 </>
               )}
@@ -101,13 +107,13 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
           </div>
         </div>
 
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           {circuits?.length > 0 && (
-            <div className="text-xs">
-              <div className="text-muted-foreground uppercase tracking-wider font-bold mb-1">Viewing</div>
+            <div className="text-xs flex-1 min-w-32">
+              <div className="text-muted-foreground uppercase tracking-wider font-bold mb-1">Viewing Segment</div>
               {circuits.length > 1 ? (
                 <select
-                  className="rounded-sm border border-input bg-transparent px-2 py-1 text-sm"
+                  className="rounded-md border border-input bg-card px-3 py-1.5 text-sm w-full font-semibold"
                   value={selectedKey || ''}
                   onChange={e => onSelectKey(e.target.value || null)}
                   aria-label="Switch segment"
@@ -115,32 +121,35 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                   {circuits.map(c => <option key={c.key} value={c.key}>{c.category} {c.subcategory}</option>)}
                 </select>
               ) : (
-                <span className="font-semibold">{circuit?.category} {circuit?.subcategory}</span>
+                <span className="font-semibold text-sm">{circuit?.category} {circuit?.subcategory}</span>
               )}
-              {circuits.length > 1 && <div className="text-muted-foreground mt-0.5">{circuits.length} segments</div>}
+              {circuits.length > 1 && <div className="text-muted-foreground mt-0.5 text-[10px]">{circuits.length} segments available</div>}
             </div>
           )}
 
           {rankProgress != null && (
-            <div className="w-40">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Goal progress</span>
-                <span className="font-bold">{rankProgress}%</span>
+            <div className="w-full sm:w-40">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-muted-foreground font-semibold uppercase tracking-wider">Goal progress</span>
+                <span className="font-bold text-primary">{rankProgress}%</span>
               </div>
-              <div className="h-2 rounded-sm bg-muted">
-                <div className="h-full rounded-sm bg-primary" style={{ width: `${rankProgress}%` }} />
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500" 
+                  style={{ width: `${rankProgress}%` }} 
+                />
               </div>
               {behindPace && (
-                <div className="text-[10px] text-destructive mt-1">
-                  {isOwnDashboard ? 'Behind pace for your target date' : 'Behind pace for target date'}
+                <div className="text-[10px] text-destructive mt-1 font-semibold">
+                  ⚠ {isOwnDashboard ? 'Behind pace for your target date' : 'Behind pace for target date'}
                 </div>
               )}
             </div>
           )}
 
           {isOwnDashboard && coachLink && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border bg-card">
-              <span className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:shadow-md transition-shadow">
+              <span className="w-8 h-8 rounded-md bg-secondary flex items-center justify-center text-xs font-bold shrink-0">
                 {initials(coachLink.coach?.displayName)}
               </span>
               <div className="min-w-0">
@@ -152,7 +161,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
 
           <div className="flex items-center gap-2">
             <button
-              className="relative w-9 h-9 rounded-sm border border-border flex items-center justify-center hover:bg-secondary"
+              className="relative w-10 h-10 rounded-lg border border-border flex items-center justify-center hover:bg-secondary transition-colors"
               onClick={() => onTabChange('recommendations')}
               aria-label="Recommendations"
             >
@@ -160,18 +169,22 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.7 21a2 2 0 0 1-3.4 0" />
               </svg>
-              {behindPace && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-destructive" />}
+              {behindPace && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />}
             </button>
             {isOwnDashboard && <Button size="sm" onClick={() => navigate('/track')}>Launch tracker</Button>}
           </div>
         </div>
       </div>
 
-      <div className="inline-flex flex-wrap border border-border rounded-sm p-1 bg-card gap-1">
+      <div className="inline-flex flex-nowrap overflow-x-auto border border-border rounded-lg p-1 bg-card gap-1 max-w-full scrollbar-hide">
         {TABS.map(t => (
           <button
             key={t.id}
-            className={`px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors ${activeTab === t.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+              activeTab === t.id 
+                ? 'bg-foreground text-background shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
             onClick={() => onTabChange(t.id)}
           >
             {t.label}
