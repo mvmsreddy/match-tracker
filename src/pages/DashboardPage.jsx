@@ -10,6 +10,8 @@ import { Button } from '@/components/primitives/button';
 import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
 import { LogTodayReminder, QuickAddGrid, Recent5Strip, DigestPreviewCard } from '@/components/DashboardExtras';
 import SkillRadarCard from '@/components/SkillRadarCard';
+import PerformanceSummarySection from '@/components/PerformanceSummarySection';
+import { SegmentProvider } from '../context/SegmentContext';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -475,6 +477,13 @@ export default function DashboardPage() {
 
       {role !== 'organizer' && streak && <StreakCard streak={streak} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
+
+      {/* Player: Ranking & Points Performance snapshot (merged from Performance tab) */}
+      {role === 'player' && user.aitaReg && (
+        <SegmentProvider>
+          <PerformanceSummarySection />
+        </SegmentProvider>
+      )}
 
       {/* Skill Radar + Digest Preview (player only) */}
       {role === 'player' && matches && (

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line,
   CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import { useSegment } from '../context/SegmentContext';
 import { Card } from '@/components/primitives/card';
-import { BarChart3, TrendingUp, TrendingDown, Award, ArrowUpRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, TrendingUp, Award } from 'lucide-react';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -33,7 +32,6 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 export default function PerformanceSummarySection() {
   const { circuits, body, loading } = useSegment();
   const [chartMode, setChartMode] = useState('points'); // 'points' | 'rank'
-  const [expanded, setExpanded] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
 
   if (loading || !circuits || circuits.length === 0) return null;
@@ -45,39 +43,20 @@ export default function PerformanceSummarySection() {
   return (
     <Card className="p-4 sm:p-6 shadow-sm" data-testid="performance-summary">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-5 h-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">My Performance</div>
-            <div className="text-sm font-bold mt-0.5">
-              {active.category} {active.subcategory} · {body.label}
-            </div>
-          </div>
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <BarChart3 className="w-5 h-5 text-primary" />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to="/player-dashboard?tab=performance"
-            className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-0.5"
-            data-testid="performance-full-link"
-          >
-            Browse all <ArrowUpRight className="w-3 h-3" />
-          </Link>
-          <button
-            onClick={() => setExpanded(v => !v)}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-            data-testid="performance-collapse"
-          >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">My Performance</div>
+          <div className="text-sm font-bold mt-0.5">
+            {active.category} {active.subcategory} · {body.label}
+          </div>
         </div>
       </div>
 
       {/* Circuit pills (only if >1) */}
-      {circuits.length > 1 && expanded && (
+      {circuits.length > 1 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {circuits.map((c, i) => (
             <button
@@ -134,7 +113,7 @@ export default function PerformanceSummarySection() {
         </div>
       </div>
 
-      {expanded && active.points.length > 1 && (
+      {active.points.length > 1 && (
         <>
           {/* Chart mode toggle */}
           <div className="flex items-center gap-1 mt-4 border border-border rounded-lg p-1 w-fit">

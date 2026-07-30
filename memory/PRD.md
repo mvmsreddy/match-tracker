@@ -64,6 +64,25 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
   - Fixed UTC→local timezone in `todayIso()` in NutritionPage so today's meals are recognized regardless of server time
   - Verified: 3 pie cells render with `var(--color-primary)`, `var(--color-chart-3)`, `var(--color-chart-4)` fills when meals exist
 
+## Iteration 6 — Performance Merge + Login Redesign (Feb 2026)
+17. **PerformanceSummarySection** wired into main `DashboardPage.jsx` for player role — merges the "View My Performance" content (rank/points/best/best-pts + points-growth & rank-progress mini charts + circuit pills) directly inline in the Dashboard flow, wrapped in `SegmentProvider`. No separate card/tab feel — sits naturally between Recent Form and Skill Radar. Removed collapse chevron and "Browse all" link so it reads as native dashboard content.
+18. **Login page redesign** — editorial dark-navy hero panel (52% width on desktop) with:
+    - Rotating brand stats ("12,847 matches tracked this month" etc, cycles every 3.5s with animated dot indicators)
+    - Amber-gradient Trophy brand mark with soft glow
+    - Grain overlay + court-lines SVG motif
+    - Serif italic accents in headline ("Every point. Every insight. Elevate your game.")
+    - Live-system indicator dot in footer
+    - Right form panel on warm off-white (#f7f6f2) with pill-style Sign In / Sign Up toggle, floating icon focus-color transitions, larger 11px input heights, dark-navy CTA with hover translate arrow
+    - Refined mobile: compact brand header above card, ambient navy backdrop bleed
+    - Demo accounts as tap-to-fill cards with monospace password chip
+    - Terms/Privacy trust footer
+    - Signup role picker: 2×2 grid with selected role in solid navy (much clearer active state)
+
+### Testing
+- Verified via screenshot tool on desktop (1920×800) + mobile (390×844)
+- No console errors; benign Supabase-not-configured warnings only (mock-mode expected)
+- Signup mode renders correctly with role selector and confirm-password field
+
 ## Deferred from PRD v2.0 (needs separate decisions)
 - Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance
 - Device integrations (Pocket Radar, Babolat, HR wearables) — blocked on vendor API keys
