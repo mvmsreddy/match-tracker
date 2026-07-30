@@ -72,4 +72,22 @@
   body { font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; }
   h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Manrope', system-ui, sans-serif; letter-spacing: -0.02em; }
   a { text-decoration: none; color: inherit; }
+
+  /* Reset UA button styling so Tailwind utility classes work as expected
+     (without preflight). This mirrors the parts of preflight that affect
+     buttons — kept explicit so icons render in currentColor and no native
+     outset border shows around icon buttons. NOTE: does not touch
+     background-image so Tailwind gradient utilities (bg-linear-to-*) work. */
+  button {
+    background-color: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  button:disabled { cursor: default; }
 }

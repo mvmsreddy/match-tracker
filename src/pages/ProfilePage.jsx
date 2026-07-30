@@ -376,9 +376,9 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto space-y-4">
-      <Card className="p-5 sm:p-6 bg-gradient-to-br from-card via-card to-primary/5 shadow-sm">
+      <Card className="p-5 sm:p-6 bg-primary/5 shadow-sm">
         <div className="flex flex-wrap items-center gap-4">
-          <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground flex items-center justify-center font-display font-extrabold text-xl sm:text-2xl shrink-0 shadow-lg ring-4 ring-primary/10">
+          <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold text-xl sm:text-2xl shrink-0 shadow-lg ring-4 ring-primary/10">
             {getInitials(form.displayName)}
           </span>
           <div className="flex-1 min-w-40">
@@ -421,7 +421,7 @@ export default function ProfilePage() {
           </div>
           <div className="h-2.5 rounded-full bg-muted mt-3 overflow-hidden">
             <div 
-              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500" 
+              className="h-full rounded-full bg-primary transition-all duration-500" 
               style={{ width: `${Math.min(100, Math.round((entryCount / entryCap) * 100))}%` }} 
             />
           </div>

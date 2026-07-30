@@ -309,7 +309,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
               <Card 
                 key={idx} 
                 className={`p-4 sm:p-5 border-l-4 hover:shadow-md transition-shadow ${
-                  i.positive ? 'border-l-primary bg-gradient-to-br from-primary/5 to-transparent' : 'border-l-destructive bg-gradient-to-br from-destructive/5 to-transparent'
+                  i.positive ? 'border-l-primary bg-primary/5' : 'border-l-destructive bg-destructive/5'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">

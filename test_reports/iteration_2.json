@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only re-verification of iteration_1 UI fixes on mobile viewport 390x844 (Playwright, public preview URL). Verified: header icon visibility/UA-border reset, avatar solid background, card border/padding/background, outside-click dropdown behavior for both notifications and user menu, mobile dropdown viewport fitting, initials sanitization, page navigation (/profile,/history,/tournaments,/aita-rankings,/player-dashboard), console cleanliness, touch-target sizes and horizontal scroll. 12 of 14 requested checks PASS. Two issues remain: initials sanitization was NOT applied to PlayerDashboardShell (shows 'M(' for 'Madhu (Parent)'), and heavy Vite dev-module 429 rate-limiting caused a fully blank white page on one navigation run.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PlayerDashboardShell", "issue": "initials() at src/components/player/PlayerDashboardShell.jsx:20-24 does not strip non-alphanumerics; parent user 'Madhu (Parent)' renders as 'M(' in the hero avatar circle. Same unsanitized logic duplicated in src/components/coach/RosterView.jsx:15, src/components/coach/LeaderboardView.jsx:10, src/pages/ParentDashboardPage.jsx:65 and src/components/nav/MTNavChrome.jsx:55 (single-letter only). Extract one shared sanitized initials util.", "selector": "text 'M(' inside PlayerDashboardShell hero avatar", "priority": "MEDIUM"},
+      {"component": "NavDrawer", "issue": "Escape key does not close the nav drawer (only overlay click / close button do), while NotificationsBell and user menu both support Escape - inconsistent keyboard UX. No focus trap either.", "selector": "[data-testid=\"nav-drawer\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Rapid multi-route navigation in Vite dev mode", "issue": "Many /src/**/*.jsx module requests returned HTTP 429 (rate limited by ingress) during back-to-back route changes; one /player-dashboard load rendered a completely blank white page and the subsequent '/' navigation timed out. Reproduced once; the same route loaded fine when navigated in isolation with a pause. Environment/dev-server issue (unbundled ESM waterfall), not app logic, but it makes the app appear broken during fast navigation.", "affected_selectors": ["[data-testid=\"app-shell-header\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "/profile - Streak Freeze card", "issues": ["Uses native browser date input (mm/dd/yyyy with UA calendar glyph) instead of the app's styled/shadcn date picker; visually inconsistent with the rest of the dark UI"]},
+      {"screen": "Dashboard - MY STATS", "issues": ["Trophy icon on the 'MATCHES' stat card renders very dark/low-contrast against the dark card compared to the blue/lime icons on sibling cards - verify intended muted color"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix unsanitized initials in PlayerDashboardShell (and dedupe with RosterView/LeaderboardView/ParentDashboardPage/MTNavChrome into one shared util)",
+    "Optional: add Escape-to-close (and focus trap) to NavDrawer for parity with dropdowns",
+    "Optional: replace native date input on /profile Streak Freeze with the app date picker component",
+    "Investigate dev-server 429 module rate-limiting (blank page risk during rapid navigation)"
+  ],
+  "critical_code_review_comments": [
+    "Initials computation is duplicated in 6 places with 3 different implementations - extract to src/lib/initials.js with the Unicode-safe sanitization already used in AppShell/TopNav",
+    "AppShell user-menu dropdown had no data-testid; added data-testid=\"user-menu-dropdown\" for testability",
+    "PlayerDashboardShell.jsx is 201 lines - fine, but AppShell/TopNav duplicate the entire outside-click useEffect; extract a useOutsideClick hook"
+  ],
+  "updated_files": ["/app/src/components/AppShell.jsx (added data-testid=\"user-menu-dropdown\" only)"],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "86% (12/14 checks passed)"},
+  "seed_data_creation": "None - used auto-seeded demo accounts (localStorage mock backend)",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "coach@matchtracker.app / coach123, parent@matchtracker.app / parent123 (auto-seeded demo accounts). NOTE: /app/memory/test_credentials.md does NOT exist - main agent should create it.",
+  "context_for_next_testing_agent": "Verified PASS on mobile 390x844: menu-toggle-btn/notifications-bell/theme-toggle-btn borderWidth=0px, color+svg=rgb(255,255,255), 44x44 hit areas, appearance=none; user-menu-btn bg=rgb(51,112,255) with white 'CR'; Card borderWidth=1px, padding=16px, bg=rgb(26,28,30), backgroundImage=none (expected); notifications dropdown rect x=8 right=382 (fits 390); outside click + Escape close both dropdowns and header buttons stay immediately clickable (no scrim); user menu rect x=126 right=382; documentElement.scrollWidth=390 (no h-scroll); /profile,/history,/tournaments,/aita-rankings load cleanly with solid blue avatars; only React Router v7 future-flag warnings, zero React errors; dashboard skeletons resolve to real values within ~8s. Remaining: PlayerDashboardShell 'M(' initials bug and dev-mode 429 blank-page flakiness.",
+  "rca_of_the_issue": "Initials sanitization was applied only in AppShell.jsx and TopNav.jsx; PlayerDashboardShell.jsx keeps its own initials() helper that takes parts[0][0]+lastPart[0] without stripping punctuation, so 'Madhu (Parent)' -> 'M' + '(' = 'M('. Blank-page incident RCA: Vite serves each source module as a separate request; rapid route switching triggered ingress rate limiting (HTTP 429) on dozens of /src/*.jsx requests, so the route chunk failed to evaluate and React rendered nothing."
+}

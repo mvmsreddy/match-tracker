@@ -102,7 +102,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-secondary/40 via-background to-background text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground flex">
       {/* Hero panel — desktop only */}
       <div
         className="hidden lg:flex lg:w-[45%] xl:w-[42%] relative flex-col justify-between overflow-hidden p-10 xl:p-14"

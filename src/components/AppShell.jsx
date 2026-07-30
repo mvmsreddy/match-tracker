@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -13,24 +13,51 @@ export default function AppShell() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = user?.displayName || user?.name || '?';
-  const initials = displayName.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const initials = displayName
+    .trim()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || '?';
+
+  const userMenuRef = useRef(null);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handlePointerDown(e) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    }
+    function handleKey(e) { if (e.key === 'Escape') setUserMenuOpen(false); }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [userMenuOpen]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header 
-        className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border px-3 sm:px-4 lg:px-8 py-2.5 flex items-center justify-between gap-2"
+        className="sticky top-0 z-30 bg-background border-b border-border px-3 sm:px-4 lg:px-8 py-2.5 flex items-center justify-between gap-2"
         data-testid="app-shell-header"
       >
         {/* Left side: Menu + Brand */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-transparent hover:bg-secondary transition-colors shrink-0"
+            className="flex items-center justify-center w-10 h-10 rounded-lg bg-transparent hover:bg-secondary transition-colors shrink-0 text-foreground"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             data-testid="menu-toggle-btn"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" strokeWidth={2} />
           </button>
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 bg-accent flex items-center justify-center rounded-lg shrink-0">
@@ -50,27 +77,25 @@ export default function AppShell() {
           <NotificationsBell />
           <button
             onClick={toggle}
-            className="flex items-center justify-center w-10 h-10 rounded-lg bg-transparent hover:bg-secondary transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-lg bg-transparent hover:bg-secondary transition-colors text-foreground"
             aria-label="Toggle theme"
             data-testid="theme-toggle-btn"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun className="w-5 h-5" strokeWidth={2} /> : <Moon className="w-5 h-5" strokeWidth={2} />}
           </button>
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen((v) => !v)}
-              className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-sm font-bold hover:shadow-md transition-shadow"
+              className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold hover:shadow-md transition-shadow"
               aria-label="User menu"
               data-testid="user-menu-btn"
             >
               {initials}
             </button>
             {userMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-lg border border-border bg-popover text-popover-foreground p-2 shadow-xl">
-                  <div className="px-3 py-2.5 flex items-center gap-3 border-b border-border">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">
+              <div className="fixed sm:absolute right-2 left-auto sm:left-auto sm:right-0 top-16 sm:top-12 z-50 w-64 rounded-lg border border-border bg-popover text-popover-foreground p-2 shadow-xl" data-testid="user-menu-dropdown">
+                <div className="px-3 py-2.5 flex items-center gap-3 border-b border-border">
+                    <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">
                       {initials}
                     </div>
                     <div className="min-w-0">
@@ -94,8 +119,7 @@ export default function AppShell() {
                   >
                     <LogOut className="w-4 h-4" /> Log out
                   </button>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>

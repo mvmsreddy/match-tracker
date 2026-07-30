@@ -148,7 +148,7 @@ button, a {
 }
 
 /* Better card backgrounds for depth */
-.bg-gradient-to-br {
+.bg-linear-to-br {
   background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
 }
 

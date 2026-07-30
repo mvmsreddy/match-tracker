@@ -1,24 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 export default function NotificationsBell() {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <button
-        className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-transparent hover:bg-secondary transition-colors"
+        className="relative flex items-center justify-center w-10 h-10 rounded-lg bg-transparent hover:bg-secondary transition-colors text-foreground"
         onClick={() => setOpen(v => !v)}
         aria-label="Notifications"
         title="Notifications"
         data-testid="notifications-bell"
       >
-        <Bell className="w-4 h-4 text-foreground" strokeWidth={2} />
+        <Bell className="w-5 h-5" strokeWidth={2} />
         {unreadCount > 0 && (
           <span
-            className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-background"
+            className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-background"
             data-testid="notifications-badge"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -27,12 +48,10 @@ export default function NotificationsBell() {
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div
-            className="absolute right-0 top-11 z-50 w-80 max-h-96 overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-xl"
-            data-testid="notifications-dropdown"
-          >
+        <div
+          className="fixed sm:absolute right-2 left-2 sm:right-0 sm:left-auto top-16 sm:top-11 z-50 sm:w-80 max-h-[70vh] sm:max-h-96 overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-xl"
+          data-testid="notifications-dropdown"
+        >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border sticky top-0 bg-popover">
               <span className="font-display font-bold text-sm tracking-tight">Notifications</span>
               {unreadCount > 0 && (
@@ -73,8 +92,7 @@ export default function NotificationsBell() {
                 ))}
               </div>
             )}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

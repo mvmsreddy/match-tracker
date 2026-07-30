@@ -144,7 +144,7 @@ function PlayerLiveBanner({ todayMatches }) {
 
 function StreakCard({ streak }) {
   return (
-    <Card className="p-5 sm:p-6 bg-gradient-to-br from-card to-card/50 border-l-4 border-l-primary shadow-sm">
+    <Card className="p-5 sm:p-6 bg-card border-l-4 border-l-primary shadow-sm">
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
           <Flame className="w-7 h-7 sm:w-8 sm:h-8 text-primary" strokeWidth={2.5} />
@@ -582,28 +582,28 @@ export default function DashboardPage() {
           {matches !== null && (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
                   <div className="flex items-center justify-between mb-2">
                     <Trophy className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{matchesOnly.length}</div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Matches</div>
                 </Card>
-                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-l-4 border-l-primary">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary">
                   <div className="flex items-center justify-between mb-2">
                     <TrendingUp className="w-5 h-5 text-primary" />
                   </div>
                   <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-primary">{wins}</div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Wins</div>
                 </Card>
-                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-destructive/5 to-destructive/10 border-l-4 border-l-destructive">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-destructive/10 border-l-4 border-l-destructive">
                   <div className="flex items-center justify-between mb-2">
                     <TrendingDown className="w-5 h-5 text-destructive" />
                   </div>
                   <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-destructive">{losses}</div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Losses</div>
                 </Card>
-                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
                   <div className="flex items-center justify-between mb-2">
                     <Target className="w-5 h-5 text-muted-foreground" />
                   </div>
@@ -612,7 +612,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Win Rate</div>
                 </Card>
-                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+                <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
                   <div className="flex items-center justify-between mb-2">
                     <Calendar className="w-5 h-5 text-muted-foreground" />
                   </div>

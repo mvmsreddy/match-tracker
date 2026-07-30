@@ -124,7 +124,7 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
   const pointsNeeded = activeGoal.targetPoints ? Math.max(0, activeGoal.targetPoints - latest.totalPoints) : null;
 
   return (
-    <Card className="p-4 sm:p-6 border-l-4 border-l-primary bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
+    <Card className="p-4 sm:p-6 border-l-4 border-l-primary bg-primary/5 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
         <div className="flex-1 min-w-0 w-full">
           <div className="flex items-center gap-2 mb-1">
@@ -171,7 +171,7 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
           </div>
           <div className="relative h-3 rounded-full bg-muted overflow-hidden">
             <div 
-              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-700" 
+              className="h-full rounded-full bg-primary transition-all duration-700" 
               style={{ width: `${rankProgress}%` }} 
             />
             {paceMarkPct != null && (

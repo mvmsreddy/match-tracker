@@ -14,12 +14,20 @@ export default function TopNav() {
   const { theme, toggle } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = user?.displayName || user?.name || '?';
-  const initials = displayName.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const initials = displayName
+    .trim()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || '?';
 
   return (
     <>
       <div 
-        className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-border bg-background/95 backdrop-blur-sm px-3 sm:px-4"
+        className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-3 sm:px-4"
         data-testid="top-nav"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -44,7 +52,7 @@ export default function TopNav() {
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <NotificationsBell />
             <div
-              className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0"
+              className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0"
               title={displayName}
               data-testid="top-nav-avatar"
             >

@@ -75,7 +75,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-4">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
+          <span className="w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
             {initials(isOwnDashboard ? user?.displayName : viewPlayerName)}
           </span>
           <div className="min-w-0">
@@ -135,7 +135,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               </div>
               <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500" 
+                  className="h-full rounded-full bg-primary transition-all duration-500" 
                   style={{ width: `${rankProgress}%` }} 
                 />
               </div>

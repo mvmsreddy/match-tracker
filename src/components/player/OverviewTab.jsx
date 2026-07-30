@@ -118,7 +118,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between mb-2">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             {monthStats?.matchesThisMonth > 0 && (
@@ -131,7 +131,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Matches this month</div>
         </Card>
         
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between mb-2">
             <Activity className="w-5 h-5 text-muted-foreground" />
             {monthStats?.avgPtsTrendUp != null && (
@@ -151,7 +151,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           )}
         </Card>
         
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-l-4 border-l-primary sm:col-span-2 lg:col-span-1">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between mb-2">
             <Trophy className="w-5 h-5 text-primary" />
             {monthStats?.winRate > 50 && (
@@ -239,7 +239,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="text-xs text-muted-foreground mb-1">Current points</div>
           <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter">{latest.totalPoints}</div>
         </Card>
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-transparent">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/5">
           <div className="text-xs text-muted-foreground mb-1">Best rank</div>
           <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter text-primary">{bestRank}</div>
         </Card>

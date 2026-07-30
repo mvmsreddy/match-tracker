@@ -56,7 +56,7 @@ export default function MatchHistoryPage() {
             </div>
             <div className="font-display font-extrabold text-2xl tracking-tighter">{matchCount}</div>
           </Card>
-          <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-transparent border-l-4 border-l-primary">
+          <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow bg-primary/5 border-l-4 border-l-primary">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">
               <Trophy className="w-3.5 h-3.5" />
               <span>Wins</span>
