@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Sparkles, Trophy, Flame, Share2, Download, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles, Trophy, Flame, Share2, Download, Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { renderHighlightReelStory } from '../../lib/highlightReelStory';
 
 /**
  * HighlightReelCard — the shareable post-match summary card.
@@ -134,6 +135,45 @@ export default function HighlightReelCard({
     URL.revokeObjectURL(url);
   }
 
+  const [storyBusy, setStoryBusy] = useState(false);
+  async function handleStoryExport() {
+    if (storyBusy) return;
+    setStoryBusy(true);
+    try {
+      const blob = await renderHighlightReelStory({
+        selfName, oppName, winnerName, isSelfWin,
+        finalScore, durationLabel,
+        pointsPlayed: points.length,
+        longestWin: swings.longestWin,
+        longestLoss: swings.longestLoss,
+        recap,
+        tips: uniqueTips,
+      });
+      const filename = `story-${selfName}-vs-${oppName}.png`.replace(/\s+/g, '_');
+      const file = new File([blob], filename, { type: 'image/png' });
+      // Prefer native file-share (Instagram Stories accepts image share)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'My tennis match', text: `${winnerName} wins ${finalScore}` });
+          return;
+        } catch { /* user cancelled — fall through to download */ }
+      }
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Story export failed', e);
+    } finally {
+      setStoryBusy(false);
+    }
+  }
+
   return (
     <div
       ref={cardRef}
@@ -228,13 +268,23 @@ export default function HighlightReelCard({
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-0 border-t border-border">
+      <div className="grid grid-cols-3 gap-0 border-t border-border">
         <button
           onClick={handleShare}
           className="py-3 inline-flex items-center justify-center gap-2 text-sm font-bold text-primary hover:bg-primary/5 border-r border-border"
           data-testid="highlight-share-btn"
         >
           <Share2 className="w-4 h-4" />Share
+        </button>
+        <button
+          onClick={handleStoryExport}
+          disabled={storyBusy}
+          className="py-3 inline-flex items-center justify-center gap-2 text-sm font-bold text-foreground hover:bg-muted/40 border-r border-border disabled:opacity-60"
+          data-testid="highlight-story-btn"
+          title="Save a 1080×1920 story-ready image"
+        >
+          {storyBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+          Story
         </button>
         <button
           onClick={handleDownload}

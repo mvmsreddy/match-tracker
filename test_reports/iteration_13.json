@@ -1,0 +1,61 @@
+{
+  "summary": "Iteration 13 testing. Backend: new pytest suite /app/backend/tests/test_serve_placement.py — 7/7 pass. POST /api/advisor/tip returns an explicit WIDE/T/BODY placement zone for both 'serving to the deuce court' and 'serving to the ad court' (verified zone=WIDE in both live runs), receiving tips still work, 422 on missing session_id, /api/health advisor_ready=true, /api/advisor/highlight-reel and /api/nutrition/suggest still stream. Frontend (preview URL, player@matchtracker.app): (a) Wake Lock — spied navigator.wakeLock.request via add_init_script before navigation: 2 calls right after 'Serves first' and 16 across a full match, zero console errors; with navigator.wakeLock forced undefined the tracker starts and logs points with zero console/page errors (silent no-op confirmed). (b) Highlight Reel Story — played a full Quick-mode short-set match (Rohan 4-0 4-0 Aditya, 32 points); reel card renders all three actions (highlight-share-btn / highlight-story-btn / highlight-download-btn); clicking Story produced a real download 'story-Rohan-vs-Aditya.png', 1080x1920, 199,663 bytes, correct content (winner headline, score, best run/tough patch, AI recap, footer), no JS errors, button re-enabled after export. (c) Advisor UI integration: 'Ask coach' while serving returned 'Serve WIDE to the deuce court…' with court-side chip DEUCE COURT. NOT VERIFIABLE END-TO-END: TodaysMatchHero and the Tournaments historical filter — the preview env has no Supabase config, so api.getMyEntries() is hard-stubbed to [] and the demo player has 0 tournament entries in all 3 segments (U18|Singles, U16|Doubles, U16|Singles). Hero is silently absent (by design, no crash) and tournaments-history-filter never mounts (guarded by segmentEntries.length > 0); Tournaments tab shows the normal empty state with no console errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "TodaysMatchHero / TournamentsTab (unreachable in mock env)",
+        "issue": "MEDIUM: Both new features depend on api.getMyEntries(), which in the no-Supabase (mock) build is hard-coded to `async () => []` (src/api/index.js:151). Verified across all 3 segments: 0 entries, so data-testid='todays-match-hero' and data-testid='tournaments-history-filter' can never render for any demo/preview user. No crash and empty states are clean, but the features are effectively dead code in this environment and cannot be QA'd or demoed. Suggest seeding a few mock tournament entries (including one dated today) in mockApi so both features are exercisable.",
+        "selector": "[data-testid=\"todays-match-hero\"], [data-testid=\"tournaments-history-filter\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "HighlightReelCard story spinner",
+        "issue": "LOW/INFO: storyBusy spinner is not observable — the canvas render + blob completes in well under 150ms, so the Loader2 never paints. Functionally fine (button disables/re-enables), just noting the spinner assertion cannot be verified on desktop.",
+        "selector": "[data-testid=\"highlight-story-btn\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Story PNG export (1080x1920)",
+        "issues": [
+          "The decorative vertical court centre line runs straight through the score row ('4-0 | 4-0' looks split) and through the recap text block — consider dropping the centre line below the content or lowering its alpha further.",
+          "~300px of empty space between the recap block and the footer for short recaps; content could be vertically centred or the frame shortened."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_serve_placement.py",
+    "/app/test_reports/pytest/iter13_backend.xml"
+  ],
+  "action_items": [
+    "Seed mock tournament entries (one scheduled for TODAY) in the mock API so TodaysMatchHero and the Tournaments historical filter are reachable/demoable — currently getMyEntries() returns [] in the no-Supabase build and both features never render.",
+    "Timezone: TodaysMatchHero (line 19) and TournamentsTab.filteredEntries both compute today via new Date().toISOString().slice(0,10) = UTC. For IST users between 00:00 and 05:30 local the 'today' key is yesterday, so a real match today would not surface (and 'last 12 months' boundary shifts). Use a local-date helper.",
+    "Minor: month facet chips are hidden whenever filter === 'range'; consider keeping them visible so a user can jump from a custom range back to a month without going through 'All'.",
+    "Minor: LiveMatchCommandCenter unmounts on every game/set transition card, so useWakeLock releases and re-requests the lock each game (16 requests in a 32-point match). Consider hoisting useWakeLock to TrackerPage keyed on t.matchStarted so the lock is held continuously."
+  ],
+  "critical_code_review_comments": [
+    "src/api/index.js:151 — getMyEntries is stubbed to [] without Supabase; any feature built on tournament entries (hero, history filter, upcoming schedule) silently renders nothing in the shipped preview build. Needs mock data parity.",
+    "TodaysMatchHero/TournamentsTab use UTC ISO dates for 'today' comparisons — should use a local-timezone date helper (single shared util) to avoid off-by-one-day filtering.",
+    "highlightReelStory.js is self-contained and dependency-free (good); it does assume document/canvas availability — the try/catch in handleStoryExport correctly logs and clears storyBusy, so no stuck spinner."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_serve_placement.py"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 pytest)",
+    "frontend": "60% (3 of 5 features fully verified: Wake Lock, Story export, serve-placement UI integration; TodaysMatchHero and Tournaments filter blocked by absent mock tournament data — no-crash/silent-hide paths verified only)"
+  },
+  "seed_data_creation": "None persisted. Test matches were played in the tracker (localStorage only) and one story-*.png export was downloaded to /app/.screenshots.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 (from /app/memory/test_credentials.md). Login: fill input[type=email]/input[type=password] then click [data-testid='login-submit-btn'] — note get_by_role('button', name='Sign in') is ambiguous (mode toggle + submit).",
+  "context_for_next_testing_agent": "Player dashboard lives at /player-dashboard (not /). Tabs: player-tab-overview / player-tab-tournaments / etc. Tracker fast path: /track -> fill input[placeholder='Your name'] and input[placeholder='Opponent name'] -> set the match-format select to 'shortsets4' -> click a tracking-mode button ('Quick') -> click '▶ Start Match' -> click [data-testid='serve-first-self-btn'] -> loop clicking [data-testid='quick-win-self-btn'] and, when it disappears, the transition card button ('Next Game'/'Continue'/'Next Set') until [data-testid='highlight-reel-card'] appears (~32 points). Wake Lock can be spied with page.add_init_script wrapping navigator.wakeLock.request (Chromium exposes it natively). TodaysMatchHero + tournaments-history-filter remain untestable until mock tournament entries exist.",
+  "rca_of_the_issue": "Root cause for the two unverified features: src/api/index.js selects mockApi/no-op stubs when VITE_SUPABASE_URL/ANON_KEY are unset (they are unset — only .env.example exists). getMyEntries resolves to [] so useSegmentMatchSchedule().upcoming is empty (hero returns null on the length===0 guard) and TournamentsTab.segmentEntries is empty (filter block gated behind segmentEntries.length > 0). Reproduced by switching all three segments and reading the '0 <segment> entries' header on the Tournaments tab."
+}

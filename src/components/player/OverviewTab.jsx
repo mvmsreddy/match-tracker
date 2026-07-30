@@ -9,6 +9,7 @@ import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
 import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
+import TodaysMatchHero from './TodaysMatchHero';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { TrendingUp, TrendingDown, Trophy, Calendar, Target, Activity } from 'lucide-react';
@@ -115,6 +116,8 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      <TodaysMatchHero upcoming={schedule.upcoming} circuit={circuit} isOwnDashboard={isOwnDashboard} />
+
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
