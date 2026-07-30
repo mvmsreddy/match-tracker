@@ -109,6 +109,31 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 - POST /api/advisor/tip — real-time AI shot suggestions during a tracked match using Emergent LLM key (no user key needed)
 - POST /api/digest/send + weekly cron — Weekly digest email via Resend (needs user's Resend API key + verified sender domain)
 
+## Iteration 8-9 — FastAPI backend, Live Advisor, Streak Freeze Tokens, Shareable Badges, Weekly Digest (Feb 2026)
+
+### Backend (new)
+- Fresh minimal FastAPI backend at `/app/backend/server.py` bound to port 8001 via supervisor.
+- `GET /api/health` — reports advisor_ready + digest_ready flags.
+- `POST /api/advisor/tip` — SSE-streaming endpoint that returns a 1-2 sentence tactical tip via Emergent LLM Key (Claude Sonnet 4.6). System prompt enforces punchy, concrete, imperative coaching.
+- `POST /api/digest/send` — HTML weekly digest email via Resend. Returns 503 with a friendly message until `RESEND_API_KEY` + `SENDER_EMAIL` are set.
+- pytest suite at `/app/backend/tests/backend_test.py`: 7/7 pass.
+
+### Frontend
+- **LiveMatchAdvisor** (`/app/src/components/LiveMatchAdvisor.jsx`) — floating "AI Coach" card inside the in-match tracker (MatchRunningView). One-tap streaming tip; reads `data: <token>` SSE frames into a live-updating italicised sentence with cursor. Uses the composed match context.
+- **Streak Freeze Tokens** (`/app/src/lib/streakTokens.js` + StreakCard) — 1 token every 7 days, cap 3. Bounded-gap auto-consumption: only spends tokens on missed days BETWEEN two logged anchors (never wasted on trailing inactivity). Persists autoConsumed across renders. StreakCard now shows a 3-slot indicator bar and an "🛡️ Auto-protected" note when tokens have been recently spent. `streaks.js` updated so frozen days count toward the streak — a spent token now visibly extends the streak by 1.
+- **Shareable Badge Cards** (`/app/src/components/motivation/ShareBadgeModal.jsx`) — every unlocked achievement in AchievementsReel is now a clickable button that opens a modal with a 1080×1920 SVG-rendered PNG matching the app's dark editorial aesthetic (deep navy background, court motif, gold medal ring, serif branding). Native `navigator.share` on mobile with download fallback.
+- **WeeklyDigestCard** (`/app/src/components/WeeklyDigestCard.jsx`) — profile-page card with opt-in toggle and "Send preview now" CTA. Auto-detects whether the backend Resend integration is configured via `/api/health` and gracefully shows a "Coming soon" pill when it isn't (user opted to skip Resend credentials for now).
+
+### Testing
+- iteration_8.json: 12 tests, 6 pass, 6 targeted fixes needed (all fixed → iteration_9)
+- iteration_9.json: All 4 targeted fixes verified. Backend 7/7 pytest pass. 2 new MEDIUM design issues (streak semantics + token efficiency) — resolved by updating streaks.js to count frozen days.
+- Rank ##180 double-hash typo on profile — fixed by stripping the prefix from seed data.
+
+## Deferred (needs external input)
+- **Resend integration goes live** — user needs to provide RESEND_API_KEY + SENDER_EMAIL (verified domain). Set them in `/app/backend/.env` and restart `sudo supervisorctl restart backend`. Everything else is already wired.
+- **Weekly cron for real Monday sends** — currently only manual triggering. Would need a supervisor-scheduled Python job hitting the digest endpoint for all opted-in users.
+- **Emergent-Auth / Real Supabase project** — currently every user is mock+localStorage. Data doesn't persist across devices.
+
 ## Deferred from PRD v2.0 (needs separate decisions)
 - Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance
 - Device integrations (Pocket Radar, Babolat, HR wearables) — blocked on vendor API keys

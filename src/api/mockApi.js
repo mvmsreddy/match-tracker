@@ -20,7 +20,7 @@ const MATCHES_KEY = 'mtp_mock_matches_v1';
 const PROFILES_KEY = 'mtp_mock_profiles_v1';
 
 const DEMO_USERS = [
-  { id: 'u_player', name: 'Aarav Sharma', email: 'player@matchtracker.app', password: 'player123', role: 'player', aitaReg: 'AITA2019X4021', ranking: '#180', stateAbbr: 'MH' },
+  { id: 'u_player', name: 'Aarav Sharma', email: 'player@matchtracker.app', password: 'player123', role: 'player', aitaReg: 'AITA2019X4021', ranking: '180', stateAbbr: 'MH' },
   { id: 'u_coach', name: 'Coach Ramesh', email: 'coach@matchtracker.app', password: 'coach123', role: 'coach' },
   { id: 'u_parent', name: 'Madhu (Parent)', email: 'parent@matchtracker.app', password: 'parent123', role: 'parent' },
 ];

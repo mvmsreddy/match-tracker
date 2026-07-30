@@ -32,7 +32,10 @@ export function computeStreak(logDates, { today, graceDays = 1, freezeDates = []
   // Cap the walk so a brand-new/empty history can't loop indefinitely.
   for (let i = 0; i < 3650; i++) {
     if (loggedSet.has(cursor) || frozenSet.has(cursor)) {
-      if (loggedSet.has(cursor)) current += 1;
+      // Frozen days count toward the streak too — the freeze itself is the
+      // player's declared commitment (or an auto-consumed streak-freeze
+      // token). Without this, a token spend feels invisible.
+      current += 1;
       cursor = addDays(cursor, -1);
       continue;
     }
