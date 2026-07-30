@@ -18,3 +18,9 @@ android/keystore.properties
 
 # Python video-analysis service (large models/video assets, excluded for now)
 video-service/
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
