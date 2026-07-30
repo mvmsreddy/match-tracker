@@ -113,18 +113,18 @@ export default function ProgressTab({ circuit, playerId }) {
         </div>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} strokeDasharray="3 3" />
+            <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
             <XAxis 
               dataKey="date" 
               tickFormatter={formatDate} 
-              stroke="hsl(var(--color-border))" 
-              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              stroke="var(--color-border)" 
+              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
               tickLine={false} 
               minTickGap={40} 
             />
             <YAxis 
-              stroke="hsl(var(--color-border))" 
-              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+              stroke="var(--color-border)" 
+              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
               tickLine={false} 
               axisLine={false} 
               width={44} 
@@ -133,8 +133,8 @@ export default function ProgressTab({ circuit, playerId }) {
             <Tooltip 
               labelFormatter={formatDate} 
               contentStyle={{ 
-                background: 'hsl(var(--color-popover))', 
-                border: '1px solid hsl(var(--color-border))', 
+                background: 'var(--color-popover)', 
+                border: '1px solid var(--color-border)', 
                 borderRadius: 6 
               }} 
             />
@@ -142,7 +142,7 @@ export default function ProgressTab({ circuit, playerId }) {
               type="monotone" 
               dataKey="actual" 
               stroke="none" 
-              fill="hsl(var(--color-primary))" 
+              fill="var(--color-primary)" 
               fillOpacity={0.15} 
               legendType="none" 
             />
@@ -150,17 +150,17 @@ export default function ProgressTab({ circuit, playerId }) {
               type="monotone" 
               dataKey="actual" 
               name="Actual" 
-              stroke="hsl(var(--color-primary))" 
+              stroke="var(--color-primary)" 
               strokeWidth={3} 
               dot={false} 
-              activeDot={{ r: 6, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-primary))' }} 
+              activeDot={{ r: 6, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-primary)' }} 
             />
             {activeGoal && (
               <Line 
                 type="monotone" 
                 dataKey="needed" 
                 name="Needed" 
-                stroke="hsl(var(--color-destructive))" 
+                stroke="var(--color-destructive)" 
                 strokeWidth={2.5} 
                 strokeDasharray="5 4" 
                 dot={false} 

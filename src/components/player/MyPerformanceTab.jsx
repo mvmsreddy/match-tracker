@@ -81,11 +81,11 @@ export default function MyPerformanceTab() {
               <div className="font-bold text-sm mb-1">Points Growth</div>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={selectedCircuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
-                  <YAxis stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-                  <Tooltip content={<ChartTooltip valueLabel="Points" />} cursor={{ stroke: 'hsl(var(--color-border))', strokeDasharray: '3 3' }} />
-                  <Area type="monotone" dataKey="totalPoints" stroke="hsl(var(--color-primary))" strokeWidth={2} fill="hsl(var(--color-primary))" fillOpacity={0.1} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-primary))' }} />
+                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--color-border)" tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} tickLine={false} minTickGap={40} />
+                  <YAxis stroke="var(--color-border)" tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
+                  <Tooltip content={<ChartTooltip valueLabel="Points" />} cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }} />
+                  <Area type="monotone" dataKey="totalPoints" stroke="var(--color-primary)" strokeWidth={2} fill="var(--color-primary)" fillOpacity={0.1} dot={false} activeDot={{ r: 5, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-primary)' }} />
                 </AreaChart>
               </ResponsiveContainer>
             </Card>
@@ -95,11 +95,11 @@ export default function MyPerformanceTab() {
               <div className="text-xs text-muted-foreground mb-3">Lower is better — axis is inverted</div>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={selectedCircuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} minTickGap={40} />
-                  <YAxis reversed stroke="hsl(var(--color-border))" tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} allowDecimals={false} />
-                  <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'hsl(var(--color-border))', strokeDasharray: '3 3' }} />
-                  <Line type="monotone" dataKey="rank" stroke="hsl(var(--color-chart-3))" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--color-card))', strokeWidth: 2, fill: 'hsl(var(--color-chart-3))' }} />
+                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--color-border)" tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} tickLine={false} minTickGap={40} />
+                  <YAxis reversed stroke="var(--color-border)" tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }} />
+                  <Line type="monotone" dataKey="rank" stroke="var(--color-chart-3)" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-chart-3)' }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>

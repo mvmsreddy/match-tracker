@@ -50,29 +50,29 @@ export default function SkillRadarCard({ ratings, stats, onCta, ctaLabel = 'Rate
       ) : (
         <ResponsiveContainer width="100%" height={240}>
           <RadarChart data={data} margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
-            <PolarGrid stroke="hsl(var(--color-border))" strokeDasharray="3 3" />
+            <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="skill"
-              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 11, fontWeight: 600 }}
+              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11, fontWeight: 600 }}
             />
             <PolarRadiusAxis
               domain={[0, 10]}
               tickCount={6}
-              tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 9 }}
+              tick={false}
               axisLine={false}
             />
             <Radar
               name="Skills"
               dataKey="value"
-              stroke="hsl(var(--color-primary))"
-              fill="hsl(var(--color-primary))"
+              stroke="var(--color-primary)"
+              fill="var(--color-primary)"
               fillOpacity={0.35}
               strokeWidth={2.5}
             />
             <Tooltip
               contentStyle={{
-                background: 'hsl(var(--color-popover))',
-                border: '1px solid hsl(var(--color-border))',
+                background: 'var(--color-popover)',
+                border: '1px solid var(--color-border)',
                 borderRadius: 6,
                 fontSize: 12,
               }}

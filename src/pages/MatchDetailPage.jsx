@@ -6,7 +6,7 @@ import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
 import { replayMatchAnalytics } from '../lib/analytics';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
-import { getLatestSkillRatings } from '../lib/localStore';
+import { getSkillRatingsForMatch } from '../lib/localStore';
 import TopNav from '../components/TopNav';
 import MTNavChrome from '../components/nav/MTNavChrome';
 import Scorebar from '../components/Scorebar';
@@ -121,7 +121,7 @@ export default function MatchDetailPage() {
         <MatchSkillRating
           userId={user.id}
           matchId={match.id}
-          existing={getLatestSkillRatings(user.id, 50).find(r => r.matchId === match.id)}
+          existing={getSkillRatingsForMatch(user.id, match.id)}
         />
       )}
 

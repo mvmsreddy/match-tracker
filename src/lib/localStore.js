@@ -4,6 +4,14 @@
 
 function key(scope, userId) { return `tt.${scope}.${userId || 'anon'}`; }
 
+// Local-date ISO (YYYY-MM-DD) so "today" matches the user's timezone rather than UTC.
+function todayLocalIso() {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
 function read(scope, userId, fallback) {
   try {
     const raw = localStorage.getItem(key(scope, userId));
@@ -36,19 +44,19 @@ export function deleteDrill(userId, id) {
 
 // ── Water quick-log ────────────────────────────────────────────────
 export function todayWaterMl(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const log = read('water', userId, {});
   return log[today] || 0;
 }
 export function addWaterMl(userId, ml) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const log = read('water', userId, {});
   log[today] = (log[today] || 0) + ml;
   write('water', userId, log);
   return log[today];
 }
 export function resetTodayWater(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const log = read('water', userId, {});
   delete log[today];
   write('water', userId, log);
@@ -57,8 +65,11 @@ export function weeklyWaterAvg(userId) {
   const log = read('water', userId, {});
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(log[d.toISOString().slice(0, 10)] || 0);
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    days.push(log[local.toISOString().slice(0, 10)] || 0);
   }
   const total = days.reduce((s, x) => s + x, 0);
   return { avg: Math.round(total / 7), total, days: days.reverse() };
@@ -69,6 +80,10 @@ export function saveSkillRatings(userId, matchId, ratings) {
   const all = read('skills', userId, {});
   all[matchId] = { ...ratings, ratedAt: new Date().toISOString() };
   write('skills', userId, all);
+}
+export function getSkillRatingsForMatch(userId, matchId) {
+  const all = read('skills', userId, {});
+  return all[matchId] || null;
 }
 export function getLatestSkillRatings(userId, limit = 5) {
   const all = read('skills', userId, {});
@@ -91,10 +106,10 @@ export function avgSkillRatings(userId, limit = 5) {
 
 // ── Dashboard reminder dismiss (session-scoped) ────────────────────
 export function reminderDismissedToday() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   return sessionStorage.getItem('tt.reminderDismissed') === today;
 }
 export function dismissReminderToday() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   sessionStorage.setItem('tt.reminderDismissed', today);
 }

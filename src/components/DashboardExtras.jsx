@@ -80,9 +80,9 @@ export function QuickAddGrid() {
             <div className="flex items-start justify-between mb-3">
               <div
                 className="w-11 h-11 rounded-lg flex items-center justify-center"
-                style={{ background: `hsl(var(--color-${t.color}) / 0.15)` }}
+                style={{ background: `color-mix(in srgb, var(--color-${t.color}) 15%, transparent)` }}
               >
-                <Icon className="w-5 h-5" style={{ color: `hsl(var(--color-${t.color}))` }} />
+                <Icon className="w-5 h-5" style={{ color: `var(--color-${t.color})` }} />
               </div>
               <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>

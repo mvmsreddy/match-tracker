@@ -139,7 +139,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
     return winRates.map(w => ({
       stroke: w.stroke,
       winRate: w.winRate || 0,
-      color: (w.winRate || 0) >= 60 ? 'hsl(var(--color-primary))' : 'hsl(var(--color-destructive))',
+      color: (w.winRate || 0) >= 60 ? 'var(--color-primary)' : 'var(--color-destructive)',
     }));
   }, [tracked]);
 
@@ -229,16 +229,16 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
           <div className="text-xs text-muted-foreground mb-4">Performance across different shot types</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={strokeChartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-              <CartesianGrid stroke="hsl(var(--color-border))" vertical={false} strokeDasharray="3 3" />
+              <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
               <XAxis 
                 dataKey="stroke" 
-                stroke="hsl(var(--color-border))" 
-                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+                stroke="var(--color-border)" 
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
                 tickLine={false} 
               />
               <YAxis 
-                stroke="hsl(var(--color-border))" 
-                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 10 }} 
+                stroke="var(--color-border)" 
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
                 tickLine={false} 
                 axisLine={false} 
                 width={40}
@@ -246,8 +246,8 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
               />
               <Tooltip 
                 contentStyle={{ 
-                  background: 'hsl(var(--color-popover))', 
-                  border: '1px solid hsl(var(--color-border))', 
+                  background: 'var(--color-popover)', 
+                  border: '1px solid var(--color-border)', 
                   borderRadius: 6 
                 }}
                 formatter={(value) => [`${value}%`, 'Win Rate']}
@@ -269,29 +269,29 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
           <div className="text-xs text-muted-foreground mb-4">Your all-round performance profile</div>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={skillRadarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
-              <PolarGrid stroke="hsl(var(--color-border))" strokeDasharray="3 3" />
+              <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
               <PolarAngleAxis 
                 dataKey="skill" 
-                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 11, fontWeight: 600 }} 
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11, fontWeight: 600 }} 
               />
               <PolarRadiusAxis 
                 domain={[0, 100]} 
-                tick={{ fill: 'hsl(var(--color-muted-foreground))', fontSize: 9 }}
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 9 }}
                 axisLine={false}
                 tickCount={5}
               />
               <Radar 
                 name="Skills" 
                 dataKey="value" 
-                stroke="hsl(var(--color-primary))" 
-                fill="hsl(var(--color-primary))" 
+                stroke="var(--color-primary)" 
+                fill="var(--color-primary)" 
                 fillOpacity={0.35} 
                 strokeWidth={2.5}
               />
               <Tooltip 
                 contentStyle={{ 
-                  background: 'hsl(var(--color-popover))', 
-                  border: '1px solid hsl(var(--color-border))', 
+                  background: 'var(--color-popover)', 
+                  border: '1px solid var(--color-border)', 
                   borderRadius: 6 
                 }}
                 formatter={(value) => [`${value}%`, 'Score']}

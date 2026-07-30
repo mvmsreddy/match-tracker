@@ -201,7 +201,7 @@ export default function DrillsPage() {
                     {intensity && (
                       <span
                         className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: `hsl(var(--color-${intensity.color}) / 0.15)`, color: `hsl(var(--color-${intensity.color}))` }}
+                        style={{ background: `color-mix(in srgb, var(--color-${intensity.color}) 15%, transparent)`, color: `var(--color-${intensity.color})` }}
                       >
                         {intensity.label}
                       </span>

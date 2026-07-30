@@ -482,6 +482,8 @@ export default function DashboardPage() {
           <SkillRadarCard
             ratings={avgSkillRatings(user.id, 5)}
             stats={winRate !== null ? { winRate, matches: matchesOnly.length } : null}
+            onCta={matchesOnly.length > 0 ? () => window.location.assign(`/history/${matchesOnly[0].id}`) : null}
+            ctaLabel={matchesOnly.length > 0 ? 'Rate your latest match' : 'Play a match first'}
           />
           <DigestPreviewCard matches={matches} streak={streak} />
         </div>

@@ -15,9 +15,9 @@ export function MacroDonut({ totals, goal }) {
   const totalMacroKcal = carbsKcal + proteinKcal + fatsKcal;
 
   const data = [
-    { name: 'Carbs', value: carbsKcal, grams: totals?.carbsG || 0, color: 'hsl(var(--color-primary))' },
-    { name: 'Protein', value: proteinKcal, grams: totals?.proteinG || 0, color: 'hsl(var(--color-chart-3))' },
-    { name: 'Fats', value: fatsKcal, grams: totals?.fatsG || 0, color: 'hsl(var(--color-chart-4))' },
+    { name: 'Carbs', value: carbsKcal, grams: totals?.carbsG || 0, color: 'var(--color-primary)' },
+    { name: 'Protein', value: proteinKcal, grams: totals?.proteinG || 0, color: 'var(--color-chart-3)' },
+    { name: 'Fats', value: fatsKcal, grams: totals?.fatsG || 0, color: 'var(--color-chart-4)' },
   ].filter(d => d.value > 0);
 
   const empty = data.length === 0;
