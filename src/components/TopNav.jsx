@@ -1,46 +1,35 @@
 import { useState } from 'react';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import SideDrawer from './SideDrawer';
 import NotificationsBell from './NotificationsBell';
 
-export default function TopNav({ variant = 'default' }) {
+// Shared top bar for pages rendered outside AppShell (Track, Match Detail,
+// Video Analysis) — kept visually identical to AppShell's own header so the
+// app doesn't shift design language when navigating into these full-screen
+// flows. Opens the same SideDrawer as everywhere else.
+export default function TopNav() {
   const { user, logout } = useAuth();
-  const { theme, setTheme, THEMES } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const isTracker = variant === 'tracker';
 
   return (
     <>
-      <div className={isTracker
-        ? 'flex h-14 flex-shrink-0 items-center justify-between border-b border-tt-border bg-tt-background px-4'
-        : 'top-nav'
-      }>
+      <div className="flex h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4">
         <button
-          className={isTracker
-            ? 'cursor-pointer rounded-tt border border-transparent bg-transparent p-1.5 text-lg text-tt-foreground hover:border-tt-border'
-            : 'hamburger-btn'
-          }
+          className="flex items-center justify-center w-9 h-9 rounded-sm bg-transparent hover:bg-secondary"
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
         >
-          ☰
+          <Menu className="w-5 h-5" />
         </button>
-        <span className={isTracker
-          ? 'font-tt-display text-sm font-bold uppercase tracking-wider text-tt-brand'
-          : 'top-nav-brand'
-        }>
-          Tennis Tracker
+        <span className="font-display font-extrabold text-sm tracking-tighter text-foreground">
+          TENNIS TRACKER
         </span>
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <NotificationsBell />
             <div
-              className={isTracker
-                ? 'flex h-8 w-8 items-center justify-center rounded-full border border-tt-border bg-tt-surface font-tt-mono text-xs font-bold text-tt-brand'
-                : 'top-nav-avatar'
-              }
+              className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center text-xs font-bold"
               title={user.name}
             >
               {user.name.charAt(0).toUpperCase()}
@@ -53,9 +42,6 @@ export default function TopNav({ variant = 'default' }) {
         onClose={() => setDrawerOpen(false)}
         user={user}
         logout={logout}
-        theme={theme}
-        setTheme={setTheme}
-        THEMES={THEMES}
       />
     </>
   );

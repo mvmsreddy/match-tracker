@@ -8,9 +8,16 @@
 @import "tailwindcss/utilities" layer(utilities);
 
 @theme {
-  --font-tt-display: 'Oswald', sans-serif;
-  --font-tt-mono: 'JetBrains Mono', monospace;
-  --font-tt-body: 'Inter', sans-serif;
+  /* Matched to the app-wide --font-display/--font-body choices (see
+     src/styles/app-tailwind.css) — both families are already loaded globally
+     via that file's @import, so referencing them here needs no extra fetch.
+     --font-tt-mono keeps its own token (still referenced across the tracker
+     component tree) but now resolves to the same body font instead of an
+     actual monospace face, so labels/buttons/tabs read like the rest of the
+     app instead of a separate "terminal" look. */
+  --font-tt-display: 'Manrope', system-ui, sans-serif;
+  --font-tt-mono: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-tt-body: 'IBM Plex Sans', system-ui, sans-serif;
 
   --radius-tt: 0.25rem;
 

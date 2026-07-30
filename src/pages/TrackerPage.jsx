@@ -130,7 +130,7 @@ export default function TrackerPage() {
 
   return (
     <div className="tracker-shell flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
-      {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav variant="tracker" />}
+      {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav />}
 
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
@@ -395,7 +395,7 @@ function SetupForm({ t, onStart }) {
       <CardContent className="space-y-6 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-tt-display text-2xl font-bold uppercase tracking-tight text-tt-foreground">Match Tracker Pro</h1>
+            <h1 className="font-tt-display text-2xl font-extrabold tracking-tighter text-tt-foreground">Match Tracker Pro</h1>
             <p className="mt-1 text-xs text-tt-muted-foreground">Enter details below to begin tracking</p>
           </div>
           <Button

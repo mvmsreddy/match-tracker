@@ -1,7 +1,17 @@
 import { NavLink } from 'react-router-dom';
+import { LogOut, X } from 'lucide-react';
 import { downloadAppGuide } from '../lib/appGuidePdf';
 
-export default function SideDrawer({ open, onClose, user, logout, theme, setTheme, THEMES }) {
+function linkClass({ isActive }) {
+  return `flex items-center px-3 py-2.5 rounded-sm text-sm font-semibold ${
+    isActive ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+  }`;
+}
+
+// Same drawer chrome as AppShell's consolidated hamburger menu, reused by
+// TopNav (Track / Match Detail / Video Analysis) so every hamburger in the
+// app opens something that looks the same.
+export default function SideDrawer({ open, onClose, user, logout }) {
   const role = user?.role || 'player';
 
   function handleLogout() {
@@ -9,91 +19,73 @@ export default function SideDrawer({ open, onClose, user, logout, theme, setThem
     logout();
   }
 
+  if (!open) return null;
+
   return (
     <>
-      <div className={`drawer-overlay${open ? ' visible' : ''}`} onClick={onClose} />
-      <div className={`side-drawer${open ? ' open' : ''}`}>
-        <div className="drawer-header">
-          <span className="drawer-title">Tennis Tracker</span>
-          <button className="drawer-close" onClick={onClose}>✕</button>
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border p-4 overflow-y-auto flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <span className="font-display font-extrabold text-lg tracking-tighter">Menu</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <nav className="drawer-nav">
-          <NavLink to="/" end className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-            Dashboard
-          </NavLink>
+        <nav className="space-y-1" onClick={onClose}>
+          <NavLink to="/" end className={linkClass}>Dashboard</NavLink>
 
-          {/* Player + Coach: personal match tracker */}
           {(role === 'player' || role === 'coach') && (
-            <NavLink to="/track" className={({ isActive }) => 'drawer-link drawer-link-cta' + (isActive ? ' active' : '')} onClick={onClose}>
+            <NavLink to="/track" className="flex items-center px-3 py-2.5 rounded-sm text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90">
               + Track Match
             </NavLink>
           )}
 
-          {/* Match History + Compare moved into the multi-segment dashboard's
-              "My Matches" tab (/player-dashboard?tab=matches) instead of
-              living here as separate menu entries. */}
-
-          {/* Coach: my players */}
           {role === 'coach' && (
-            <NavLink to="/my-players" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-              My Players
-            </NavLink>
+            <NavLink to="/my-players" className={linkClass}>My Players</NavLink>
           )}
 
-          {/* Player: my coaches */}
           {role === 'player' && (
-            <NavLink to="/my-coaches" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-              My Coaches
-            </NavLink>
+            <NavLink to="/my-coaches" className={linkClass}>My Coaches</NavLink>
           )}
 
-          {/* All roles: tournaments */}
-          <NavLink to="/tournaments" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-            Tournaments
-          </NavLink>
+          <NavLink to="/tournaments" className={linkClass}>Tournaments</NavLink>
+          <NavLink to="/aita-calendar" className={linkClass}>AITA Calendar</NavLink>
 
-          {/* All roles: AITA calendar mirror */}
-          <NavLink to="/aita-calendar" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-            AITA Calendar
-          </NavLink>
-
-          {/* Coach + organizer: AITA rankings mirror — players see their own
-              rank on their dashboard instead of a separate rankings browser */}
           {role !== 'player' && (
-            <NavLink to="/aita-rankings" className={({ isActive }) => 'drawer-link' + (isActive ? ' active' : '')} onClick={onClose}>
-              AITA Rankings
-            </NavLink>
+            <NavLink to="/aita-rankings" className={linkClass}>AITA Rankings</NavLink>
           )}
         </nav>
 
-        <div className="drawer-divider" />
+        <div className="h-px bg-border my-3" />
 
-        <button className="guide-btn drawer-guide-btn" onClick={downloadAppGuide}>
+        <button
+          onClick={downloadAppGuide}
+          className="w-full text-left px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
           Download Guide PDF ↓
         </button>
 
         {user && (
-          <div className="drawer-user">
-            <div className="drawer-user-name">{user.displayName || user.name}</div>
-            <div className="drawer-user-email">{user.email}</div>
-            <NavLink
-              to="/profile"
-              className="drawer-link"
-              style={{ fontSize: '0.68rem', padding: '4px 0', marginBottom: 6 }}
-              onClick={onClose}
-            >
+          <div className="mt-auto pt-4 border-t border-border">
+            <div className="text-sm font-bold truncate">{user.displayName || user.name}</div>
+            <div className="text-xs text-muted-foreground truncate mb-2">{user.email}</div>
+            <NavLink to="/profile" onClick={onClose} className="block text-xs font-semibold text-primary hover:underline mb-3">
               Edit Profile →
             </NavLink>
             {user.role && (
-              <div className={`drawer-role-badge role-badge-${user.role}`}>
-                {user.role === 'player' ? 'Player'
-                  : user.role === 'coach' ? 'Coach'
-                  : 'Organizer'}
+              <div className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide rounded-sm px-1.5 py-0.5 bg-secondary text-muted-foreground mb-3">
+                {user.role === 'player' ? 'Player' : user.role === 'coach' ? 'Coach' : 'Organizer'}
                 {user.isVerified && ' ✓'}
               </div>
             )}
-            <button className="drawer-logout-btn" onClick={handleLogout}>Log out</button>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-semibold bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4" strokeWidth={2.5} />
+              Log out
+            </button>
           </div>
         )}
       </div>
