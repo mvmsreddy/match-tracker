@@ -166,24 +166,17 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 ### Testing
 - iteration_10.json: 10/10 backend pytest, ~90% frontend (all 17 features render + function), 1 HIGH styling defect + 3 MEDIUM + 1 LOW — all resolved.
 
-## Deferred (needs external input)
-- **Resend integration goes live** — user needs to provide RESEND_API_KEY + SENDER_EMAIL (verified domain). Set them in `/app/backend/.env` and restart `sudo supervisorctl restart backend`. Everything else is already wired.
-- **Weekly cron for real Monday sends** — currently only manual triggering. Would need a supervisor-scheduled Python job hitting the digest endpoint for all opted-in users.
-- **Emergent-Auth / Real Supabase project** — currently every user is mock+localStorage. Data doesn't persist across devices.
+## 📋 Roadmap
+See **`/app/memory/ROADMAP.md`** for the full prioritised backlog (56+ items across P0–P6, from unblock-with-a-key items to distant wishlist ideas). This section used to duplicate that list — now it's the single source of truth.
 
-## Deferred from PRD v2.0 (needs separate decisions)
-- Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance
-- Device integrations (Pocket Radar, Babolat, HR wearables) — blocked on vendor API keys
-- Live Match Advisor (real-time AI) — blocked on LLM integration decision
-- Formal RBAC (§17 Phase 0) — current single-role + `links` model still functional
-- Weekly Digest Emails — user picked option (c) → shipped as in-app Digest Preview card instead
-
-## Next Action Items
-- Testing agent verification of iteration 5
-- Address any P1/P2 bugs found by testing agent
-- If clean → consider Phase 2 (Fitness/Dietitian dashboards) once user confirms permission-matrix decisions
+**Immediate P0 (unblock with credentials):**
+- Activate Resend Weekly Digest — needs `RESEND_API_KEY` + `SENDER_EMAIL`
+- Real Supabase backend — needs Supabase project
+- Emergent-Auth / Google OAuth — follow playbook
 
 ## Environment
 - Frontend: `npm run dev` on port 3000 (supervised)
+- Backend: FastAPI on port 8001 (supervised)
 - Preview URL: https://0e360100-eae9-4867-811b-c1ce9b3f6a38.preview.emergentagent.com
 - Test credentials in `/app/memory/test_credentials.md`
+- Full roadmap in `/app/memory/ROADMAP.md`
