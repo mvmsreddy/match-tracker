@@ -34,6 +34,12 @@ export const getCoachLinks = hasSupabaseConfig ? supabaseApi.getCoachLinks : asy
 export const respondToCoachRequest = hasSupabaseConfig ? supabaseApi.respondToCoachRequest : async () => {};
 export const deleteCoachLink = hasSupabaseConfig ? supabaseApi.deleteCoachLink : async () => {};
 
+// Phase 33 — Parent ↔ Player Links
+export const sendParentRequest = hasSupabaseConfig ? supabaseApi.sendParentRequest : async () => {};
+export const getParentLinks = hasSupabaseConfig ? supabaseApi.getParentLinks : async () => [];
+export const respondToParentRequest = hasSupabaseConfig ? supabaseApi.respondToParentRequest : async () => {};
+export const deleteParentLink = hasSupabaseConfig ? supabaseApi.deleteParentLink : async () => {};
+
 // Tournament module — Supabase only (no mock fallback needed)
 const noSupabase = () => { throw new Error('Requires Supabase'); };
 

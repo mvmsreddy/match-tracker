@@ -34,7 +34,7 @@ function syncedAgo(iso) {
 // Topbar + in-page tab strip for the Player Coaching Dashboard. Nav chrome
 // (sidebar/bottom-nav) is supplied by AppShell — this only owns the
 // identity/segment/goal header and the 8-section pill submenu.
-export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, circuits, selectedKey, onSelectKey, viewPlayerId, isOwnDashboard = true, viewPlayerName, children }) {
+export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, circuits, selectedKey, onSelectKey, viewPlayerId, isOwnDashboard = true, viewPlayerName, viewerRole, children }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeGoal, setActiveGoal] = useState(null);
@@ -81,7 +81,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
           <div className="min-w-0">
             <div className="text-base font-bold flex items-center gap-2 flex-wrap">
               {isOwnDashboard ? (user?.displayName || 'Player') : (viewPlayerName || 'Player')}
-              {!isOwnDashboard && <Badge variant="secondary">Coach view</Badge>}
+              {!isOwnDashboard && <Badge variant="secondary">{viewerRole === 'parent' ? 'Parent view' : 'Coach view'}</Badge>}
             </div>
             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
               {circuit && <span>Ranked <span className="font-bold text-foreground">{circuit.latest.rank}</span></span>}

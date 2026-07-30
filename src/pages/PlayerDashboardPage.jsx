@@ -31,7 +31,7 @@ import ProgressTab from '../components/player/ProgressTab';
 // "DASHBOARD →" link (route /coach/players/:playerId/dashboard) — the exact
 // same tabs/data a player sees for themselves, scoped to a linked player
 // instead. `playerId` is only present on that route.
-function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) {
+function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, viewerRole }) {
   const { user } = useAuth();
   const { circuits, loading, error, selectedKey, setSelectedKey, selectedCircuit } = useSegment();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,6 +64,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) 
       viewPlayerId={viewPlayerId}
       isOwnDashboard={isOwnDashboard}
       viewPlayerName={viewPlayerName}
+      viewerRole={viewerRole}
     >
       {isOwnDashboard && error && <div className="history-empty">{error}</div>}
       {loading && <div className="history-empty">Loading segments…</div>}
@@ -93,42 +94,55 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName }) 
 }
 
 export default function PlayerDashboardPage() {
-  const { playerId } = useParams(); // only present on /coach/players/:playerId/dashboard
+  const { playerId } = useParams(); // only present on /coach/players/:playerId/dashboard and /parent/players/:playerId/dashboard
   const { user } = useAuth();
 
   if (!playerId) {
     return <PlayerDashboardInner viewPlayerId={user.id} isOwnDashboard viewPlayerName={user.displayName} />;
   }
 
-  return <CoachViewedPlayerDashboard coachId={user.id} playerId={playerId} />;
+  return <LinkedPlayerDashboard viewerId={user.id} viewerRole={user.role} playerId={playerId} />;
 }
 
-// Resolves the viewed player's aitaReg via the coach's own active links
-// (no extra table needed — getCoachLinks already joins the player profile),
-// confirms the coach is actually linked+active to this player, then mounts
-// a SECOND, nested SegmentProvider scoped to that player's ranking history
-// instead of the app-wide one (which always reads the logged-in user).
-function CoachViewedPlayerDashboard({ coachId, playerId }) {
+// Resolves the viewed player's aitaReg via the viewer's own active links
+// (no extra table needed — getCoachLinks/getParentLinks already join the
+// player profile), confirms the viewer is actually linked+active to this
+// player (via coach_player_links for a coach, parent_player_links for a
+// parent — see Phase 33), then mounts a SECOND, nested SegmentProvider
+// scoped to that player's ranking history instead of the app-wide one
+// (which always reads the logged-in user).
+function LinkedPlayerDashboard({ viewerId, viewerRole, playerId }) {
   const [state, setState] = useState({ loading: true, player: null });
+  const isParentViewer = viewerRole === 'parent';
 
   useEffect(() => {
     let cancelled = false;
-    api.getCoachLinks(coachId)
+    const fetchLinks = isParentViewer ? api.getParentLinks : api.getCoachLinks;
+    fetchLinks(viewerId)
       .then(links => {
         if (cancelled) return;
-        const link = (links || []).find(l => l.status === 'active' && l.coachId === coachId && l.playerId === playerId);
+        const link = (links || []).find(l => {
+          if (l.status !== 'active' || l.playerId !== playerId) return false;
+          return isParentViewer ? l.parentId === viewerId : l.coachId === viewerId;
+        });
         setState({ loading: false, player: link?.player || null });
       })
       .catch(() => { if (!cancelled) setState({ loading: false, player: null }); });
     return () => { cancelled = true; };
-  }, [coachId, playerId]);
+  }, [viewerId, isParentViewer, playerId]);
 
   if (state.loading) return <div className="px-4 lg:px-8 py-6 text-sm text-muted-foreground">Loading player…</div>;
-  if (!state.player) return <div className="px-4 lg:px-8 py-6 text-sm text-muted-foreground">This player isn't linked to your coaching profile.</div>;
+  if (!state.player) {
+    return (
+      <div className="px-4 lg:px-8 py-6 text-sm text-muted-foreground">
+        {isParentViewer ? "This player isn't linked to your parent profile." : "This player isn't linked to your coaching profile."}
+      </div>
+    );
+  }
 
   return (
     <SegmentProvider overrideAitaReg={state.player.aitaReg}>
-      <PlayerDashboardInner viewPlayerId={playerId} isOwnDashboard={false} viewPlayerName={state.player.displayName} />
+      <PlayerDashboardInner viewPlayerId={playerId} isOwnDashboard={false} viewPlayerName={state.player.displayName} viewerRole={viewerRole} />
     </SegmentProvider>
   );
 }

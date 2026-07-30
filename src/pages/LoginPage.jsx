@@ -9,6 +9,7 @@ import { Input } from '@/components/primitives/input';
 const ROLES = [
   { id: 'player', label: 'Player', desc: 'I compete in tournaments' },
   { id: 'coach', label: 'Coach', desc: 'I train players' },
+  { id: 'parent', label: 'Parent', desc: 'My child competes' },
   { id: 'organizer', label: 'Organizer', desc: 'I host tournaments' },
 ];
 
@@ -151,7 +152,7 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">I am a</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {ROLES.map((r) => (
                       <button
                         key={r.id}

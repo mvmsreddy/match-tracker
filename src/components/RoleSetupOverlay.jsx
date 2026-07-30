@@ -16,6 +16,12 @@ const ROLES = [
     detail: 'Access: Player stats · Tournament watch · Match tracker',
   },
   {
+    id: 'parent',
+    label: 'Parent',
+    desc: 'My child competes and I want a read-only view of their progress and schedule.',
+    detail: 'Access: Linked player overview · Match & tournament history (read-only)',
+  },
+  {
     id: 'organizer',
     label: 'Tournament Organizer',
     desc: 'I host AITA events and need to manage draws, scores, and order of play.',

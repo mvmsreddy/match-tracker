@@ -22,6 +22,7 @@ const STATES = [
 const ROLE_LABELS = {
   player:    'Player',
   coach:     'Coach',
+  parent:    'Parent',
   organizer: 'Tournament Organizer',
 };
 
@@ -280,8 +281,8 @@ export default function ProfilePage() {
               </Field>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Role</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {['player', 'coach', 'organizer'].map(r => (
+                <div className="grid grid-cols-2 gap-2">
+                  {['player', 'coach', 'parent', 'organizer'].map(r => (
                     <button
                       key={r}
                       type="button"

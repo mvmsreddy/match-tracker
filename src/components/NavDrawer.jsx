@@ -21,6 +21,8 @@ function getNavItems(role) {
   const rankings = { id: 'rankings', label: 'AITA Rankings', to: '/aita-rankings', icon: Medal };
   const myPlayers = { id: 'my-players', label: 'My Players', to: '/my-players', icon: Users };
   const myCoaches = { id: 'my-coaches', label: 'My Coaches', to: '/my-coaches', icon: Users };
+  const myParentPlayers = { id: 'my-parent-players', label: 'My Players', to: '/my-parents', icon: Users };
+  const myParents = { id: 'my-parents', label: 'My Parents', to: '/my-parents', icon: Users };
 
   if (role === 'organizer') {
     return [dashboard, tournaments, calendar, rankings, profile];
@@ -28,7 +30,10 @@ function getNavItems(role) {
   if (role === 'coach') {
     return [dashboard, track, videoAnalysis, myPlayers, compare, tournaments, calendar, rankings, profile];
   }
-  return [dashboard, track, videoAnalysis, performance, tournaments, compare, myCoaches, calendar, profile];
+  if (role === 'parent') {
+    return [dashboard, myParentPlayers, tournaments, calendar, profile];
+  }
+  return [dashboard, track, videoAnalysis, performance, tournaments, compare, myCoaches, myParents, calendar, profile];
 }
 
 function NavItem({ item, className }) {

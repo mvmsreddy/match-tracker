@@ -1619,6 +1619,69 @@ export async function deleteCoachLink(linkId) {
   return { ok: true };
 }
 
+// ---------------------------------------------------------------------------
+// Parent ↔ Player Links (Phase 33) — same shape/flow as Coach ↔ Player Links
+// above, against the separate parent_player_links table.
+// ---------------------------------------------------------------------------
+
+function rowToParentLink(row) {
+  return {
+    id: row.id,
+    parentId: row.parent_id,
+    playerId: row.player_id,
+    status: row.status,
+    createdAt: row.created_at,
+    // joined profile data
+    parent: row.parent ? rowToProfile(row.parent) : null,
+    player: row.player ? rowToProfile(row.player) : null,
+  };
+}
+
+export async function sendParentRequest(parentId, playerId) {
+  const { data, error } = await supabase
+    .from('parent_player_links')
+    .insert({ parent_id: parentId, player_id: playerId, status: 'pending' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToParentLink(data);
+}
+
+export async function getParentLinks(userId) {
+  // Returns all links where user is either parent or player, with the other party's profile
+  const { data, error } = await supabase
+    .from('parent_player_links')
+    .select(`
+      id, parent_id, player_id, status, created_at,
+      parent:user_profiles!parent_player_links_parent_id_fkey(id, display_name, aita_reg, state_abbr, ranking, club_name, role),
+      player:user_profiles!parent_player_links_player_id_fkey(id, display_name, aita_reg, state_abbr, ranking, club_name, role)
+    `)
+    .or(`parent_id.eq.${userId},player_id.eq.${userId}`)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToParentLink);
+}
+
+export async function respondToParentRequest(linkId, status) {
+  const { data, error } = await supabase
+    .from('parent_player_links')
+    .update({ status })
+    .eq('id', linkId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToParentLink(data);
+}
+
+export async function deleteParentLink(linkId) {
+  const { error } = await supabase
+    .from('parent_player_links')
+    .delete()
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
 export async function advanceWinner(eventId, drawType, currentRound, currentSlot, winnerEntryId) {
   const nextRound = currentRound + 1;
   const nextSlot = Math.ceil(currentSlot / 2);
