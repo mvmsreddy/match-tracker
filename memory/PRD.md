@@ -56,8 +56,13 @@ All existing features (match tracker, PDF export, tournaments, rankings, calenda
 - Semantic testids on every interactive element
 
 ## Testing Status
-- Iteration 5 verified with screenshots + interaction tests (water tracker end-to-end, drill save, nav drawer, compare page, dashboard quick-adds).
-- **Testing agent run: pending** — being called next per system reminder.
+- **Iteration 4** — 12/13 pass. Found 1 MEDIUM CSS bug: `hsl(var(--color-X))` was invalid on all 4 new components + preexisting player-tab charts.
+- **Iteration 5** — 8/8 pass on the CSS-fix re-verification. All colors now render correctly (verified computed styles + visual screenshots).
+- **Post-iteration-5 polish** applied by main agent:
+  - Fixed remaining `hsl(var(...))` in `/app/src/index.css` (focus outline + table hover)
+  - Backed nutrition logs with `/app/src/api/nutritionMock.js` (localStorage), so MacroDonut populates end-to-end in demo mode
+  - Fixed UTC→local timezone in `todayIso()` in NutritionPage so today's meals are recognized regardless of server time
+  - Verified: 3 pie cells render with `var(--color-primary)`, `var(--color-chart-3)`, `var(--color-chart-4)` fills when meals exist
 
 ## Deferred from PRD v2.0 (needs separate decisions)
 - Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance

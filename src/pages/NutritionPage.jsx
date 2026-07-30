@@ -18,7 +18,11 @@ const MEAL_TYPES = [
 ];
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  // Use LOCAL date so "today" matches what the user sees, not UTC.
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 10);
 }
 
 function Field({ label, children }) {
@@ -193,19 +197,20 @@ export default function NutritionPage() {
         )}
       </Card>
 
-      <Button size="sm" onClick={() => setCreating(v => !v)}>{creating ? 'Cancel' : '+ Log a meal'}</Button>
+      <Button size="sm" onClick={() => setCreating(v => !v)} data-testid="log-meal-toggle">{creating ? 'Cancel' : '+ Log a meal'}</Button>
 
       {creating && (
-        <Card className="p-4 sm:p-6">
+        <Card className="p-4 sm:p-6" data-testid="log-meal-form">
           <div className="flex flex-wrap gap-3">
             <Field label="Date">
-              <Input type="date" value={form.logDate} onChange={e => setForm(f => ({ ...f, logDate: e.target.value }))} className="w-40" />
+              <Input type="date" value={form.logDate} onChange={e => setForm(f => ({ ...f, logDate: e.target.value }))} className="w-40" data-testid="meal-date" />
             </Field>
             <Field label="Meal">
               <select
                 className="rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9"
                 value={form.mealType}
                 onChange={e => setForm(f => ({ ...f, mealType: e.target.value }))}
+                data-testid="meal-type"
               >
                 {MEAL_TYPES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
@@ -213,22 +218,22 @@ export default function NutritionPage() {
           </div>
           <div className="mt-3">
             <Field label="Food items">
-              <Input value={form.foodItems} onChange={e => setForm(f => ({ ...f, foodItems: e.target.value }))} placeholder="e.g. Oatmeal, banana, eggs" />
+              <Input value={form.foodItems} onChange={e => setForm(f => ({ ...f, foodItems: e.target.value }))} placeholder="e.g. Oatmeal, banana, eggs" data-testid="meal-food-items" />
             </Field>
           </div>
           <div className="flex flex-wrap gap-3 mt-3">
-            <Field label="Calories"><Input type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="w-24" /></Field>
-            <Field label="Protein (g)"><Input type="number" value={form.proteinG} onChange={e => setForm(f => ({ ...f, proteinG: e.target.value }))} className="w-24" /></Field>
-            <Field label="Carbs (g)"><Input type="number" value={form.carbsG} onChange={e => setForm(f => ({ ...f, carbsG: e.target.value }))} className="w-24" /></Field>
-            <Field label="Fats (g)"><Input type="number" value={form.fatsG} onChange={e => setForm(f => ({ ...f, fatsG: e.target.value }))} className="w-24" /></Field>
-            <Field label="Hydration (ml)"><Input type="number" value={form.hydrationMl} onChange={e => setForm(f => ({ ...f, hydrationMl: e.target.value }))} className="w-28" /></Field>
+            <Field label="Calories"><Input type="number" value={form.calories} onChange={e => setForm(f => ({ ...f, calories: e.target.value }))} className="w-24" data-testid="meal-calories" /></Field>
+            <Field label="Protein (g)"><Input type="number" value={form.proteinG} onChange={e => setForm(f => ({ ...f, proteinG: e.target.value }))} className="w-24" data-testid="meal-protein" /></Field>
+            <Field label="Carbs (g)"><Input type="number" value={form.carbsG} onChange={e => setForm(f => ({ ...f, carbsG: e.target.value }))} className="w-24" data-testid="meal-carbs" /></Field>
+            <Field label="Fats (g)"><Input type="number" value={form.fatsG} onChange={e => setForm(f => ({ ...f, fatsG: e.target.value }))} className="w-24" data-testid="meal-fats" /></Field>
+            <Field label="Hydration (ml)"><Input type="number" value={form.hydrationMl} onChange={e => setForm(f => ({ ...f, hydrationMl: e.target.value }))} className="w-28" data-testid="meal-hydration" /></Field>
           </div>
           <div className="mt-3">
             <Field label="Notes">
-              <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} data-testid="meal-notes" />
             </Field>
           </div>
-          <Button className="mt-4" disabled={saving} onClick={handleCreate}>{saving ? 'Saving…' : 'Save meal'}</Button>
+          <Button className="mt-4" disabled={saving} onClick={handleCreate} data-testid="save-meal-btn">{saving ? 'Saving…' : 'Save meal'}</Button>
         </Card>
       )}
 

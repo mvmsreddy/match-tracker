@@ -159,7 +159,7 @@ button, a, [role="button"], .card {
 
 /* Better focus states for accessibility */
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
-  outline: 2px solid hsl(var(--color-primary));
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -171,7 +171,7 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 /* Better table row hover on mobile */
 @media (hover: hover) {
   tbody tr:hover {
-    background-color: hsl(var(--color-muted) / 0.5);
+    background-color: color-mix(in srgb, var(--color-muted) 50%, transparent);
   }
 }
 

@@ -1,5 +1,6 @@
 import * as mockApi from './mockApi';
 import * as supabaseApi from './supabaseApi';
+import * as nutritionMock from './nutritionMock';
 
 const hasSupabaseConfig = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
@@ -55,9 +56,9 @@ export const updateNutritionGoals = hasSupabaseConfig ? supabaseApi.updateNutrit
 
 // Phase 41 — reminder / weekly digest preferences
 export const updateReminderPrefs = hasSupabaseConfig ? supabaseApi.updateReminderPrefs : async () => {};
-export const getNutritionLogs = hasSupabaseConfig ? supabaseApi.getNutritionLogs : async () => [];
-export const createNutritionLog = hasSupabaseConfig ? supabaseApi.createNutritionLog : async () => {};
-export const deleteNutritionLog = hasSupabaseConfig ? supabaseApi.deleteNutritionLog : async () => {};
+export const getNutritionLogs = hasSupabaseConfig ? supabaseApi.getNutritionLogs : nutritionMock.getNutritionLogs;
+export const createNutritionLog = hasSupabaseConfig ? supabaseApi.createNutritionLog : nutritionMock.createNutritionLog;
+export const deleteNutritionLog = hasSupabaseConfig ? supabaseApi.deleteNutritionLog : nutritionMock.deleteNutritionLog;
 export const searchPlayers = hasSupabaseConfig ? supabaseApi.searchPlayers : async () => [];
 export const sendCoachRequest = hasSupabaseConfig ? supabaseApi.sendCoachRequest : async () => {};
 export const getCoachLinks = hasSupabaseConfig ? supabaseApi.getCoachLinks : async () => [];
