@@ -46,9 +46,9 @@ export const getMyThreads = hasSupabaseConfig ? supabaseApi.getMyThreads : async
 export const getThreadMessages = hasSupabaseConfig ? supabaseApi.getThreadMessages : async () => ({ threadId: null, messages: [] });
 export const sendMessage = hasSupabaseConfig ? supabaseApi.sendMessage : async () => {};
 
-// Profile module — Supabase only
-export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async () => null;
-export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async () => {};
+// Profile module
+export const getProfile = impl.getProfile;
+export const upsertProfile = impl.upsertProfile;
 
 // Phase 36 — Nutrition
 export const updateNutritionGoals = hasSupabaseConfig ? supabaseApi.updateNutritionGoals : async () => {};

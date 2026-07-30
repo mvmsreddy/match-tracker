@@ -17,6 +17,7 @@ const DELAY_MS = 500;
 const USERS_KEY = 'mtp_mock_users_v1';
 const SESSION_KEY = 'mtp_mock_session_v1';
 const MATCHES_KEY = 'mtp_mock_matches_v1';
+const PROFILES_KEY = 'mtp_mock_profiles_v1';
 
 const DEMO_USERS = [
   { id: 'u_coach', name: 'Coach Ramesh', email: 'coach@matchtracker.app', password: 'coach123', role: 'coach' },
@@ -47,6 +48,18 @@ function writeJSON(key, value) {
 function ensureUsersSeeded() {
   const existing = readJSON(USERS_KEY, null);
   if (!existing) writeJSON(USERS_KEY, DEMO_USERS);
+
+  // Demo accounts have a fixed role and skip the RoleSetupOverlay entirely —
+  // they should never be asked to (re-)pick a role like a fresh signup would.
+  const profiles = readJSON(PROFILES_KEY, {});
+  let changed = false;
+  for (const u of DEMO_USERS) {
+    if (!profiles[u.id]) {
+      profiles[u.id] = { id: u.id, role: u.role, roleConfirmed: true, displayName: u.name };
+      changed = true;
+    }
+  }
+  if (changed) writeJSON(PROFILES_KEY, profiles);
 }
 
 function makeToken(user) {
@@ -65,7 +78,7 @@ function decodeToken(token) {
 // Auth
 // ---------------------------------------------------------------------------
 
-export async function signup(email, password, name) {
+export async function signup(email, password, name, role = 'player') {
   ensureUsersSeeded();
   await delay();
   const users = readJSON(USERS_KEY, DEMO_USERS);
@@ -80,10 +93,18 @@ export async function signup(email, password, name) {
     name: name || email.split('@')[0],
     email: String(email).trim().toLowerCase(),
     password,
-    role: 'user',
+    role: role || 'player',
   };
   users.push(newUser);
   writeJSON(USERS_KEY, users);
+
+  // The signup form already collects a role — confirm it immediately so the
+  // RoleSetupOverlay (meant for Google OAuth, which has no role picker) isn't
+  // shown redundantly right after.
+  const profiles = readJSON(PROFILES_KEY, {});
+  profiles[newUser.id] = { id: newUser.id, role: newUser.role, roleConfirmed: true, displayName: newUser.name };
+  writeJSON(PROFILES_KEY, profiles);
+
   const token = makeToken(newUser);
   writeJSON(SESSION_KEY, { token, userId: newUser.id });
   return { token, user: publicUser(newUser) };
@@ -168,6 +189,25 @@ export async function deleteMatch(userId, matchId) {
   const matches = allMatches().filter((m) => !(m.id === matchId && m.userId === userId));
   writeJSON(MATCHES_KEY, matches);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// User Profiles
+// ---------------------------------------------------------------------------
+
+export async function getProfile(userId) {
+  await delay(150);
+  const profiles = readJSON(PROFILES_KEY, {});
+  return profiles[userId] || null;
+}
+
+export async function upsertProfile(userId, profile) {
+  await delay(150);
+  const profiles = readJSON(PROFILES_KEY, {});
+  const merged = { ...profiles[userId], ...profile, id: userId, roleConfirmed: true };
+  profiles[userId] = merged;
+  writeJSON(PROFILES_KEY, profiles);
+  return merged;
 }
 
 export const DEMO_CREDENTIALS = DEMO_USERS.map((u) => ({ email: u.email, password: u.password, role: u.role }));
