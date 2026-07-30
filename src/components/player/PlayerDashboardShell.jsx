@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { computeGoalPace, computeRankProgress } from '../../lib/segments';
+import { getInitials as initials } from '../../lib/initials';
 import { Badge } from '@/components/primitives/badge';
 import { Button } from '@/components/primitives/button';
 
@@ -16,12 +17,6 @@ const TABS = [
   { id: 'recommendations', label: 'Recommendations' },
   { id: 'progress', label: 'Progress Tracker' },
 ];
-
-function initials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  return parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : parts[0].slice(0, 2).toUpperCase();
-}
 
 function syncedAgo(iso) {
   if (!iso) return null;

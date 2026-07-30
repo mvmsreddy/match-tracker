@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { downloadAppGuide } from '@/lib/appGuidePdf';
 import {
@@ -57,6 +58,13 @@ function NavItem({ item, className }) {
 
 export default function NavDrawer({ open, onClose, role, theme, toggle, logout }) {
   const items = getNavItems(role || 'player');
+
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 

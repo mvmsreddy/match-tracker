@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only targeted verification of iteration-4 fixes (initials sanitization + NavDrawer Escape-to-close) plus iteration-2 regression spot-checks. All requested checks PASSED. Parent avatar renders 'MP' (bg rgb(51,112,255)); no 'M(' text anywhere on /player-dashboard for the parent account. Shared /app/src/lib/initials.js exists and exports Unicode-safe getInitials; PlayerDashboardShell.jsx imports it as `import { getInitials as initials } from '../../lib/initials'`. Coach: nav drawer opens via menu-toggle-btn and closes on Escape (verified on both 1920x1080 and 390x844). Header menu icon color rgb(255,255,255), borderWidth 0px; coach avatar 'CR'. Notifications dropdown fits 390px viewport (x=8, width=374 -> right edge 382), closes on outside click, and menu-toggle-btn remains clickable afterwards; user menu dropdown also closes on outside click. Zero JS console errors across /, /profile, /history, /aita-rankings on both coach and parent (only Cloudflare 429 rate-limit resource errors triggered by rapid automated navigation, not app errors). /app/memory/test_credentials.md exists with correct demo credentials.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/aita-rankings (coach)", "issues": ["Renders empty state 'No ranking categories loaded yet.' with no loading/retry affordance — likely mock-data limitation, cosmetic only"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional cleanup: AppShell.jsx (lines 16-24) still duplicates the initials regex inline instead of using the new shared getInitials() util — refactor to import from lib/initials for DRY."
+  ],
+  "critical_code_review_comments": [
+    "DRY: initials computation exists in 3 places (lib/initials.js, AppShell.jsx inline, ProfilePage.jsx). Consolidate on lib/initials.js.",
+    "NavDrawer Escape listener is correctly cleaned up in useEffect and gated on `open` — no leak.",
+    "Notifications bell testid is 'notifications-bell' (not 'notifications-btn'); keep testid naming consistent for future test scripts."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "100% (all 6 requested checks passed)"},
+  "seed_data_creation": "None — demo accounts auto-seeded by app on /login",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "coach@matchtracker.app / coach123, parent@matchtracker.app / parent123 (documented in /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "App is a Vite React SPA served at the preview URL root (no /api backend; localStorage mock). Preview URL is behind Cloudflare — rapid page.goto loops trigger 429 / 'Verify you are human' interstitial; keep navigations sparse (>=2s apart, <6 per run). Working testids: menu-toggle-btn, nav-drawer, nav-drawer-overlay, nav-drawer-close-btn, notifications-bell, notifications-dropdown, user-menu-btn. Login is a plain email/password form (input[type=email], input[type=password], button[type=submit]).",
+  "rca_of_the_issue": "Iteration-2 bug 'M(' was caused by PlayerDashboardShell's local initials() taking the first char of whitespace-split tokens without stripping punctuation, so 'Madhu (Parent)' yielded 'M' + '('. Fix routes all initials through lib/initials.js which replaces non \\p{L}/\\p{N} chars with spaces before splitting. Verified fixed."
+}
