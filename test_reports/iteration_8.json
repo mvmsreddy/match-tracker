@@ -1,0 +1,65 @@
+{
+  "summary": "Full backend + frontend test of iteration_8 (Live Match Advisor, Weekly Digest coming-soon, Streak Freeze Tokens, Shareable Badge Cards) on the public preview URL at 390x844. Backend: created /app/backend/tests/backend_test.py (pytest) - 7/7 pass. GET /api/health -> 200 {status:ok, advisor_ready:true, digest_ready:false}. POST /api/advisor/tip streams valid SSE (verified with curl -N and via pytest: 'data: <text>' frames then 'event: done / data: [DONE]'), tip is 1 punchy tactical sentence; missing session_id -> 422. POST /api/digest/send -> 503 'Weekly digest email is not configured...'; bad email / empty body -> 422. Frontend: login via demo-player-btn works; Live Advisor card renders in the Match tab of a running match, 'Thinking...' spinner appears, tokens stream in and the final tip was 'Serve wide to the deuce court, attack the short ball, and finish at the net with a volley.' (only one /api/advisor/tip request, no console errors). WeeklyDigestCard on /profile shows the muted 'Coming soon' pill (digest-pending-state present, digest-send-now-btn absent), helper text about the missing Resend key, and the opt-in toggle flips and persists to mtp_digest_optin_v1 across reload. ShareBadgeModal: ach-rank-climber tile is a button, modal opens, 1080x1920 PNG data-URL preview renders (rendered box 324x577.5 = 9:16), Share (falls back to download in headless) + Save + Close all work, backdrop click closes, locked tiles do not open the modal. Freeze token indicator shows 3 slots with slot 0 filled blue and text '1 freeze token / Next in 7 days'. Regression: momentum-meter, weekly-rings, daily-mission, achievements-reel, performance-summary, next-milestone, streak-card all render (h2h-rivalry absent - no upcoming match, expected). Zero console errors in every flow. TWO real defects found in the streak-freeze feature (see below).",
+  "backend_issues": { "critical": [], "minor": [
+    {"endpoint": "POST /api/advisor/tip", "issue": "SSE frames are emitted as `data: {token}\\n\\n` without escaping newlines inside the token. If the model ever emits a token containing a newline the frame splits into a bogus event/blank data line and the frontend concatenation loses/garbles text. Escape \\n before yielding (and un-escape client side)."},
+    {"endpoint": "GET /api/health", "issue": "WeeklyDigestCard fires /api/health twice on every Profile mount (React StrictMode double-effect, no cache/AbortController reuse). Harmless but noisy."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "src/lib/streakTokens.js autoProtectStreak",
+        "issue": "HIGH: auto-protection never fires in the main real-world case - when today IS logged. The anchor loop starts at i=0 (today), so if today is logged anchor===today, and the spend loop `for (let d = addDays(today,-1); d > anchor; ...)` is immediately false, so intermediate missed days are never frozen. Repro (verified): seed mtp_mock_matches_v1 with matches dated today and today-3 for u_player, reload dashboard -> streak-card reads '1 DAY STREAK', mtp_freeze_tokens_v1 stays {tokens:1, autoConsumed:[]}. Expected: the 2 gap days get frozen (token spent) and the streak bridges to 4. Fix: skip the trailing consecutive logged run first (walk back while the day is logged/frozen) and use the day before the first gap as the anchor, then spend tokens on the gap days between that anchor and the start of the current run.",
+        "selector": "[data-testid=\"streak-card\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "DashboardPage StreakCard (freeze-spent-note)",
+        "issue": "MEDIUM: the 'Auto-protected N rest days' indicator (data-testid='freeze-spent-note') is never visible even when a token really was spent. It is driven by the transient `protection.newSpends`, which is only non-empty on the very first render pass that writes the spend; StrictMode/subsequent re-renders re-run autoProtectStreak, read the already-persisted autoConsumed and return newSpends=[] so the final DOM has no note. Repro (verified): seed matches at today-2/-3/-4 -> mtp_freeze_tokens_v1 becomes {tokens:0, autoConsumed:['<yesterday>']} and slots go all-empty, but freeze-spent-note count = 0. Fix: derive the badge from persisted autoConsumed dates inside the current streak window instead of newSpends.",
+        "selector": "[data-testid=\"freeze-spent-note\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "TrackerPage MatchRunningView advisorContext",
+        "issue": "MEDIUM: `my_score: t.header.currentScore` and `game_state: t.header.currentGame` are always undefined - no code anywhere writes those header keys (grep shows the only two references are these lines). The AI Coach therefore always receives a context-free prompt (no score, no serving/receiving state), which defeats the 'real-time, situation-aware tip' requirement. Wire them from t.engine / t.nextServer instead.",
+        "selector": "[data-testid=\"live-advisor-card\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "TrackerPage.jsx",
+        "issue": "LOW: the whole Tracker page has ZERO data-testid attributes (setup-form inputs, Start Match button, Match/Live Track/Stats/Close tabs). Tests must fall back to placeholder text and ARIA roles, which is brittle. Also note the required field is 'Your name', not opponent name as stated in the review request.",
+        "selector": "input[placeholder=\"Your name\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ShareBadgeModal PNG preview (390x844)", "issues": ["The small brand sub-line under 'TENNIS TRACKER PRO' (achievement-unlocked kicker) is rendered in a very dim colour on the near-black card and is effectively unreadable at story scale - lift its opacity/colour.", "The rasterised PNG data URL is ~4 MB of base64 held in React state; on low-end mobiles this is a noticeable memory/GC spike. Consider a smaller canvas scale or an object URL from the blob for the preview."]},
+      {"screen": "Profile - WeeklyDigestCard", "issues": ["Looks correct: muted 'Coming soon' pill + helper copy, toggle contrast fine in dark theme."]},
+      {"screen": "Dashboard - StreakCard freeze slots", "issues": ["Empty slots are bg-muted with a border - readable in dark theme; filled slot is clearly blue. No contrast issue."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "HIGH: Fix autoProtectStreak anchor logic so gaps are frozen when today (or a trailing run of days) is already logged - currently the freeze feature is a no-op in its primary scenario.",
+    "MEDIUM: Render freeze-spent-note from persisted autoConsumed dates, not the transient newSpends value (indicator currently never shows).",
+    "MEDIUM: Populate advisorContext my_score/game_state from the live scoring engine (t.header.currentScore/currentGame do not exist).",
+    "MEDIUM: Move autoProtectStreak/getTokenState out of the DashboardPage render body into useEffect/useMemo - they write localStorage during render (impure render, double-invoked under StrictMode).",
+    "LOW: Escape newlines in the /api/advisor/tip SSE data frames.",
+    "LOW: Add data-testid attributes to TrackerPage setup form, Start Match button and tab triggers."
+  ],
+  "critical_code_review_comments": [
+    "streakTokens.autoProtectStreak: the anchor search and the spend walk overlap - anchor is the most recent logged day INCLUDING today, so the `d > anchor` spend loop can only ever run when today itself is unlogged. This is the root cause of the HIGH bug.",
+    "DashboardPage.jsx line ~551: autoProtectStreak() is invoked directly in the component body and persists to localStorage - a side effect during render. It is currently idempotent only because autoConsumed is deduped; any future non-idempotent change will double-spend tokens.",
+    "server.py advisor stream: exceptions are converted to an `event: error` frame with the raw exception string - leaks internal error detail to the client; log server-side and send a generic message.",
+    "LiveMatchAdvisor: on `event: done` it returns from inside the read loop without cancelling the reader / aborting the controller, so the response body is left un-drained; call controller.abort() or reader.cancel() in the finally block.",
+    "DashboardPage.jsx remains ~800 lines - StreakCard/FormBars/etc. should move to src/components/."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (7/7 pytest)", "frontend": "80% (advisor, digest coming-soon, badge share modal, token indicator, regressions all pass; streak freeze auto-protection + auto-protected indicator fail)"},
+  "seed_data_creation": "Temporary localStorage seeds only: mtp_mock_matches_v1 with TEST_ prefixed match ids for u_player (removed at end of each run); mtp_freeze_tokens_v1 reset between scenarios. Backend has no DB, so no server-side data created.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "player@matchtracker.app / player123 via [data-testid=demo-player-btn] then [data-testid=login-submit-btn]",
+  "context_for_next_testing_agent": "Backend regression suite: pytest /app/backend/tests/backend_test.py (health, advisor SSE, digest 503/422). Frontend: clear localStorage on /login, click demo-player-btn -> login-submit-btn -> wait for [data-testid=momentum-meter]. Dashboard motivation testids are momentum-meter, weekly-rings, daily-mission, achievements-reel, performance-summary, next-milestone, streak-card (h2h-rivalry only with an upcoming draw). Matches live in localStorage key 'mtp_mock_matches_v1' (NOT mtp_matches) with userId 'u_player'; freeze tokens in 'mtp_freeze_tokens_v1'; digest opt-in in 'mtp_digest_optin_v1'. Live Advisor: /track -> fill input[placeholder='Your name'] (required) + input[placeholder='Opponent name'] -> click 'Start Match' -> the app jumps to the Live Track tab, so click the 'Match' tab to reach [data-testid=live-advisor-card]. Streak repro seeds: [0,3] => should bridge (currently fails), [2,3,4] => token IS spent but freeze-spent-note missing, [20] => correctly no spend. Cloudflare bot-check can interrupt a run; wait ~45s and retry.",
+  "rca_of_the_issue": "Streak freeze no-op: autoProtectStreak() picks its anchor by walking back from today and stopping at the FIRST logged/frozen day, which is today itself whenever the player logged today. The subsequent spend loop starts at yesterday with the guard `d > anchor`, which is false immediately, so no gap day is ever frozen and no token is ever spent in the normal 'logged today after skipping a day or two' flow. Separately, the UI's 'Auto-protected' badge depends on autoProtectStreak's transient newSpends array; because the function is called during render and is idempotent against persisted autoConsumed, the last render always returns newSpends=[] and the badge never paints. Fixes: (1) skip the trailing consecutive logged run before choosing the anchor; (2) render the badge from persisted autoConsumed dates."
+}

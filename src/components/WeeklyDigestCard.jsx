@@ -60,12 +60,25 @@ export default function WeeklyDigestCard({ user }) {
   const [matches, setMatches] = useState([]);
   const [state, setState] = useState('idle'); // idle | sending | sent | error
   const [error, setError] = useState('');
+  const [emailReady, setEmailReady] = useState(null); // null=unknown, bool once loaded
 
   useEffect(() => {
     let cancelled = false;
     api.listMatches(user.id)
       .then(m => { if (!cancelled) setMatches(m || []); })
       .catch(() => { if (!cancelled) setMatches([]); });
+
+    // Ping the backend once to see whether Resend is configured. Lets us
+    // switch the CTA from "Send preview now" to a "Coming soon" hint
+    // instead of the user tapping a button that will error every time.
+    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL
+      || import.meta.env.REACT_APP_BACKEND_URL
+      || window.location.origin;
+    fetch(`${backendUrl}/api/health`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (!cancelled) setEmailReady(!!j?.digest_ready); })
+      .catch(() => { if (!cancelled) setEmailReady(false); });
+
     return () => { cancelled = true; };
   }, [user.id]);
 
@@ -126,20 +139,33 @@ export default function WeeklyDigestCard({ user }) {
             Get an inbox recap of last week's matches, streak and top skill — every Monday at 8am your local time.
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={sendNow}
-              disabled={state === 'sending'}
-              className="rounded-full bg-primary text-primary-foreground px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.97]"
-              data-testid="digest-send-now-btn"
-            >
-              {state === 'sending' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {state === 'sent' && <Check className="w-3.5 h-3.5" />}
-              {state !== 'sending' && state !== 'sent' && <Send className="w-3.5 h-3.5" />}
-              {state === 'sending' ? 'Sending…' : state === 'sent' ? 'Sent' : 'Send preview now'}
-            </button>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {emailReady === false ? (
+              <div className="rounded-full bg-muted text-muted-foreground px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5" data-testid="digest-pending-state">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Coming soon
+              </div>
+            ) : (
+              <button
+                onClick={sendNow}
+                disabled={state === 'sending' || emailReady === null}
+                className="rounded-full bg-primary text-primary-foreground px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.97]"
+                data-testid="digest-send-now-btn"
+              >
+                {state === 'sending' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {state === 'sent' && <Check className="w-3.5 h-3.5" />}
+                {state !== 'sending' && state !== 'sent' && <Send className="w-3.5 h-3.5" />}
+                {state === 'sending' ? 'Sending…' : state === 'sent' ? 'Sent' : 'Send preview now'}
+              </button>
+            )}
             <span className="text-[11px] text-muted-foreground">→ {user.email}</span>
           </div>
+
+          {emailReady === false && (
+            <div className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+              Email delivery is pending — an admin needs to add a Resend API key and a verified sender before this activates. Your opt-in preference is saved for when it goes live.
+            </div>
+          )}
 
           {state === 'error' && (
             <div className="mt-3 text-xs text-destructive font-semibold flex items-start gap-1.5" data-testid="digest-error">
