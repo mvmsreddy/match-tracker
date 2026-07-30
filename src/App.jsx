@@ -25,6 +25,7 @@ import EventDetailPage from './pages/EventDetailPage';
 import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 import NutritionPage from './pages/NutritionPage';
+import DrillsPage from './pages/DrillsPage';
 import MessagesPage from './pages/MessagesPage';
 
 // Parent's home experience (linked-player list) is different enough from
@@ -53,6 +54,7 @@ export default function App() {
                 <Route path="/my-coaches" element={<CoachPlayersPage />} />
                 <Route path="/my-parents" element={<ParentPlayersPage />} />
                 <Route path="/nutrition" element={<NutritionPage />} />
+                <Route path="/drills" element={<DrillsPage />} />
                 <Route path="/messages" element={<MessagesPage />} />
                 <Route path="/coach/players/:playerId/dashboard" element={<PlayerDashboardPage />} />
                 <Route path="/parent/players/:playerId/dashboard" element={<PlayerDashboardPage />} />

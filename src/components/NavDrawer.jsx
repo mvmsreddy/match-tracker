@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { downloadAppGuide } from '@/lib/appGuidePdf';
 import {
   LayoutDashboard, Activity, Trophy, GitCompare, User, Users,
-  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown, Video, Apple, MessageCircle,
+  Calendar, Medal, Sun, Moon, LogOut, X, TrendingUp, FileDown, Video, Apple, MessageCircle, Dumbbell,
 } from 'lucide-react';
 
 // Single canonical hamburger-menu drawer for the whole app. AppShell (every
@@ -13,6 +13,7 @@ import {
 function getNavItems(role) {
   const dashboard = { id: 'dashboard', label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true };
   const track = { id: 'track', label: 'Track', to: '/track', icon: Activity };
+  const drills = { id: 'drills', label: 'Drills', to: '/drills', icon: Dumbbell };
   const videoAnalysis = { id: 'video-analysis', label: 'Video Analysis (Beta)', to: '/video-analysis-test', icon: Video };
   const performance = { id: 'performance', label: 'View My Performance', to: '/player-dashboard?tab=performance', icon: TrendingUp };
   const tournaments = { id: 'tournaments', label: 'Tournaments', to: '/tournaments', icon: Trophy };
@@ -31,12 +32,12 @@ function getNavItems(role) {
     return [dashboard, tournaments, calendar, rankings, profile];
   }
   if (role === 'coach') {
-    return [dashboard, track, videoAnalysis, myPlayers, compare, nutrition, messages, tournaments, calendar, rankings, profile];
+    return [dashboard, track, drills, videoAnalysis, myPlayers, compare, nutrition, messages, tournaments, calendar, rankings, profile];
   }
   if (role === 'parent') {
     return [dashboard, myParentPlayers, messages, tournaments, calendar, profile];
   }
-  return [dashboard, track, videoAnalysis, performance, tournaments, compare, nutrition, messages, myCoaches, myParents, calendar, profile];
+  return [dashboard, track, drills, videoAnalysis, performance, tournaments, compare, nutrition, messages, myCoaches, myParents, calendar, profile];
 }
 
 function NavItem({ item, className }) {

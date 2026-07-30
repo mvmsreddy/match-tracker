@@ -6,12 +6,14 @@ import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
 import { replayMatchAnalytics } from '../lib/analytics';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
+import { getLatestSkillRatings } from '../lib/localStore';
 import TopNav from '../components/TopNav';
 import MTNavChrome from '../components/nav/MTNavChrome';
 import Scorebar from '../components/Scorebar';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
+import MatchSkillRating from '../components/MatchSkillRating';
 import RetroactivePointEntryModal from '../components/RetroactivePointEntryModal';
 
 export default function MatchDetailPage() {
@@ -114,6 +116,15 @@ export default function MatchDetailPage() {
 
       <StatsPanel points={match.points} header={header} sessionType={match.sessionType} analytics={analytics} />
       <ShotLocationHeatmap points={match.points} selfName={match.selfName} oppName={match.oppName} />
+
+      {user && (
+        <MatchSkillRating
+          userId={user.id}
+          matchId={match.id}
+          existing={getLatestSkillRatings(user.id, 50).find(r => r.matchId === match.id)}
+        />
+      )}
+
       <PointLog points={match.points} header={header} />
 
       {match.notes && (

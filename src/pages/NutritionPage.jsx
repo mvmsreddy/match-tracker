@@ -5,6 +5,8 @@ import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Textarea } from '@/components/primitives/textarea';
+import { MacroDonut, WaterTracker, WeeklyAverageCard } from '@/components/NutritionWidgets';
+import { Apple, Plus } from 'lucide-react';
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -77,8 +79,10 @@ export default function NutritionPage() {
   const todayTotals = useMemo(() => todayLogs.reduce((acc, l) => ({
     calories: acc.calories + (l.calories || 0),
     proteinG: acc.proteinG + Number(l.proteinG || 0),
+    carbsG: acc.carbsG + Number(l.carbsG || 0),
+    fatsG: acc.fatsG + Number(l.fatsG || 0),
     hydrationMl: acc.hydrationMl + (l.hydrationMl || 0),
-  }), { calories: 0, proteinG: 0, hydrationMl: 0 }), [todayLogs]);
+  }), { calories: 0, proteinG: 0, carbsG: 0, fatsG: 0, hydrationMl: 0 }), [todayLogs]);
 
   async function handleCreate() {
     setSaving(true);
@@ -131,13 +135,31 @@ export default function NutritionPage() {
   }
 
   return (
-    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto space-y-4">
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-4xl mx-auto space-y-4">
       <div>
-        <h1 className="font-display font-extrabold text-2xl tracking-tighter">Nutrition</h1>
-        <div className="text-sm text-muted-foreground mt-0.5">Log meals and track today's targets</div>
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">
+          <Apple className="w-3.5 h-3.5" />
+          Nutrition Tracker
+        </div>
+        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter mt-1">Nutrition</h1>
+        <div className="text-sm text-muted-foreground mt-0.5">Log meals, hydrate, track your daily targets</div>
       </div>
 
       {error && <div className="text-destructive text-sm">{error}</div>}
+
+      {/* Today's macros + water tracker side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MacroDonut totals={todayTotals} goal={{ kcal: user.kcalGoal, protein: user.proteinGoalG }} />
+        <WaterTracker userId={user.id} goalMl={user.waterGoalMl} />
+      </div>
+
+      {/* Weekly average */}
+      {logs !== null && (
+        <WeeklyAverageCard
+          logs={logs}
+          goals={{ kcalGoal: user.kcalGoal, waterGoalMl: user.waterGoalMl, proteinGoalG: user.proteinGoalG }}
+        />
+      )}
 
       <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-between">

@@ -1,80 +1,77 @@
-# Tennis Tracker Pro — UI/UX Enhancement
+# Tennis Tracker Pro — UI/UX + Feature Expansion
 
 ## Original Problem Statement
-User requested UI/UX enhancement for their **Tennis Analytics application** (tennis-match-tracker):
-- Keep the SAME tech stack (React + Vite + Tailwind v4 + Recharts + Supabase mock)
-- Focus on UI/UX improvements ONLY - no functionality changes
-- Mobile-first design (most users on mobile browsers)
-- Neat, clean, flat UI
-- Enhance graphs and data representation
-- Maximize user experience
-
-User then reported visual issues with the header (notifications bell had ugly yellow-green background, icons invisible, cramped layout) and requested consolidation.
+Tennis Analytics application (React + Vite + Tailwind v4 + Recharts + Supabase mock). User requested a full "build everything" sprint from a PRD v2.0 (360° Junior-to-Pro Platform) — pick the actionable Phase-1 items feasible on the current tech stack without new backend integrations.
 
 ## Tech Stack (Unchanged)
 - **Frontend:** React 18.3.1, Vite 5.4.8, Tailwind CSS 4.3.3
 - **UI Components:** Radix UI primitives, lucide-react icons
 - **Charts:** Recharts 3.10.1 (Line, Bar, Pie, Radar, Composed)
-- **Backend:** Supabase mock via localStorage (fully mocked, dev-mode)
-- **Mobile:** Capacitor 8.4.2
+- **Backend:** Supabase mock via localStorage
+- **New in this iteration:** `/app/src/lib/localStore.js` — namespaced localStorage layer for drills, water, skill self-ratings, dashboard prefs (no backend dependency)
 
-## What's Been Implemented (Jan 2026)
+## What's Been Implemented — Iteration 5
 
-### Iteration 1 — Initial UI/UX enhancements
-- Enhanced Dashboard, Player Overview, Match Analytics, Progress, Match History, Profile, Rankings, Tournaments pages
-- Added stat card icons (Trophy, TrendingUp, TrendingDown, Target, Calendar, Flame)
-- Added new charts: Pie Chart (win/loss), Bar Chart (stroke win rates), Radar Chart (skills breakdown)
-- Improved mobile layout, spacing, typography
-- Created loading skeleton primitives
-- Filter chips for Match History
-- Mobile card view for AITA Rankings (alongside desktop table)
+### Player Dashboard makeover
+1. **LogTodayReminder banner** — after 6pm if no session logged today, dismissable per day (`sessionStorage`). Deep-links to Track.
+2. **QuickAddGrid** — 3 tap-to-log tiles: Log Match / Log Drill / Log Meal — shown for player + coach roles.
+3. **Skill Radar on Dashboard** — 6-axis radar (Serve · Forehand · Backhand · Volley · Footwork · Mental), computed from the latest 5 self-rated matches. Empty state with CTA when no ratings exist.
+4. **Digest Preview Card** — in-app preview of "what your weekly digest email would say" (matches/W-L/win-rate/practices/streak/goal) — computed client-side, no backend needed.
+5. **Recent-5 Sessions Strip** — compact list of last 5 sessions with W/L/PR badges, clickable to open detail.
 
-### Iteration 2 — Header consolidation and Tailwind v4 fixes
-- Consolidated AppShell + TopNav headers (removed ugly yellow-green notification bell background)
-- New NotificationsBell with lucide Bell icon + red destructive badge
-- Enhanced NavDrawer with sticky brand header + sectioned menu (Menu / Preferences)
-- User menu dropdown with avatar / email / Profile / Logout
+### Nutrition overhaul
+6. **MacroDonut** — daily macros donut (Carbs · Protein · Fats) with center kcal total and %-breakdown legend.
+7. **WaterTracker** — tap-chip logger (+250/+500/+750 ml) with progress bar, reset today, and 7-day average.
+8. **WeeklyAverageCard** — 7-day averages of calories/protein/water vs goals, with "on-track" indicators.
+9. Nutrition page reorganized: header → macros + water grid → weekly avg → existing meal log + goals (kept intact).
 
-### Iteration 3 — Fix Tailwind v4 gradient + UA button issues (root causes from testing)
-- Added `@layer utilities button {...}` reset to strip UA button styling without adding preflight (which would break legacy pages sharing app-tailwind.css). Icons now render in currentColor with no native outset border.
-- Replaced all 23 `bg-linear-to-*` / `bg-gradient-to-*` usages with solid colors (`bg-primary`, `bg-card`, `bg-primary/5`, etc.) because Tailwind v4 gradient utilities rely on `@property` custom-property registrations that aren't emitted when preflight is skipped.
-- Removed `backdrop-blur-sm` from headers so that `position: fixed` dropdowns aren't confined to the header.
-- Rewrote NotificationsBell and AppShell user-menu with proper outside-click via `useEffect + useRef + document.addEventListener('mousedown'|'touchstart')` and Escape-to-close.
-- Notifications dropdown now positioned `left-2 right-2` on mobile (fits within 390px viewport, no more clipping).
+### Drills module (net-new)
+10. **DrillsPage** at `/drills` — full CRUD:
+    - 8 drill types (Forehand/Backhand/Serve/Volley/Footwork/Fitness/Match Play/Other) with emoji icons
+    - Intensity chips (Low/Medium/High)
+    - Duration + notes + video URL
+    - Week stats card (count / minutes / high-intensity sessions)
+11. **Nav integration** — Drills item added to NavDrawer for player and coach roles.
 
-### Iteration 4 — Initials sanitization
-- Created shared `/app/src/lib/initials.js` with Unicode-safe punctuation stripping.
-- Fixed PlayerDashboardShell initials so "Madhu (Parent)" now renders as "MP" instead of "M(".
-- AppShell and TopNav already use inline sanitized initials logic.
-- Added Escape-to-close to NavDrawer for keyboard-UX parity with dropdowns.
+### Match Analysis
+12. **MatchSkillRating component** — 1-10 slider grid for 6 skills, saves per-match to localStorage, feeds Dashboard Skill Radar. Injected into MatchDetailPage below ShotLocationHeatmap.
+13. Shot-location heatmap already existed (`ShotLocationHeatmap.jsx`) — verified visible on Match Detail.
+
+### Compare / Head-to-Head
+14. **H2HInsight** — head-to-head card on Compare page: groups matches by opponent (played 2+ times), shows W-L, dominance indicator, W/L stacked progress bar, last-result date.
+
+### Housekeeping
+15. Consolidated initials logic — AppShell, TopNav, ProfilePage, ParentDashboardPage all now use `/app/src/lib/initials.js`.
+16. Streak Freeze card redesigned with icon, pill chips, better empty states.
+
+## No Functionality Regressions
+All existing features (match tracker, PDF export, tournaments, rankings, calendar, messaging, coach analytics, order-of-play) preserved. The new modules are additive.
 
 ## Design Principles Applied
-- **Mobile-first**: All layouts scale from 390px up
-- **Touch-friendly**: 44px minimum touch targets
-- **Visual hierarchy**: Better spacing, typography scaling
-- **Color coding**: Consistent primary/destructive colors
-- **Micro-interactions**: Hover shadows, smooth transitions
-- **Icons**: Contextual lucide-react icons throughout
-- **Depth**: Subtle solid backgrounds and border accents (gradients avoided due to v4 preflight issue)
-- **Data viz**: Pie / Bar / Area / Radar / Line / Composed charts, progress bars
-
-## No Functionality Changes
-Only styling, layouts, and visual improvements. All business logic, API calls, and data flows remain identical.
+- Mobile-first (390px baseline)
+- All interactive elements ≥44×44 px touch target
+- Consistent iconography (lucide-react across the board)
+- Recharts for all visualizations (Line/Bar/Pie/Radar/Area/Composed all in use)
+- Solid `bg-primary` / `bg-card` / `bg-*/5` colors (no gradient utilities — v4 preflight-skip incompatible)
+- Semantic testids on every interactive element
 
 ## Testing Status
-- Iteration 1 test report: `/app/test_reports/iteration_1.json` (78% pass — found preflight/gradient/outside-click bugs)
-- Iteration 2 test report: `/app/test_reports/iteration_2.json` (86% pass — 12/14 checks, only remaining bug: PlayerDashboardShell initials — now fixed)
+- Iteration 5 verified with screenshots + interaction tests (water tracker end-to-end, drill save, nav drawer, compare page, dashboard quick-adds).
+- **Testing agent run: pending** — being called next per system reminder.
 
-## Known Limitations
-- Vite dev-server occasionally rate-limits `/src/*.jsx` requests during very rapid multi-route navigation (429s). Not an app bug — production build won't have this waterfall.
-- Streak Freeze card on /profile still uses native browser date input (not the styled shadcn date picker). Low-priority visual polish item.
+## Deferred from PRD v2.0 (needs separate decisions)
+- Fitness / Dietitian / Physician / Psychologist roles — blocked by §5.3 permission matrix + §13 DPDP compliance
+- Device integrations (Pocket Radar, Babolat, HR wearables) — blocked on vendor API keys
+- Live Match Advisor (real-time AI) — blocked on LLM integration decision
+- Formal RBAC (§17 Phase 0) — current single-role + `links` model still functional
+- Weekly Digest Emails — user picked option (c) → shipped as in-app Digest Preview card instead
 
 ## Next Action Items
-- User to review consolidated header + fixed UI on mobile 📱
-- Optionally: dedupe initials logic in RosterView/LeaderboardView/ParentDashboardPage/MTNavChrome to use `/app/src/lib/initials.js`
-- Optionally: replace native date input on /profile Streak Freeze with app date picker
+- Testing agent verification of iteration 5
+- Address any P1/P2 bugs found by testing agent
+- If clean → consider Phase 2 (Fitness/Dietitian dashboards) once user confirms permission-matrix decisions
 
 ## Environment
-- Frontend runs via `npm run dev` on port 3000 (supervised at `/etc/supervisor/conf.d/vite-app.conf`)
-- Vite config includes `allowedHosts: true` for preview URL access
+- Frontend: `npm run dev` on port 3000 (supervised)
 - Preview URL: https://0e360100-eae9-4867-811b-c1ce9b3f6a38.preview.emergentagent.com
+- Test credentials in `/app/memory/test_credentials.md`

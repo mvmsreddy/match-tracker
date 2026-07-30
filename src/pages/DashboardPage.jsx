@@ -4,9 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
+import { avgSkillRatings } from '../lib/localStore';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
+import { LogTodayReminder, QuickAddGrid, Recent5Strip, DigestPreviewCard } from '@/components/DashboardExtras';
+import SkillRadarCard from '@/components/SkillRadarCard';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -459,8 +462,35 @@ export default function DashboardPage() {
 
       {/* Player: on-court-today banner + recent form */}
       {role === 'player' && <PlayerLiveBanner todayMatches={activity.todayMatches} />}
+
+      {/* Log-today reminder (all roles, after 6PM if no session today) */}
+      {matches && (
+        <LogTodayReminder
+          loggedToday={matches.some(m => m.date === new Date().toISOString().slice(0, 10))}
+        />
+      )}
+
+      {/* Quick-Add tiles (player/coach) */}
+      {(role === 'player' || role === 'coach') && <QuickAddGrid />}
+
       {role !== 'organizer' && streak && <StreakCard streak={streak} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
+
+      {/* Skill Radar + Digest Preview (player only) */}
+      {role === 'player' && matches && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkillRadarCard
+            ratings={avgSkillRatings(user.id, 5)}
+            stats={winRate !== null ? { winRate, matches: matchesOnly.length } : null}
+          />
+          <DigestPreviewCard matches={matches} streak={streak} />
+        </div>
+      )}
+
+      {/* Recent 5 sessions (player only) */}
+      {role === 'player' && matches && matches.length > 0 && (
+        <Recent5Strip matches={matches} onSelect={(m) => window.location.assign(`/history/${m.id}`)} />
+      )}
 
       {/* Organizer: quick actions only */}
       {role === 'organizer' && (
