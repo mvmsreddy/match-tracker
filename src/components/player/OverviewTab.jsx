@@ -7,6 +7,7 @@ import {
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
+import { todayLocalIso } from '../../lib/dates';
 import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
 import TodaysMatchHero from './TodaysMatchHero';
@@ -69,14 +70,17 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
 
   const upcomingEntries = useMemo(() => {
     if (!entries) return [];
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayLocalIso();
+    // "Upcoming" includes tournaments still running today (endDate >= today),
+    // not only those with a future startDate — otherwise a tournament that
+    // opened yesterday but has a live match TODAY would be counted as 0.
     return entries
-      .filter(e => e.event && e.event.week?.startDate >= today)
+      .filter(e => e.event && (e.event.week?.endDate || e.event.week?.startDate) >= today)
       .filter(e => {
         const seg = normalizeEventSegment(e.event.category, e.event.ageGroup);
         return seg && seg.category === circuit.category && seg.subcategory === circuit.subcategory;
       })
-      .sort((a, b) => a.event.week.startDate.localeCompare(b.event.week.startDate));
+      .sort((a, b) => (a.event.week.startDate || '').localeCompare(b.event.week.startDate || ''));
   }, [entries, circuit]);
 
   const monthStats = useMemo(() => {
@@ -84,26 +88,35 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
     const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const thisMonth = segMatches.filter(m => m.date?.startsWith(thisMonthKey));
+    // Tournament matches completed this month (from useSegmentMatchSchedule)
+    // are ALSO real segment matches for the purposes of "this month" —
+    // otherwise a player who just wrapped up an AITA week sees "0 matches
+    // this month" while the tournaments tab shows the same 3 rounds.
+    const scheduleThisMonth = (schedule.recent || []).filter(m => m.date?.startsWith(thisMonthKey));
+    const scheduleWins = scheduleThisMonth.filter(m => m.won === true).length;
+    const scheduleLosses = scheduleThisMonth.filter(m => m.won === false).length;
+
     const tracked = segMatches.filter(m => m.pointCount);
     const avgPts = tracked.length ? Math.round((tracked.reduce((s, m) => s + m.pointCount, 0) / tracked.length) * 10) / 10 : null;
     const thisMonthTracked = thisMonth.filter(m => m.pointCount);
     const avgPtsThisMonth = thisMonthTracked.length ? thisMonthTracked.reduce((s, m) => s + m.pointCount, 0) / thisMonthTracked.length : null;
-    
-    // Calculate win/loss stats for visualization
-    const wins = segMatches.filter(m => m.winner === 'self').length;
-    const losses = segMatches.filter(m => m.winner === 'opp').length;
-    const winRate = segMatches.length > 0 ? Math.round((wins / segMatches.length) * 100) : 0;
-    
+
+    // Combined win/loss counts
+    const wins = segMatches.filter(m => m.winner === 'self').length + scheduleWins;
+    const losses = segMatches.filter(m => m.winner === 'opp').length + scheduleLosses;
+    const total = segMatches.length + (schedule.recent?.length || 0);
+    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
     return {
-      matchesThisMonth: thisMonth.length,
+      matchesThisMonth: thisMonth.length + scheduleThisMonth.length,
       avgPts,
       avgPtsTrendUp: avgPts != null && avgPtsThisMonth != null ? avgPtsThisMonth >= avgPts : null,
       wins,
       losses,
       winRate,
-      total: segMatches.length,
+      total,
     };
-  }, [segMatches]);
+  }, [segMatches, schedule.recent]);
 
   const { latest, previous, bestRank, bestPoints, firstSeen, snapshotCount } = circuit;
   const rankDelta = previous ? previous.rank - latest.rank : 0;

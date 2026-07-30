@@ -2,6 +2,36 @@ import { useNavigate } from 'react-router-dom';
 import { Zap, ChevronRight } from 'lucide-react';
 import { todayLocalIso } from '../../lib/dates';
 
+// Maps our segment shape (Boys / Girls + U-14/16/18/12/10 or Men/Women)
+// onto the exact Age-Group <option> label used by the tracker setup form.
+// See AGE_GROUPS in TrackerPage.jsx.
+function segmentToAgeGroupLabel(subcategory, category) {
+  if (!subcategory) return '';
+  const m = /U-?(\d+)/i.exec(subcategory);
+  if (m) return `Under ${m[1]}`;
+  if (category === 'Men') return 'Men';
+  if (category === 'Women') return 'Women';
+  return '';
+}
+
+// AITA "grade" strings ('CS-7', 'CS-5', 'AITA Talent Series', ...) → the
+// tracker's Circuit <option> label. Mirrors mapAitaGradeToCircuit() in
+// TrackerPage.jsx but scoped to the sparse strings the mock/tournament data
+// emits. Falls back to '' when the grade doesn't match any option so the
+// select stays blank rather than showing garbage.
+function gradeToCircuit(grade) {
+  if (!grade) return '';
+  const g = grade.toLowerCase();
+  if (g.includes('national championship')) return 'National Championships';
+  if (g.includes('national series')) return 'National Series';
+  if (g.includes('super series')) return 'Super Series';
+  if (g.includes('talent series')) return 'Talent Series';
+  if (g.includes('cs-7') || g.includes('cs7') || g.includes('7 star')) return 'Championship Series (CS7)';
+  if (g.includes('cs-3') || g.includes('cs3') || g.includes('3 star')) return 'Championship Series (CS3)';
+  if (g.includes('cs-5') || g.includes('cs5')) return 'Championship Series (CS7)'; // CS-5 events log to CS7 tier by convention
+  return '';
+}
+
 /**
  * TodaysMatchHero — the one place a player never has to hunt for.
  *
@@ -33,6 +63,8 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
           round: m.round || '',
           date: m.date || todayIso,
           governingBody: 'AITA',
+          circuit: gradeToCircuit(m.grade),
+          ageGroup: segmentToAgeGroupLabel(circuit.subcategory, circuit.category),
           eventMatchId: m.id,
           normalizedCategory: circuit.category,
           normalizedSubcategory: circuit.subcategory,

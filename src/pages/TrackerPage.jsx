@@ -491,6 +491,7 @@ function SetupForm({ t, onStart }) {
                 value={t.header.selfName}
                 onChange={(e) => t.updateHeader({ selfName: e.target.value })}
                 autoFocus
+                data-testid="setup-self-name"
               />
             </Field>
             <Field label="Opponent">
@@ -498,6 +499,7 @@ function SetupForm({ t, onStart }) {
                 placeholder="Opponent name"
                 value={t.header.oppName}
                 onChange={(e) => t.updateHeader({ oppName: e.target.value })}
+                data-testid="setup-opp-name"
               />
             </Field>
           </div>
@@ -522,6 +524,7 @@ function SetupForm({ t, onStart }) {
                 value={t.header.circuit}
                 disabled={!t.header.governingBody}
                 onChange={(e) => t.updateHeader({ circuit: e.target.value })}
+                data-testid="setup-circuit"
               >
                 <option value="">{t.header.governingBody ? 'Not specified' : 'Select governing body first'}</option>
                 {(GOVERNING_BODIES[t.header.governingBody] || []).map((c) => <option key={c} value={c}>{c}</option>)}
@@ -535,7 +538,7 @@ function SetupForm({ t, onStart }) {
               />
             </Field>
             <Field label="Age Group">
-              <Select value={t.header.ageGroup} onChange={(e) => t.updateHeader({ ageGroup: e.target.value })}>
+              <Select value={t.header.ageGroup} onChange={(e) => t.updateHeader({ ageGroup: e.target.value })} data-testid="setup-age-group">
                 <option value="">Not specified</option>
                 {AGE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
               </Select>
@@ -552,6 +555,7 @@ function SetupForm({ t, onStart }) {
                 placeholder="e.g. Club Championship"
                 value={t.header.tournament}
                 onChange={(e) => t.updateHeader({ tournament: e.target.value })}
+                data-testid="setup-tournament"
               />
             </Field>
             <Field label="Date">
@@ -559,11 +563,12 @@ function SetupForm({ t, onStart }) {
                 type="date"
                 value={t.header.date}
                 onChange={(e) => t.updateHeader({ date: e.target.value })}
+                data-testid="setup-date"
               />
             </Field>
             {t.sessionType === 'match' && (
               <Field label="Round">
-                <Select value={t.header.round} onChange={(e) => t.updateHeader({ round: e.target.value })}>
+                <Select value={t.header.round} onChange={(e) => t.updateHeader({ round: e.target.value })} data-testid="setup-round">
                   <option value="">Not specified</option>
                   {ROUNDS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </Select>

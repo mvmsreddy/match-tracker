@@ -213,6 +213,47 @@ The "heart of the app" upgrade — a persistent context bar that wraps the exist
 - iteration_12.json: 8/8 pytest (backend SSE happy path + variants + validation + regression on `/api/advisor/tip`, `/api/nutrition/suggest`, `/api/health`) → PASS. Frontend end-to-end at 812x375 phone-landscape: giant score, court chip, exit button all correct; laptop 1366x768 no longer hijacked (post-fix).
 - Post-report fixes: `useOrientation` isMobile threshold tightened to prevent laptop hijack; HighlightReelCard duration now shows sub-minute values (`{n}s`) instead of "0 min".
 
+## What's Been Implemented — Iteration 15 (Feb 2026): Tournament Live Match + Polish
+
+### Today's Match Hero (Player Dashboard Overview)
+- New `TodaysMatchHero` component (`/app/src/components/player/TodaysMatchHero.jsx`) auto-mounts at top of Overview tab when any tournament match is scheduled for TODAY in the current segment. Deep-links to `/track` with a full prefill payload including opponent name, tournament, round token → label mapping, date, circuit (mapped from AITA grade), age-group (mapped from segment), and normalized segment.
+
+### Historical Tournament Filter (Tournaments Tab)
+- New `TournamentHistoryFilter` sub-component with All / This year / Last 12 months / Custom range chips plus year facets (last 3 years) and month facets (last 12 months). Custom range uses local-date `<input type="date">`. Header shows filtered/total count.
+- `filter-*` test IDs across the board; empty state via `tournaments-empty-filtered`.
+
+### Tournament Mock Layer
+- New `/app/src/api/tournamentsMock.js` seeds 5 tournaments spanning today (Deccan Open, QF today), last month, earlier this year, last year, and 2 years back. All Boys U-18 Singles so segment matches align.
+- Wired via `hasSupabaseConfig ? supabaseApi.* : tournamentsMock.*` in `/app/src/api/index.js` for `getMyEntries`, `getEventMatches`, `getDrawEntries`.
+
+### Taxonomy Unification
+- `mockRankingHistory.js` CIRCUITS aligned to `normalizeEventSegment()` shape: `{Boys, U-14|U-16|U-18}` (was `{U16, Singles}` — mismatched everywhere).
+- `TrackerPage.jsx` new `ROUND_TOKEN_TO_LABEL` map + `normalizeRoundPrefill()` so 'QF' → 'Quarterfinal' when the hero prefills the Round select.
+- Locked in with node verification: `normalizeEventSegment('Boys Singles', 'U18')` → `{Boys, U-18}` matches `buildCircuits()`.
+
+### Screen Wake Lock (P0 Spark)
+- New `/app/src/hooks/useWakeLock.js`. Hoisted to TrackerPage level, keyed on `matchStarted && !matchOver`. Testing agent verified 1 request per match (was 16 pre-hoist).
+
+### Instagram Story 1080×1920 (P0 Spark)
+- New `/app/src/lib/highlightReelStory.js` — draws dark editorial navy 9:16 canvas with brand strip, winner headline, giant score, streak stat boxes, AI recap block (padded 30px from court border), optional COACH WHISPERED tips section as filler when recap is short. Ellipsis suppressed after terminal punctuation.
+- New `data-testid="highlight-story-btn"` in `HighlightReelCard` — uses Web Share files when available, downloads PNG otherwise.
+
+### Serve Placement Suggest (P0 Spark)
+- `/api/advisor/tip` system prompt now requires one of WIDE / T / BODY when player is serving, using the court-side (deuce/ad) already passed in game_state. Verified 7/7 backend pytest.
+
+### Cross-cutting Polish
+- New `/app/src/lib/dates.js` (todayLocalIso, toLocalIso) — replaces all `new Date().toISOString().slice(0,10)` calls that broke around midnight in non-UTC timezones.
+- `useMatchTracker` no longer defaults `selfName` to a hardcoded stranger's name — backfills from `user.displayName || fullName || name || email prefix`.
+- Overview "Matches this month" and "Upcoming tournaments" stat cards now include tournament schedule matches, not just self-logged sessions.
+- Setup form: new `data-testid` on selfName / oppName / tournament / date / round / circuit / age-group for E2E testability.
+- Tournament rows: `data-testid="tournament-entry-<id>"`.
+- Custom range date inputs: explicit `text-foreground` for contrast.
+
+### Testing (Iteration 13 → 15)
+- iteration_13: 100% pytest, TodaysMatchHero + Tournaments filter blocked by empty mock → seed added
+- iteration_14: RCA identified taxonomy mismatch + round index vs draw-size bug → fixed
+- iteration_15: 100% pytest (7/7), all 5 requested features verified green end-to-end. LOW polish items now shipped in this same iteration.
+
 ## 📋 Roadmap
 See **`/app/memory/ROADMAP.md`** for the full prioritised backlog (56+ items across P0–P6, from unblock-with-a-key items to distant wishlist ideas). This section used to duplicate that list — now it's the single source of truth.
 

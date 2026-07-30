@@ -6,7 +6,7 @@ import { getFormatConfig, FORMAT_PRESETS } from '../lib/constants';
 import { saveSession, loadSession, clearSession } from '../lib/storage';
 
 const DEFAULT_HEADER = {
-  selfName: 'Kundanapriya',
+  selfName: '',
   oppName: '',
   tournament: '',
   date: '',
@@ -61,11 +61,28 @@ export function useMatchTracker() {
   // ---- Load saved session on mount (per logged-in user) ----
   useEffect(() => {
     if (!user) return;
+    // Prefer the user's real profile name over the empty default. If they
+    // manually change it in the setup form (or a saved session already
+    // exists), we respect that below.
+    const profileName = user.displayName || user.fullName || user.name || user.email?.split('@')[0] || '';
     const saved = loadSession(user.id);
     if (saved) {
-      setState((prev) => ({ ...prev, ...saved, header: { ...DEFAULT_HEADER, ...saved.header } }));
+      setState((prev) => ({
+        ...prev,
+        ...saved,
+        header: {
+          ...DEFAULT_HEADER,
+          ...(profileName ? { selfName: profileName } : {}),
+          ...saved.header,
+        },
+      }));
       restoredRef.current = true;
       if (saved.points && saved.points.length > 0) showStatus('Restored your previous session');
+    } else if (profileName) {
+      setState((prev) => ({
+        ...prev,
+        header: { ...prev.header, selfName: prev.header.selfName || profileName },
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);

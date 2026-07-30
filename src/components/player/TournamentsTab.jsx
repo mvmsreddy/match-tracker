@@ -225,10 +225,11 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
       )}
 
       {filteredEntries.map(e => (
-        <div key={e.id} className="rounded-sm border border-border bg-card overflow-hidden">
+        <div key={e.id} className="rounded-sm border border-border bg-card overflow-hidden" data-testid={`tournament-entry-${e.id}`}>
           <button
             onClick={() => setOpenId(openId === e.id ? null : e.id)}
             className="w-full flex items-center gap-3 p-3 text-left hover:bg-secondary/50"
+            data-testid={`tournament-entry-toggle-${e.id}`}
           >
             <div className="text-muted-foreground shrink-0">{openId === e.id ? '▾' : '▸'}</div>
             <div className="flex-1 min-w-48">
@@ -316,7 +317,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
               type="date"
               value={rangeFrom}
               onChange={(e) => onRangeFrom(e.target.value)}
-              className="rounded-sm border border-border bg-background px-2 py-1 text-xs"
+              className="rounded-sm border border-border bg-background text-foreground px-2 py-1 text-xs"
               data-testid="filter-range-from"
             />
           </label>
@@ -326,7 +327,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
               type="date"
               value={rangeTo}
               onChange={(e) => onRangeTo(e.target.value)}
-              className="rounded-sm border border-border bg-background px-2 py-1 text-xs"
+              className="rounded-sm border border-border bg-background text-foreground px-2 py-1 text-xs"
               data-testid="filter-range-to"
             />
           </label>

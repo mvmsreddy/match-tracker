@@ -157,7 +157,11 @@ Dashboard: Skill Radar · Quick-Add tiles · Nutrition macro donut · water tap-
 
 Tracker (iteration 11 + 12): LiveMatchCommandCenter shell · Score Hero · Momentum Strip · Streak/break-point burst · Changeover countdown · Floating Undo · AI Coach inline SSE · Distraction-Free / Focus mode · **Big-Screen Landscape Mode (phone-only gating)** · **Server-Side Deuce/Ad Indicator (regular + tiebreak)** · **Post-Match Highlight Reel (AI recap card with streaks, tips list, share/save)**
 
-Backend: FastAPI at `/app/backend` · `/api/health` · `/api/advisor/tip` (Live Match Advisor SSE) · `/api/nutrition/suggest` (AI Meal Suggester SSE) · `/api/advisor/highlight-reel` (Post-match AI recap SSE) · `/api/digest/send` (Resend, awaiting keys)
+Tracker (iteration 13-15): **Screen Wake Lock** on live match (hoisted to TrackerPage) · **Instagram Story 1080×1920 canvas export** (dark editorial theme with dedup'd coach tips) · **Serve Placement Suggest** (advisor system prompt now requires WIDE/T/BODY zone when serving)
+
+Player Dashboard (iteration 13-15): **Today's Match Hero card** (auto-mounts on Overview when segment has match today, deep-links to /track with tournament/round/opponent/circuit/age-group/date prefill) · **Historical Tournament Filter** (All / This year / Last 12m / Custom range + Year and Month facets) · **Tournament Mock Layer** (5 seeded events across dates for demo without Supabase) · Taxonomy unified across `normalizeEventSegment` / `buildCircuits` / `roundToken` / tracker round labels
+
+Backend: FastAPI at `/app/backend` · `/api/health` · `/api/advisor/tip` (Live Match Advisor SSE with serve placement) · `/api/nutrition/suggest` (AI Meal Suggester SSE) · `/api/advisor/highlight-reel` (Post-match AI recap SSE) · `/api/digest/send` (Resend, awaiting keys)
 
 Nutritionist Module: New role · 6-tab command center · Day-type macro grid · Supplemental protocols · Meal templates · Body composition · Athlete roster with compliance flags · Nutritionist ↔ player messaging · Allergen/preference tags · Micronutrient targets · Compliance color bands (±10/20/30%) · Weekly report card · GI trigger detection · Wellness quick log · Peri-match fuel timer · AI meal suggester · Dietitian chat card · Nutrition achievements merged into Trophy Cabinet
 
