@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
+import { computeStreak } from '../lib/streaks';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 
@@ -135,6 +136,26 @@ function PlayerLiveBanner({ todayMatches }) {
         </div>
       </div>
       <Link to="/track"><Button size="sm">Start tracking</Button></Link>
+    </Card>
+  );
+}
+
+function StreakCard({ streak }) {
+  return (
+    <Card className="p-4 flex items-center gap-4">
+      <div className="text-3xl shrink-0" aria-hidden="true">🔥</div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2">
+          <div className="font-display font-extrabold text-2xl tracking-tighter">{streak.current}</div>
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">day streak</div>
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          Best {streak.best} {streak.best === 1 ? 'day' : 'days'}
+          {!streak.loggedToday && streak.graceAvailable && ' · Log today to keep it going'}
+          {!streak.loggedToday && !streak.graceAvailable && streak.current > 0 && ' · Grace day used — log today or lose your streak'}
+          {streak.loggedToday && ' · Logged today'}
+        </div>
+      </div>
     </Card>
   );
 }
@@ -330,6 +351,7 @@ export default function DashboardPage() {
   const [error, setError]       = useState('');
   const [myEntries, setMyEntries]         = useState(null);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [streakInputs, setStreakInputs] = useState(null); // { sessionDates, freezeDates }
 
   // Load personal match history for players and coaches
   useEffect(() => {
@@ -360,12 +382,33 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [role]);
 
+  // Streak (Phase 34) — training-session dates + freeze dates; matches are
+  // already loaded above and reused for the match-date half of the streak.
+  useEffect(() => {
+    if (role === 'organizer') return;
+    let cancelled = false;
+    Promise.all([api.getTrainingSessions(user.id), api.getStreakFreezes(user.id)])
+      .then(([sessions, freezes]) => {
+        if (cancelled) return;
+        setStreakInputs({
+          sessionDates: (sessions || []).map(s => s.sessionDate),
+          freezeDates: (freezes || []).map(f => f.freezeDate),
+        });
+      })
+      .catch(() => { if (!cancelled) setStreakInputs({ sessionDates: [], freezeDates: [] }); });
+    return () => { cancelled = true; };
+  }, [user.id, role]);
+
   const matchesOnly = matches ? matches.filter(m => m.sessionType !== 'practice') : [];
   const practices   = matches ? matches.filter(m => m.sessionType === 'practice') : [];
   const wins        = matchesOnly.filter(m => m.winner === 'self').length;
   const losses      = matchesOnly.filter(m => m.winner === 'opp').length;
   const winRate     = matchesOnly.length > 0 ? Math.round((wins / matchesOnly.length) * 100) : null;
   const recent      = matches ? matches.slice(0, 5) : [];
+
+  const streak = (matches && streakInputs)
+    ? computeStreak([...matches.map(m => m.date), ...streakInputs.sessionDates], { freezeDates: streakInputs.freezeDates })
+    : null;
 
   // Tournament activity (player: self, coach: whole active roster)
   const activeLinks = (links || []).filter(l => l.status === 'active');
@@ -395,6 +438,7 @@ export default function DashboardPage() {
 
       {/* Player: on-court-today banner + recent form */}
       {role === 'player' && <PlayerLiveBanner todayMatches={activity.todayMatches} />}
+      {role !== 'organizer' && streak && <StreakCard streak={streak} />}
       {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
 
       {/* Organizer: quick actions only */}

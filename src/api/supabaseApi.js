@@ -7,6 +7,8 @@ import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
 import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
 import { buildCircuits } from '../lib/segments';
+import { computeServeStats } from '../lib/analytics';
+import { computeStreak } from '../lib/streaks';
 
 // ---------------------------------------------------------------------------
 // REAL API LAYER (Supabase)
@@ -213,6 +215,60 @@ export async function getMatch(userId, matchId) {
 
 export async function deleteMatch(userId, matchId) {
   const { error } = await supabase.from('matches').delete().eq('id', matchId).eq('user_id', userId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+// Phase 35 — retroactive point-by-point entry (RetroactivePointEntryModal.jsx)
+// appends to an already-saved match's points instead of only ever inserting
+// a brand-new row. Deliberately only touches points/point_count — the
+// match's already-recorded outcome (score_summary/winner/sets) reflects
+// what actually happened and isn't recomputed from the retroactively-added
+// point detail.
+export async function updateMatchPoints(userId, matchId, points) {
+  const { data, error } = await supabase
+    .from('matches')
+    .update({ points, point_count: points.length })
+    .eq('id', matchId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToMatch(data);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 34 — Streak Freezes (src/lib/streaks.js computes the streak itself
+// client-side from matches.match_date + training_sessions.session_date;
+// this table only stores the user-declared "skip this day" dates.)
+// ---------------------------------------------------------------------------
+
+function rowToStreakFreeze(row) {
+  return { id: row.id, userId: row.user_id, freezeDate: row.freeze_date, createdAt: row.created_at };
+}
+
+export async function getStreakFreezes(userId) {
+  const { data, error } = await supabase
+    .from('streak_freezes')
+    .select('*')
+    .eq('user_id', userId)
+    .order('freeze_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToStreakFreeze);
+}
+
+export async function addStreakFreeze(userId, freezeDate) {
+  const { data, error } = await supabase
+    .from('streak_freezes')
+    .insert({ user_id: userId, freeze_date: freezeDate })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToStreakFreeze(data);
+}
+
+export async function deleteStreakFreeze(freezeId) {
+  const { error } = await supabase.from('streak_freezes').delete().eq('id', freezeId);
   if (error) throw new Error(error.message);
   return { ok: true };
 }
@@ -2968,4 +3024,42 @@ export async function getRosterWithSegments(coachId) {
 
 function rowToPlayerSummary(p) {
   return { id: p.id, displayName: p.display_name, aitaReg: p.aita_reg, stateAbbr: p.state_abbr, ranking: p.ranking, clubName: p.club_name };
+}
+
+// Phase 34 — Coach roster leaderboard (CoachIntelligenceShell's Leaderboard
+// tab). Unlike getRosterWithSegments (ranking-history driven), this reads
+// each linked player's full matches/training_sessions/streak_freezes
+// directly — no segment scoping — so streak/wins/aces/drill-minutes reflect
+// everything a player has ever logged, not just their most recent segment.
+// Relies on the existing "Linked coaches can view a player's matches/
+// training_sessions" RLS policies (phase29/phase30) plus the new streak
+// freeze one (phase34).
+export async function getRosterLeaderboard(coachId) {
+  const { data: links, error: linkErr } = await supabase
+    .from('coach_player_links')
+    .select('player_id, player:user_profiles!coach_player_links_player_id_fkey(id, display_name, aita_reg, club_name)')
+    .eq('coach_id', coachId)
+    .eq('status', 'active');
+  if (linkErr) throw new Error(linkErr.message);
+
+  const players = (links || []).map(l => l.player).filter(Boolean);
+
+  return Promise.all(players.map(async (p) => {
+    const [matchesRes, sessionsRes, freezesRes] = await Promise.all([
+      supabase.from('matches').select('winner, points, match_date').eq('user_id', p.id),
+      supabase.from('training_sessions').select('session_date, duration_minutes').eq('player_id', p.id),
+      supabase.from('streak_freezes').select('freeze_date').eq('user_id', p.id),
+    ]);
+    const matches = matchesRes.data || [];
+    const sessions = sessionsRes.data || [];
+    const freezes = freezesRes.data || [];
+
+    const wins = matches.filter(m => m.winner === 'self').length;
+    const aces = matches.reduce((sum, m) => sum + computeServeStats(m.points || [], 'self').aces, 0);
+    const drillMinutes = sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+    const logDates = [...matches.map(m => m.match_date), ...sessions.map(s => s.session_date)].filter(Boolean);
+    const streak = computeStreak(logDates, { freezeDates: freezes.map(f => f.freeze_date) });
+
+    return { ...rowToPlayerSummary(p), wins, aces, drillMinutes, sessionCount: sessions.length, streak };
+  }));
 }

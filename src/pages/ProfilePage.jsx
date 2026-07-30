@@ -70,6 +70,74 @@ function Field({ label, children }) {
 
 const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9';
 
+// Phase 34 — user-declared streak freeze days (travel/rest dates that count
+// as neither logged nor missed — src/lib/streaks.js). Self-contained: owns
+// its own fetch/add/delete rather than threading through the big profile
+// `form` state, since freeze dates save immediately and aren't part of the
+// edit/cancel/save flow the rest of this page uses.
+function StreakFreezeCard({ userId }) {
+  const [freezes, setFreezes] = useState(null);
+  const [date, setDate] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getStreakFreezes(userId)
+      .then(data => { if (!cancelled) setFreezes(data); })
+      .catch(() => { if (!cancelled) setFreezes([]); });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  async function handleAdd() {
+    if (!date) return;
+    setError('');
+    try {
+      const created = await api.addStreakFreeze(userId, date);
+      setFreezes(prev => [created, ...(prev || [])].sort((a, b) => b.freezeDate.localeCompare(a.freezeDate)));
+      setDate('');
+    } catch (e) {
+      setError(e.message || 'Could not add freeze day');
+    }
+  }
+
+  async function handleRemove(id) {
+    try {
+      await api.deleteStreakFreeze(id);
+      setFreezes(prev => prev.filter(f => f.id !== id));
+    } catch (e) {
+      setError(e.message || 'Could not remove freeze day');
+    }
+  }
+
+  return (
+    <Card className="p-4 sm:p-6">
+      <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Streak Freeze</div>
+      <div className="text-xs text-muted-foreground mt-1">
+        Mark travel or rest days so they don't break your logging streak.
+      </div>
+      <div className="flex gap-2 mt-3 flex-wrap">
+        <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-auto" />
+        <Button size="sm" onClick={handleAdd} disabled={!date}>+ Add freeze day</Button>
+      </div>
+      {error && <div className="text-destructive text-xs mt-2">{error}</div>}
+      {freezes === null ? (
+        <div className="text-xs text-muted-foreground mt-3">Loading…</div>
+      ) : freezes.length === 0 ? (
+        <div className="text-xs text-muted-foreground mt-3">No freeze days set.</div>
+      ) : (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {freezes.map(f => (
+            <span key={f.id} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-sm px-2 py-1 bg-secondary">
+              {f.freezeDate}
+              <button onClick={() => handleRemove(f.id)} className="text-muted-foreground hover:text-destructive" title="Remove">✕</button>
+            </span>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function ProfilePage() {
   const { user, refreshProfile } = useAuth();
 
@@ -251,6 +319,8 @@ export default function ProfilePage() {
           </div>
         </Card>
       )}
+
+      {!editing && !isOrganizer && <StreakFreezeCard userId={user.id} />}
 
       {!editing && (
         <div className="inline-flex border border-border rounded-sm p-1 bg-card gap-1">

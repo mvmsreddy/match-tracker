@@ -25,6 +25,15 @@ export const saveMatch = impl.saveMatch;
 export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
 
+// Phase 35 — retroactive point-by-point entry
+export const updateMatchPoints = hasSupabaseConfig ? supabaseApi.updateMatchPoints : async () => {};
+
+// Phase 34 — Streak Freezes + roster leaderboard
+export const getStreakFreezes = hasSupabaseConfig ? supabaseApi.getStreakFreezes : async () => [];
+export const addStreakFreeze = hasSupabaseConfig ? supabaseApi.addStreakFreeze : async () => {};
+export const deleteStreakFreeze = hasSupabaseConfig ? supabaseApi.deleteStreakFreeze : async () => {};
+export const getRosterLeaderboard = hasSupabaseConfig ? supabaseApi.getRosterLeaderboard : async () => [];
+
 // Profile module — Supabase only
 export const getProfile = hasSupabaseConfig ? supabaseApi.getProfile : async () => null;
 export const upsertProfile = hasSupabaseConfig ? supabaseApi.upsertProfile : async () => {};

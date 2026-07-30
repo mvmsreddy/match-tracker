@@ -9,6 +9,7 @@ export const COACH_TABS = [
   { id: 'library', label: 'Drill Library' },
   { id: 'correlation', label: 'Correlation' },
   { id: 'log', label: 'Log Session' },
+  { id: 'leaderboard', label: 'Leaderboard' },
 ];
 
 const VIEW_TITLES = {
@@ -18,6 +19,7 @@ const VIEW_TITLES = {
   library: ['Drill library', 'Routines mapped to weaknesses, ranked by what has worked'],
   correlation: ['Progress correlation', 'Did the drills actually move the match metric?'],
   log: ['Log a session', "Quick entry — from today's assigned blocks"],
+  leaderboard: ['Leaderboard', 'Roster ranked by streak, wins, aces, and drill minutes'],
 };
 
 function weekStartIso() {

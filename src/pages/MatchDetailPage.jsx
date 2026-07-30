@@ -12,6 +12,7 @@ import Scorebar from '../components/Scorebar';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
+import RetroactivePointEntryModal from '../components/RetroactivePointEntryModal';
 
 export default function MatchDetailPage() {
   const { matchId } = useParams();
@@ -19,6 +20,7 @@ export default function MatchDetailPage() {
   const { theme } = useTheme();
   const [match, setMatch] = useState(null);
   const [error, setError] = useState('');
+  const [addingPoints, setAddingPoints] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,8 +99,18 @@ export default function MatchDetailPage() {
       <div className="wrap" style={{ margin: '14px 0' }}>
         <button className="action-btn primary" onClick={handleDownloadPdf}>Download PDF report</button>
         {' '}
+        <button className="action-btn" onClick={() => setAddingPoints(true)}>Add point detail</button>
+        {' '}
         <Link to="/history"><button className="action-btn">Back to history</button></Link>
       </div>
+
+      {addingPoints && (
+        <RetroactivePointEntryModal
+          match={match}
+          onClose={() => setAddingPoints(false)}
+          onSaved={(updated) => { setMatch(updated); setAddingPoints(false); }}
+        />
+      )}
 
       <StatsPanel points={match.points} header={header} sessionType={match.sessionType} analytics={analytics} />
       <ShotLocationHeatmap points={match.points} selfName={match.selfName} oppName={match.oppName} />

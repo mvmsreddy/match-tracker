@@ -8,6 +8,7 @@ import RosterView from '../components/coach/RosterView';
 import DrillLibraryView from '../components/coach/DrillLibraryView';
 import CorrelationView from '../components/coach/CorrelationView';
 import LogSessionView from '../components/coach/LogSessionView';
+import LeaderboardView from '../components/coach/LeaderboardView';
 
 // Coach Intelligence System — replaces the old CoachPlayersPage(coach)/
 // CoachPlayerDetailPage/CoachSkillGroupsPage/CoachDrillLibraryPage with the
@@ -63,6 +64,7 @@ export default function CoachIntelligencePage() {
           {view === 'library' && <DrillLibraryView />}
           {view === 'correlation' && <CorrelationView />}
           {view === 'log' && <LogSessionView roster={roster} />}
+          {view === 'leaderboard' && <LeaderboardView />}
         </>
       )}
     </CoachIntelligenceShell>
