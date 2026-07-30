@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import SideDrawer from './SideDrawer';
+import { useTheme } from '../context/ThemeContext';
+import NavDrawer from './NavDrawer';
 import NotificationsBell from './NotificationsBell';
 
 // Shared top bar for pages rendered outside AppShell (Track, Match Detail,
-// Video Analysis) — kept visually identical to AppShell's own header so the
-// app doesn't shift design language when navigating into these full-screen
-// flows. Opens the same SideDrawer as everywhere else.
+// Video Analysis) — kept visually identical to AppShell's own header, and
+// opens the exact same NavDrawer AppShell does, so the menu never looks or
+// behaves differently depending on which screen you opened it from.
 export default function TopNav() {
   const { user, logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -37,10 +39,12 @@ export default function TopNav() {
           </div>
         )}
       </div>
-      <SideDrawer
+      <NavDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        user={user}
+        role={user?.role}
+        theme={theme}
+        toggle={toggle}
         logout={logout}
       />
     </>

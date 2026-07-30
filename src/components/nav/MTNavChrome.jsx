@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import SideDrawer from '../SideDrawer';
+import NavDrawer from '../NavDrawer';
 
 // Persistent nav chrome for the "Navy" design system: a bottom tab bar on
 // phone, a left icon+label rail on tablet/desktop. Curated subset of
-// SideDrawer's full link list (a 5/6-item bar can't hold all 8 links a
+// NavDrawer's full link list (a 5/6-item bar can't hold all 8 links a
 // player/coach has) — the hamburger button here still opens the same
-// SideDrawer as every other theme, so nothing becomes unreachable, it's
+// NavDrawer as every other theme, so nothing becomes unreachable, it's
 // just no longer the *only* way to get around.
 function navItemsForRole(role) {
   const dashboard = { id: 'dashboard', code: 'DB', label: 'Dashboard', to: '/' };
@@ -48,7 +48,7 @@ function navItemsForRole(role) {
 
 export default function MTNavChrome({ active }) {
   const { user, logout } = useAuth();
-  const { theme, setTheme, THEMES } = useTheme();
+  const { theme, toggle } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const role = user?.role || 'player';
   const { tabBar, rail } = navItemsForRole(role);
@@ -105,14 +105,13 @@ export default function MTNavChrome({ active }) {
         )}
       </nav>
 
-      <SideDrawer
+      <NavDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        user={user}
-        logout={logout}
+        role={role}
         theme={theme}
-        setTheme={setTheme}
-        THEMES={THEMES}
+        toggle={toggle}
+        logout={logout}
       />
     </>
   );
