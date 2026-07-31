@@ -152,7 +152,7 @@ export default function PerformanceSummarySection() {
           </div>
 
           <div className="mt-3">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={180} debounce={200}>
               {chartMode === 'points' ? (
                 <AreaChart data={active.points} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />

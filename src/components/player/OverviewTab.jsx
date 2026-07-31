@@ -192,7 +192,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="font-bold text-sm mb-4">Match Performance Overview</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={160} debounce={200}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -277,7 +277,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       <Card className="p-4 sm:p-6 shadow-sm">
         <div className="font-bold text-sm sm:text-base mb-1">Ranking Growth</div>
         <div className="text-xs text-muted-foreground mb-4">Lower is better — axis is inverted</div>
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={220} debounce={200}>
           <LineChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
             <XAxis 

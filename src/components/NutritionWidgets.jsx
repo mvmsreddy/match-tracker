@@ -34,7 +34,7 @@ export function MacroDonut({ totals, goal }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
           <div className="relative">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={180} debounce={200}>
               <PieChart>
                 <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
                   {data.map((entry, i) => <Cell key={i} fill={entry.color} />)}

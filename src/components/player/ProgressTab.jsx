@@ -111,7 +111,7 @@ export default function ProgressTab({ circuit, playerId }) {
             )}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={260} debounce={200}>
           <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
             <XAxis 

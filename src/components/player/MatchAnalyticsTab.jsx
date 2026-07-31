@@ -227,7 +227,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         <Card className="p-4 sm:p-6 shadow-sm">
           <div className="font-bold text-sm sm:text-base mb-1">Stroke Win Rates</div>
           <div className="text-xs text-muted-foreground mb-4">Performance across different shot types</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={200} debounce={200}>
             <BarChart data={strokeChartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
               <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
               <XAxis 
@@ -267,7 +267,7 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
         <Card className="p-4 sm:p-6 shadow-sm">
           <div className="font-bold text-sm sm:text-base mb-1">Skills Breakdown</div>
           <div className="text-xs text-muted-foreground mb-4">Your all-round performance profile</div>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={280} debounce={200}>
             <RadarChart data={skillRadarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
               <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
               <PolarAngleAxis 

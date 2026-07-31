@@ -48,7 +48,7 @@ export default function SkillRadarCard({ ratings, stats, onCta, ctaLabel = 'Rate
           )}
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={240} debounce={200}>
           <RadarChart data={data} margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
             <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
             <PolarAngleAxis
