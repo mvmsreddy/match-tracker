@@ -4,7 +4,7 @@
 
 @theme {
   --font-display: 'Manrope', system-ui, sans-serif;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
   --color-background: hsl(var(--app-background));
   --color-foreground: hsl(var(--app-foreground));
@@ -23,6 +23,7 @@
   --color-accent-ink: hsl(var(--app-accent-ink));
   --color-forced: hsl(var(--app-forced));
   --color-forced-background: hsl(var(--app-forced-background));
+  --color-info: hsl(var(--app-info));
   --color-destructive: hsl(var(--app-destructive));
   --color-destructive-foreground: hsl(var(--app-destructive-foreground));
   --color-border: hsl(var(--app-border));
@@ -49,10 +50,11 @@
   --app-popover: 0 0% 100%; --app-popover-foreground: 147 22% 8%;
   --app-primary: 71 85% 65%; --app-primary-foreground: 147 22% 8%;
   --app-secondary: 50 23% 95%; --app-secondary-foreground: 147 22% 8%;
-  --app-muted: 53 16% 90%; --app-muted-foreground: 132 7% 45%;
+  --app-muted: 53 16% 90%; --app-muted-foreground: 130 7% 33%;
   --app-accent: 71 85% 65%; --app-accent-foreground: 147 22% 8%;
-  --app-accent-ink: 76 71% 37%;
+  --app-accent-ink: 79 74% 24%;
   --app-forced: 41 100% 27%; --app-forced-background: 40 100% 95%;
+  --app-info: 215 75% 43%;
   --app-destructive: 11 67% 35%; --app-destructive-foreground: 0 0% 100%;
   --app-border: 86 10% 86%; --app-input: 86 10% 86%; --app-ring: 71 85% 65%;
   --app-chart-1: 71 85% 65%; --app-chart-2: 215 80% 55%; --app-chart-3: 85 57% 24%;
@@ -98,7 +100,7 @@
    always loses to any class-selector utility on normal specificity, instead
    of depending on cross-layer priority ordering. */
 @layer utilities {
-  body { font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; }
+  body { font-family: 'Manrope', system-ui, -apple-system, sans-serif; }
   h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Manrope', system-ui, sans-serif; letter-spacing: -0.02em; }
   a { text-decoration: none; color: inherit; }
 

@@ -202,11 +202,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   .action-btn { font-size: 0.68rem; padding: 13px 12px; }
 }
 
-/* ── Tablets and larger (≥ 640px) ── */
-@media (min-width: 640px) {
-  .header { max-width: 680px; margin: 0 auto; }
-}
-
 /* TopNav, NavDrawer and MTNavChrome (and their .top-nav, .mt-, .side-drawer,
    .drawer- and .hamburger-btn CSS) were retired in favor of one AppNav —
    styled with Tailwind utility classes against the --app- tokens directly,
@@ -259,9 +254,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 
 /* Section label inside modals — still used by AiReviewModal.jsx */
 .t-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 14px 0 8px; }
-
-/* Modal large variant — still used by AiReviewModal.jsx */
-.t-modal-lg { max-width: 680px; }
 
 /* WD label — still used by BracketMatchCard (EventDetailPage.jsx) */
 .t-wd-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; color: #e05252; }
