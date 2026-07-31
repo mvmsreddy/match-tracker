@@ -27,14 +27,14 @@ TableRow.displayName = 'TableRow';
 const TableHead = React.forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
-    className={cn('h-10 px-2 text-left align-middle font-medium text-muted-foreground', className)}
+    className={cn('h-10 px-2 text-left align-middle text-[13px] font-medium text-muted-foreground', className)}
     {...props}
   />
 ));
 TableHead.displayName = 'TableHead';
 
 const TableCell = React.forwardRef(({ className, ...props }, ref) => (
-  <td ref={ref} className={cn('p-2 align-middle', className)} {...props} />
+  <td ref={ref} className={cn('p-2 align-middle text-[13px]', className)} {...props} />
 ));
 TableCell.displayName = 'TableCell';
 

@@ -63,7 +63,7 @@ export default function WeeklyGoalRings({ rings }) {
           <div className="text-sm font-bold mt-0.5">Goal rings · close all 3 to level up</div>
         </div>
         {allClosed && (
-          <span className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground">
+          <span className="rounded-full px-2.5 py-1 text-[12px] font-bold uppercase tracking-wider bg-primary text-primary-foreground">
             Perfect Week
           </span>
         )}
@@ -92,9 +92,9 @@ export default function WeeklyGoalRings({ rings }) {
         />
       </div>
       <div className="grid grid-cols-3 gap-3 mt-3 text-center">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Matches</div>
-        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Practice</div>
-        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Hydration (avg/day)</div>
+        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Matches</div>
+        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Practice</div>
+        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Hydration (avg/day)</div>
       </div>
     </Card>
   );

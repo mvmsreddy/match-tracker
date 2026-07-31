@@ -148,12 +148,12 @@ export default function MessagesPage() {
                 <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[75%] rounded-sm px-3 py-2 ${isMine ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
                     {!isMine && (
-                      <div className="text-[10px] font-bold uppercase tracking-wider opacity-70 mb-0.5">
+                      <div className="text-[12px] font-bold uppercase tracking-wider opacity-70 mb-0.5">
                         {m.sender?.displayName || 'Unknown'}{m.sender?.role ? ` · ${m.sender.role}` : ''}
                       </div>
                     )}
                     <div className="text-sm whitespace-pre-wrap">{m.body}</div>
-                    <div className="text-[10px] opacity-60 mt-1 text-right">{timeLabel(m.createdAt)}</div>
+                    <div className="text-[12px] opacity-60 mt-1 text-right">{timeLabel(m.createdAt)}</div>
                   </div>
                 </div>
               );

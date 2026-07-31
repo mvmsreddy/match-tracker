@@ -1,11 +1,11 @@
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 
 export default function MomentumGraph({ points, selfName, oppName, analytics }) {
   if (points.length < 3) {
     return (
       <Card>
         <CardHeader><CardTitle>Live Momentum</CardTitle></CardHeader>
-        <CardContent className="py-6 text-center text-xs text-tt-muted-foreground">
+        <CardContent className="py-6 text-center text-xs text-muted-foreground">
           Log a few more points to see momentum
         </CardContent>
       </Card>
@@ -34,7 +34,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
   const areaPts = `${gx(0).toFixed(1)},${midY} ${linePts} ${gx(data.length - 1).toFixed(1)},${midY}`;
 
   const lastVal = data[data.length - 1];
-  const lineColor = lastVal >= 0 ? 'var(--color-tt-brand)' : 'var(--color-tt-opp)';
+  const lineColor = lastVal >= 0 ? 'var(--color-primary)' : 'var(--color-destructive)';
   const lastX = gx(data.length - 1).toFixed(1);
   const lastY = gy(lastVal).toFixed(1);
 
@@ -48,10 +48,10 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
       <CardHeader><CardTitle>Live Momentum</CardTitle></CardHeader>
       <CardContent className="pt-0">
         {/* Streak summary */}
-        <div className="mb-2 flex items-center justify-center gap-2 font-tt-mono text-xs">
-          <span className="text-tt-brand">{selfName}: {selfRecent}/{recent.length} recent</span>
-          <span className="text-tt-muted-foreground">|</span>
-          <span className="text-tt-opp">{oppName}: {oppRecent}/{recent.length} recent</span>
+        <div className="mb-2 flex items-center justify-center gap-2 font-mono text-xs">
+          <span className="text-primary">{selfName}: {selfRecent}/{recent.length} recent</span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-destructive">{oppName}: {oppRecent}/{recent.length} recent</span>
         </div>
 
         <div>
@@ -66,23 +66,23 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
             </defs>
 
             {/* Player zone labels */}
-            <text x={PX} y={PY - 4} fill="var(--color-tt-brand)" fontSize="9" fontFamily="monospace" opacity="0.8">
+            <text x={PX} y={PY - 4} fill="var(--color-primary)" fontSize="9" fontFamily="monospace" opacity="0.8">
               {selfName.slice(0, 14)}
             </text>
-            <text x={PX} y={H - 3} fill="var(--color-tt-opp)" fontSize="9" fontFamily="monospace" opacity="0.8">
+            <text x={PX} y={H - 3} fill="var(--color-destructive)" fontSize="9" fontFamily="monospace" opacity="0.8">
               {oppName.slice(0, 14)}
             </text>
 
             {/* Zero / neutral line */}
-            <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="var(--color-tt-border)" strokeWidth="1.5" strokeDasharray="4,4" />
+            <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4,4" />
 
             {/* Game boundary markers */}
             {gameBoundaries.map((gb) => {
               const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
               return (
                 <g key={gb.index}>
-                  <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="var(--color-tt-border)" strokeWidth="0.75" opacity="0.6" />
-                  <text x={px} y={PY - 4} fill="var(--color-tt-muted-foreground)" fontSize="7" fontFamily="monospace" textAnchor="middle">
+                  <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="var(--color-border)" strokeWidth="0.75" opacity="0.6" />
+                  <text x={px} y={PY - 4} fill="var(--color-muted-foreground)" fontSize="7" fontFamily="monospace" textAnchor="middle">
                     {gb.label}
                   </text>
                 </g>
@@ -90,9 +90,9 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
             })}
 
             {/* Brand fill: self is ahead */}
-            <polygon points={areaPts} fill="var(--color-tt-brand)" opacity="0.18" clipPath="url(#clip-above)" />
+            <polygon points={areaPts} fill="var(--color-primary)" opacity="0.18" clipPath="url(#clip-above)" />
             {/* Opp fill: opp is ahead */}
-            <polygon points={areaPts} fill="var(--color-tt-opp)" opacity="0.18" clipPath="url(#clip-below)" />
+            <polygon points={areaPts} fill="var(--color-destructive)" opacity="0.18" clipPath="url(#clip-below)" />
 
             {/* Momentum line */}
             <polyline
@@ -113,7 +113,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
               const label = i === 0 ? null : points[i - 1].scoreAfter;
               return (
                 <g key={i}>
-                  <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="var(--color-tt-muted-foreground)" strokeWidth="0.6" opacity="0.6" />
+                  <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="var(--color-muted-foreground)" strokeWidth="0.6" opacity="0.6" />
                   <circle cx={px} cy={py.toFixed(1)} r="1.2" fill={lineColor} opacity="0.9" />
                   {label && (
                     <text
@@ -121,7 +121,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
                       y={tickTop}
                       transform={`rotate(-90 ${px} ${tickTop})`}
                       fontSize="4.5"
-                      fill="var(--color-tt-muted-foreground)"
+                      fill="var(--color-muted-foreground)"
                       fontFamily="monospace"
                       textAnchor="start"
                     >
@@ -137,10 +137,10 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
           </svg>
         </div>
 
-        <div className="mt-1 flex items-center justify-between font-tt-mono text-[10px] text-tt-muted-foreground">
-          <span className="text-tt-brand">▲ {selfName} winning</span>
+        <div className="mt-1 flex items-center justify-between font-mono text-[12px] text-muted-foreground">
+          <span className="text-primary">▲ {selfName} winning</span>
           <span>point #1 → #{points.length}</span>
-          <span className="text-tt-opp">▼ {oppName} winning</span>
+          <span className="text-destructive">▼ {oppName} winning</span>
         </div>
       </CardContent>
     </Card>

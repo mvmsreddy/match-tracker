@@ -56,7 +56,7 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
           <Swords className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500">Rivalry Alert</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-amber-500">Rivalry Alert</div>
           <div className="text-sm font-bold mt-0.5 truncate">
             You've faced {opponentName(next)} before
           </div>
@@ -76,7 +76,7 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
               <span className="text-muted-foreground mx-1.5 text-lg">-</span>
               <span className="text-destructive">{losses}</span>
             </div>
-            <div className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+            <div className={`inline-flex items-center gap-1 text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
               dominant ? 'bg-primary/10 text-primary' : even ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'
             }`}>
               {dominant ? <TrendingUp className="w-3 h-3" /> : even ? <Trophy className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}

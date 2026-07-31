@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 import ShotLocationCourt from './ShotLocationCourt';
 import ChipButton from './tracker/ChipButton';
-import { Button } from './ui/button';
+import { Button } from './primitives/button';
 import { cn } from '../lib/utils';
 
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
@@ -230,11 +230,11 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
   const colClass = (who) => cn(
-    'rounded-t-tt border-b px-1.5 py-1.5 text-center font-tt-mono text-xs font-semibold uppercase tracking-wide',
-    who === 'self' ? 'text-tt-brand' : 'text-tt-opp',
+    'rounded-t-lg border-b px-1.5 py-1.5 text-center font-mono text-xs font-semibold uppercase tracking-wide',
+    who === 'self' ? 'text-primary' : 'text-destructive',
     pending.server === who
-      ? (who === 'self' ? 'border-b-2 border-tt-brand bg-tt-brand/10' : 'border-b-2 border-tt-opp bg-tt-opp/10')
-      : 'border-tt-border'
+      ? (who === 'self' ? 'border-b-2 border-primary bg-primary/10' : 'border-b-2 border-destructive bg-destructive/10')
+      : 'border-border'
   );
   const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
   const receiver = pending.server === 'self' ? 'opp' : 'self';
@@ -258,14 +258,14 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
     <div className="flex flex-1 flex-col py-3">
       {/* Breadcrumb */}
       {breadcrumbs.length > 0 && (
-        <div className="mb-2 border-b border-tt-border pb-2 font-tt-mono text-xs text-tt-muted-foreground">
+        <div className="mb-2 border-b border-border pb-2 font-mono text-xs text-muted-foreground">
           {breadcrumbs.join(' → ')}
         </div>
       )}
 
       {/* Active step card */}
       <div
-        className="mb-2 flex min-h-[180px] flex-1 flex-col overflow-y-auto rounded-tt border border-tt-border border-l-[3px] border-l-tt-brand bg-tt-surface p-3.5"
+        className="mb-2 flex min-h-[180px] flex-1 flex-col overflow-y-auto rounded-lg border border-border border-l-[3px] border-l-primary bg-card p-3.5"
         ref={stepCardRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -273,7 +273,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {(history.length > 0 || canUndo) && (
           <button
             type="button"
-            className="mb-1 flex-shrink-0 cursor-pointer self-start bg-transparent font-tt-mono text-xs text-tt-muted-foreground hover:text-tt-brand"
+            className="mb-1 flex-shrink-0 cursor-pointer self-start bg-transparent font-mono text-xs text-muted-foreground hover:text-primary"
             onClick={goBack}
             title="Go back one step (or swipe right)"
           >
@@ -283,7 +283,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'faultLocation' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">
               {pending.serveAttempt === '2nd' ? 'Double Fault — Where?' : '1st Serve Fault — Where?'}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -296,23 +296,23 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'serviceScreen' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{serveLabel}</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{serveLabel}</div>
             <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {/* Left column: always self */}
               <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                 <div className={colClass('self')}>{playerName('self')}</div>
                 {pending.server === 'self' ? (
                   <>
-                    <ChipButton variant="action" className="flex-1" onClick={handleAce}>Ace</ChipButton>
-                    <ChipButton variant="warn" className="flex-1" onClick={handleFault}>
+                    <ChipButton variant="action" className="min-h-[54px] flex-1" onClick={handleAce}>Ace</ChipButton>
+                    <ChipButton variant="warn" className="min-h-[54px] flex-1" onClick={handleFault}>
                       {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
                     </ChipButton>
-                    <ChipButton className="flex-1" onClick={handleBallIn}>Ball In</ChipButton>
+                    <ChipButton className="min-h-[54px] flex-1" onClick={handleBallIn}>Ball In</ChipButton>
                   </>
                 ) : (
                   <>
-                    <ChipButton variant="self" className="flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
-                    <ChipButton variant="warn" className="flex-1" onClick={handleReturnError}>Return Error</ChipButton>
+                    <ChipButton variant="self" className="min-h-[54px] flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
+                    <ChipButton variant="warn" className="min-h-[54px] flex-1" onClick={handleReturnError}>Return Error</ChipButton>
                   </>
                 )}
               </div>
@@ -321,16 +321,16 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                 <div className={colClass('opp')}>{playerName('opp')}</div>
                 {pending.server === 'opp' ? (
                   <>
-                    <ChipButton variant="action" className="flex-1" onClick={handleAce}>Ace</ChipButton>
-                    <ChipButton variant="warn" className="flex-1" onClick={handleFault}>
+                    <ChipButton variant="action" className="min-h-[54px] flex-1" onClick={handleAce}>Ace</ChipButton>
+                    <ChipButton variant="warn" className="min-h-[54px] flex-1" onClick={handleFault}>
                       {pending.serveAttempt === '2nd' ? 'Double Fault' : 'Fault'}
                     </ChipButton>
-                    <ChipButton className="flex-1" onClick={handleBallIn}>Ball In</ChipButton>
+                    <ChipButton className="min-h-[54px] flex-1" onClick={handleBallIn}>Ball In</ChipButton>
                   </>
                 ) : (
                   <>
-                    <ChipButton variant="self" className="flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
-                    <ChipButton variant="warn" className="flex-1" onClick={handleReturnError}>Return Error</ChipButton>
+                    <ChipButton variant="self" className="min-h-[54px] flex-1" onClick={handleReturnWinner}>Return Winner</ChipButton>
+                    <ChipButton variant="warn" className="min-h-[54px] flex-1" onClick={handleReturnError}>Return Error</ChipButton>
                   </>
                 )}
               </div>
@@ -345,7 +345,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'returnErrorType' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{playerName(receiver)} — Return Error</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{playerName(receiver)} — Return Error</div>
             <div className="flex flex-wrap gap-2">
               <ChipButton variant="forced" full onClick={() => handleReturnErrorReason('ForcedError')}>
                 Forced Error
@@ -359,7 +359,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'rallySelect' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Rally Length</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Rally Length</div>
             <div className="mb-2 grid grid-cols-2 gap-2.5">
               <div className={colClass('self')}>{playerName('self')}</div>
               <div className={colClass('opp')}>{playerName('opp')}</div>
@@ -380,18 +380,18 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'ballInPlay' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Ball in Play</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Ball in Play</div>
             <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {(['self', 'opp']).map((who) => (
                 <div key={who} className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass(who)}>{playerName(who)}</div>
-                  <ChipButton variant="self" className="flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
+                  <ChipButton variant="self" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
                     Winner
                   </ChipButton>
-                  <ChipButton variant="forced" className="flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
+                  <ChipButton variant="forced" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
                     Forced Error
                   </ChipButton>
-                  <ChipButton variant="warn" className="flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
+                  <ChipButton variant="warn" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
                     Unforced Error
                   </ChipButton>
                 </div>
@@ -404,7 +404,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Select Wing</div>
+              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Select Wing</div>
               <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
                 <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
@@ -433,7 +433,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">{pending.shotWing} — Select Shot</div>
+              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{pending.shotWing} — Select Shot</div>
               <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
                 <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
@@ -462,7 +462,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'errorLocation' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Unforced Error — Where did it go?</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Unforced Error — Where did it go?</div>
             <div className="flex flex-wrap gap-2">
               <ChipButton variant="warn" onClick={() => handleErrorLocation('Long')}>Long</ChipButton>
               <ChipButton variant="warn" onClick={() => handleErrorLocation('Wide')}>Wide</ChipButton>
@@ -473,7 +473,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'infractionSelect' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Infraction? (Optional)</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Infraction? (Optional)</div>
             <div className="flex flex-wrap gap-2">
               {OTHER_SUB_TYPES.map((sub) => (
                 <ChipButton key={sub} className="flex-[1_1_calc(50%-4px)]" onClick={() => commitAndReset({ infraction: sub })}>

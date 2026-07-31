@@ -1,10 +1,10 @@
 import { ZONES, SHORT_LABEL, center } from '../lib/courtZones';
 import { computeShotLocationBreakdown } from '../lib/analytics';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Table, TableBody, TableRow, TableHead, TableCell } from './ui/table';
+import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
+import { Table, TableBody, TableRow, TableHead, TableCell } from './primitives/table';
 
 const ORDER = ['win', 'forced', 'ue'];
-const COLOR_VAR = { win: 'var(--color-tt-win)', forced: 'var(--color-tt-forced)', ue: 'var(--color-tt-destructive)' };
+const COLOR_VAR = { win: 'var(--color-chart-3)', forced: 'var(--color-forced)', ue: 'var(--color-destructive)' };
 const LABEL = { win: 'Winner', forced: 'Forced Error', ue: 'Unforced Error' };
 const BAND_GAP = 1.5;
 
@@ -30,7 +30,7 @@ function zoneTooltip(zoneId, counts) {
 function ZoneCourt({ breakdown, label }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-1.5">
-      <div className="font-tt-mono text-[10px] uppercase tracking-wider text-tt-muted-foreground">{label}</div>
+      <div className="font-mono text-[12px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="court-svg-wrap w-full max-w-[150px]">
         <svg viewBox="0 0 300 640" role="img" aria-label={label + ' shot location heatmap'}>
           {ZONES.map((z) => {
@@ -65,7 +65,7 @@ function Legend() {
   return (
     <div className="mb-2 flex flex-wrap gap-3">
       {ORDER.map((k) => (
-        <span className="flex items-center gap-1.5 font-tt-mono text-[10px] uppercase tracking-wider text-tt-muted-foreground" key={k}>
+        <span className="flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wider text-muted-foreground" key={k}>
           <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLOR_VAR[k] }} />
           {LABEL[k]}
         </span>
@@ -100,14 +100,14 @@ function ZoneTable({ selfBreakdown, oppBreakdown, selfName, oppName }) {
         <TableBody>
           <TableRow>
             <TableHead>Zone</TableHead>
-            <TableHead className="text-tt-brand">{selfName} (W/F/UE)</TableHead>
-            <TableHead className="text-tt-opp">{oppName} (W/F/UE)</TableHead>
+            <TableHead className="text-primary">{selfName} (W/F/UE)</TableHead>
+            <TableHead className="text-destructive">{oppName} (W/F/UE)</TableHead>
           </TableRow>
           {zoneIds.map((id) => (
             <TableRow key={id}>
               <TableCell>{id}</TableCell>
-              <TableCell className="text-tt-brand">{fmt(selfBreakdown[id])}</TableCell>
-              <TableCell className="text-tt-opp">{fmt(oppBreakdown[id])}</TableCell>
+              <TableCell className="text-primary">{fmt(selfBreakdown[id])}</TableCell>
+              <TableCell className="text-destructive">{fmt(oppBreakdown[id])}</TableCell>
             </TableRow>
           ))}
         </TableBody>

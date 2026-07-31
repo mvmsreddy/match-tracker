@@ -332,13 +332,13 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
                 <div key={m.id} className={`flex items-center gap-3 p-3 rounded-sm border border-border bg-card border-l-4 ${isToday ? 'border-l-destructive' : 'border-l-blue-400'}`}>
                   <div className="w-14 shrink-0 text-center">
                     <div className={`text-xs font-bold ${isToday ? 'text-destructive' : 'text-blue-400'}`}>{dayLabel(m.date, m.hasDay)}</div>
-                    <div className="text-[10px] text-muted-foreground">{m.round || 'TBC'}</div>
+                    <div className="text-[12px] text-muted-foreground">{m.round || 'TBC'}</div>
                   </div>
                   <div className="flex-1 min-w-32">
                     <div className="text-sm font-semibold">{m.opponentName}</div>
                     <div className="text-xs text-muted-foreground">{m.tournamentName}{m.grade ? ` · ${m.grade}` : ''}</div>
                   </div>
-                  <span className="rounded-sm px-2 py-0.5 text-[10px] font-bold bg-blue-400/10 text-blue-400 shrink-0">{m.h2h || 'First meeting'}</span>
+                  <span className="rounded-sm px-2 py-0.5 text-[12px] font-bold bg-blue-400/10 text-blue-400 shrink-0">{m.h2h || 'First meeting'}</span>
                   {isOwnDashboard && (
                     <Button
                       size="sm"
@@ -375,7 +375,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
                   <div className="text-xs text-muted-foreground mt-0.5">{m.tournamentName} &middot; {m.round} &middot; {formatDate(m.date)}</div>
                 </div>
                 <div className={`text-sm font-bold shrink-0 ${m.won ? 'text-primary' : 'text-destructive'}`}>{m.score || '—'}</div>
-                {m.tracked && <span className="rounded-sm px-2 py-0.5 text-[10px] font-bold bg-primary/10 text-primary shrink-0">Full stats</span>}
+                {m.tracked && <span className="rounded-sm px-2 py-0.5 text-[12px] font-bold bg-primary/10 text-primary shrink-0">Full stats</span>}
                 <div className="text-muted-foreground shrink-0">→</div>
               </button>
             ))}

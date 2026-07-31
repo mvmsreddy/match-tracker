@@ -31,11 +31,11 @@ export default function DailyMissionCard({ mission, missionStreak, userId, onCom
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
+            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
               Daily Mission
             </div>
             {missionStreak > 0 && (
-              <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-500" data-testid="mission-streak">
+              <div className="inline-flex items-center gap-0.5 text-[12px] font-bold text-amber-500" data-testid="mission-streak">
                 <Flame className="w-3 h-3" strokeWidth={2.5} />
                 {missionStreak}d
               </div>

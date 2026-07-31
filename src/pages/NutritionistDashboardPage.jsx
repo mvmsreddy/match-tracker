@@ -76,7 +76,7 @@ export default function NutritionistDashboardPage() {
           <Apple className="w-6 h-6 text-primary" strokeWidth={2.2} />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-primary">Nutritionist Console</div>
+          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-primary">Nutritionist Console</div>
           <h1 className="font-display font-extrabold text-2xl leading-tight">Hi, {user.displayName || user.name}</h1>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function NutritionistDashboardPage() {
       {selectedAthlete && (
         <Card className="p-3 flex items-center justify-between" data-testid="nutritionist-selected-athlete">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Editing plan for</div>
+            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Editing plan for</div>
             <div className="font-bold text-sm">{selectedAthlete.name}</div>
           </div>
           <button
@@ -169,7 +169,7 @@ function AthleteRosterTab({ roster, logsByAthlete, onSelect }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div className="font-bold text-sm">{a.name}</div>
-                {flag && <span className="text-[10px] uppercase font-bold text-amber-500 flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" />Flag</span>}
+                {flag && <span className="text-[12px] uppercase font-bold text-amber-500 flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" />Flag</span>}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 truncate">{a.email}</div>
               <div className="mt-2 grid grid-cols-5 gap-1 max-w-md">
@@ -313,7 +313,7 @@ function PlanConfigTab({ athleteId }) {
             { k: 'potassiumMg',  label: 'K (mg)' },
           ].map(m => (
             <label key={m.k} className="block">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{m.label}</span>
+              <span className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">{m.label}</span>
               <Input
                 type="number"
                 value={profile.micronutrientTargets?.[m.k] ?? 0}
@@ -356,7 +356,7 @@ function SupplementalProtocolsTab({ athleteId }) {
         <label key={f.k} className="flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold">{f.label}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{f.unit}</div>
+            <div className="text-[12px] uppercase tracking-wider text-muted-foreground">{f.unit}</div>
           </div>
           <Input
             type="number"
@@ -410,7 +410,7 @@ function MealTemplatesTab({ nutritionistId }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div className="font-bold text-sm">{t.name}</div>
-                <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{t.tag}</span>
+                <span className="text-[12px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{t.tag}</span>
               </div>
               {t.description && <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>}
               <div className="text-xs font-mono mt-1 text-muted-foreground">
@@ -459,20 +459,20 @@ function BodyCompositionTab({ athleteId }) {
         <Card className="p-4">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Weight</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Weight</div>
               <div className="font-display font-extrabold text-2xl tracking-tighter">{latest.weightKg}<span className="text-sm text-muted-foreground">kg</span></div>
               {wDelta !== 0 && (
-                <div className={`text-[10px] font-bold ${wDelta > 0 ? 'text-amber-500' : 'text-primary'}`}>
+                <div className={`text-[12px] font-bold ${wDelta > 0 ? 'text-amber-500' : 'text-primary'}`}>
                   {wDelta > 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {wDelta > 0 ? '+' : ''}{wDelta.toFixed(1)} kg
                 </div>
               )}
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Body Fat</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Body Fat</div>
               <div className="font-display font-extrabold text-2xl tracking-tighter">{latest.bodyFatPct || '—'}<span className="text-sm text-muted-foreground">%</span></div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Hydration</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Hydration</div>
               <div className="font-display font-extrabold text-2xl tracking-tighter">{latest.hydrationPct || '—'}<span className="text-sm text-muted-foreground">%</span></div>
             </div>
           </div>

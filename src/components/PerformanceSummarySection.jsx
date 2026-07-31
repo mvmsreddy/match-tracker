@@ -92,35 +92,35 @@ export default function PerformanceSummarySection() {
       {/* Stat quad */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-2.5 rounded-lg bg-muted/40">
-          <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Rank</div>
+          <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Rank</div>
           <div className="flex items-baseline gap-1.5 mt-1">
             <div className="font-display font-extrabold text-xl tracking-tighter">#{active.latest.rank}</div>
             {rankDelta !== 0 && (
-              <span className={`text-[10px] font-bold ${rankDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`text-[12px] font-bold ${rankDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
                 {rankDelta > 0 ? '▲' : '▼'}{Math.abs(rankDelta)}
               </span>
             )}
           </div>
         </div>
         <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/10">
-          <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Points</div>
+          <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Points</div>
           <div className="flex items-baseline gap-1.5 mt-1">
             <div className="font-display font-extrabold text-xl tracking-tighter text-primary">{active.latest.totalPoints}</div>
             {pointsDelta !== 0 && (
-              <span className={`text-[10px] font-bold ${pointsDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`text-[12px] font-bold ${pointsDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
                 {pointsDelta > 0 ? '+' : ''}{pointsDelta}
               </span>
             )}
           </div>
         </div>
         <div className="p-2.5 rounded-lg bg-muted/40">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+          <div className="flex items-center gap-1 text-[12px] uppercase tracking-wider font-bold text-muted-foreground">
             <Award className="w-3 h-3" />Best rank
           </div>
           <div className="font-display font-extrabold text-xl tracking-tighter mt-1">#{active.bestRank}</div>
         </div>
         <div className="p-2.5 rounded-lg bg-muted/40">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+          <div className="flex items-center gap-1 text-[12px] uppercase tracking-wider font-bold text-muted-foreground">
             <TrendingUp className="w-3 h-3" />Best pts
           </div>
           <div className="font-display font-extrabold text-xl tracking-tighter mt-1">{active.bestPoints}</div>
@@ -171,7 +171,7 @@ export default function PerformanceSummarySection() {
                 </LineChart>
               )}
             </ResponsiveContainer>
-            <div className="text-[10px] text-muted-foreground text-center mt-1">
+            <div className="text-[12px] text-muted-foreground text-center mt-1">
               {chartMode === 'points' ? 'Points across snapshots' : 'Lower is better — axis inverted'}
             </div>
           </div>

@@ -83,11 +83,11 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
 
       <div className="p-5 sm:p-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 text-destructive px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 text-destructive px-2.5 py-1 text-[12px] font-bold uppercase tracking-widest">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
             Match today
           </span>
-          <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+          <span className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground">
             {circuit.category} · {circuit.subcategory}
           </span>
         </div>
@@ -103,7 +103,7 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
               {primary.grade && <> · {primary.grade}</>}
             </div>
             {primary.h2h && (
-              <div className="mt-2 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">
+              <div className="mt-2 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[12px] font-bold uppercase tracking-widest">
                 {primary.h2h}
               </div>
             )}
@@ -122,7 +122,7 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
 
         {others.length > 0 && (
           <div className="mt-4 pt-4 border-t border-border">
-            <div className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2">
+            <div className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground mb-2">
               Also today · {others.length} more
             </div>
             <div className="space-y-2">

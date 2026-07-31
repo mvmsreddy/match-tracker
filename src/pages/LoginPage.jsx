@@ -145,7 +145,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="font-display font-extrabold text-lg tracking-tight text-white leading-none">TENNIS TRACKER</div>
-            <div className="text-[10px] uppercase tracking-[0.3em] text-white/40 mt-1">PRO · EST. 2025</div>
+            <div className="text-[12px] uppercase tracking-[0.3em] text-white/40 mt-1">PRO · EST. 2025</div>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export default function LoginPage() {
               </div>
               <span className="font-display font-extrabold text-lg tracking-tight text-white">TENNIS TRACKER</span>
             </div>
-            <div className="text-[10px] uppercase tracking-[0.35em] text-white/50 font-semibold">PRO · EST. 2025</div>
+            <div className="text-[12px] uppercase tracking-[0.35em] text-white/50 font-semibold">PRO · EST. 2025</div>
           </div>
 
           <Card className="border-none shadow-[0_20px_60px_-15px_rgba(10,17,40,0.15)] bg-white lg:shadow-[0_1px_0_0_rgba(0,0,0,0.03)] lg:border lg:border-slate-200/70">
@@ -340,7 +340,7 @@ export default function LoginPage() {
                             <r.icon className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
                             <span className="min-w-0">
                               <span className="block text-xs font-bold leading-tight">{r.label}</span>
-                              <span className={`block text-[10px] leading-tight mt-0.5 ${role === r.id ? 'text-white/60' : 'text-slate-500'}`}>{r.desc}</span>
+                              <span className={`block text-[12px] leading-tight mt-0.5 ${role === r.id ? 'text-white/60' : 'text-slate-500'}`}>{r.desc}</span>
                             </span>
                           </button>
                         ))}

@@ -2,90 +2,55 @@
    Deliberately imports only the theme/utilities layers (not "tailwindcss" itself),
    which skips Tailwind's preflight reset — the rest of the app (~15 other pages)
    shares one global index.css with zero scoping, so a document-wide reset would
-   regress them. All new tokens use a unique "tt-" prefix so landing at :root
-   cannot collide with the existing --bg/--accent/--border theme variables. */
+   regress them. The tracker used to run its own "tt-" prefixed token set (kept
+   separate so landing at :root couldn't collide with the legacy --bg/--accent/
+   --border variables); those are gone now that every JSX consumer reads the
+   app-wide --app-*-backed theme vars from styles/app-tailwind.css directly, so
+   the two selector blocks below do the same. */
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
-@theme {
-  /* Matched to the app-wide --font-display/--font-body choices (see
-     src/styles/app-tailwind.css) — both families are already loaded globally
-     via that file's @import, so referencing them here needs no extra fetch.
-     --font-tt-mono keeps its own token (still referenced across the tracker
-     component tree) but now resolves to the same body font instead of an
-     actual monospace face, so labels/buttons/tabs read like the rest of the
-     app instead of a separate "terminal" look. */
-  --font-tt-display: 'Manrope', system-ui, sans-serif;
-  --font-tt-mono: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-tt-body: 'IBM Plex Sans', system-ui, sans-serif;
-
-  --radius-tt: 0.25rem;
-
-  /* Aliased to the app-wide --app-* tokens (src/styles/app-tailwind.css)
-     instead of their own fixed OKLCH values, so Tracker uses the exact same
-     palette as the rest of the app and — since --app-* already flips between
-     :root/.dark — automatically gains light/dark support too, with no
-     separate light/dark block needed here. Only --color-tt-forced has no
-     app-wide equivalent token (no "amber" role exists yet elsewhere) and
-     stays a fixed value. */
-  --color-tt-brand: hsl(var(--app-primary));
-  --color-tt-brand-dark: hsl(var(--app-primary));
-  --color-tt-background: hsl(var(--app-background));
-  --color-tt-surface: hsl(var(--app-card));
-  --color-tt-surface-2: hsl(var(--app-secondary));
-  --color-tt-foreground: hsl(var(--app-foreground));
-  --color-tt-border: hsl(var(--app-border));
-  --color-tt-muted-foreground: hsl(var(--app-muted-foreground));
-  --color-tt-destructive: hsl(var(--app-destructive));
-  --color-tt-destructive-bg: hsl(var(--app-destructive) / 0.12);
-  --color-tt-opp: hsl(var(--app-destructive));
-  --color-tt-win: hsl(var(--app-chart-3));
-  --color-tt-win-bg: hsl(var(--app-chart-3) / 0.12);
-  --color-tt-forced: oklch(0.75 0.15 80);
-  --color-tt-forced-bg: oklch(0.75 0.15 80 / 0.12);
-}
-
 .tracker-shell {
-  font-family: var(--font-tt-body);
-  background: var(--color-tt-background);
-  color: var(--color-tt-foreground);
+  font-family: var(--font-body);
+  background: var(--color-background);
+  color: var(--color-foreground);
 }
 
 /* ShotLocationCourt.jsx / ShotLocationHeatmap.jsx court diagrams — tracker-exclusive
    selectors, safe to retheme here without touching index.css's --court-fill/--court-line. */
 .tracker-shell .court-zone,
 .tracker-shell .zone-cell {
-  fill: var(--color-tt-surface);
-  stroke: var(--color-tt-border);
+  fill: var(--color-card);
+  stroke: var(--color-border);
   cursor: pointer;
 }
 .tracker-shell .court-zone.out,
 .tracker-shell .zone-cell.out {
-  fill: var(--color-tt-surface-2);
+  fill: var(--color-secondary);
 }
 .tracker-shell .court-zone:hover {
-  fill: var(--color-tt-surface-2);
+  fill: var(--color-secondary);
 }
 .tracker-shell .court-line-main {
-  stroke: var(--color-tt-muted-foreground);
+  stroke: var(--color-muted-foreground);
   fill: none;
 }
 .tracker-shell .court-zone-label {
-  fill: var(--color-tt-muted-foreground);
+  fill: var(--color-muted-foreground);
   font-size: 9px;
-  font-family: var(--font-tt-mono);
+  font-family: var(--font-mono);
   text-anchor: middle;
   pointer-events: none;
 }
 .tracker-shell .court-marker-crosshair line,
 .tracker-shell .court-marker-crosshair circle {
-  stroke: var(--color-tt-brand);
+  stroke: var(--color-primary);
   fill: none;
   stroke-width: 2;
 }
 
 /* ShotLocationCourt.jsx wrapper text — index.css's --accent tracks whichever
-   [data-theme] is active app-wide; the tracker always wants tt-brand regardless. */
+   tier is active app-wide; the tracker always wants the brand color regardless. */
 .tracker-shell .shot-location-hint {
-  color: var(--color-tt-brand);
+  color: var(--color-primary);
 }

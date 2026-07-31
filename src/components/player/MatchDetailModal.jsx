@@ -97,7 +97,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {kpis.map(k => (
                   <div key={k.label} className="rounded-sm border border-border bg-secondary/50 p-2.5">
-                    <div className="text-[10px] text-muted-foreground">{k.label}</div>
+                    <div className="text-[12px] text-muted-foreground">{k.label}</div>
                     <div className={`font-display font-extrabold text-base ${k.cls}`}>{k.value}</div>
                   </div>
                 ))}
@@ -109,7 +109,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
               <div className="flex items-end gap-2 h-20">
                 {rally.map((b, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
-                    <div className="text-[10px] font-bold">{b.pct}</div>
+                    <div className="text-[12px] font-bold">{b.pct}</div>
                     <div className={`w-full rounded-sm ${b.colorCls}`} style={{ height: b.h }} />
                   </div>
                 ))}

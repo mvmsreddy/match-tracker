@@ -1737,7 +1737,7 @@ const CARD_H = 100;  // assumed card height used to vertically center a card wit
 const COL_W  = 236;  // column width (px)
 const COL_GAP = 40;  // gap between columns (px)
 
-function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore, drawType = 'main' }) {
+function BracketView({ matches, entries, totalRounds, isOwner, onScore, drawType = 'main' }) {
   const entryMap = new Map(entries.map(e => [e.id, e]));
 
   const byRound = {};
@@ -1746,49 +1746,58 @@ function BracketView({ matches, entries, drawSize, totalRounds, isOwner, onScore
       .sort((a, b) => a.matchSlot - b.matchSlot);
   }
 
-  const totalH = (drawSize / 2) * SLOT_H;
-  const totalW = totalRounds * COL_W + (totalRounds - 1) * COL_GAP;
+  const gridTemplateColumns = `repeat(${totalRounds}, minmax(${COL_W}px, 1fr))`;
 
   return (
     <div className="t-bracket-wrap">
       {/* Round labels */}
-      <div className="t-bracket-labels" style={{ width: totalW }}>
+      <div className="t-bracket-labels" style={{ gridTemplateColumns, columnGap: COL_GAP }}>
         {Array.from({ length: totalRounds }, (_, i) => i + 1).map(r => (
-          <div key={r} className="t-bracket-label"
-            style={{ width: COL_W, marginLeft: r === 1 ? 0 : COL_GAP }}>
+          <div key={r} className="t-bracket-label">
             {roundLabel(r, totalRounds, drawType)}
           </div>
         ))}
       </div>
 
-      {/* Bracket grid */}
-      <div className="t-bracket-grid" style={{ width: totalW, height: totalH }}>
+      {/* Bracket grid — each round is a normal-flow column; a match's
+          vertical offset is the same "center it between its two feeder
+          matches" math the old absolute layout used, expressed as a
+          margin-top gap from the previous card's bottom edge instead of a
+          top: <px> coordinate. */}
+      <div className="t-bracket-grid" style={{ gridTemplateColumns, columnGap: COL_GAP }}>
         {Array.from({ length: totalRounds }, (_, i) => i + 1).map(round => {
-          const slotH  = Math.pow(2, round - 1) * SLOT_H;
-          const colLeft = (round - 1) * (COL_W + COL_GAP);
+          const slotH = Math.pow(2, round - 1) * SLOT_H;
           const roundMatches = byRound[round] || [];
+          let prevBottom = 0;
 
-          return roundMatches.map(match => {
-            const top    = (match.matchSlot - 1) * slotH + (slotH - CARD_H) / 2;
-            const entry1 = entryMap.get(match.entry1Id);
-            const entry2 = entryMap.get(match.entry2Id);
+          return (
+            <div key={round} className="t-bracket-col">
+              {roundMatches.map(match => {
+                const top = (match.matchSlot - 1) * slotH + (slotH - CARD_H) / 2;
+                const marginTop = top - prevBottom;
+                prevBottom = top + CARD_H;
 
-            // Clickable if organizer, not yet complete, and has at least one real player
-            const hasPlayers = (match.entry1Id || match.entry2Id);
-            const isClickable = isOwner && match.status !== 'complete' && !!hasPlayers;
+                const entry1 = entryMap.get(match.entry1Id);
+                const entry2 = entryMap.get(match.entry2Id);
 
-            return (
-              <div key={match.id} style={{ position: 'absolute', top, left: colLeft }}>
-                <BracketMatchCard
-                  match={match}
-                  entry1={entry1}
-                  entry2={entry2}
-                  isClickable={isClickable}
-                  onClick={() => onScore(match)}
-                />
-              </div>
-            );
-          });
+                // Clickable if organizer, not yet complete, and has at least one real player
+                const hasPlayers = (match.entry1Id || match.entry2Id);
+                const isClickable = isOwner && match.status !== 'complete' && !!hasPlayers;
+
+                return (
+                  <div key={match.id} style={{ marginTop }}>
+                    <BracketMatchCard
+                      match={match}
+                      entry1={entry1}
+                      entry2={entry2}
+                      isClickable={isClickable}
+                      onClick={() => onScore(match)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
         })}
       </div>
     </div>

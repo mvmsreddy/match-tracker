@@ -236,7 +236,7 @@ function StreakFreezeCard({ userId }) {
         <div className="text-xs text-muted-foreground mt-4 italic">No freeze days set.</div>
       ) : (
         <div className="mt-4">
-          <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
+          <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground mb-2">
             Frozen dates ({freezes.length})
           </div>
           <div className="flex flex-wrap gap-2">

@@ -4,9 +4,7 @@ import { useMatchTracker } from '../hooks/useMatchTracker';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { getWeatherString } from '../lib/weather';
 import * as api from '../api';
-import { useTheme } from '../context/ThemeContext';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
+import AppNav from '../components/AppNav';
 import Scorebar from '../components/Scorebar';
 import Wizard from '../components/Wizard';
 import QuickMode from '../components/tracker/QuickMode';
@@ -22,12 +20,12 @@ import HighlightReelCard from '../components/tracker/HighlightReelCard';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { cn } from '../lib/utils';
 import '../styles/tracker-tailwind.css';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Card, CardContent } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
-import { Table, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '../components/primitives/tabs';
+import { Card, CardContent } from '../components/primitives/card';
+import { Button } from '../components/primitives/button';
+import { Input } from '../components/primitives/input';
+import { Select } from '../components/primitives/select';
+import { Table, TableBody, TableRow, TableHead, TableCell } from '../components/primitives/table';
 
 const SURFACES = [
   'Acrylic (Hard-Court)', 'Artificial Clay', 'Artificial Grass',
@@ -124,7 +122,6 @@ const AI_REVIEW_ENABLED = false;
 
 export default function TrackerPage() {
   const t = useMatchTracker();
-  const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('match');
@@ -167,9 +164,8 @@ export default function TrackerPage() {
   }
 
   return (
-    <div className="tracker-shell flex h-dvh flex-col overflow-hidden bg-tt-background text-tt-foreground font-tt-body">
-      {theme === 'navy' ? <MTNavChrome active="track" /> : <TopNav />}
-
+    <AppNav>
+    <div className="tracker-shell flex h-full flex-col overflow-hidden bg-background text-foreground font-body">
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
         <Scorebar
@@ -188,7 +184,7 @@ export default function TrackerPage() {
           <TabsTrigger
             value="close"
             disabled={!t.matchStarted}
-            className={cn(t.matchStarted && activeTab !== 'close' && 'text-tt-opp')}
+            className={cn(t.matchStarted && activeTab !== 'close' && 'text-destructive')}
           >
             Close
           </TabsTrigger>
@@ -197,7 +193,7 @@ export default function TrackerPage() {
 
       {/* Global status message */}
       <div className="mx-auto mt-1 w-full max-w-3xl px-4">
-        <div className="py-1 text-xs text-tt-muted-foreground">{t.status}</div>
+        <div className="py-1 text-xs text-muted-foreground">{t.status}</div>
       </div>
 
       {/* On-demand AI review — available any time there are points to review */}
@@ -222,9 +218,22 @@ export default function TrackerPage() {
         </div>
       )}
 
-      {/* ── Track tab ── */}
-      {activeTab === 'track' && t.matchStarted && (
-        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-6">
+      {/*
+        Live Track and Stats become one side-by-side view at >=1024px (README
+        step 7: "drop the Match/Live/Stats tab switch and use two panes ...
+        Keep the tabs below that width") — both blocks mount whenever either
+        tab is selected, each one deciding for itself (activeTab check first,
+        `lg:` second) whether it's visible. Match/Close stay exactly as they
+        were; only the Track<->Stats split changes at that width.
+      */}
+      {(activeTab === 'track' || activeTab === 'stats') && t.matchStarted && (
+        <div className="flex flex-1 min-h-0 flex-col lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:px-4 lg:pb-6">
+
+        {/* ── Track pane ── */}
+        <div className={cn(
+          'flex-1 flex-col overflow-y-auto px-4 pb-6 lg:min-h-0 lg:px-0 lg:pb-0',
+          activeTab === 'track' ? 'flex' : 'hidden lg:flex'
+        )}>
           {t.gameTransition ? (
             <GameTransitionCard
               transition={t.gameTransition}
@@ -295,16 +304,17 @@ export default function TrackerPage() {
                   )}
                 </LiveMatchCommandCenter>
               ) : (
-                <div className="py-8 text-center text-sm text-tt-muted-foreground">Select who serves first above to begin tracking</div>
+                <div className="py-8 text-center text-sm text-muted-foreground">Select who serves first above to begin tracking</div>
               )}
             </>
           )}
         </div>
-      )}
 
-      {/* ── Stats tab ── */}
-      {activeTab === 'stats' && t.matchStarted && (
-        <div className="mx-auto w-full max-w-3xl flex-1 space-y-4 overflow-y-auto px-4 pb-6">
+        {/* ── Stats pane ── */}
+        <div className={cn(
+          'w-full flex-1 space-y-4 overflow-y-auto px-4 pb-6 lg:min-h-0 lg:px-0 lg:pb-0',
+          activeTab === 'stats' ? 'mx-auto max-w-3xl block' : 'hidden lg:block'
+        )}>
           <MomentumGraph
             points={t.points}
             selfName={t.header.selfName || 'Self'}
@@ -321,6 +331,8 @@ export default function TrackerPage() {
             section="shots"
           />
           <ShotLocationHeatmap points={t.points} selfName={t.header.selfName || 'Self'} oppName={t.header.oppName || 'Opponent'} />
+        </div>
+
         </div>
       )}
 
@@ -346,13 +358,14 @@ export default function TrackerPage() {
         />
       )}
     </div>
+    </AppNav>
   );
 }
 
 // ── Small shared field/label helpers ──────────────────────────────────────
 function SectionLabel({ children }) {
   return (
-    <div className="mb-2 font-tt-mono text-[0.65rem] font-bold uppercase tracking-widest text-tt-muted-foreground">
+    <div className="mb-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-muted-foreground">
       {children}
     </div>
   );
@@ -361,7 +374,7 @@ function SectionLabel({ children }) {
 function Field({ label, children, className }) {
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <label className="font-tt-mono text-[0.58rem] uppercase tracking-widest text-tt-muted-foreground">{label}</label>
+      <label className="font-mono text-[0.58rem] uppercase tracking-widest text-muted-foreground">{label}</label>
       {children}
     </div>
   );
@@ -385,40 +398,40 @@ function MatchRunningView({ t, onGoTrack }) {
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-4">
         <div>
-          <div className="mb-2 font-tt-mono text-xs font-bold uppercase tracking-wider text-tt-brand">Match in Progress</div>
+          <div className="mb-2 font-mono text-xs font-bold uppercase tracking-wider text-primary">Match in Progress</div>
           <div className="mb-3 text-sm">
-            <span className="font-semibold text-tt-brand">{t.header.selfName || 'You'}</span>
+            <span className="font-semibold text-primary">{t.header.selfName || 'You'}</span>
             {' vs '}
-            <span className="font-semibold text-tt-opp">{t.header.oppName || 'Opponent'}</span>
-            {t.header.tournament ? <span className="text-tt-muted-foreground"> · {t.header.tournament}</span> : null}
+            <span className="font-semibold text-destructive">{t.header.oppName || 'Opponent'}</span>
+            {t.header.tournament ? <span className="text-muted-foreground"> · {t.header.tournament}</span> : null}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {t.header.round && (
-              <Field label="Round"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.round}</div></Field>
+              <Field label="Round"><div className="py-1 font-mono text-xs text-foreground">{t.header.round}</div></Field>
             )}
             {t.header.surface && (
-              <Field label="Surface"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.surface}</div></Field>
+              <Field label="Surface"><div className="py-1 font-mono text-xs text-foreground">{t.header.surface}</div></Field>
             )}
             {t.header.indoorOutdoor && (
-              <Field label="Indoor / Outdoor"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.indoorOutdoor}</div></Field>
+              <Field label="Indoor / Outdoor"><div className="py-1 font-mono text-xs text-foreground">{t.header.indoorOutdoor}</div></Field>
             )}
             {t.header.governingBody && (
-              <Field label="Governing Body"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.governingBody}</div></Field>
+              <Field label="Governing Body"><div className="py-1 font-mono text-xs text-foreground">{t.header.governingBody}</div></Field>
             )}
             {t.header.circuit && (
-              <Field label="Circuit"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.circuit}</div></Field>
+              <Field label="Circuit"><div className="py-1 font-mono text-xs text-foreground">{t.header.circuit}</div></Field>
             )}
             {t.header.city && (
-              <Field label="City"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.city}</div></Field>
+              <Field label="City"><div className="py-1 font-mono text-xs text-foreground">{t.header.city}</div></Field>
             )}
             {t.header.ageGroup && (
-              <Field label="Age Group"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.ageGroup}</div></Field>
+              <Field label="Age Group"><div className="py-1 font-mono text-xs text-foreground">{t.header.ageGroup}</div></Field>
             )}
             {t.header.playingStyle && (
-              <Field label="Opponent Style"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.playingStyle}</div></Field>
+              <Field label="Opponent Style"><div className="py-1 font-mono text-xs text-foreground">{t.header.playingStyle}</div></Field>
             )}
             {t.header.rankSeed && (
-              <Field label="Opponent Rank/Seed"><div className="py-1 font-tt-mono text-xs text-tt-foreground">{t.header.rankSeed}</div></Field>
+              <Field label="Opponent Rank/Seed"><div className="py-1 font-mono text-xs text-foreground">{t.header.rankSeed}</div></Field>
             )}
           </div>
         </div>
@@ -467,8 +480,8 @@ function SetupForm({ t, onStart }) {
       <CardContent className="space-y-6 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-tt-display text-2xl font-extrabold tracking-tighter text-tt-foreground">Match Tracker Pro</h1>
-            <p className="mt-1 text-xs text-tt-muted-foreground">Enter details below to begin tracking</p>
+            <h1 className="font-display text-2xl font-extrabold tracking-tighter text-foreground">Match Tracker Pro</h1>
+            <p className="mt-1 text-xs text-muted-foreground">Enter details below to begin tracking</p>
           </div>
           <Button
             type="button"
@@ -699,7 +712,7 @@ function SetupForm({ t, onStart }) {
               </Button>
             ))}
           </div>
-          <p className="mt-1.5 text-xs text-tt-muted-foreground">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             {(TRACKING_MODES.find((m) => m.value === t.trackingMode) || TRACKING_MODES[2]).hint}
           </p>
         </section>
@@ -708,7 +721,7 @@ function SetupForm({ t, onStart }) {
         <Button className="w-full" size="lg" disabled={!canStart} onClick={onStart}>
           {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
         </Button>
-        {!canStart && <p className="text-xs text-tt-muted-foreground">Enter your name to continue</p>}
+        {!canStart && <p className="text-xs text-muted-foreground">Enter your name to continue</p>}
       </CardContent>
     </Card>
   );
@@ -773,12 +786,12 @@ function AitaTournamentSuggestions({ header, updateHeader }) {
     <Card className="mt-3">
       <CardContent className="space-y-2 pt-4">
         <SectionLabel>Suggested AITA Tournaments</SectionLabel>
-        {error && <p className="text-xs text-tt-opp">{error}</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
         {!error && tournaments === null && (
-          <p className="text-xs text-tt-muted-foreground">Searching the AITA calendar…</p>
+          <p className="text-xs text-muted-foreground">Searching the AITA calendar…</p>
         )}
         {!error && circuitMatches && circuitMatches.length === 0 && (
-          <p className="text-xs text-tt-muted-foreground">No matching AITA tournaments found{header.city ? ` for "${header.city}"` : ''}.</p>
+          <p className="text-xs text-muted-foreground">No matching AITA tournaments found{header.city ? ` for "${header.city}"` : ''}.</p>
         )}
 
         {/* Stage 1 — pick the event (a name can host several age-group draws) */}
@@ -789,10 +802,10 @@ function AitaTournamentSuggestions({ header, updateHeader }) {
                 key={tour.name}
                 type="button"
                 onClick={() => handlePickName(tour.name)}
-                className="flex flex-col items-start gap-0.5 rounded-tt border border-tt-border bg-transparent px-3 py-2 text-left hover:border-tt-brand"
+                className="flex flex-col items-start gap-0.5 rounded-lg border border-border bg-transparent px-3 py-2 text-left hover:border-primary"
               >
-                <span className="text-sm font-semibold text-tt-foreground">{tour.name}</span>
-                <span className="font-tt-mono text-[0.65rem] uppercase tracking-widest text-tt-muted-foreground">
+                <span className="text-sm font-semibold text-foreground">{tour.name}</span>
+                <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
                   {[[tour.city, tour.venue].filter(Boolean).join(' · '), tour.startDate].filter(Boolean).join('  ·  ')}
                 </span>
               </button>
@@ -803,17 +816,17 @@ function AitaTournamentSuggestions({ header, updateHeader }) {
         {/* Stage 2 — this event has multiple age-group draws, pick one */}
         {selectedName && !resolvedRow && rowsForName.length > 1 && (
           <div className="space-y-2">
-            <button type="button" className="bg-transparent text-xs text-tt-muted-foreground underline" onClick={() => setSelectedName(null)}>
+            <button type="button" className="bg-transparent text-xs text-muted-foreground underline" onClick={() => setSelectedName(null)}>
               ← Choose a different tournament
             </button>
-            <p className="text-xs text-tt-muted-foreground">{selectedName} — which age group?</p>
+            <p className="text-xs text-muted-foreground">{selectedName} — which age group?</p>
             <div className="flex flex-wrap gap-1.5">
               {rowsForName.map((row) => (
                 <button
                   key={row.id}
                   type="button"
                   onClick={() => pickTournament(row)}
-                  className="rounded-tt border border-tt-border bg-transparent px-2.5 py-1 text-xs text-tt-foreground hover:border-tt-brand"
+                  className="rounded-lg border border-border bg-transparent px-2.5 py-1 text-xs text-foreground hover:border-primary"
                 >
                   {row.ageGroup || 'Unspecified'}
                 </button>
@@ -825,7 +838,7 @@ function AitaTournamentSuggestions({ header, updateHeader }) {
         {/* Stage 3 — resolved to one exact tournament row: show its facts */}
         {resolvedRow && (
           <div className="space-y-2">
-            <button type="button" className="bg-transparent text-xs text-tt-muted-foreground underline" onClick={() => setSelectedName(null)}>
+            <button type="button" className="bg-transparent text-xs text-muted-foreground underline" onClick={() => setSelectedName(null)}>
               ← Choose a different tournament
             </button>
             <TournamentFactsPanel tour={resolvedRow} />
@@ -840,8 +853,8 @@ function Fact({ label, value }) {
   if (!value) return null;
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-tt-mono text-[0.6rem] uppercase tracking-widest text-tt-muted-foreground">{label}</span>
-      <span className="text-xs text-tt-foreground">{value}</span>
+      <span className="font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="text-xs text-foreground">{value}</span>
     </div>
   );
 }
@@ -851,8 +864,8 @@ function TournamentFactsPanel({ tour }) {
   const director = [tour.directorName, tour.directorPhone, tour.directorEmail].filter(Boolean).join(' · ');
   const referee = [tour.refereeName, tour.refereePhone, tour.refereeEmail].filter(Boolean).join(' · ');
   return (
-    <div className="space-y-3 rounded-tt border border-tt-border p-3">
-      <div className="text-sm font-semibold text-tt-brand">{tour.name} — {tour.ageGroup}</div>
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="text-sm font-semibold text-primary">{tour.name} — {tour.ageGroup}</div>
       <div className="grid grid-cols-2 gap-2.5">
         <Fact label="Court Type" value={tour.surface} />
         <Fact label="Draw Size" value={tour.drawSize} />
@@ -869,7 +882,7 @@ function TournamentFactsPanel({ tour }) {
       <Fact label="Tournament Director" value={director} />
       <Fact label="Tournament Referee" value={referee} />
       {tour.factsheetUrl && (
-        <a href={tour.factsheetUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-tt-brand underline">
+        <a href={tour.factsheetUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-primary underline">
           View full fact sheet PDF ↗
         </a>
       )}
@@ -885,11 +898,11 @@ function MatchOverBlock({ sessionType, selfName, oppName, winner, header, points
     <div className="mx-auto my-4 max-w-lg space-y-4">
       <Card className="text-center">
         <CardContent className="space-y-4 pt-6">
-          <div className="font-tt-mono text-xs uppercase tracking-widest text-tt-muted-foreground">
+          <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             {isPractice ? 'Session complete' : 'Match complete'}
           </div>
-          <div className="font-tt-display text-xl font-bold uppercase tracking-tight">
-            <span className={winner === 'self' ? 'text-tt-brand' : 'text-tt-opp'}>{winnerName}</span>
+          <div className="font-display text-xl font-bold uppercase tracking-tight">
+            <span className={winner === 'self' ? 'text-primary' : 'text-destructive'}>{winnerName}</span>
             {isPractice ? ' wins the session' : ' wins'}
           </div>
           <div className="flex justify-center gap-2">
@@ -951,14 +964,14 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-6">
         <div className="text-center">
-          <div className={cn('font-tt-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-tt-brand' : 'text-tt-opp')}>
+          <div className={cn('font-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-primary' : 'text-destructive')}>
             {headline}
           </div>
-          <div className="mt-1 font-tt-mono text-sm text-tt-muted-foreground">{subline}</div>
+          <div className="mt-1 font-mono text-sm text-muted-foreground">{subline}</div>
           {type !== 'match' && nextServer && (
-            <div className="mt-2 text-xs text-tt-muted-foreground">
+            <div className="mt-2 text-xs text-muted-foreground">
               Serves next:&nbsp;
-              <span className={nextServer === 'self' ? 'font-semibold text-tt-brand' : 'font-semibold text-tt-opp'}>
+              <span className={nextServer === 'self' ? 'font-semibold text-primary' : 'font-semibold text-destructive'}>
                 {nextServer === 'self' ? selfName : oppName}
               </span>
             </div>
@@ -966,51 +979,51 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
         </div>
 
         <div>
-          <div className="mb-1 font-tt-mono text-[10px] font-bold uppercase tracking-widest text-tt-muted-foreground">This Game</div>
+          <div className="mb-1 font-mono text-[12px] font-bold uppercase tracking-widest text-muted-foreground">This Game</div>
           <Table>
             <TableBody>
               <TableRow>
                 <TableHead>Metric</TableHead>
-                <TableHead className="text-tt-brand">{selfName}</TableHead>
-                <TableHead className="text-tt-opp">{oppName}</TableHead>
+                <TableHead className="text-primary">{selfName}</TableHead>
+                <TableHead className="text-destructive">{oppName}</TableHead>
               </TableRow>
               <TableRow>
                 <TableCell>Points Won</TableCell>
-                <TableCell className="text-tt-brand">{stats.self.pointCount}</TableCell>
-                <TableCell className="text-tt-opp">{stats.opp.pointCount}</TableCell>
+                <TableCell className="text-primary">{stats.self.pointCount}</TableCell>
+                <TableCell className="text-destructive">{stats.opp.pointCount}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Winners / FE</TableCell>
-                <TableCell className="text-tt-brand">{stats.self.wfe}</TableCell>
-                <TableCell className="text-tt-opp">{stats.opp.wfe}</TableCell>
+                <TableCell className="text-primary">{stats.self.wfe}</TableCell>
+                <TableCell className="text-destructive">{stats.opp.wfe}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Unforced Errors</TableCell>
-                <TableCell className="text-tt-brand">{stats.self.ue}</TableCell>
-                <TableCell className="text-tt-opp">{stats.opp.ue}</TableCell>
+                <TableCell className="text-primary">{stats.self.ue}</TableCell>
+                <TableCell className="text-destructive">{stats.opp.ue}</TableCell>
               </TableRow>
               {hasServeData && (
                 <>
                   <TableRow>
                     <TableCell>1st Serve %</TableCell>
-                    <TableCell className="text-tt-brand">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</TableCell>
-                    <TableCell className="text-tt-opp">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</TableCell>
+                    <TableCell className="text-primary">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</TableCell>
+                    <TableCell className="text-destructive">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Won on 1st</TableCell>
-                    <TableCell className="text-tt-brand">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</TableCell>
-                    <TableCell className="text-tt-opp">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</TableCell>
+                    <TableCell className="text-primary">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</TableCell>
+                    <TableCell className="text-destructive">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Won on 2nd</TableCell>
-                    <TableCell className="text-tt-brand">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</TableCell>
-                    <TableCell className="text-tt-opp">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</TableCell>
+                    <TableCell className="text-primary">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</TableCell>
+                    <TableCell className="text-destructive">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</TableCell>
                   </TableRow>
                   {(ss.aces > 0 || so.aces > 0 || ss.dfs > 0 || so.dfs > 0) && (
                     <TableRow>
                       <TableCell>Aces / DFs</TableCell>
-                      <TableCell className="text-tt-brand">{ss.aces} / {ss.dfs}</TableCell>
-                      <TableCell className="text-tt-opp">{so.aces} / {so.dfs}</TableCell>
+                      <TableCell className="text-primary">{ss.aces} / {ss.dfs}</TableCell>
+                      <TableCell className="text-destructive">{so.aces} / {so.dfs}</TableCell>
                     </TableRow>
                   )}
                 </>
@@ -1032,9 +1045,9 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
 // ── Live Track top bar: server picker + delete ────────────────────────────────
 function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverExplicitlyChosen, hasPoints }) {
   return (
-    <Card className={cn('my-4', !serverExplicitlyChosen && 'border-tt-brand')}>
+    <Card className={cn('my-4', !serverExplicitlyChosen && 'border-primary')}>
       <CardContent className="flex flex-col items-center gap-3 pt-4 sm:flex-row">
-        <span className={cn('font-tt-mono text-xs uppercase tracking-widest', !serverExplicitlyChosen ? 'font-bold text-tt-brand' : 'text-tt-muted-foreground')}>
+        <span className={cn('font-mono text-xs uppercase tracking-widest', !serverExplicitlyChosen ? 'font-bold text-primary' : 'text-muted-foreground')}>
           Serves first
         </span>
         <div className="flex flex-1 gap-2">

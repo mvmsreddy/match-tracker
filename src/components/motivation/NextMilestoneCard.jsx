@@ -30,7 +30,7 @@ export default function NextMilestoneCard({ milestone }) {
           <Icon className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500">Next milestone</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-amber-500">Next milestone</div>
           <div className="text-sm font-bold mt-0.5 leading-snug">{headline}</div>
           <div className="text-xs text-muted-foreground mt-1">{sub}</div>
           <div className="mt-2.5 h-1.5 rounded-full bg-muted overflow-hidden">

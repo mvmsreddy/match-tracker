@@ -164,7 +164,7 @@ export function DigestPreviewCard({ matches, streak, activeGoal }) {
           <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Weekly Digest</div>
           <div className="text-sm font-bold mt-0.5">Your week at a glance</div>
         </div>
-        <div className="text-[10px] text-muted-foreground uppercase font-bold">Preview</div>
+        <div className="text-[12px] text-muted-foreground uppercase font-bold">Preview</div>
       </div>
 
       {total === 0 && practices === 0 ? (
@@ -172,23 +172,23 @@ export function DigestPreviewCard({ matches, streak, activeGoal }) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Matches</div>
+            <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Matches</div>
             <div className="font-display font-extrabold text-xl tracking-tighter mt-0.5">{total}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">W - L</div>
+            <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">W - L</div>
             <div className="font-display font-extrabold text-xl tracking-tighter mt-0.5">
               <span className="text-primary">{wins}</span>-<span className="text-destructive">{losses}</span>
             </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Win Rate</div>
+            <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Win Rate</div>
             <div className="font-display font-extrabold text-xl tracking-tighter mt-0.5">
               {winRate !== null ? `${winRate}%` : '—'}
             </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Practices</div>
+            <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Practices</div>
             <div className="font-display font-extrabold text-xl tracking-tighter mt-0.5">{practices}</div>
           </div>
         </div>

@@ -23,7 +23,7 @@
   <div style="max-width: 1180px; margin: 0 auto; padding: 0 32px;">
 
     <header style="padding: 64px 0 40px; border-bottom: 2px solid #14293D;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">Match Tracker Pro · design spec v1 · mvmsreddy/match-tracker @ main</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">Match Tracker Pro · design spec v1 · mvmsreddy/match-tracker @ main</div>
       <h1 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.035em; font-size: 56px; line-height: 1.02; margin: 18px 0 0; max-width: 900px;">Day / night theming &amp; responsive layout</h1>
       <p style="font-size: 18px; line-height: 1.6; color: #3D5568; max-width: 720px; margin: 18px 0 0; text-wrap: pretty;">A dev-ready specification: one token layer that resolves automatically from local sunrise/sunset, three contrast tiers for real court conditions, and a layout system that scales from a 360&nbsp;px phone held one-handed at the fence to a 1440&nbsp;px laptop used for review.</p>
       <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px;">
@@ -34,20 +34,30 @@
     </header>
 
     <section style="padding: 48px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">01 · Audit</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">01 · Audit</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 6px;">What's blocking day/night and big screens today</h2>
-      <p style="font-size: 16px; line-height: 1.65; color: #3D5568; max-width: 760px; margin: 0 0 28px;">Every item below is a specific thing in the repo, not a general observation.</p>
+      <p style="font-size: 16px; line-height: 1.65; color: #3D5568; max-width: 760px; margin: 0 0 20px;">Every item below is a specific thing in the repo, not a general observation.</p>
+      <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-left: 4px solid #2F7D3A; border-radius: 4px; padding: 18px; margin: 0 0 28px; max-width: 900px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: #2F7D3A; font-weight: 700; margin-bottom: 8px;">Sync 31 Jul 2026 · migration steps 1–3 are now shipped upstream</div>
+        <div style="font-size: 14.5px; line-height: 1.65; color: #3D5568;">
+          <strong>Fixed:</strong> <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">app-tailwind.css</code> now carries the three tiers as <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">:root, [data-tier="day"] / ["night"], .dark / ["glare"]</code> with <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-accent-ink</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-forced</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-forced-background</code> and a real <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--font-mono</code> (IBM Plex Mono). <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">ThemeContext</code> resolves <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">'auto' | 'day' | 'night' | 'glare'</code> from sunrise/sunset with the 30/45-minute margins, a 5-minute interval, a <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">visibilitychange</code> re-check and a legacy <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">{ theme, toggle }</code> shim. <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">weather.js</code> exposes <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">getSunTimes()</code> with a per-calendar-day cache that never throws. <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">index.css</code>'s legacy names (<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--bg</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--accent</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--text*</code>) are aliases of <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-*</code>, so legacy classes follow the tier, and the dead <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">[data-theme="navy"]</code> gate is gone.
+          <br /><br />
+          <strong>Still open:</strong> body copy still resolves to IBM Plex Sans (the approved design is Manrope throughout); <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">.header</code> and <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">.t-modal-lg</code> keep their 680&nbsp;px caps; <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">.t-bmc</code> bracket cards are still absolutely positioned at 236&nbsp;px; <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">.mt-rail</code>/<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">.mt-tabbar</code> still default to <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">display: none</code> — confirm what now gates them by width; and the <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">ui/</code> + <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">primitives/</code> duplication and 10&nbsp;px labels remain. Steps 5–8 are unstarted.
+          <br /><br />
+          <strong>One token delta adopted into the designs:</strong> night <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-border</code> ships as the same value as <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">--app-muted</code> (<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">133 12% 15%</code> ≈ <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">#26302A</code>) rather than the darker <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">#212A23</code> this spec proposed. The Floodlight frames now use the shipped value — <strong>the code is the source of truth for token values from here on.</strong>
+        </div>
+      </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-left: 4px solid #C0432F; border-radius: 4px; padding: 20px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #C0432F; font-weight: 600;">Blocker · two competing dark themes</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #C0432F; font-weight: 600;">Fixed 31 Jul · was: two competing dark themes</div>
           <h3 style="font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; margin: 8px 0 8px;">Navy identity lives outside the token system</h3>
           <p style="font-size: 14.5px; line-height: 1.6; color: #3D5568; margin: 0;"><code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">src/index.css</code> pins the shipped look — <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--bg: #14293D</code>, lime <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--accent: #C6E23D</code> — at <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">:root</code>, so it never flips. Meanwhile <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">app-tailwind.css</code>'s <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.dark</code> block is near-black (<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">0 0% 4%</code>) with a blue primary. Two dark palettes, one screen.</p>
         </div>
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-left: 4px solid #C0432F; border-radius: 4px; padding: 20px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #C0432F; font-weight: 600;">Blocker · light mode is untested</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #C0432F; font-weight: 600;">Fixed 31 Jul · was: light mode untested</div>
           <h3 style="font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; margin: 8px 0 8px;">Legacy classes hard-code dark values</h3>
           <p style="font-size: 14.5px; line-height: 1.6; color: #3D5568; margin: 0;">Light <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--app-*</code> tokens exist, but any screen still using <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.panel</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.field</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.drawer-*</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.history-empty</code> or <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">.role-overlay-*</code> stays dark when the toggle flips — light text on light ground.</p>
         </div>
@@ -71,7 +81,7 @@
         </div>
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-left: 4px solid #5C7183; border-radius: 4px; padding: 20px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #5C7183; font-weight: 600;">Cleanup · naming</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #4A5D6D; font-weight: 600;">Cleanup · naming</div>
           <h3 style="font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; margin: 8px 0 8px;">Three token namespaces, one palette</h3>
           <p style="font-size: 14.5px; line-height: 1.6; color: #3D5568; margin: 0;"><code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--bg/--accent</code> (index.css), <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--app-*</code> (app-tailwind) and <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--color-tt-*</code> (tracker-tailwind) describe the same roles. Also: <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: #EEF1EC; padding: 1px 5px; border-radius: 3px;">--font-tt-mono</code> resolves to IBM Plex <em>Sans</em>, so "mono" labels aren't monospaced and numbers don't align.</p>
         </div>
@@ -80,13 +90,13 @@
     </section>
 
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">02 · Theme architecture</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">02 · Theme architecture</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 6px;">One token layer, three tiers, resolved from the sun</h2>
       <p style="font-size: 16px; line-height: 1.65; color: #3D5568; max-width: 760px; margin: 0 0 28px;">Collapse all three namespaces into <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">--app-*</code> and keep <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">--bg</code>/<code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">--color-tt-*</code> only as aliases during migration. Tier is a single attribute on <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">&lt;html&gt;</code>.</p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 32px;">
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 4px; padding: 20px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #5C7183;">data-tier="day"</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #4A5D6D;">data-tier="day"</div>
           <h3 style="font-family: Manrope, sans-serif; font-weight: 800; font-size: 20px; margin: 6px 0 8px; letter-spacing: -0.02em;">Day</h3>
           <p style="font-size: 14px; line-height: 1.6; color: #3D5568; margin: 0;">Sunrise+30&nbsp;min → sunset−45&nbsp;min. Warm paper ground, navy ink, lime reserved for fills. Default outdoors.</p>
         </div>
@@ -104,7 +114,7 @@
 
       <sc-if value="{{ codeBlocks }}" hint-placeholder-val="{{ true }}">
       <div style="background: #14293D; border-radius: 6px; padding: 22px 24px; overflow-x: auto; margin-bottom: 14px;">
-        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #7FA0B5; margin-bottom: 14px;">src/context/ThemeContext.jsx — replace the boolean toggle</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #A8C0D0; margin-bottom: 14px;">src/context/ThemeContext.jsx — replace the boolean toggle</div>
         <pre style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.75; color: #F3F1E6; white-space: pre;">// preference: 'auto' | 'day' | 'night' | 'glare'   (localStorage 'tt-theme')
 // resolved tier is what lands on &lt;html data-tier&gt;
 
@@ -136,7 +146,7 @@ useEffect(() =&gt; {
     </section>
 
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">03 · Tokens</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">03 · Tokens</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 6px;">Palette</h2>
       <p style="font-size: 16px; line-height: 1.65; color: #3D5568; max-width: 760px; margin: 0 0 28px;">Night values are lifted verbatim from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">index.css</code> so nothing shipped changes appearance. Day and Glare are new. Contrast ratios are against each tier's own <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">background</code>.</p>
 
@@ -249,7 +259,7 @@ useEffect(() =&gt; {
     </section>
 
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">04 · Components in all tiers</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">04 · Components in all tiers</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 6px;">The same components, three tiers</h2>
       <p style="font-size: 16px; line-height: 1.65; color: #3D5568; max-width: 760px; margin: 0 0 28px;">Rendered from the real class recipes in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">components/ui</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">components/primitives</code> and <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: #FFFFFF; border: 1px solid #DDE3DC; padding: 1px 6px; border-radius: 3px;">tracker/ChipButton.jsx</code> — only the token values change.</p>
 
@@ -260,19 +270,19 @@ useEffect(() =&gt; {
           <div style="border: 1px solid #2C4C68; border-radius: 4px; background: #1E3A52; margin-bottom: 12px;">
             <div style="border-bottom: 1px solid #2C4C68; padding: 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #F3F1E6;">Match Totals</div>
             <div style="padding: 4px 0;">
-              <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; padding: 8px 14px; border-bottom: 1px solid #2C4C68; font-size: 13px; color: #F3F1E6;"><span>Winners / FE</span><span style="font-family: 'IBM Plex Mono', monospace; color: #C6E23D;">24</span><span style="font-family: 'IBM Plex Mono', monospace; color: #E37B6B;">18</span></div>
-              <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; padding: 8px 14px; font-size: 13px; color: #F3F1E6;"><span>Unforced errors</span><span style="font-family: 'IBM Plex Mono', monospace; color: #C6E23D;">11</span><span style="font-family: 'IBM Plex Mono', monospace; color: #E37B6B;">19</span></div>
+              <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; padding: 8px 14px; border-bottom: 1px solid #2C4C68; font-size: 13px; color: #F3F1E6;"><span>Winners / FE</span><span style="font-family: 'IBM Plex Mono', monospace; color: #C6E23D;">24</span><span style="font-family: 'IBM Plex Mono', monospace; color: #F09A8B;">18</span></div>
+              <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; padding: 8px 14px; font-size: 13px; color: #F3F1E6;"><span>Unforced errors</span><span style="font-family: 'IBM Plex Mono', monospace; color: #C6E23D;">11</span><span style="font-family: 'IBM Plex Mono', monospace; color: #F09A8B;">19</span></div>
             </div>
           </div>
           <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
             <span style="background: #C6E23D; color: #14293D; border-radius: 4px; padding: 9px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'IBM Plex Mono', monospace;">Primary</span>
             <span style="background: transparent; border: 1px solid #2C4C68; color: #F3F1E6; border-radius: 4px; padding: 9px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'IBM Plex Mono', monospace;">Outline</span>
-            <span style="background: transparent; border: 1px solid #E1484B; color: #E1484B; border-radius: 4px; padding: 9px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'IBM Plex Mono', monospace;">Delete</span>
+            <span style="background: transparent; border: 1px solid #E1484B; color: #F07B7D; border-radius: 4px; padding: 9px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'IBM Plex Mono', monospace;">Delete</span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <span style="min-height: 56px; display: flex; align-items: center; justify-content: center; border: 1px solid #6AAF5A; color: #9DD98E; border-radius: 4px; font-size: 14px;">Winner</span>
             <span style="min-height: 56px; display: flex; align-items: center; justify-content: center; border: 1px solid #D4A843; color: #D4A843; border-radius: 4px; font-size: 14px;">Forced</span>
-            <span style="min-height: 56px; display: flex; align-items: center; justify-content: center; border: 1px solid #E1484B; color: #E1484B; border-radius: 4px; font-size: 14px;">Unforced</span>
+            <span style="min-height: 56px; display: flex; align-items: center; justify-content: center; border: 1px solid #E1484B; color: #F07B7D; border-radius: 4px; font-size: 14px;">Unforced</span>
             <span style="min-height: 56px; display: flex; align-items: center; justify-content: center; border: 1px solid #2C4C68; background: #1E3A52; color: #F3F1E6; border-radius: 4px; font-size: 14px;">Ball In</span>
           </div>
         </div>
@@ -336,7 +346,7 @@ useEffect(() =&gt; {
                   <span style="min-width: 30px; text-align: center; border: 1px solid #C6E23D; border-radius: 4px; padding: 3px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C6E23D; font-weight: 600;">3</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 15px; font-weight: 600; color: #E37B6B; font-family: 'IBM Plex Mono', monospace;">Player B</span>
+                  <span style="font-size: 15px; font-weight: 600; color: #F09A8B; font-family: 'IBM Plex Mono', monospace;">Player B</span>
                   <span style="min-width: 30px; text-align: center; border: 1px solid #2C4C68; border-radius: 4px; padding: 3px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #F3F1E6;">4</span>
                   <span style="min-width: 30px; text-align: center; border: 1px solid #C6E23D; border-radius: 4px; padding: 3px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C6E23D; font-weight: 600;">2</span>
                 </div>
@@ -373,7 +383,7 @@ useEffect(() =&gt; {
     </section>
 
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">05 · Responsive system</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">05 · Responsive system</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 6px;">Breakpoints and what each one earns</h2>
 
       <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 4px; overflow: hidden; margin: 22px 0 28px;">
@@ -402,7 +412,7 @@ useEffect(() =&gt; {
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 6px; padding: 18px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #5C7183; margin-bottom: 4px;">Phone · 390 × 844 · Night</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #4A5D6D; margin-bottom: 4px;">Phone · 390 × 844 · Night</div>
           <div style="font-size: 13.5px; color: #3D5568; line-height: 1.55; margin-bottom: 14px;">Thumb zone owns the outcome chips. Nav moves to a bottom bar so the drawer stops being the only way around.</div>
           <div style="background: #14293D; border: 1px solid #2C4C68; border-radius: 6px; overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #2C4C68;">
@@ -415,26 +425,26 @@ useEffect(() =&gt; {
               <span style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; color: #F3F1E6;">40–30</span>
             </div>
             <div style="padding: 12px;">
-              <div style="height: 92px; border-radius: 4px; border: 1px dashed #2C4C68; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #7FA0B5; letter-spacing: 0.08em;">CONTEXT · SERVE + SHOT</div>
+              <div style="height: 92px; border-radius: 4px; border: 1px dashed #2C4C68; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #A8C0D0; letter-spacing: 0.08em;">CONTEXT · SERVE + SHOT</div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <span style="min-height: 54px; border-radius: 4px; border: 1px solid #6AAF5A; color: #9DD98E; display: flex; align-items: center; justify-content: center; font-size: 13px;">Winner</span>
                 <span style="min-height: 54px; border-radius: 4px; border: 1px solid #D4A843; color: #D4A843; display: flex; align-items: center; justify-content: center; font-size: 13px;">Forced</span>
-                <span style="min-height: 54px; border-radius: 4px; border: 1px solid #E1484B; color: #E1484B; display: flex; align-items: center; justify-content: center; font-size: 13px;">Unforced</span>
+                <span style="min-height: 54px; border-radius: 4px; border: 1px solid #E1484B; color: #F07B7D; display: flex; align-items: center; justify-content: center; font-size: 13px;">Unforced</span>
                 <span style="min-height: 54px; border-radius: 4px; border: 1px solid #2C4C68; background: #1E3A52; color: #F3F1E6; display: flex; align-items: center; justify-content: center; font-size: 13px;">Ball In</span>
               </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 7px 6px; background: #1E3A52; border-top: 1px solid #2C4C68;">
               <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #C6E23D;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #F3F1E6;">TRACK</span></span>
-              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #7FA0B5;">HOME</span></span>
-              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #7FA0B5;">HIST</span></span>
-              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #7FA0B5;">TOUR</span></span>
-              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #7FA0B5;">MORE</span></span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #A8C0D0;">HOME</span></span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #A8C0D0;">HIST</span></span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #A8C0D0;">TOUR</span></span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 30px; height: 22px; border-radius: 7px; background: #182E42;"></span><span style="font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: #A8C0D0;">MORE</span></span>
             </div>
           </div>
         </div>
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 6px; padding: 18px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #5C7183; margin-bottom: 4px;">Tablet · 834 × 1112 · Day</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #4A5D6D; margin-bottom: 4px;">Tablet · 834 × 1112 · Day</div>
           <div style="font-size: 13.5px; color: #3D5568; line-height: 1.55; margin-bottom: 14px;">Icon rail replaces the drawer. Content becomes two columns; the wizard stays one column so muscle memory survives.</div>
           <div style="background: #F4F6F2; border: 1px solid #D3DBD2; border-radius: 6px; overflow: hidden; display: flex;">
             <div style="width: 46px; background: #FFFFFF; border-right: 1px solid #D3DBD2; padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
@@ -460,7 +470,7 @@ useEffect(() =&gt; {
         </div>
 
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 6px; padding: 18px;">
-          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #5C7183; margin-bottom: 4px;">Laptop · 1440 × 900 · Day</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: #4A5D6D; margin-bottom: 4px;">Laptop · 1440 × 900 · Day</div>
           <div style="font-size: 13.5px; color: #3D5568; line-height: 1.55; margin-bottom: 14px;">Review mode: labelled rail, and the tracker finally uses the width — wizard left, live stats and point log right, no tab switching.</div>
           <div style="background: #F4F6F2; border: 1px solid #D3DBD2; border-radius: 6px; overflow: hidden; display: flex;">
             <div style="width: 92px; background: #FFFFFF; border-right: 1px solid #D3DBD2; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px;">
@@ -510,7 +520,7 @@ useEffect(() =&gt; {
     </section>
 
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">06 · Courtside rules</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">06 · Courtside rules</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 22px;">Non-negotiables for logging a live point</h2>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
         <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 4px; padding: 18px;">
@@ -542,7 +552,7 @@ useEffect(() =&gt; {
 
     <sc-if value="{{ showMigration }}" hint-placeholder-val="{{ true }}">
     <section style="padding: 56px 0 8px;">
-      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #5C7183;">07 · Migration</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4A5D6D;">07 · Migration</div>
       <h2 style="font-family: Manrope, sans-serif; font-weight: 800; letter-spacing: -0.028em; font-size: 34px; margin: 10px 0 22px;">File-by-file, in order</h2>
 
       <div style="background: #FFFFFF; border: 1px solid #DDE3DC; border-radius: 4px; overflow: hidden;">
@@ -603,7 +613,7 @@ useEffect(() =&gt; {
     </section>
     </sc-if>
 
-    <footer style="padding: 48px 0 0; border-top: 1px solid #D3DBD2; margin-top: 56px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #5C7183; text-transform: uppercase;">
+    <footer style="padding: 48px 0 0; border-top: 1px solid #D3DBD2; margin-top: 56px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #4A5D6D; text-transform: uppercase;">
       Grounded in index.css · app-tailwind.css · tracker-tailwind.css · AppShell · NavDrawer · Scorebar · ChipButton · StatsPanel · PointLog · MatchHistoryPage · ui/* · primitives/*
     </footer>
 

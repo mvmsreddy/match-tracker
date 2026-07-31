@@ -172,7 +172,7 @@ export default function DrillLibraryView() {
                     <div className="text-xs text-muted-foreground">Success rate</div>
                     <div className="flex items-baseline gap-2 mt-1">
                       <div className={`font-display font-extrabold text-xl ${avgRate == null ? 'text-muted-foreground' : (avgRate >= 60 ? 'text-primary' : 'text-destructive')}`}>{avgRate == null ? '—' : `${avgRate}%`}</div>
-                      <div className="text-[10px] text-muted-foreground">{stat ? `${stat.sampleImproved} of ${stat.sampleTotal} improved` : 'Not yet measured'}</div>
+                      <div className="text-[12px] text-muted-foreground">{stat ? `${stat.sampleImproved} of ${stat.sampleTotal} improved` : 'Not yet measured'}</div>
                     </div>
                   </div>
                 </div>

@@ -2,16 +2,16 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const chipVariants = cva(
-  "flex min-h-[50px] flex-1 cursor-pointer select-none items-center justify-center rounded-tt border px-3 py-3 text-center font-sans text-[0.87rem] transition-colors",
+  "flex min-h-[50px] flex-1 cursor-pointer select-none items-center justify-center rounded-lg border px-3 py-3 text-center font-sans text-[0.87rem] transition-colors",
   {
     variants: {
       variant: {
-        default: "border-tt-border bg-tt-surface text-tt-foreground hover:border-tt-brand",
-        warn: "bg-transparent border-tt-destructive text-tt-destructive hover:bg-tt-destructive-bg",
-        action: "bg-transparent border-tt-brand text-tt-brand hover:bg-tt-brand/10",
-        self: "bg-transparent border-tt-win text-tt-win hover:bg-tt-win-bg",
-        forced: "bg-transparent border-tt-forced text-tt-forced hover:bg-tt-forced-bg",
-        let: "bg-transparent border-tt-border text-tt-muted-foreground text-[0.76rem] hover:border-tt-muted-foreground",
+        default: "border-border bg-card text-foreground hover:border-primary",
+        warn: "bg-transparent border-destructive text-destructive hover:bg-destructive/10",
+        action: "bg-transparent border-primary text-primary hover:bg-primary/10",
+        self: "bg-transparent border-chart-3 text-chart-3 hover:bg-chart-3/10",
+        forced: "bg-transparent border-forced text-forced hover:bg-forced-background",
+        let: "bg-transparent border-border text-muted-foreground text-[0.76rem] hover:border-muted-foreground",
       },
       full: {
         true: "w-full flex-[1_1_100%]",

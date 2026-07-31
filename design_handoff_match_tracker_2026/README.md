@@ -23,9 +23,20 @@ Each HTML file is a *gallery*: many phone (390 px) and laptop (1140 px) frames l
 
 **High-fidelity.** Colours, type sizes/weights/tracking, radii, spacing and copy are final and exact. Recreate them pixel-for-pixel using the codebase's components. Where a frame shows a typographic glyph (see **Assets**), substitute the named `lucide-react` icon.
 
+## Sync status — 31 Jul 2026
+
+**Migration steps 1–3 are already implemented upstream** (tree `42e694ee132e`). Read these files before writing anything; **the shipped code is the source of truth for token values**, and this README's tables now match it:
+
+- `src/styles/app-tailwind.css` — the three tiers exist as `:root, [data-tier="day"]`, `[data-tier="night"], .dark`, `[data-tier="glare"]`, with `--app-accent-ink`, `--app-forced`, `--app-forced-background` and a real `--font-mono` (IBM Plex Mono, now imported).
+- `src/context/ThemeContext.jsx` — 4-value `preference` with migration of old `light`/`dark`/`midnight`/`navy` values, `resolveTier` with the 30/45-minute margins, sun fetched only in `auto`, 5-minute interval + `visibilitychange` re-check, `data-tier` written to `<html>`, `.dark` kept in sync, and a legacy `{ theme, toggle }` shim for the six components not yet migrated.
+- `src/lib/weather.js` — `getSunTimes()` returns `{ lat, lon, sunrise, sunset, day }` (epoch ms) with a per-calendar-day localStorage cache under `tt-sun-cache`; never throws.
+- `src/index.css` — legacy `--bg`/`--accent`/`--text*` are now aliases of `--app-*`, so legacy classes follow the tier; the dead `[data-theme="navy"]` gate is gone.
+
+**Still open — start here:** body copy still resolves to IBM Plex Sans (the approved design is Manrope throughout, so finish that swap in the `@layer utilities` block); `.header` and `.t-modal-lg` keep 680 px caps; `.t-bmc` bracket cards are still absolutely positioned at 236 px; `.mt-rail`/`.mt-tabbar` still default to `display: none` — confirm what gates them by width now; the `components/ui/*` + `components/primitives/*` duplication and the 10 px labels remain. **Steps 5–8 of the migration order are unstarted.**
+
 ## Design tokens
 
-Replace the three competing namespaces (`--bg/--accent/--text*` in index.css, `--app-*` in app-tailwind.css, `--color-tt-*` in tracker-tailwind.css) with **one `--app-*` layer**, keyed off `<html data-tier>`. Keep the other two as aliases for one release so nothing breaks mid-migration.
+The three competing namespaces (`--bg/--accent/--text*` in index.css, `--app-*` in app-tailwind.css, `--color-tt-*` in tracker-tailwind.css) with **one `--app-*` layer**, keyed off `<html data-tier>`. Keep the other two as aliases for one release so nothing breaks mid-migration.
 
 ### Tier: Daylight (`data-tier="day"`)
 
@@ -35,16 +46,16 @@ Replace the three competing namespaces (`--bg/--accent/--text*` in index.css, `-
 | frame / section ground | `#F5F4EF` | phone body, laptop panel |
 | card | `#FFFFFF` | with `box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25)` |
 | ink (foreground) | `#101914` | 11.9:1 on `#F5F4EF` |
-| muted foreground | `#6B7A6E` | secondary labels |
+| muted foreground | `#4E5A50` | secondary labels — 6.4:1 on page ground, 7.4:1 on card |
 | body text on card | `#46524A` | paragraph copy |
 | hairline / track | `#EAE9E2` / `#E1E4DD` | dividers, bar tracks |
 | border (inputs, outlines) | `#DCDFD8` / `#C9CEC4` | |
 | accent (lime) | `#D7F25C` | **fill only**, always with `#101914` text |
-| accent ink | `#7FA31C` | lime as *text* / small graphics |
+| accent ink (text) | `#4E6B10` | lime as *text*; the `#D7F25C` fill and `#7FA31C` graphic fill stay for bars/rings |
 | win / self | `#43601A` text on `#E8F4C8` | always paired with a `W` letter |
 | loss / opponent / destructive | `#96331E` text on `#F7DDD7` | pill fill `#FDF2EF` |
-| forced error / amber | `#8A5F00` text on `#FFF6E4`; graphic `#E09A1F` | |
-| hydration / info | `#2E7BE8`, track `#E3E9F5` | |
+| forced error / amber | text `#8A5F00` on `#FFF6E4`; graphic fill `#E09A1F` — never amber text on white | |
+| hydration / info | fill `#2E7BE8`, text `#1B5FBF`, track `#E3E9F5` | |
 | inverted hero card | bg `#101914`, text `#F5F4EF`, muted `rgba(245,244,239,0.62)` | |
 
 ### Tier: Floodlight (`data-tier="night"`)
@@ -52,18 +63,18 @@ Replace the three competing namespaces (`--bg/--accent/--text*` in index.css, `-
 | Role | Value |
 |---|---|
 | page ground | `#0B0F0D` |
-| card | `#141A16`, border `1px solid #212A23` |
+| card | `#141A16`, border `1px solid #26302A` |
 | card raised / row hover | `#191F1B`; inset field `#0F1411` |
 | foreground | `#F2F5F0` |
 | muted foreground | `#7C8A80`; body `#A5B3A8`; strong body `#C4D0C7` |
 | accent (lime) | `#C8FF4D` — text-safe on all night surfaces |
 | accent glow | `box-shadow: 0 10px 24px -14px rgba(200,255,77,0.75)` on primary buttons only |
-| hero gradient | `linear-gradient(150deg, #1B2A14 0%, #141A15 60%, #171D19 100%)`, border `1px solid rgba(200,255,77,0.22)` |
+| hero gradient | `linear-gradient(150deg, #1B2A14 0%, #141A15 60%, #171D19 100%)`, border `1px solid rgba(200,255,77,0.22)` (gradient is a component style, not a token) |
 | win / self | `#C8FF4D` on `rgba(200,255,77,0.16)` |
 | loss / opponent | `#F0937F` on `rgba(232,110,86,0.12)`, border `rgba(232,110,86,0.35)` |
 | forced / amber | `#F5B547` on `rgba(245,158,11,0.12)`, border `rgba(245,158,11,0.35)` |
 | info / hydration | `#3B82F6`; track `#26302A` |
-| divider / track | `#212A23` / `#26302A` |
+| divider / border / track | `#26302A` (ships as one value — night `--app-border` equals `--app-muted`, `133 12% 15%`) |
 
 ### Tier: Glare (`data-tier="glare"`) — manual only
 
@@ -216,6 +227,16 @@ At ≥ 1024 px, drop the Match / Live / Stats tab switch and use two panes: wiza
 - **Organizer** — ink live-event card with three counts (scores pending / draws to seed / withdrawals) and a lime "Open order of play", then per-event cards with status pills.
 - **Nutritionist** (`NutritionistDashboardPage.jsx`) — athlete rows with compliance % and a red/green initials tile, an "Adjust match-day plan" action, and the day-type macro grid (Match / Training / Rest with kcal · carbs · protein).
 
+## Contrast law (non-negotiable)
+
+Every colour carries a **fill** value and a separate **ink** value; they are never interchanged.
+
+- Lime, amber and blue are **fills**. As text they darken: lime → `#4E6B10`, amber → `#8A5F00`, blue → `#1B5FBF`.
+- **Never white text on a lime fill** — lime fills always take `#101914`. **Never near-black text on a dark surface** — Floodlight text is `#F2F5F0` / `#C4D0C7` / `#A5B3A8`, and the lightest muted allowed is `#7C8A80`.
+- Muted text is `#4E5A50` in Daylight (not a mid-grey) and `#7C8A80` in Floodlight. Below 13 px, use the foreground colour, not muted.
+- Minimums: **4.5:1** for body and label text, **3:1** for display text ≥ 24 px (or ≥ 18.66 px at weight 700+), **7:1** everywhere in Glare.
+- Verify by measurement, not by eye: every pair in the frames was audited programmatically and passes.
+
 ## Interactions & behaviour
 
 - **Navigation** — bottom bar ≤ 767 px (first four items + More sheet), icon rail 768–1023, labelled rail ≥ 1024. Active state = lime pill (phone) / ink fill (rail). Sheet and modals close on Escape and on backdrop tap.
@@ -233,6 +254,8 @@ No new state model — the redesign is presentational. Keep `AuthContext`, `Segm
 1. `ThemeContext` gains `preference` (`'auto' | 'day' | 'night' | 'glare'`), a resolved `tier`, and `sun` from `getSunTimes()`.
 2. `lib/weather.js` gains a per-calendar-day sunrise/sunset cache.
 
+Both of these already exist upstream — consume `useTheme()`'s `{ preference, setPreference, tier, sun }` rather than the legacy `{ theme, toggle }` shim, and migrate the six components still on the shim (TopNav, AppShell, MTNavChrome, TrackerPage, MatchDetailPage, VideoAnalysisTestPage).
+
 Do not change the point/rally data model: `rally` stays an integer, outcomes stay `Winner | ForcedError | UnforcedError | DoubleFault`, locations stay `Long | Wide | Net`, and zone names stay exactly as `courtZones.js` defines them.
 
 ## Assets
@@ -247,10 +270,10 @@ Do not change the point/rally data model: `rally` stays an integer, outcomes sta
 
 ## Migration order
 
-1. `styles/app-tailwind.css` — rewrite token blocks as `[data-tier="day"|"night"|"glare"]`; add `--app-accent-ink` and `--app-forced`; point `--font-mono` at IBM Plex Mono.
-2. `context/ThemeContext.jsx` — 4-value preference, write `data-tier`, keep `.dark` in sync for one release.
-3. `lib/weather.js` — `daily=sunrise,sunset`, per-day cache, `getSunTimes()`.
-4. `index.css` — delete the `:root` colour block, alias `--bg/--accent/--text*` to `--app-*`, drop the `[data-theme="navy"]` gates, remove the 680 px caps and `.root { overflow: hidden }`.
+1. ~~`styles/app-tailwind.css` — rewrite token blocks as `[data-tier="day"|"night"|"glare"]`; add `--app-accent-ink` and `--app-forced`; point `--font-mono` at IBM Plex Mono.~~ **Done upstream.**
+2. ~~`context/ThemeContext.jsx` — 4-value preference, write `data-tier`, keep `.dark` in sync for one release.~~ **Done upstream.**
+3. ~~`lib/weather.js` — `daily=sunrise,sunset`, per-day cache, `getSunTimes()`.~~ **Done upstream.**
+4. `index.css` — **partly done** (aliases in place, navy gate removed). Remaining: finish the Manrope body switch, remove the 680 px caps on `.header`/`.t-modal-lg`, drop `.root { overflow: hidden }`, and confirm the width gating for `.mt-rail`/`.mt-tabbar`.
 5. `AppShell` + `NavDrawer` + `nav/MTNavChrome` → one `<AppNav>` with the three width presentations.
 6. Merge the duplicated `components/ui/*` and `components/primitives/*` into one set; `tt-*` classes become plain token classes; bump 10 px labels to 12 px and table cells to 13 px.
 7. `TrackerPage` + `Wizard` + `ChipButton` — tile sizes, the two-pane layout at ≥ 1024, landscape switch.
@@ -268,9 +291,8 @@ Do not change the point/rally data model: `rally` stays an integer, outcomes sta
 
 | File | What it is |
 |---|---|
-| `Match Tracker App 2026.dc.html` | **Primary reference.** All 18 routes, sections 00–08, phone + laptop frames in both tiers. |
+| `Match Tracker App 2026.dc.html` | **The design. Single source of truth.** All 18 routes, sections 00–08, phone + laptop frames in both tiers. Every text/background pair is contrast-audited. |
 | `Responsive Theming Spec.dc.html` | Audit of the current code, full token tables with contrast ratios, breakpoint table, component specs, migration checklist. |
-| `Match Tracker 2026.dc.html` | The two-direction exploration (Daylight / Floodlight) the final language was chosen from. |
 | `github.md` | Source association (repo, branch, sync receipt) and a screen → repo-file map. |
 | `logo.svg`, `logo.png` | Brand mark, copied from the repo. |
 | `support.js` | Runtime for the `.dc.html` files. Keep it beside them to open them in a browser; **not** for production. |

@@ -28,7 +28,7 @@ export default function SkillRadarCard({ ratings, stats, onCta, ctaLabel = 'Rate
         {stats && (
           <div className="text-right">
             <div className="font-display font-extrabold text-lg tracking-tighter text-primary">{stats.winRate}%</div>
-            <div className="text-[10px] text-muted-foreground uppercase font-bold">Win Rate</div>
+            <div className="text-[12px] text-muted-foreground uppercase font-bold">Win Rate</div>
           </div>
         )}
       </div>

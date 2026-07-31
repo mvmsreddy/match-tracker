@@ -40,7 +40,7 @@ export function ComplianceHero({ athleteId, logs }) {
     <Card className="p-4 sm:p-5 space-y-4" data-testid="compliance-hero">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-primary">Today's Plan</div>
+          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-primary">Today's Plan</div>
           <div className="text-sm font-bold">{DAY_TYPE_LABELS[dayType]}</div>
         </div>
         <select
@@ -62,7 +62,7 @@ export function ComplianceHero({ athleteId, logs }) {
               <div className="flex items-baseline justify-between text-xs">
                 <span className="font-semibold">{m.label}</span>
                 <span className="font-mono text-muted-foreground">
-                  {Math.round(c.value)}<span className="text-[10px]"> / {c.goal}{m.unit}</span>
+                  {Math.round(c.value)}<span className="text-[12px]"> / {c.goal}{m.unit}</span>
                 </span>
               </div>
               <div className="relative h-2.5 rounded-full bg-muted overflow-hidden">
@@ -73,7 +73,7 @@ export function ComplianceHero({ athleteId, logs }) {
                   style={{ width: `${Math.min(100, (pct / 150) * 100)}%`, background: bandColor(c.band) }}
                 />
               </div>
-              <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: bandColor(c.band) }}>
+              <div className="text-[12px] uppercase tracking-wider font-bold" style={{ color: bandColor(c.band) }}>
                 {c.band === 'green' ? '🟢 On target' : c.band === 'amber' ? '🟡 Close (±20%)' : c.band === 'orange' ? '🟠 Off track' : '🔴 Red flag'} · {pct}%
               </div>
             </div>
@@ -150,7 +150,7 @@ export function AiMealSuggester({ athleteId }) {
           <Sparkles className="w-5 h-5 text-primary" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-primary">AI Dietitian</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-primary">AI Dietitian</div>
           <div className="text-sm font-bold">What should I eat right now?</div>
         </div>
       </div>
@@ -270,7 +270,7 @@ export function PeriMatchFuelTimer({ athleteId }) {
           <Timer className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500">Peri-Match Timer</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-amber-500">Peri-Match Timer</div>
           <div className="text-sm font-bold">Fuel your match by the clock</div>
         </div>
       </div>
@@ -297,7 +297,7 @@ export function PeriMatchFuelTimer({ athleteId }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-semibold">{cp.label}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono">
+                    <div className="text-[12px] text-muted-foreground font-mono">
                       {new Date(cp.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                       {past && !cp.done && ' · overdue'}
                     </div>
@@ -325,7 +325,7 @@ export function WeeklyReportCard({ athleteId, logs }) {
           <Trophy className="w-5 h-5 text-primary" strokeWidth={2.2} />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">This Week</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">This Week</div>
           <div className="text-sm font-bold">Compliance report card</div>
         </div>
       </div>
@@ -376,7 +376,7 @@ export function GiTriggerCard({ logs }) {
       <div className="flex items-center gap-3 mb-2">
         <AlertTriangle className="w-5 h-5 text-amber-500" strokeWidth={2.2} />
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500">GI Detective</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-amber-500">GI Detective</div>
           <div className="text-sm font-bold">Foods correlated with discomfort</div>
         </div>
       </div>
@@ -427,7 +427,7 @@ export function WellnessQuickLog({ athleteId, onLogged }) {
           <MessageSquare className="w-5 h-5 text-primary" strokeWidth={2.2} />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Quick Wellness Check-in</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Quick Wellness Check-in</div>
           <div className="text-sm font-bold">How did you feel on court?</div>
         </div>
       </div>
@@ -490,7 +490,7 @@ export function DietitianChatCard({ athleteId }) {
             {unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">{unread}</span>}
           </div>
           <div className="text-left">
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Nutritionist chat</div>
+            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Nutritionist chat</div>
             <div className="text-sm font-bold">Ask your dietitian anything</div>
           </div>
         </div>

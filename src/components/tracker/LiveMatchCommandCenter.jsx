@@ -237,11 +237,11 @@ export default function LiveMatchCommandCenter({
 
         <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`text-[10px] uppercase tracking-widest font-bold ${server === 'self' ? 'text-primary' : 'text-muted-foreground'}`}>
+            <span className={`text-[12px] uppercase tracking-widest font-bold ${server === 'self' ? 'text-primary' : 'text-muted-foreground'}`}>
               ● {server === 'self' ? (header.selfName || 'You') : (header.oppName || 'Opp')} serves
             </span>
             <span
-              className={`text-[10px] uppercase tracking-widest font-bold rounded-full px-1.5 py-0.5 border ${
+              className={`text-[12px] uppercase tracking-widest font-bold rounded-full px-1.5 py-0.5 border ${
                 courtSide === 'ad'
                   ? 'border-amber-500/40 bg-amber-500/10 text-amber-500'
                   : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
@@ -253,7 +253,7 @@ export default function LiveMatchCommandCenter({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] text-muted-foreground inline-flex items-center gap-1" data-testid="match-duration">
+            <span className="font-mono text-[12px] text-muted-foreground inline-flex items-center gap-1" data-testid="match-duration">
               <Timer className="w-3 h-3" />{durationLabel}
             </span>
             <button
@@ -304,7 +304,7 @@ export default function LiveMatchCommandCenter({
           <div className="mt-2 relative z-10 flex flex-wrap gap-2">
             {streakInfo && (
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider ${
                   streakInfo.side === 'self' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'
                 }`}
                 data-testid="streak-indicator"
@@ -314,7 +314,7 @@ export default function LiveMatchCommandCenter({
               </span>
             )}
             {isBreakPoint && (
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-500 animate-pulse">
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-500 animate-pulse">
                 <Zap className="w-3 h-3" />Break point
               </span>
             )}
@@ -327,7 +327,7 @@ export default function LiveMatchCommandCenter({
         <div className="rounded-xl bg-amber-500/10 border border-amber-500/40 p-3 flex items-center gap-3" data-testid="changeover-timer">
           <Coffee className="w-5 h-5 text-amber-500 shrink-0" />
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-widest font-bold text-amber-500">Changeover</div>
+            <div className="text-[12px] uppercase tracking-widest font-bold text-amber-500">Changeover</div>
             <div className="text-xs text-muted-foreground">Breathe. Hydrate. Reset.</div>
           </div>
           <div className="font-display font-black text-2xl tracking-tighter tabular-nums">
@@ -346,7 +346,7 @@ export default function LiveMatchCommandCenter({
             <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={2.2} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-primary">AI Coach</span>
+                <span className="text-[12px] uppercase tracking-widest font-bold text-primary">AI Coach</span>
                 <div className="flex items-center gap-2">
                   {advisorState === 'done' && (
                     <button onClick={fetchAdvisor} className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1">

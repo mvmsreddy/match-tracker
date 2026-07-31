@@ -255,27 +255,27 @@ export default function AitaRankingsPage() {
                           <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-1.5 items-center">
                             {r.regNo && <span>Reg: {r.regNo}</span>}
                             {r.state && (
-                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{r.state}</span>
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[12px] font-semibold">{r.state}</span>
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="font-display font-extrabold text-xl tracking-tighter text-primary">{r.totalPoints}</div>
-                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">pts</div>
+                        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">pts</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border">
                       <div>
-                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Singles</div>
+                        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Singles</div>
                         <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.singlesPts ?? '—'}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Doubles</div>
+                        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Doubles</div>
                         <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.doublesPts ?? '—'}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">25% Best</div>
+                        <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">25% Best</div>
                         <div className="text-sm font-semibold mt-0.5">{r.pointsBreakdown?.best25DoublesPts ?? '—'}</div>
                       </div>
                     </div>

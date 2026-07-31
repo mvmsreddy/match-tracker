@@ -207,92 +207,13 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   .header { max-width: 680px; margin: 0 auto; }
 }
 
-/* ================================================
-   THEME PICKER
-   ================================================ */
-
-/* ================================================
-   TOP NAV (hamburger layout)
-   ================================================ */
-.top-nav { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
-.hamburger-btn { background: none; border: 1px solid var(--border); color: var(--text2); font-size: 1.1rem; padding: 5px 10px; border-radius: 4px; cursor: pointer; line-height: 1; }
-.hamburger-btn:hover { border-color: var(--accent); color: var(--accent); }
-.top-nav-brand { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.95rem; color: var(--text); }
-.top-nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; cursor: default; }
-
-/* ================================================
-   MT NAV CHROME — persistent bottom tab bar (phone) /
-   left rail (tablet+desktop). Mounted only when the
-   "navy" theme is active (see MTNavChrome.jsx) in place
-   of TopNav/SideDrawer's hamburger bar — the drawer
-   itself is still reachable via the small hamburger here.
-   ================================================ */
-.mt-brand-chip { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: var(--accent-text); font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-.mt-topstrip { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
-.mt-hamburger { background: none; border: 1px solid var(--border); color: var(--text2); font-size: 1rem; padding: 5px 9px; border-radius: 7px; cursor: pointer; line-height: 1; }
-.mt-hamburger:hover { border-color: var(--accent); color: var(--accent); }
-.mt-topstrip-brand { display: flex; align-items: center; gap: 9px; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.9rem; color: var(--text); }
-
-.mt-tabbar { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 150; grid-template-columns: repeat(5, 1fr); background: var(--bg2); border-top: 1px solid var(--border); padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); }
-.mt-tabbar-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 10px; text-decoration: none; color: var(--text3); }
-.mt-tabbar-code { width: 32px; height: 24px; border-radius: 7px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.62rem; color: var(--text3); }
-.mt-tabbar-label { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.6rem; color: var(--text3); }
-.mt-tabbar-item.active .mt-tabbar-code { background: var(--accent); color: var(--accent-text); }
-.mt-tabbar-item.active .mt-tabbar-label { color: var(--text); }
-
-.mt-rail { display: none; flex-direction: column; gap: 5px; position: fixed; top: 0; left: 0; bottom: 0; width: 212px; padding: 18px 10px; background: var(--bg3); border-right: 1px solid var(--border); z-index: 150; overflow-y: auto; }
-.mt-rail-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
-.mt-rail-brand-text { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--text); letter-spacing: -0.01em; }
-.mt-rail-item { display: flex; align-items: center; gap: 11px; padding: 10px 9px; border-radius: 10px; text-decoration: none; color: var(--text2); }
-.mt-rail-code { width: 28px; height: 24px; border-radius: 7px; background: var(--bg2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.62rem; color: var(--text3); }
-.mt-rail-label { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.82rem; }
-.mt-rail-item.active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.mt-rail-item.active .mt-rail-code { background: var(--accent); color: var(--accent-text); }
-.mt-rail-item.active .mt-rail-label { color: var(--text); }
-.mt-rail-user { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 11px; background: var(--bg2); border: 1px solid var(--border); }
-.mt-rail-user-chip { width: 30px; height: 30px; border-radius: 9px; background: var(--bg3); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.7rem; color: var(--accent); }
-.mt-rail-user-text { min-width: 0; }
-.mt-rail-user-name { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.78rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mt-rail-user-role { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
-
-/* .mt-tabbar/.mt-rail's breakpoint toggle and the .root padding that made
-   room for them were gated on the dead [data-theme="navy"] selector — gate
-   removed, but not reinstated unconditionally: MTNavChrome only ever renders
-   behind a `theme === 'navy'` check (TrackerPage, MatchDetailPage,
-   VideoAnalysisTestPage) that stays permanently false until step 5 folds it
-   into <AppNav>, so today .mt-tabbar/.mt-rail never mount. Reserving .root
-   padding for them now — before there's a rail/tabbar to fill it — would
-   just punch an empty 212px gap into the current TopNav layout. Re-add the
-   breakpoint rules alongside that AppNav work instead of here. */
-
-/* ================================================
-   SIDE DRAWER
-   ================================================ */
-.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.22s; }
-.drawer-overlay.visible { opacity: 1; pointer-events: all; }
-.side-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: var(--bg2); border-right: 1px solid var(--border); z-index: 201; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.24s ease; }
-.side-drawer.open { transform: translateX(0); }
-.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 16px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.drawer-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 1rem; color: var(--accent); }
+/* TopNav, NavDrawer and MTNavChrome (and their .top-nav, .mt-, .side-drawer,
+   .drawer- and .hamburger-btn CSS) were retired in favor of one AppNav —
+   styled with Tailwind utility classes against the --app- tokens directly,
+   not this file. .drawer-close survives below since AiReviewModal.jsx (an
+   unrelated modal) still uses it for its own close button. */
 .drawer-close { background: none; border: none; color: var(--text3); font-size: 1rem; cursor: pointer; padding: 2px 6px; line-height: 1; }
 .drawer-close:hover { color: var(--text); }
-.drawer-nav { display: flex; flex-direction: column; padding: 10px 0; }
-.drawer-link { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); text-decoration: none; padding: 12px 20px; border-left: 3px solid transparent; transition: color 0.12s, border-color 0.12s, background 0.12s; }
-.drawer-link:hover { color: var(--text); background: var(--bg3); }
-.drawer-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-.drawer-link-cta { color: var(--accent); font-weight: 700; margin: 6px 12px; border: 1px solid var(--accent); border-radius: 4px; border-left-width: 1px; padding: 11px 16px; }
-.drawer-link-cta:hover { background: rgba(198,226,61,0.1); }
-.drawer-link-cta.active { background: rgba(198,226,61,0.15); border-left-color: var(--accent); }
-.drawer-divider { height: 1px; background: var(--border); margin: 6px 0; flex-shrink: 0; }
-.drawer-section { padding: 12px 20px; }
-.drawer-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); margin-bottom: 10px; }
-.drawer-guide-btn { display: block; width: calc(100% - 32px); margin: 0 16px 4px; text-align: left; font-size: 0.72rem; padding: 10px 14px; }
-.drawer-user { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.drawer-user-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--text); margin-bottom: 2px; }
-.drawer-user-email { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text4); margin-bottom: 12px; }
-.drawer-logout-btn { background: none; border: 1px solid var(--border); color: var(--opp); font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 7px 14px; border-radius: 3px; cursor: pointer; width: 100%; }
-.drawer-logout-btn:hover { border-color: var(--opp); background: rgba(227,123,107,0.08); }
 
 /* Generic modal shell — still used by AiReviewModal.jsx */
 .t-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -369,7 +290,7 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
    ================================================ */
 
 /* ---- Bracket Match Card ---- */
-.t-bmc { width: 236px; background: hsl(var(--app-card)); border: 1px solid hsl(var(--app-border)); border-radius: var(--radius-sm); overflow: hidden; position: absolute; transition: border-color 0.12s, box-shadow 0.12s; }
+.t-bmc { width: 100%; min-width: 236px; background: hsl(var(--app-card)); border: 1px solid hsl(var(--app-border)); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.12s, box-shadow 0.12s; }
 .t-bmc-clickable { cursor: pointer; }
 .t-bmc-clickable:hover { border-color: color-mix(in srgb, hsl(var(--app-primary)) 45%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, hsl(var(--app-primary)) 18%, transparent); }
 .t-bmc-complete { border-color: hsl(var(--app-border)); }
@@ -391,10 +312,17 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 .t-bmc-outcome { padding: 4px 10px 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: hsl(var(--app-muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; background: hsl(var(--app-muted)); }
 .t-bmc-cta     { padding: 4px 10px 5px; font-size: 0.68rem; color: color-mix(in srgb, hsl(var(--app-primary)) 75%, transparent); background: color-mix(in srgb, hsl(var(--app-primary)) 4%, transparent); text-align: right; font-style: italic; }
 
-/* ---- Bracket Grid ---- */
+/* ---- Bracket Grid ----
+   Round labels and match cards both use the same minmax(236px, 1fr) grid
+   template (set inline per-draw, since round count is dynamic) so a column
+   grows past 236px on wide screens instead of the old fixed-236px absolute
+   layout, and stays aligned between the label row and the cards below it.
+   Each round is a normal-flow column (.t-bracket-col); a match's vertical
+   position comes from margin-top computed once in BracketView, not
+   position: absolute. */
 .t-bracket-wrap   { overflow-x: auto; overflow-y: auto; padding: 16px; }
-.t-bracket-labels { display: flex; padding-left: 0; margin-bottom: 8px; }
-.t-bracket-label  { width: 236px; flex-shrink: 0; margin-right: 40px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: hsl(var(--app-muted-foreground)); text-align: center; }
-.t-bracket-label:last-child { margin-right: 0; }
-.t-bracket-grid   { position: relative; }
+.t-bracket-labels { display: grid; margin-bottom: 8px; position: sticky; top: 0; z-index: 1; background: hsl(var(--app-background)); padding-bottom: 8px; }
+.t-bracket-label  { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: hsl(var(--app-muted-foreground)); text-align: center; }
+.t-bracket-grid   { display: grid; align-items: start; }
+.t-bracket-col    { display: flex; flex-direction: column; min-width: 0; }
 

@@ -117,7 +117,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               ) : (
                 <span className="font-semibold text-sm">{circuit?.category} {circuit?.subcategory}</span>
               )}
-              {circuits.length > 1 && <div className="text-muted-foreground mt-0.5 text-[10px]">{circuits.length} segments available</div>}
+              {circuits.length > 1 && <div className="text-muted-foreground mt-0.5 text-[12px]">{circuits.length} segments available</div>}
             </div>
           )}
 
@@ -134,7 +134,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                 />
               </div>
               {behindPace && (
-                <div className="text-[10px] text-destructive mt-1 font-semibold">
+                <div className="text-[12px] text-destructive mt-1 font-semibold">
                   ⚠ {isOwnDashboard ? 'Behind pace for your target date' : 'Behind pace for target date'}
                 </div>
               )}
@@ -148,7 +148,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               </span>
               <div className="min-w-0">
                 <div className="text-xs font-bold truncate">{coachLink.coach?.displayName || 'Your coach'}</div>
-                <div className="text-[10px] text-muted-foreground">Linked coach</div>
+                <div className="text-[12px] text-muted-foreground">Linked coach</div>
               </div>
             </div>
           )}

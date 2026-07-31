@@ -140,24 +140,24 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
         </div>
         <div className="grid grid-cols-2 gap-3 w-full sm:w-auto sm:flex-shrink-0">
           <div className="text-center sm:text-left p-3 rounded-lg bg-muted/50">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Current</div>
+            <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Current</div>
             <div className="font-display font-extrabold text-xl sm:text-2xl mt-0.5">#{latest.rank}</div>
           </div>
           {activeGoal.targetRank && (
             <div className="text-center sm:text-left p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-primary">Target</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-primary">Target</div>
               <div className="font-display font-extrabold text-xl sm:text-2xl text-primary mt-0.5">#{activeGoal.targetRank}</div>
             </div>
           )}
           {pointsNeeded != null && (
             <div className="text-center sm:text-left p-3 rounded-lg bg-muted/50">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Points needed</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Points needed</div>
               <div className="font-display font-extrabold text-xl sm:text-2xl mt-0.5">{pointsNeeded}</div>
             </div>
           )}
           {monthsLeft != null && (
             <div className="text-center sm:text-left p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-destructive">Months left</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-destructive">Months left</div>
               <div className="font-display font-extrabold text-xl sm:text-2xl text-destructive mt-0.5">{monthsLeft}</div>
             </div>
           )}

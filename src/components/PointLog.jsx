@@ -1,5 +1,5 @@
 import { reasonLabel } from '../lib/format';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 
 export default function PointLog({ points, header }) {
   const selfName = header.selfName || 'Self';
@@ -11,17 +11,17 @@ export default function PointLog({ points, header }) {
       <CardContent className="max-h-[280px] overflow-y-auto pt-0">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-tt-border">
-              <th className="px-3 py-2 font-tt-mono text-[10px] font-bold uppercase tracking-wider text-tt-muted-foreground">Score</th>
-              <th className="px-3 py-2 font-tt-mono text-[10px] font-bold uppercase tracking-wider text-tt-muted-foreground">Detail</th>
-              <th className="px-3 py-2 font-tt-mono text-[10px] font-bold uppercase tracking-wider text-tt-muted-foreground">Rally</th>
+            <tr className="border-b border-border">
+              <th className="px-3 py-2 font-mono text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Score</th>
+              <th className="px-3 py-2 font-mono text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Detail</th>
+              <th className="px-3 py-2 font-mono text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Rally</th>
             </tr>
           </thead>
           <tbody>
             {points.slice().reverse().map((pt, i) => (
-              <tr key={points.length - 1 - i} className="border-b border-tt-border last:border-0">
+              <tr key={points.length - 1 - i} className="border-b border-border last:border-0">
                 <td className="px-3 py-2 tabular-nums">{String(pt.scoreAfter)}</td>
-                <td className={'px-3 py-2 ' + (pt.endedBy === 'self' ? 'text-tt-brand' : 'text-tt-opp')}>
+                <td className={'px-3 py-2 ' + (pt.endedBy === 'self' ? 'text-primary' : 'text-destructive')}>
                   {reasonLabel(pt, selfName, oppName)}
                 </td>
                 <td className="px-3 py-2 tabular-nums">{pt.rally}</td>

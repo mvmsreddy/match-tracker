@@ -184,7 +184,7 @@ export default function HighlightReelCard({
       <div className={`px-5 py-6 ${isSelfWin ? 'bg-primary/10' : 'bg-destructive/5'} border-b border-border`}>
         <div className="flex items-center gap-2 mb-2">
           <Trophy className={`w-4 h-4 ${isSelfWin ? 'text-primary' : 'text-muted-foreground'}`} />
-          <span className="font-mono text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+          <span className="font-mono text-[12px] uppercase tracking-widest font-bold text-muted-foreground">
             Match highlight reel
           </span>
         </div>
@@ -207,14 +207,14 @@ export default function HighlightReelCard({
         <div className="p-4 border-r border-border" data-testid="swing-win">
           <div className="flex items-center gap-1 text-primary mb-1">
             <Flame className="w-3.5 h-3.5" />
-            <span className="text-[10px] uppercase tracking-widest font-bold">Best run</span>
+            <span className="text-[12px] uppercase tracking-widest font-bold">Best run</span>
           </div>
           <div className="font-display font-black text-2xl">{swings.longestWin}</div>
           <div className="text-[11px] text-muted-foreground">points in a row won</div>
         </div>
         <div className="p-4" data-testid="swing-loss">
           <div className="flex items-center gap-1 text-destructive mb-1">
-            <span className="text-[10px] uppercase tracking-widest font-bold">Tough patch</span>
+            <span className="text-[12px] uppercase tracking-widest font-bold">Tough patch</span>
           </div>
           <div className="font-display font-black text-2xl">{swings.longestLoss}</div>
           <div className="text-[11px] text-muted-foreground">points in a row lost</div>
@@ -226,7 +226,7 @@ export default function HighlightReelCard({
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-1.5 text-primary">
             <Sparkles className="w-4 h-4" />
-            <span className="text-[10px] uppercase tracking-widest font-bold">AI recap</span>
+            <span className="text-[12px] uppercase tracking-widest font-bold">AI recap</span>
           </div>
           {state === 'done' && (
             <button
@@ -255,7 +255,7 @@ export default function HighlightReelCard({
 
         {uniqueTips.length > 0 && (
           <div className="pt-3 border-t border-border/60">
-            <div className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2">Coach tips during the match</div>
+            <div className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground mb-2">Coach tips during the match</div>
             <ul className="space-y-1.5">
               {uniqueTips.map((tip, i) => (
                 <li key={i} className="text-xs italic text-foreground/80 leading-relaxed" data-testid={`highlight-tip-${i}`}>

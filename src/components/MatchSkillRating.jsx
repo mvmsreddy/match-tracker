@@ -68,7 +68,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
           {avg && (
             <>
               <div className="font-display font-extrabold text-2xl tracking-tighter text-primary">{avg}</div>
-              <div className="text-[10px] uppercase font-bold text-muted-foreground">Avg / 10</div>
+              <div className="text-[12px] uppercase font-bold text-muted-foreground">Avg / 10</div>
             </>
           )}
         </div>
@@ -98,7 +98,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
               <div className="flex items-baseline justify-between mb-1.5">
                 <div>
                   <span className="text-sm font-bold">{s.label}</span>
-                  <span className="text-[10px] text-muted-foreground ml-2">{s.hint}</span>
+                  <span className="text-[12px] text-muted-foreground ml-2">{s.hint}</span>
                 </div>
                 <span className="text-sm font-bold text-primary">{ratings[s.key] || '—'}/10</span>
               </div>

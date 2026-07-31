@@ -3,7 +3,7 @@ import { getSunTimes } from '../lib/weather';
 
 const ThemeContext = createContext(null);
 
-const PRE_DAWN = 30, PRE_DUSK = 45; // minutes of margin
+export const PRE_DAWN = 30, PRE_DUSK = 45; // minutes of margin
 
 // Migrates the old binary 'light'/'dark' values (and the already-retired
 // 'midnight'/'navy' picker values) to the new 4-value preference. Anything

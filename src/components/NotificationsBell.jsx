@@ -39,7 +39,7 @@ export default function NotificationsBell() {
         <Bell className="w-5 h-5" strokeWidth={2} />
         {unreadCount > 0 && (
           <span
-            className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center px-1 border-2 border-background"
+            className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-white text-[12px] font-bold flex items-center justify-center px-1 border-2 border-background"
             data-testid="notifications-badge"
           >
             {unreadCount > 9 ? '9+' : unreadCount}

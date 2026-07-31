@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
 import { replayMatchAnalytics } from '../lib/analytics';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { getSkillRatingsForMatch } from '../lib/localStore';
-import TopNav from '../components/TopNav';
-import MTNavChrome from '../components/nav/MTNavChrome';
+import AppNav from '../components/AppNav';
 import Scorebar from '../components/Scorebar';
 import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
@@ -19,7 +17,6 @@ import RetroactivePointEntryModal from '../components/RetroactivePointEntryModal
 export default function MatchDetailPage() {
   const { matchId } = useParams();
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [match, setMatch] = useState(null);
   const [error, setError] = useState('');
   const [addingPoints, setAddingPoints] = useState(false);
@@ -34,19 +31,17 @@ export default function MatchDetailPage() {
 
   if (error) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
+      <AppNav>
         <div className="history-empty">{error} — <Link to="/history" style={{ color: '#C6E23D' }}>back to history</Link></div>
-      </div>
+      </AppNav>
     );
   }
 
   if (!match) {
     return (
-      <div className="root">
-        {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
+      <AppNav>
         <div className="history-empty">Loading match...</div>
-      </div>
+      </AppNav>
     );
   }
 
@@ -80,8 +75,7 @@ export default function MatchDetailPage() {
   }
 
   return (
-    <div className="root">
-      {theme === 'navy' ? <MTNavChrome active="stats" /> : <TopNav />}
+    <AppNav>
       <div className="header">
         <div className="title-row">
           <h1 className="title">{match.selfName} vs {match.oppName}</h1>
@@ -133,6 +127,6 @@ export default function MatchDetailPage() {
           <div style={{ fontFamily: 'Inter', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{match.notes}</div>
         </div>
       )}
-    </div>
+    </AppNav>
   );
 }

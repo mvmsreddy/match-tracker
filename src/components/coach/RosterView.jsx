@@ -68,7 +68,7 @@ function RosterRow({ player }) {
           <span className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center text-xs font-bold shrink-0">{initials(player.displayName)}</span>
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{player.displayName}</div>
-            <div className="text-[10px] text-muted-foreground whitespace-nowrap">{seg ? `${seg.category} ${seg.subcategory}` : 'No segment'}</div>
+            <div className="text-[12px] text-muted-foreground whitespace-nowrap">{seg ? `${seg.category} ${seg.subcategory}` : 'No segment'}</div>
           </div>
         </div>
       </TableCell>
@@ -79,7 +79,7 @@ function RosterRow({ player }) {
           {recent === null ? <span className="text-xs text-muted-foreground">…</span> :
             recent.length === 0 ? <span className="text-xs text-muted-foreground">—</span> :
             recent.map((won, i) => (
-              <span key={i} className={`w-5 h-5 rounded-sm flex items-center justify-center text-[10px] font-bold ${won ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{won ? 'W' : 'L'}</span>
+              <span key={i} className={`w-5 h-5 rounded-sm flex items-center justify-center text-[12px] font-bold ${won ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{won ? 'W' : 'L'}</span>
             ))}
         </div>
       </TableCell>

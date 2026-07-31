@@ -82,21 +82,21 @@ export default function DrillsPage() {
             <Dumbbell className="w-3.5 h-3.5" />Drills
           </div>
           <div className="font-display font-extrabold text-2xl tracking-tighter">{weekDrills.length}</div>
-          <div className="text-[10px] text-muted-foreground uppercase font-bold mt-0.5">This week</div>
+          <div className="text-[12px] text-muted-foreground uppercase font-bold mt-0.5">This week</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-primary/5 border-l-4 border-l-primary">
           <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">
             <Clock className="w-3.5 h-3.5" />Time
           </div>
           <div className="font-display font-extrabold text-2xl tracking-tighter text-primary">{totalMinsThisWeek}</div>
-          <div className="text-[10px] text-muted-foreground uppercase font-bold mt-0.5">Minutes</div>
+          <div className="text-[12px] text-muted-foreground uppercase font-bold mt-0.5">Minutes</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-destructive/5 border-l-4 border-l-destructive">
           <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">
             <Zap className="w-3.5 h-3.5" />High
           </div>
           <div className="font-display font-extrabold text-2xl tracking-tighter text-destructive">{highIntensityCount}</div>
-          <div className="text-[10px] text-muted-foreground uppercase font-bold mt-0.5">Sessions</div>
+          <div className="text-[12px] text-muted-foreground uppercase font-bold mt-0.5">Sessions</div>
         </Card>
       </div>
 
@@ -200,14 +200,14 @@ export default function DrillsPage() {
                     <div className="text-sm font-bold">{type.label}</div>
                     {intensity && (
                       <span
-                        className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full"
+                        className="text-[12px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full"
                         style={{ background: `color-mix(in srgb, var(--color-${intensity.color}) 15%, transparent)`, color: `var(--color-${intensity.color})` }}
                       >
                         {intensity.label}
                       </span>
                     )}
                     {d.videoUrl && (
-                      <a href={d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline">
+                      <a href={d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-primary hover:underline">
                         <Video className="w-3 h-3" /> Video
                       </a>
                     )}

@@ -85,13 +85,13 @@ export default function LeaderboardView() {
             </span>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold truncate">{p.displayName}</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
+              <div className="text-[12px] text-muted-foreground mt-0.5">
                 {p.streak.current}d streak (best {p.streak.best}) &middot; {p.wins}W &middot; {p.aces} aces &middot; {p.drillMinutes} drill min
               </div>
             </div>
             <div className="text-right shrink-0">
               <div className="font-display font-extrabold text-lg tracking-tighter">{metric.display(p)}</div>
-              <div className="text-[10px] text-muted-foreground">{metric.label.toLowerCase()}</div>
+              <div className="text-[12px] text-muted-foreground">{metric.label.toLowerCase()}</div>
             </div>
           </Link>
         ))}

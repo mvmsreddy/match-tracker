@@ -7,9 +7,9 @@ import * as api from '../api';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { computeStats } from '../lib/analytics';
 import { formatDuration } from '../lib/storage';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Textarea } from './ui/textarea';
-import { Button } from './ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
+import { Textarea } from './primitives/textarea';
+import { Button } from './primitives/button';
 
 async function saveAndSharePdfNative(doc, filename) {
   const dataUri = doc.output('datauristring');

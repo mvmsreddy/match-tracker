@@ -105,7 +105,7 @@ export default function SkillGroupsView({ roster, onOpenGroup, onGoLibrary, onGo
                   </div>
                   <div className="text-right shrink-0">
                     <div className="font-display font-extrabold text-2xl">{g.members.length}</div>
-                    <div className="text-[10px] text-muted-foreground mt-1 whitespace-nowrap">Players</div>
+                    <div className="text-[12px] text-muted-foreground mt-1 whitespace-nowrap">Players</div>
                   </div>
                 </div>
 

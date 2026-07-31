@@ -406,7 +406,7 @@ function H2HInsight({ matches }) {
                     <span className="text-muted-foreground mx-1">-</span>
                     <span className="text-destructive">{r.losses}</span>
                   </div>
-                  <div className={`text-[10px] font-bold uppercase tracking-wider ${dominant ? 'text-primary' : even ? 'text-muted-foreground' : 'text-destructive'}`}>
+                  <div className={`text-[12px] font-bold uppercase tracking-wider ${dominant ? 'text-primary' : even ? 'text-muted-foreground' : 'text-destructive'}`}>
                     {dominant ? 'Leading' : even ? 'Even' : 'Trailing'}
                   </div>
                 </div>
@@ -419,7 +419,7 @@ function H2HInsight({ matches }) {
                   <div className="bg-destructive transition-all" style={{ width: `${(r.losses / total) * 100}%` }} />
                 )}
               </div>
-              <div className="text-[10px] text-muted-foreground mt-1.5">
+              <div className="text-[12px] text-muted-foreground mt-1.5">
                 Last: {r.matches[0].scoreSummary || '—'} ({r.matches[0].winner === 'self' ? 'W' : r.matches[0].winner === 'opp' ? 'L' : '—'}) · {r.matches[0].date || 'unknown date'}
               </div>
             </div>

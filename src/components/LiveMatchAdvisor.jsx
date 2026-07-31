@@ -79,7 +79,7 @@ export default function LiveMatchAdvisor({ matchContext }) {
             <Sparkles className="w-5 h-5 text-primary" strokeWidth={2.2} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-primary">AI Coach</div>
+            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-primary">AI Coach</div>
             <div className="text-sm font-bold">Next-point plan</div>
           </div>
           {!busy && (

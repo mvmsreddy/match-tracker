@@ -44,7 +44,7 @@ export function MacroDonut({ totals, goal }) {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <div className="font-display font-extrabold text-2xl tracking-tighter">{totals?.calories || 0}</div>
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">kcal</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">kcal</div>
             </div>
           </div>
           <div className="space-y-2">
@@ -213,12 +213,12 @@ export function WeeklyAverageCard({ logs, goals }) {
           const onTrack = pct !== null && pct >= 80;
           return (
             <div key={c.label} className="p-3 rounded-lg border border-border">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{c.label}</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">{c.label}</div>
               <div className="font-display font-extrabold text-lg tracking-tighter mt-1">
                 {c.value}<span className="text-xs text-muted-foreground ml-0.5">{c.unit}</span>
               </div>
               {c.goal && (
-                <div className={`text-[10px] font-semibold mt-1 ${onTrack ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div className={`text-[12px] font-semibold mt-1 ${onTrack ? 'text-primary' : 'text-muted-foreground'}`}>
                   {pct}% of {c.goal}{c.unit}
                 </div>
               )}

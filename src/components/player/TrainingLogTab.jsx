@@ -94,10 +94,10 @@ function SessionVideo({ session, onAttached }) {
   }
 
   return (
-    <label className="text-[10px] font-semibold text-primary hover:underline cursor-pointer shrink-0">
+    <label className="text-[12px] font-semibold text-primary hover:underline cursor-pointer shrink-0">
       {uploading ? 'Uploading…' : '+ Video'}
       <input type="file" accept="video/*" className="hidden" onChange={handleFile} disabled={uploading} />
-      {error && <div className="text-destructive text-[10px]">{error}</div>}
+      {error && <div className="text-destructive text-[12px]">{error}</div>}
     </label>
   );
 }
@@ -261,7 +261,7 @@ export default function TrainingLogTab({ circuit, playerId, isOwnDashboard = tru
               <div key={s.id} className="flex gap-3 items-start">
                 <div className="w-16 shrink-0 text-right">
                   <div className="text-xs font-bold">{formatDate(s.sessionDate)}</div>
-                  {s.durationMinutes && <div className="text-[10px] text-muted-foreground">{s.durationMinutes} min</div>}
+                  {s.durationMinutes && <div className="text-[12px] text-muted-foreground">{s.durationMinutes} min</div>}
                 </div>
                 <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1" />
                 <div className="flex-1 min-w-0">

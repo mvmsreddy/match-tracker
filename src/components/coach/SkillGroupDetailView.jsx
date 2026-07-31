@@ -112,19 +112,19 @@ export default function SkillGroupDetailView({ groupKey, roster, onBack }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                 {routine.defaultVolume && (
                   <div className="rounded-sm bg-secondary/50 p-3">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Volume</div>
+                    <div className="text-[12px] uppercase tracking-wider text-muted-foreground">Volume</div>
                     <div className="font-bold text-sm mt-1">{routine.defaultVolume}</div>
                   </div>
                 )}
                 {routine.defaultFrequencyPerWeek && (
                   <div className="rounded-sm bg-secondary/50 p-3">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Frequency</div>
+                    <div className="text-[12px] uppercase tracking-wider text-muted-foreground">Frequency</div>
                     <div className="font-bold text-sm mt-1">{routine.defaultFrequencyPerWeek}&times;/week</div>
                   </div>
                 )}
                 {routine.defaultDurationWeeks && (
                   <div className="rounded-sm bg-secondary/50 p-3">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Duration</div>
+                    <div className="text-[12px] uppercase tracking-wider text-muted-foreground">Duration</div>
                     <div className="font-bold text-sm mt-1">{routine.defaultDurationWeeks} weeks</div>
                   </div>
                 )}

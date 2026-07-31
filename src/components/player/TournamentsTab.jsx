@@ -270,7 +270,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
   return (
     <div className="rounded-sm border border-border bg-card p-3 space-y-2" data-testid="tournaments-history-filter">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Filter:</span>
+        <span className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Filter:</span>
         <FilterChip active={filter === 'all'} onClick={() => onFilter('all')} testId="filter-all">All</FilterChip>
         <FilterChip active={filter === 'this-year'} onClick={() => onFilter('this-year')} testId="filter-this-year">This year</FilterChip>
         <FilterChip active={filter === 'last-12m'} onClick={() => onFilter('last-12m')} testId="filter-last-12m">Last 12 months</FilterChip>
@@ -279,7 +279,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
 
       {years.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Year:</span>
+          <span className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Year:</span>
           {years.map((y) => (
             <FilterChip
               key={y}
@@ -295,7 +295,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
 
       {months.length > 0 && (isYearFilter || isMonthFilter || filter === 'all' || filter === 'this-year' || filter === 'last-12m') && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Month:</span>
+          <span className="text-[12px] uppercase tracking-widest font-bold text-muted-foreground shrink-0">Month:</span>
           {months.map((ym) => (
             <FilterChip
               key={ym}
