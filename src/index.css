@@ -6,24 +6,27 @@ body { margin: 0; }
 /* ================================================
    THEMES — CSS custom properties
    ================================================ */
-:root, [data-theme="dark"] {
-  --bg: #14293D; --bg2: #1E3A52; --bg3: #182E42; --bg4: #122436;
-  --border: #2C4C68; --border2: #2A4560;
-  --text: #F3F1E6; --text2: #9FB0BE; --text3: #7FA0B5; --text4: #6E8598; --text5: #8FA4B5;
-  --accent: #C6E23D; --accent-text: #14293D;
-  --opp: #E37B6B; --danger: #E1484B; --danger-bg: #2A1820;
-  --win: #6AAF5A; --win-text: #9DD98E; --win-hover: #1A3520;
-  --forced: #B8922A; --forced-text: #D4A843; --forced-hover: #251E0E;
-  --info: #4FC3E8; --info-text: #7DD8F5;
-  --shadow: rgba(0,0,0,0.45);
+/* Legacy names aliased onto the [data-tier]-driven --app-* layer
+   (src/styles/app-tailwind.css) instead of fixed hex, so every class below
+   still keyed on --bg, --text2, etc. now flips with the tier instead of
+   being pinned. Kept for one release per the migration plan; --court-*
+   stay literal since the court diagram token isn't part of the new
+   design-token set yet. */
+:root {
+  --bg: hsl(var(--app-background)); --bg2: hsl(var(--app-card)); --bg3: hsl(var(--app-muted));
+  --border: hsl(var(--app-border));
+  --text: hsl(var(--app-foreground));
+  --text2: hsl(var(--app-muted-foreground)); --text3: hsl(var(--app-muted-foreground));
+  --text4: hsl(var(--app-muted-foreground)); --text5: hsl(var(--app-muted-foreground));
+  --accent: hsl(var(--app-accent)); --accent-text: hsl(var(--app-accent-foreground));
+  --opp: hsl(var(--app-destructive)); --danger: hsl(var(--app-destructive));
+  --win: hsl(var(--app-chart-3)); --win-text: hsl(var(--app-chart-3));
+  --forced: hsl(var(--app-forced)); --forced-text: hsl(var(--app-forced));
   --court-fill: #1C5266; --court-fill2: #194A5C; --court-line: #E8E4D6;
 }
-/* 'midnight'/'navy' theme variants retired along with the 3-theme picker —
-   ThemeContext now only ever sets .dark, so these [data-theme] blocks would
-   be unreachable dead CSS. */
 
-.root { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
-.wrap { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+.root { display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+.wrap { margin: 0 auto; padding: 0 16px; }
 .header { padding: 20px 16px 14px; border-bottom: 2px solid var(--bg2); }
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.4rem; margin: 0; }
@@ -56,7 +59,7 @@ body { margin: 0; }
 .zone-cell.out { fill: var(--bg2); stroke-opacity: 0.2; }
 .zone-band { stroke: none; }
 
-.panel { max-width: 680px; margin: 16px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 16px; }
+.panel { margin: 16px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 16px; }
 .panel-title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.82rem; color: var(--text2); margin: 0 0 10px; }
 
 .action-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 15px; border-radius: 3px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; }
@@ -253,14 +256,15 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 .mt-rail-user-name { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 0.78rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-rail-user-role { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 
-@media (max-width: 767px) {
-  [data-theme="navy"] .mt-tabbar { display: grid; }
-  [data-theme="navy"] .root { padding-bottom: 74px; }
-}
-@media (min-width: 768px) {
-  [data-theme="navy"] .mt-rail { display: flex; }
-  [data-theme="navy"] .root { padding-left: 212px; }
-}
+/* .mt-tabbar/.mt-rail's breakpoint toggle and the .root padding that made
+   room for them were gated on the dead [data-theme="navy"] selector — gate
+   removed, but not reinstated unconditionally: MTNavChrome only ever renders
+   behind a `theme === 'navy'` check (TrackerPage, MatchDetailPage,
+   VideoAnalysisTestPage) that stays permanently false until step 5 folds it
+   into <AppNav>, so today .mt-tabbar/.mt-rail never mount. Reserving .root
+   padding for them now — before there's a rail/tabbar to fill it — would
+   just punch an empty 212px gap into the current TopNav layout. Re-add the
+   breakpoint rules alongside that AppNav work instead of here. */
 
 /* ================================================
    SIDE DRAWER

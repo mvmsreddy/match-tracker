@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
 @theme {
   --font-display: 'Manrope', system-ui, sans-serif;
   --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
   --color-background: hsl(var(--app-background));
   --color-foreground: hsl(var(--app-foreground));
   --color-card: hsl(var(--app-card));
@@ -19,6 +20,9 @@
   --color-muted-foreground: hsl(var(--app-muted-foreground));
   --color-accent: hsl(var(--app-accent));
   --color-accent-foreground: hsl(var(--app-accent-foreground));
+  --color-accent-ink: hsl(var(--app-accent-ink));
+  --color-forced: hsl(var(--app-forced));
+  --color-forced-background: hsl(var(--app-forced-background));
   --color-destructive: hsl(var(--app-destructive));
   --color-destructive-foreground: hsl(var(--app-destructive-foreground));
   --color-border: hsl(var(--app-border));
@@ -34,31 +38,56 @@
   --radius-sm: calc(var(--app-radius) - 4px);
 }
 
-:root {
-  --app-background: 0 0% 100%; --app-foreground: 0 0% 4%;
-  --app-card: 165 20% 97%; --app-card-foreground: 0 0% 4%;
-  --app-popover: 0 0% 100%; --app-popover-foreground: 0 0% 4%;
-  --app-primary: 222 100% 50%; --app-primary-foreground: 0 0% 100%;
-  --app-secondary: 210 15% 95%; --app-secondary-foreground: 0 0% 4%;
-  --app-muted: 210 15% 95%; --app-muted-foreground: 215 16% 47%;
-  --app-accent: 72 100% 50%; --app-accent-foreground: 0 0% 4%;
-  --app-destructive: 4 100% 59%; --app-destructive-foreground: 0 0% 100%;
-  --app-border: 214 32% 91%; --app-input: 214 32% 91%; --app-ring: 222 100% 50%;
-  --app-chart-1: 222 100% 50%; --app-chart-2: 72 100% 50%; --app-chart-3: 145 63% 49%;
-  --app-chart-4: 4 100% 59%; --app-chart-5: 215 16% 47%;
+/* Match Tracker 2026 redesign — Daylight / Floodlight / Glare token layer.
+   Resolved tier is written to <html data-tier> by ThemeContext; `:root` alone
+   (no attribute) supplies the Daylight values as the pre-hydration default,
+   and `.dark` stays aliased to Floodlight for one release per the migration
+   plan so anything still keyed on the old class doesn't go unstyled mid-flip. */
+:root, [data-tier="day"] {
+  --app-background: 96 10% 90%; --app-foreground: 147 22% 8%;
+  --app-card: 0 0% 100%; --app-card-foreground: 147 22% 8%;
+  --app-popover: 0 0% 100%; --app-popover-foreground: 147 22% 8%;
+  --app-primary: 71 85% 65%; --app-primary-foreground: 147 22% 8%;
+  --app-secondary: 50 23% 95%; --app-secondary-foreground: 147 22% 8%;
+  --app-muted: 53 16% 90%; --app-muted-foreground: 132 7% 45%;
+  --app-accent: 71 85% 65%; --app-accent-foreground: 147 22% 8%;
+  --app-accent-ink: 76 71% 37%;
+  --app-forced: 41 100% 27%; --app-forced-background: 40 100% 95%;
+  --app-destructive: 11 67% 35%; --app-destructive-foreground: 0 0% 100%;
+  --app-border: 86 10% 86%; --app-input: 86 10% 86%; --app-ring: 71 85% 65%;
+  --app-chart-1: 71 85% 65%; --app-chart-2: 215 80% 55%; --app-chart-3: 85 57% 24%;
+  --app-chart-4: 11 67% 35%; --app-chart-5: 132 7% 45%;
   --app-radius: 0.25rem;
 }
-.dark {
-  --app-background: 0 0% 4%; --app-foreground: 0 0% 100%;
-  --app-card: 210 8% 11%; --app-card-foreground: 0 0% 100%; --app-popover: 0 0% 4%; --app-popover-foreground: 0 0% 100%;
-  --app-primary: 222 100% 60%;
-  --app-secondary: 210 8% 15%; --app-secondary-foreground: 0 0% 100%;
-  --app-muted: 210 8% 15%; --app-muted-foreground: 214 15% 65%;
-  --app-accent: 68 100% 50%; --app-accent-foreground: 0 0% 4%;
-  --app-destructive: 4 100% 62%;
-  --app-border: 215 20% 22%; --app-input: 215 20% 22%; --app-ring: 222 100% 60%;
-  --app-chart-1: 222 100% 60%; --app-chart-2: 68 100% 50%; --app-chart-3: 145 63% 55%;
-  --app-chart-4: 4 100% 62%; --app-chart-5: 214 15% 65%;
+[data-tier="night"], .dark {
+  --app-background: 150 15% 5%; --app-foreground: 96 20% 95%;
+  --app-card: 140 13% 9%; --app-card-foreground: 96 20% 95%;
+  --app-popover: 140 13% 9%; --app-popover-foreground: 96 20% 95%;
+  --app-primary: 79 100% 65%; --app-primary-foreground: 150 15% 5%;
+  --app-secondary: 140 11% 11%; --app-secondary-foreground: 96 20% 95%;
+  --app-muted: 133 12% 15%; --app-muted-foreground: 137 6% 51%;
+  --app-accent: 79 100% 65%; --app-accent-foreground: 150 15% 5%;
+  --app-accent-ink: 79 100% 65%;
+  --app-forced: 38 90% 62%; --app-forced-background: 38 92% 50% / 0.12;
+  --app-destructive: 11 79% 72%; --app-destructive-foreground: 150 15% 5%;
+  --app-border: 133 12% 15%; --app-input: 133 12% 15%; --app-ring: 79 100% 65%;
+  --app-chart-1: 79 100% 65%; --app-chart-2: 217 91% 60%; --app-chart-3: 79 100% 65%;
+  --app-chart-4: 11 79% 72%; --app-chart-5: 137 6% 51%;
+}
+[data-tier="glare"] {
+  --app-background: 0 0% 100%; --app-foreground: 206 60% 7%;
+  --app-card: 0 0% 100%; --app-card-foreground: 206 60% 7%;
+  --app-popover: 0 0% 100%; --app-popover-foreground: 206 60% 7%;
+  --app-primary: 209 51% 16%; --app-primary-foreground: 0 0% 100%;
+  --app-secondary: 0 0% 100%; --app-secondary-foreground: 206 60% 7%;
+  --app-muted: 205 17% 62%; --app-muted-foreground: 207 30% 25%;
+  --app-accent: 209 51% 16%; --app-accent-foreground: 0 0% 100%;
+  --app-accent-ink: 81 67% 19%;
+  --app-forced: 41 100% 22%; --app-forced-background: 41 100% 22% / 0.12;
+  --app-destructive: 9 83% 35%; --app-destructive-foreground: 0 0% 100%;
+  --app-border: 209 51% 16%; --app-input: 209 51% 16%; --app-ring: 209 51% 16%;
+  --app-chart-1: 209 51% 16%; --app-chart-2: 207 30% 25%; --app-chart-3: 130 54% 25%;
+  --app-chart-4: 9 83% 35%; --app-chart-5: 207 30% 25%;
 }
 
 /* app-tailwind.css skips Tailwind's Preflight layer (same reason as

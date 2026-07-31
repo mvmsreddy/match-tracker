@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #E6E9E4; }
+  a { color: #101914; text-decoration: none; border-bottom: 1px solid rgba(127,163,28,0.5); }
+  a:hover { color: #43601A; border-bottom-color: #7FA31C; }
+</style>
+</helmet>
+
+<div style="background: #E6E9E4; color: #101914; font-family: Manrope, system-ui, sans-serif; padding: 56px 40px 120px;">
+
+  <header style="max-width: 1240px; margin: 0 auto 48px;">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">Match Tracker · complete app · Daylight + Floodlight</div>
+    <h1 style="font-weight: 800; letter-spacing: -0.042em; font-size: 58px; line-height: 1.0; margin: 16px 0 0;">Every screen, new design</h1>
+    <p style="font-size: 18px; line-height: 1.6; color: #46524A; max-width: 780px; margin: 18px 0 0; text-wrap: pretty;">All 18 routes rebuilt in the approved language. <strong>Daylight</strong> is the day tier, <strong>Floodlight</strong> the night tier — one token set, switched automatically at local sunrise/sunset. Phone frames are 390&nbsp;px; laptop frames show the ≥1024&nbsp;px layout.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 26px; align-items: center;">
+      <span style="display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: #46524A;"><span style="width: 16px; height: 16px; border-radius: 5px; background: #F5F4EF; border: 1px solid #C9CEC4;"></span>Daylight</span>
+      <span style="display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: #46524A;"><span style="width: 16px; height: 16px; border-radius: 5px; background: #0B0F0D;"></span>Floodlight</span>
+      <span style="display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: #46524A;"><span style="width: 16px; height: 16px; border-radius: 5px; background: #D7F25C;"></span>Accent · lime</span>
+    </div>
+  </header>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Design language">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">00 · Language</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 22px;">The rules every screen follows</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px;">
+      <div style="background: #FFFFFF; border-radius: 22px; padding: 20px;">
+        <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px;">Surfaces</h3>
+        <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Page ground is tinted, cards are the light/dark surface at 24&nbsp;px radius with a soft shadow (day) or 1&nbsp;px border (night). Hero blocks invert: ink card on paper, gradient card on black. No hairline grids.</p>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 22px; padding: 20px;">
+        <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px;">Type</h3>
+        <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Manrope only. Headings 800 at −0.03em, body 500–600 at 14–15&nbsp;px, sentence case. IBM Plex Mono is reserved for live scores and set boxes — never for labels.</p>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 22px; padding: 20px;">
+        <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px;">Controls</h3>
+        <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Pill segments replace tabs. Primary actions are 54&nbsp;px tall, 20&nbsp;px radius. Wizard chips are 92&nbsp;px tiles with a secondary line. Nav is a floating bar on phone, a labelled rail from 1024&nbsp;px.</p>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 22px; padding: 20px;">
+        <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px;">Colour meaning</h3>
+        <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Lime = you / primary. Terracotta = opponent &amp; destructive. Amber = forced error &amp; practice ring. Blue = hydration &amp; info. Every status also carries a letter or glyph, so sun-washed screens still read.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Chrome">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">01 · App chrome</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Navigation</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Driven by the same <code style="font-family: 'IBM Plex Mono', monospace; font-size: 14px;">getNavItems(role)</code> list: four primary destinations plus More on phone, the full list in the rail on laptop, and a 3-state tier control (Auto / Day / Night) with Glare as a separate switch.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Floodlight · sheet menu ("More")</div>
+        <div style="width: 390px; background: #0B0F0D; border-radius: 34px; padding: 14px 12px 16px; box-shadow: 0 24px 60px -28px rgba(11,15,13,0.7);">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 8px 8px 14px;">
+            <img src="scripts-tmp/logo.svg" alt="Tennis Tracker" style="width: 38px; height: 38px; flex-shrink: 0;" />
+            <span style="flex: 1; min-width: 0;">
+              <span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; color: #F2F5F0; line-height: 1.1;">Tennis Tracker</span>
+              <span style="display: block; font-size: 12.5px; font-weight: 500; color: #7C8A80; margin-top: 2px;">Demo Reddy · Player</span>
+            </span>
+            <span style="width: 40px; height: 40px; border-radius: 14px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">DR</span>
+          </div>
+          <div style="border-radius: 26px; background: #141A16; border: 1px solid #212A23; padding: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #C8FF4D; color: #0B0F0D;"><span style="font-size: 19px;">▤</span><span style="font-size: 14px; font-weight: 800;">Dashboard</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px; color: #C8FF4D;">◈</span><span style="font-size: 14px; font-weight: 700;">Track</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px; color: #F59E0B;">◇</span><span style="font-size: 14px; font-weight: 700;">Drills</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px; color: #3B82F6;">◉</span><span style="font-size: 14px; font-weight: 700;">Nutrition</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">♛</span><span style="font-size: 14px; font-weight: 700;">Tournaments</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">⇄</span><span style="font-size: 14px; font-weight: 700;">Compare</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">▦</span><span style="font-size: 14px; font-weight: 700;">AITA calendar</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">★</span><span style="font-size: 14px; font-weight: 700;">AITA rankings</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">✉</span><span style="font-size: 14px; font-weight: 700;">Messages</span></span>
+              <span style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: #191F1B; color: #F2F5F0;"><span style="font-size: 19px;">▷</span><span style="font-size: 14px; font-weight: 700;">Video (beta)</span></span>
+            </div>
+          </div>
+          <div style="border-radius: 26px; background: #141A16; border: 1px solid #212A23; padding: 16px; margin-top: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: #7C8A80;">Appearance</div>
+            <div style="display: flex; gap: 5px; padding: 5px; border-radius: 18px; background: #0F1411; margin-top: 12px;">
+              <span style="flex: 1; height: 40px; border-radius: 14px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800;">Auto</span>
+              <span style="flex: 1; height: 40px; border-radius: 14px; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700;">Day</span>
+              <span style="flex: 1; height: 40px; border-radius: 14px; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700;">Night</span>
+            </div>
+            <div style="font-size: 12.5px; font-weight: 500; color: #7C8A80; margin-top: 10px;">Sunset 19:06 · switching to night in 42 min</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #212A23;">
+              <span><span style="display: block; font-size: 14px; font-weight: 700; color: #F2F5F0;">Glare mode</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #7C8A80; margin-top: 2px;">Max contrast for direct sun</span></span>
+              <span style="width: 46px; height: 28px; border-radius: 999px; background: #26302A; display: flex; align-items: center; padding: 0 3px;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #7C8A80;"></span></span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <span style="flex: 1; height: 50px; border-radius: 18px; background: #141A16; border: 1px solid #212A23; color: #F2F5F0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 700;">⇩ Guide PDF</span>
+            <span style="flex: 1; height: 50px; border-radius: 18px; background: rgba(232,110,86,0.14); color: #F0937F; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 800;">⇥ Log out</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · labelled rail</div>
+        <div style="width: 780px; background: #E6E9E4; border-radius: 28px; padding: 12px; display: flex; gap: 12px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.4);">
+          <div style="width: 226px; background: #F5F4EF; border-radius: 24px; padding: 18px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px 18px;">
+              <img src="scripts-tmp/logo.svg" alt="Tennis Tracker" style="width: 34px; height: 34px; flex-shrink: 0;" />
+              <span style="font-size: 14.5px; font-weight: 800; letter-spacing: -0.02em;">Tennis Tracker</span>
+            </div>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; background: #101914; color: #F5F4EF; font-size: 14px; font-weight: 800;"><span style="width: 18px;">▤</span>Dashboard</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">◈</span>Track</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">◷</span>History</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">⇄</span>Compare</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">◇</span>Drills</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">◉</span>Nutrition</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">♛</span>Tournaments</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px; color: #46524A; font-size: 14px; font-weight: 600;"><span style="width: 18px;">✉</span>Messages<span style="margin-left: auto; padding: 2px 8px; border-radius: 999px; background: #D7F25C; color: #101914; font-size: 11px; font-weight: 800;">2</span></span>
+            <div style="margin-top: auto; display: flex; align-items: center; gap: 11px; padding: 12px; border-radius: 18px; background: #FFFFFF;">
+              <span style="width: 36px; height: 36px; border-radius: 12px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">DR</span>
+              <span style="min-width: 0;"><span style="display: block; font-size: 13.5px; font-weight: 700;">Demo Reddy</span><span style="display: block; font-size: 12px; font-weight: 500; color: #6B7A6E; margin-top: 1px;">Player · TN</span></span>
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: #F5F4EF; border-radius: 24px;">
+              <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em; flex: 1;">Dashboard</span>
+              <span style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 16px; background: #EAE9E2;">
+                <span style="padding: 7px 13px; border-radius: 12px; background: #101914; color: #F5F4EF; font-size: 12.5px; font-weight: 800;">Auto</span>
+                <span style="padding: 7px 13px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Day</span>
+                <span style="padding: 7px 13px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Night</span>
+              </span>
+              <span style="width: 40px; height: 40px; border-radius: 14px; background: #EAE9E2; display: flex; align-items: center; justify-content: center; color: #46524A;">◔</span>
+            </div>
+            <div style="flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: start;">
+              <div style="grid-column: span 3; height: 92px; border-radius: 24px; background: #101914;"></div>
+              <div style="height: 84px; border-radius: 24px; background: #F5F4EF;"></div>
+              <div style="height: 84px; border-radius: 24px; background: #F5F4EF;"></div>
+              <div style="height: 84px; border-radius: 24px; background: #F5F4EF;"></div>
+              <div style="grid-column: span 3; text-align: center; font-size: 12.5px; font-weight: 700; color: #6B7A6E; padding-top: 4px;">Content column · max 1360 px · 12 px gutters</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Login">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">02 · /login</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Sign in &amp; sign up</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Floodlight hero, Daylight form — the split that already exists, minus the amber gradient. Sign-up adds name, the five role cards and confirm password inside the same card.</p>
+
+    <div style="width: 1140px; border-radius: 32px; overflow: hidden; display: flex; min-height: 640px; box-shadow: 0 30px 70px -34px rgba(16,25,20,0.5);">
+      <div style="width: 48%; background: #0B0F0D; padding: 40px 38px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;">
+        <div style="position: absolute; right: -120px; top: -80px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(200,255,77,0.20) 0%, rgba(200,255,77,0) 66%);"></div>
+        <div style="position: absolute; left: 38px; right: -40px; bottom: 0; height: 260px; border: 1px solid rgba(242,245,240,0.09); border-bottom: none; border-radius: 4px;">
+          <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(242,245,240,0.09);"></div>
+          <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(242,245,240,0.06);"></div>
+          <div style="position: absolute; left: 16%; right: 16%; top: 22%; bottom: 0; border: 1px solid rgba(242,245,240,0.07); border-bottom: none;"></div>
+        </div>
+        <div style="position: relative; display: flex; align-items: center; gap: 14px;">
+          <img src="scripts-tmp/logo.svg" alt="Tennis Tracker" style="width: 52px; height: 52px; flex-shrink: 0;" />
+          <span>
+            <span style="display: block; font-size: 19px; font-weight: 800; letter-spacing: -0.025em; color: #F2F5F0; line-height: 1.1;">Tennis Tracker</span>
+            <span style="display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #7C8A80; margin-top: 5px;">Pro · est. 2025</span>
+          </span>
+        </div>
+        <div style="position: relative; max-width: 440px;">
+          <span style="display: inline-flex; align-items: center; gap: 9px; padding: 8px 14px; border-radius: 999px; background: rgba(200,255,77,0.14); color: #C8FF4D; font-size: 12.5px; font-weight: 800;">✦ Trusted by AITA-ranked players</span>
+          <h3 style="font-weight: 800; font-size: 52px; line-height: 0.98; letter-spacing: -0.045em; color: #F2F5F0; margin: 26px 0 0;">Every point.<br />Every insight.<br /><span style="color: #C8FF4D;">Elevate</span> your game.</h3>
+          <p style="font-size: 15.5px; line-height: 1.65; color: #A5B3A8; margin: 22px 0 0; max-width: 400px;">The definitive companion for competitive tennis — from serve-side coaches to rising juniors chasing their first AITA rank.</p>
+          <div style="margin-top: 32px; display: flex; gap: 28px;">
+            <span><span style="display: block; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; color: #F2F5F0;">12,847</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #7C8A80; margin-top: 4px;">Matches tracked this month</span></span>
+            <span><span style="display: block; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; color: #F2F5F0;">3.2M</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #7C8A80; margin-top: 4px;">Rally points logged</span></span>
+          </div>
+        </div>
+        <div style="position: relative; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500; color: #7C8A80;">
+          <span>© 2026 Tennis Tracker Pro</span>
+          <span style="display: inline-flex; align-items: center; gap: 8px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #C8FF4D;"></span>All systems operational</span>
+        </div>
+      </div>
+
+      <div style="flex: 1; background: #E6E9E4; padding: 40px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 100%; max-width: 430px;">
+          <div style="background: #FFFFFF; border-radius: 28px; padding: 32px 30px; box-shadow: 0 20px 50px -30px rgba(16,25,20,0.45);">
+            <h4 style="font-weight: 800; font-size: 32px; line-height: 1.06; letter-spacing: -0.035em; margin: 0;">Welcome back</h4>
+            <p style="font-size: 14.5px; line-height: 1.6; color: #6B7A6E; margin: 10px 0 0;">Sign in to pick up right where you left off on court.</p>
+
+            <div style="display: flex; gap: 4px; padding: 5px; border-radius: 18px; background: #EAE9E2; margin: 22px 0 18px;">
+              <span style="flex: 1; text-align: center; padding: 11px 0; border-radius: 14px; background: #101914; color: #F5F4EF; font-size: 14px; font-weight: 800;">Sign in</span>
+              <span style="flex: 1; text-align: center; padding: 11px 0; border-radius: 14px; color: #46524A; font-size: 14px; font-weight: 700;">Sign up</span>
+            </div>
+
+            <div style="height: 52px; border-radius: 18px; border: 1px solid #DCDFD8; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14.5px; font-weight: 700;"><span style="width: 18px; height: 18px; border-radius: 5px; background: #EAE9E2;"></span>Continue with Google</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: 12.5px; font-weight: 700; color: #6B7A6E;"><span style="flex: 1; height: 1px; background: #E1E4DD;"></span>or with email<span style="flex: 1; height: 1px; background: #E1E4DD;"></span></div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <span>
+                <span style="display: block; font-size: 13px; font-weight: 700; color: #46524A; margin-bottom: 7px;">Email address</span>
+                <span style="display: flex; align-items: center; height: 52px; padding: 0 16px; border-radius: 18px; background: #F5F4EF; font-size: 15px; font-weight: 500;">demo@matchtracker.app</span>
+              </span>
+              <span>
+                <span style="display: block; font-size: 13px; font-weight: 700; color: #46524A; margin-bottom: 7px;">Password</span>
+                <span style="display: flex; align-items: center; height: 52px; padding: 0 16px; border-radius: 18px; background: #FFFFFF; border: 2px solid #101914; font-size: 15px; font-weight: 500;">••••••••<span style="margin-left: auto; color: #6B7A6E;">◎</span></span>
+              </span>
+              <span style="height: 54px; border-radius: 20px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 15px; font-weight: 800; margin-top: 4px;">Sign in →</span>
+            </div>
+
+            <div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid #EAE9E2;">
+              <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Demo accounts</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #F5F4EF;">
+                  <span><span style="display: block; font-size: 13.5px; font-weight: 800;">Coach</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E;">coach@matchtracker.app</span></span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">coach123</span>
+                </span>
+                <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #F5F4EF;">
+                  <span><span style="display: block; font-size: 13.5px; font-weight: 800;">Parent</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E;">parent@matchtracker.app</span></span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">parent123</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 18px;">By continuing you agree to our <strong>Terms</strong> and <strong>Privacy Policy</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width: 1140px; margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 16px;"><div style="font-size: 12.5px; font-weight: 800; color: #7FA31C; margin-bottom: 6px;">Sign-up</div><div style="font-size: 13.5px; line-height: 1.55; color: #46524A;">Adds Full name, the five role tiles (Player / Coach / Parent / Nutritionist / Organizer) as a 2-col pill grid, and Confirm password.</div></div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 16px;"><div style="font-size: 12.5px; font-weight: 800; color: #7FA31C; margin-bottom: 6px;">Phone ≤1023</div><div style="font-size: 13.5px; line-height: 1.55; color: #46524A;">Hero collapses to a Floodlight band behind the lockup; the card goes full width with 20 px gutters; inputs stay 16 px to stop iOS zoom.</div></div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 16px;"><div style="font-size: 12.5px; font-weight: 800; color: #7FA31C; margin-bottom: 6px;">Tier</div><div style="font-size: 13.5px; line-height: 1.55; color: #46524A;">Login keeps this fixed pairing day and night — the dark half is the hero, so the form never flashes bright at 9 pm.</div></div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Dashboard">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">03 · / (player home)</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Player dashboard</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Order of business: what's happening now, then the streak, then the week's goal rings, then history. Same modules as today — role banner folded into the header subtitle, quick-add folded into the rings card's actions.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 14px 12px 0; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 8px 8px 16px;">
+            <img src="scripts-tmp/logo.svg" alt="Tennis Tracker" style="width: 38px; height: 38px; flex-shrink: 0;" />
+            <span style="flex: 1; min-width: 0;">
+              <span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1;">Good morning, Demo</span>
+              <span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">AITA 1104782 · Rank 214 · 1 coach</span>
+            </span>
+            <span style="width: 40px; height: 40px; border-radius: 14px; background: #EAE9E2; display: flex; align-items: center; justify-content: center; color: #46524A; position: relative;">◔<span style="position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: #C0432F;"></span></span>
+            <span style="width: 40px; height: 40px; border-radius: 14px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">DR</span>
+          </div>
+
+          <div style="border-radius: 28px; background: #101914; padding: 22px; color: #F5F4EF; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(215,242,92,0.16);"></div>
+            <div style="position: relative; display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: #D7F25C;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #D7F25C;"></span>On court in 42 min</div>
+            <div style="position: relative; font-size: 30px; font-weight: 800; letter-spacing: -0.038em; margin-top: 12px; line-height: 1.08;">vs Karthik Iyer</div>
+            <div style="position: relative; font-size: 13.5px; font-weight: 500; color: rgba(245,244,239,0.62); margin-top: 6px;">Quarter-final · Court 3 · 14:00 · Chennai Open</div>
+            <div style="position: relative; display: flex; gap: 10px; margin-top: 20px;">
+              <span style="flex: 1.5; height: 52px; border-radius: 18px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Start tracking</span>
+              <span style="flex: 1; height: 52px; border-radius: 18px; background: rgba(245,244,239,0.12); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;">H2H 3–1</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <div style="flex: 1; border-radius: 24px; background: #FFFFFF; padding: 18px 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: baseline; gap: 5px;"><span style="font-size: 38px; font-weight: 800; letter-spacing: -0.05em; line-height: 1;">12</span><span style="font-size: 14px; font-weight: 700; color: #6B7A6E;">d</span></div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 8px;">Streak · best 21</div>
+              <div style="display: flex; gap: 4px; margin-top: 12px;"><span style="flex: 1; height: 6px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #E1E4DD;"></span><span style="flex: 1; height: 6px; border-radius: 999px; background: #E1E4DD;"></span></div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #EAE9E2;">
+                <span style="display: flex; gap: 3px;"><span style="width: 12px; height: 18px; border-radius: 4px; background: #2E7BE8;"></span><span style="width: 12px; height: 18px; border-radius: 4px; background: #2E7BE8;"></span><span style="width: 12px; height: 18px; border-radius: 4px; background: #E1E4DD;"></span></span>
+                <span style="font-size: 12px; font-weight: 600; color: #6B7A6E;">2 freeze tokens</span>
+              </div>
+            </div>
+            <div style="flex: 1; border-radius: 24px; background: #FFFFFF; padding: 18px 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: baseline; gap: 5px;"><span style="font-size: 38px; font-weight: 800; letter-spacing: -0.05em; line-height: 1;">61</span><span style="font-size: 14px; font-weight: 700; color: #6B7A6E;">%</span></div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 8px;">Win rate · 18 played</div>
+              <div style="display: flex; align-items: flex-end; gap: 3px; height: 20px; margin-top: 12px;"><span style="flex: 1; height: 100%; border-radius: 3px; background: #101914;"></span><span style="flex: 1; height: 40%; border-radius: 3px; background: #E1E4DD;"></span><span style="flex: 1; height: 100%; border-radius: 3px; background: #101914;"></span><span style="flex: 1; height: 100%; border-radius: 3px; background: #101914;"></span><span style="flex: 1; height: 40%; border-radius: 3px; background: #E1E4DD;"></span><span style="flex: 1; height: 100%; border-radius: 3px; background: #101914;"></span><span style="flex: 1; height: 40%; border-radius: 3px; background: #E1E4DD;"></span></div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #EAE9E2;">
+                <span style="font-size: 12px; font-weight: 700; color: #43601A;">11W</span><span style="font-size: 12px; font-weight: 700; color: #96331E;">7L</span><span style="font-size: 12px; font-weight: 600; color: #6B7A6E;">· 9 practices</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+              <span>
+                <span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">This week</span>
+                <span style="display: block; font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">Goal rings · close all 3 to level up</span>
+              </span>
+              <span style="padding: 6px 11px; border-radius: 999px; background: #EAE9E2; color: #6B7A6E; font-size: 11.5px; font-weight: 800;">2 of 3</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px;">
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="width: 86px; height: 86px; border-radius: 50%; background: conic-gradient(#7FA31C 0 100%, #EAE9E2 100%); display: flex; align-items: center; justify-content: center;"><span style="width: 66px; height: 66px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #7FA31C;">♛</span></span>
+                <span style="text-align: center;"><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.03em; color: #7FA31C;">4<span style="font-size: 12.5px; font-weight: 700; color: #6B7A6E;"> / 3</span></span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Matches</span></span>
+              </span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="width: 86px; height: 86px; border-radius: 50%; background: conic-gradient(#E09A1F 0 100%, #EAE9E2 100%); display: flex; align-items: center; justify-content: center;"><span style="width: 66px; height: 66px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #E09A1F;">◇</span></span>
+                <span style="text-align: center;"><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.03em; color: #E09A1F;">5<span style="font-size: 12.5px; font-weight: 700; color: #6B7A6E;"> / 4</span></span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Practice</span></span>
+              </span>
+              <span style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="width: 86px; height: 86px; border-radius: 50%; background: conic-gradient(#2E7BE8 0 74%, #EAE9E2 74% 100%); display: flex; align-items: center; justify-content: center;"><span style="width: 66px; height: 66px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #2E7BE8;">◉</span></span>
+                <span style="text-align: center;"><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.03em;">2.6L<span style="font-size: 12.5px; font-weight: 700; color: #6B7A6E;"> / 3.5L</span></span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Hydration</span></span>
+              </span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+              <span style="flex: 1; height: 46px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13.5px; font-weight: 700;">◈ Match</span>
+              <span style="flex: 1; height: 46px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13.5px; font-weight: 700;">◇ Drill</span>
+              <span style="flex: 1; height: 46px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13.5px; font-weight: 700;">◉ Meal</span>
+            </div>
+          </div>
+
+          <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+              <span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Skill radar</span><span style="display: block; font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">6-axis snapshot · avg of your last 5 rated matches</span></span>
+              <span style="font-size: 13px; font-weight: 700; color: #7FA31C;">Rate →</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; margin-top: 16px;">
+              <span style="position: relative; width: 160px; height: 160px; flex-shrink: 0;">
+                <span style="position: absolute; inset: 0; background: #EAE9E2; clip-path: polygon(50% 5%, 89% 27.5%, 89% 72.5%, 50% 95%, 11% 72.5%, 11% 27.5%);"></span>
+                <span style="position: absolute; inset: 0; background: rgba(127,163,28,0.42); clip-path: polygon(50% 14.9%, 78.1% 33.8%, 75.7% 64.9%, 50% 74.3%, 21.1% 66.7%, 18.8% 32%);"></span>
+                <span style="position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #101914;"></span>
+              </span>
+              <span style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px;">
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #6B7A6E;">Serve</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em;">7.8<span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">/10</span></span></span>
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #6B7A6E;">Forehand</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em;">7.2<span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">/10</span></span></span>
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #6B7A6E;">Volley</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em;">6.6<span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">/10</span></span></span>
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #96331E;">Backhand</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em; color: #96331E;">5.4<span style="font-size: 11.5px; font-weight: 700; color: rgba(150,51,30,0.7);">/10</span></span></span>
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #6B7A6E;">Footwork</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em;">7.4<span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">/10</span></span></span>
+                <span><span style="display: block; font-size: 12px; font-weight: 700; color: #6B7A6E;">Mental</span><span style="display: block; font-size: 15px; font-weight: 800; letter-spacing: -0.03em;">8.0<span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">/10</span></span></span>
+              </span>
+            </div>
+          </div>
+
+          <div style="border-radius: 24px; background: #FFFFFF; padding: 8px; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 8px;">
+              <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Recent sessions</span>
+              <span style="font-size: 13px; font-weight: 700; color: #46524A;">All →</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 18px;">
+              <span style="width: 42px; height: 42px; border-radius: 14px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0;">W</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Karthik Iyer</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Chennai Open · 28 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; text-align: right;">6-4 4-6<br />[10-7]</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 18px; background: #F5F4EF;">
+              <span style="width: 42px; height: 42px; border-radius: 14px; background: #F7DDD7; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0;">L</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Aditya Rao</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Bengaluru ITF · 21 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;">3-6 5-7</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 18px;">
+              <span style="width: 42px; height: 42px; border-radius: 14px; background: #EAE9E2; color: #46524A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">PR</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Wall drill</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Practice · 19 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;">21-14</span>
+            </div>
+          </div>
+
+          <div style="position: sticky; bottom: 0; margin: 14px -12px 0; padding: 10px 12px 14px; background: linear-gradient(to top, #F5F4EF 62%, rgba(245,244,239,0));">
+            <div style="display: flex; align-items: center; gap: 4px; padding: 8px; border-radius: 26px; background: #101914; box-shadow: 0 14px 30px -14px rgba(16,25,20,0.7);">
+              <span style="flex: 1; height: 46px; border-radius: 18px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 800;">▤ Home</span>
+              <span style="flex: 1; height: 46px; border-radius: 18px; color: rgba(245,244,239,0.65); display: flex; align-items: center; justify-content: center; font-size: 14px;">◈</span>
+              <span style="flex: 1; height: 46px; border-radius: 18px; color: rgba(245,244,239,0.65); display: flex; align-items: center; justify-content: center; font-size: 14px;">◷</span>
+              <span style="flex: 1; height: 46px; border-radius: 18px; color: rgba(245,244,239,0.65); display: flex; align-items: center; justify-content: center; font-size: 14px;">♛</span>
+              <span style="flex: 1; height: 46px; border-radius: 18px; color: rgba(245,244,239,0.65); display: flex; align-items: center; justify-content: center; font-size: 14px;">•••</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · 3-column</div>
+        <div style="width: 700px; background: #E6E9E4; border-radius: 28px; padding: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: start; box-shadow: 0 24px 60px -30px rgba(16,25,20,0.4);">
+          <div style="grid-column: span 3; border-radius: 26px; background: #101914; color: #F5F4EF; padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -50px; top: -70px; width: 220px; height: 220px; border-radius: 50%; background: rgba(215,242,92,0.14);"></div>
+            <span style="position: relative;">
+              <span style="display: block; font-size: 12.5px; font-weight: 800; color: #D7F25C;">● On court in 42 min</span>
+              <span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.035em; margin-top: 8px;">vs Karthik Iyer</span>
+              <span style="display: block; font-size: 13px; font-weight: 500; color: rgba(245,244,239,0.6); margin-top: 5px;">Quarter-final · Court 3 · 14:00</span>
+            </span>
+            <span style="position: relative; display: flex; gap: 10px;">
+              <span style="padding: 15px 22px; border-radius: 18px; background: rgba(245,244,239,0.12); font-size: 14px; font-weight: 700;">H2H 3–1</span>
+              <span style="padding: 15px 24px; border-radius: 18px; background: #D7F25C; color: #101914; font-size: 14.5px; font-weight: 800;">Start tracking</span>
+            </span>
+          </div>
+          <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.05em;">12</span><span style="font-size: 14px; font-weight: 700; color: #6B7A6E;">d streak</span></div>
+            <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 6px;">Best 21 · logged today</div>
+          </div>
+          <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.05em;">61</span><span style="font-size: 14px; font-weight: 700; color: #6B7A6E;">% win rate</span></div>
+            <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 6px;">11W · 7L · 18 matches</div>
+          </div>
+          <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.05em;">2</span><span style="font-size: 14px; font-weight: 700; color: #6B7A6E;">of 3 rings</span></div>
+            <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 6px;">Hydration 74% short</div>
+          </div>
+          <div style="grid-column: span 2; border-radius: 24px; background: #F5F4EF; padding: 18px;">
+            <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Recent sessions</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 16px; background: #FFFFFF;"><span style="width: 32px; height: 32px; border-radius: 11px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">W</span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">Karthik Iyer</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600;">6-4 4-6 [10-7]</span></span>
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 16px; background: #FFFFFF;"><span style="width: 32px; height: 32px; border-radius: 11px; background: #F7DDD7; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">L</span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">Aditya Rao</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600;">3-6 5-7</span></span>
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 16px; background: #FFFFFF;"><span style="width: 32px; height: 32px; border-radius: 11px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">W</span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">Sanjay Menon</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600;">6-2 6-3</span></span>
+            </div>
+          </div>
+          <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+            <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Weekly digest</div>
+            <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 6px;">Preview</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;">
+              <span><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">4</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E;">Matches</span></span>
+              <span><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;"><span style="color: #43601A;">3</span>-<span style="color: #96331E;">1</span></span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E;">W – L</span></span>
+              <span><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">75%</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E;">Win rate</span></span>
+              <span><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">5</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E;">Practices</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Live Track">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">04 · /track</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Live track</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Four steps per point — server, outcome, shot, location — with the whole wizard in the bottom two-thirds of the screen. Floodlight is the courtside default after dusk; Glare is one tap from the scorebar; landscape drops to score-only.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Floodlight · outcome step</div>
+        <div style="width: 390px; background: #0B0F0D; border-radius: 34px; padding: 14px 12px 16px; box-shadow: 0 24px 60px -28px rgba(11,15,13,0.7);">
+          <div style="border-radius: 28px; background: linear-gradient(150deg, #1B2A14 0%, #141A15 60%, #171D19 100%); border: 1px solid rgba(200,255,77,0.22); padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #7C8A80;">Set 2 · you serve</span>
+              <span style="display: inline-flex; gap: 6px;">
+                <span style="padding: 6px 11px; border-radius: 999px; background: rgba(200,255,77,0.16); color: #C8FF4D; font-size: 12px; font-weight: 800;">Break point</span>
+                <span style="padding: 6px 10px; border-radius: 999px; background: rgba(242,245,240,0.08); color: #A5B3A8; font-size: 12px; font-weight: 700;">☀</span>
+              </span>
+            </div>
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 18px;">
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <span style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: #C8FF4D; box-shadow: 0 0 10px 2px rgba(200,255,77,0.6);"></span>
+                  <span style="font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: #F2F5F0;">You</span>
+                  <span style="display: inline-flex; gap: 6px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: #7C8A80;">6</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700; color: #C8FF4D;">3</span></span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 10px; padding-left: 18px;">
+                  <span style="font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: #C4D0C7;">Iyer</span>
+                  <span style="display: inline-flex; gap: 6px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: #7C8A80;">4</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700; color: #C8FF4D;">2</span></span>
+                </span>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 48px; font-weight: 800; letter-spacing: -0.05em; line-height: 0.95; color: #F2F5F0;">40<span style="color: #4A564D;">–</span>30</div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7C8A80; margin-top: 6px;">1:12:04 · ⦿ awake</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 4px; padding: 6px; border-radius: 22px; background: #141A16; border: 1px solid #212A23; margin-top: 12px;">
+            <span style="flex: 1; height: 40px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700; color: #7C8A80;">Match</span>
+            <span style="flex: 1.2; height: 40px; border-radius: 16px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800;">Live</span>
+            <span style="flex: 1; height: 40px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700; color: #7C8A80;">Stats</span>
+          </div>
+
+          <div style="margin-top: 14px; padding: 0 4px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: #7C8A80;">
+              <span style="padding: 5px 11px; border-radius: 999px; background: #141A16; border: 1px solid #212A23;">Ball in</span>
+              <span>→</span>
+              <span style="padding: 5px 11px; border-radius: 999px; background: #141A16; border: 1px solid #212A23;">Rally 5</span>
+              <span>→</span>
+              <span style="color: #C8FF4D;">now</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: #F2F5F0; margin-top: 10px;">Ball in play</div>
+            <div style="font-size: 13px; font-weight: 600; color: #7C8A80; margin-top: 4px;">Who ended the rally, and how?</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;">
+            <span style="padding: 9px 0; border-radius: 14px; background: rgba(200,255,77,0.12); border-bottom: 2px solid #C8FF4D; color: #C8FF4D; text-align: center; font-size: 13px; font-weight: 800;">You</span>
+            <span style="padding: 9px 0; border-radius: 14px; background: rgba(240,147,127,0.10); border-bottom: 2px solid #F0937F; color: #F0937F; text-align: center; font-size: 13px; font-weight: 800;">Iyer</span>
+            <span style="min-height: 72px; border-radius: 22px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em; box-shadow: 0 10px 24px -14px rgba(200,255,77,0.75);">Winner</span>
+            <span style="min-height: 72px; border-radius: 22px; background: rgba(200,255,77,0.08); border: 1px solid rgba(200,255,77,0.32); color: #C8FF4D; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em;">Winner</span>
+            <span style="min-height: 72px; border-radius: 22px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #F5B547; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em;">Forced error</span>
+            <span style="min-height: 72px; border-radius: 22px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #F5B547; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em;">Forced error</span>
+            <span style="min-height: 72px; border-radius: 22px; background: rgba(232,110,86,0.12); border: 1px solid rgba(232,110,86,0.35); color: #F0937F; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em;">Unforced</span>
+            <span style="min-height: 72px; border-radius: 22px; background: rgba(232,110,86,0.12); border: 1px solid rgba(232,110,86,0.35); color: #F0937F; display: flex; align-items: center; justify-content: center; font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em;">Unforced</span>
+          </div>
+
+          <div style="border-radius: 24px; background: #141A16; border: 1px solid #212A23; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 13.5px; font-weight: 700; color: #F2F5F0;">Rally length</span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #7C8A80;">previous step · shots after the return</span>
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 12px;">
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">1</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">2</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">3</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">4</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;">5</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">6</span>
+              <span style="flex: 1; height: 40px; border-radius: 13px; background: #191F1B; color: #A5B3A8; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">7+</span>
+            </div>
+          </div>
+
+          <div style="border-radius: 20px; background: #141A16; border: 1px dashed #262F28; padding: 13px; margin-top: 10px;">
+            <div style="font-size: 12.5px; font-weight: 800; color: #C8FF4D;">Steps are dynamic</div>
+            <div style="font-size: 12.5px; font-weight: 500; color: #A5B3A8; line-height: 1.55; margin-top: 5px;">Expert tier runs serve → rally length → ball in play → wing → shot → court tap → infraction. Standard drops the court tap and infraction; Basic keeps only serve and outcome. Never a fixed "step 3 of 4".</div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <span style="flex: 2; height: 54px; border-radius: 20px; background: #171D19; border: 1px solid #262F28; color: #F2F5F0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14.5px; font-weight: 800;">↩ Undo last point</span>
+            <span style="flex: 1; height: 54px; border-radius: 20px; background: rgba(232,110,86,0.14); color: #F0937F; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 800;">End</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Glare · shot location step</div>
+        <div style="width: 390px; background: #FFFFFF; border-radius: 34px; padding: 14px 12px 16px; border: 3px solid #101914; box-shadow: 0 24px 60px -30px rgba(16,25,20,0.4);">
+          <div style="border-radius: 24px; border: 2px solid #101914; padding: 18px;">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <span style="display: flex; align-items: center; gap: 9px;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #101914;"></span><span style="font-size: 17px; font-weight: 800;">You</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700;">6&nbsp;&nbsp;3</span></span>
+                <span style="display: flex; align-items: center; gap: 9px; padding-left: 18px;"><span style="font-size: 17px; font-weight: 800; color: #8C2F19;">Iyer</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700;">4&nbsp;&nbsp;2</span></span>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 48px; font-weight: 800; letter-spacing: -0.05em; line-height: 0.95;">40–30</div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: #24302A; margin-top: 5px;">1:12:04</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 14px; padding: 0 4px;">
+            <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em;">Dropped at</div>
+            <div style="font-size: 13.5px; font-weight: 700; color: #24302A; margin-top: 5px;">Two taps: hit from ✓ Far Deep Right → now tap where it landed</div>
+          </div>
+          <div style="margin-top: 14px; border: 2px solid #101914; border-radius: 20px; padding: 12px;">
+            <div style="display: flex; gap: 6px;">
+              <span style="width: 34px; border: 2px solid #101914; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; writing-mode: vertical-rl; letter-spacing: 0.08em;">Wide</span>
+              <span style="flex: 1;">
+                <span style="display: flex; align-items: center; justify-content: center; height: 30px; border: 2px solid #101914; border-radius: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em;">Long</span>
+                <span style="display: block; border: 2px solid #101914; border-radius: 8px; overflow: hidden; margin-top: 6px;">
+                  <span style="display: grid; grid-template-columns: repeat(3, 1fr);">
+                    <span style="height: 44px; border-right: 2px solid #101914; border-bottom: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deep L</span>
+                    <span style="height: 44px; border-right: 2px solid #101914; border-bottom: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deep C</span>
+                    <span style="height: 44px; border-bottom: 2px solid #101914; background: #101914; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">Deep R<span style="font-size: 10px; font-weight: 700;">hit from</span></span>
+                  </span>
+                  <span style="display: flex; align-items: center; justify-content: center; height: 30px; border-bottom: 2px solid #101914; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;">Mid-court</span>
+                  <span style="display: grid; grid-template-columns: repeat(2, 1fr);">
+                    <span style="height: 52px; border-right: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Ad box</span>
+                    <span style="height: 52px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deuce box</span>
+                  </span>
+                </span>
+                <span style="display: block; height: 4px; background: #101914; border-radius: 2px; margin: 6px 0;"></span>
+                <span style="display: block; border: 2px solid #101914; border-radius: 8px; overflow: hidden;">
+                  <span style="display: grid; grid-template-columns: repeat(2, 1fr);">
+                    <span style="height: 52px; border-right: 2px solid #101914; border-bottom: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deuce box</span>
+                    <span style="height: 52px; border-bottom: 2px solid #101914; background: rgba(16,25,20,0.14); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">Ad box<span style="font-size: 10px; font-weight: 700;">dropped ✓</span></span>
+                  </span>
+                  <span style="display: flex; align-items: center; justify-content: center; height: 30px; border-bottom: 2px solid #101914; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;">Mid-court</span>
+                  <span style="display: grid; grid-template-columns: repeat(3, 1fr);">
+                    <span style="height: 44px; border-right: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deep L</span>
+                    <span style="height: 44px; border-right: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deep C</span>
+                    <span style="height: 44px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700;">Deep R</span>
+                  </span>
+                </span>
+                <span style="display: flex; align-items: center; justify-content: center; height: 30px; border: 2px solid #101914; border-radius: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; margin-top: 6px;">Long</span>
+              </span>
+              <span style="width: 34px; border: 2px solid #101914; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; writing-mode: vertical-rl; letter-spacing: 0.08em;">Wide</span>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #24302A; margin-top: 10px; line-height: 1.5;">Zone names come from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;">lib/courtZones.js</code> — far/near halves so one diagram serves both taps.</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <span style="flex: 1; height: 46px; border: 2px solid #101914; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800;">Net</span>
+            <span style="flex: 1; height: 46px; border: 2px solid #101914; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800;">Wide</span>
+            <span style="flex: 1; height: 46px; border: 2px solid #101914; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800;">Long</span>
+          </div>
+          <div style="font-size: 12px; font-weight: 700; color: #24302A; margin-top: 8px;">Unforced errors get this extra Long / Wide / Net tap.</div>
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <span style="flex: 2; height: 54px; border-radius: 18px; border: 2px solid #101914; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 800;">↩ Undo</span>
+            <span style="flex: 1; height: 54px; border-radius: 18px; background: #101914; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 800;">Save</span>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 700; color: #24302A; text-align: center; margin-top: 12px;">Glare tier · 7:1 minimum, 2 px borders, no greys</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone landscape · Floodlight · fence-clip score</div>
+        <div style="width: 620px; height: 240px; background: #0B0F0D; border-radius: 30px; padding: 20px; display: flex; gap: 20px; align-items: center; box-shadow: 0 24px 60px -30px rgba(11,15,13,0.7);">
+          <div style="flex: 1.3;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #212A23;">
+              <span style="display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; color: #F2F5F0;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #C8FF4D; box-shadow: 0 0 10px 2px rgba(200,255,77,0.6);"></span>You</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 700; color: #C8FF4D;">6 · 3</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 12px;">
+              <span style="font-size: 20px; font-weight: 700; color: #C4D0C7; padding-left: 19px;">Iyer</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 700; color: #C4D0C7;">4 · 2</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 600; color: #7C8A80; margin-top: 18px;">Last point · forehand winner · rally 5</div>
+          </div>
+          <div style="flex: 1; text-align: center; border-left: 1px solid #212A23; padding-left: 20px;">
+            <div style="font-size: 62px; font-weight: 800; letter-spacing: -0.05em; line-height: 1; color: #F2F5F0;">40<span style="color: #4A564D;">–</span>30</div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #7C8A80; margin-top: 10px;">1:12:04 · SET 2</div>
+            <div style="display: inline-flex; margin-top: 14px; padding: 7px 14px; border-radius: 999px; background: rgba(200,255,77,0.16); color: #C8FF4D; font-size: 12.5px; font-weight: 800;">Break point</div>
+          </div>
+        </div>
+        <div style="width: 620px; background: #FFFFFF; border-radius: 18px; padding: 16px; margin-top: 12px;">
+          <div style="font-size: 12.5px; font-weight: 800; color: #7FA31C; margin-bottom: 6px;">Rule</div>
+          <div style="font-size: 13.5px; line-height: 1.55; color: #46524A;">Under 500 px viewport height the wizard can't hold 92 px tiles, so landscape becomes read-only score (the existing <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;">LandscapeScoreView</code>). Rotate back to log the next point.</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · wizard + live analysis, no tab switching</div>
+        <div style="width: 1140px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="border-radius: 26px; background: #101914; color: #F5F4EF; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 18px;">
+            <div style="display: flex; align-items: center; gap: 22px;">
+              <span style="display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #D7F25C;"></span>You <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: rgba(245,244,239,0.6);">6 3</span></span>
+              <span style="display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: rgba(245,244,239,0.8);">Iyer <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: rgba(245,244,239,0.6);">4 2</span></span>
+              <span style="padding: 7px 13px; border-radius: 999px; background: rgba(215,242,92,0.18); color: #D7F25C; font-size: 12.5px; font-weight: 800;">Break point</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: rgba(245,244,239,0.6);">1:12:04 · ⦿ awake</span>
+              <span style="font-size: 34px; font-weight: 800; letter-spacing: -0.045em;">40–30</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; margin-top: 14px;">
+            <div style="border-radius: 26px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <span style="font-size: 19px; font-weight: 800; letter-spacing: -0.03em;">Ball in play</span>
+                <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: #6B7A6E;"><span style="padding: 5px 10px; border-radius: 999px; background: #FFFFFF;">Ball in</span>→<span style="padding: 5px 10px; border-radius: 999px; background: #FFFFFF;">Rally 5</span></span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;">
+                <span style="padding: 8px 0; border-radius: 12px; background: #E8F4C8; color: #43601A; text-align: center; font-size: 12.5px; font-weight: 800;">You</span>
+                <span style="padding: 8px 0; border-radius: 12px; background: #F7DDD7; color: #96331E; text-align: center; font-size: 12.5px; font-weight: 800;">Iyer</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Winner</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #FFFFFF; color: #43601A; border: 1px solid #C6DE8C; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Winner</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #FFF6E4; color: #8A5F00; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Forced error</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #FFF6E4; color: #8A5F00; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Forced error</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #FDF2EF; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Unforced</span>
+                <span style="min-height: 60px; border-radius: 20px; background: #FDF2EF; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;">Unforced</span>
+              </div>
+              <div style="border-radius: 20px; background: #FFFFFF; padding: 14px; margin-top: 12px;">
+                <div style="font-size: 13.5px; font-weight: 800;">Hit from → dropped at</div>
+                <div style="height: 130px; border-radius: 12px; background: #F5F4EF; margin-top: 10px; position: relative; overflow: hidden;">
+                  <div style="position: absolute; inset: 12px; border: 1px solid #C9CEC4; border-radius: 4px;"></div>
+                  <div style="position: absolute; left: 12px; right: 12px; top: 50%; height: 1px; background: #C9CEC4;"></div>
+                  <div style="position: absolute; left: 26%; top: 28%; width: 18px; height: 18px; border: 2px solid #E09A1F; border-radius: 50%;"></div>
+                  <div style="position: absolute; left: 68%; top: 62%; width: 18px; height: 18px; background: rgba(127,163,28,0.28); border: 2px solid #7FA31C; border-radius: 50%;"></div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <span style="flex: 2; height: 50px; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 800;">↩ Undo last point</span>
+                <span style="flex: 1; height: 50px; border-radius: 18px; background: #FDF2EF; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;">End match</span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="border-radius: 26px; background: #F5F4EF; padding: 18px;">
+                <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Live totals</div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px;">
+                  <span style="background: #FFFFFF; border-radius: 16px; padding: 12px 8px; text-align: center;"><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">24</span><span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">W/FE</span></span>
+                  <span style="background: #FFFFFF; border-radius: 16px; padding: 12px 8px; text-align: center;"><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">11</span><span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">UE</span></span>
+                  <span style="background: #FFFFFF; border-radius: 16px; padding: 12px 8px; text-align: center;"><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: #7FA31C;">68%</span><span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">1st in</span></span>
+                  <span style="background: #FFFFFF; border-radius: 16px; padding: 12px 8px; text-align: center;"><span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.04em;">3/5</span><span style="font-size: 11.5px; font-weight: 700; color: #6B7A6E;">BP</span></span>
+                </div>
+              </div>
+              <div style="border-radius: 26px; background: #F5F4EF; padding: 18px;">
+                <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Shot stats · you</div>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                  <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Ground forehand</span><span style="color: #6B7A6E;">9 / 4</span></span><span style="display: flex; gap: 4px;"><span style="flex: 9; height: 10px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 4; height: 10px; border-radius: 999px; background: #C0432F;"></span><span style="flex: 5; height: 10px; border-radius: 999px; background: #E1E4DD;"></span></span></span>
+                  <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Ground backhand</span><span style="color: #6B7A6E;">6 / 7</span></span><span style="display: flex; gap: 4px;"><span style="flex: 6; height: 10px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 7; height: 10px; border-radius: 999px; background: #C0432F;"></span><span style="flex: 5; height: 10px; border-radius: 999px; background: #E1E4DD;"></span></span></span>
+                  <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Volley</span><span style="color: #6B7A6E;">5 / 1</span></span><span style="display: flex; gap: 4px;"><span style="flex: 5; height: 10px; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; height: 10px; border-radius: 999px; background: #C0432F;"></span><span style="flex: 12; height: 10px; border-radius: 999px; background: #E1E4DD;"></span></span></span>
+                </div>
+              </div>
+              <div style="border-radius: 26px; background: #F5F4EF; padding: 18px; flex: 1;">
+                <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Point log</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                  <span style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #FFFFFF;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; width: 52px;">40-30</span><span style="flex: 1; font-size: 13px; font-weight: 600; color: #43601A;">Forehand winner</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">5</span></span>
+                  <span style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #FFFFFF;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; width: 52px;">30-30</span><span style="flex: 1; font-size: 13px; font-weight: 600; color: #96331E;">Backhand long</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">3</span></span>
+                  <span style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #FFFFFF;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; width: 52px;">30-15</span><span style="flex: 1; font-size: 13px; font-weight: 600; color: #43601A;">Ace</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">1</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="History and review">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">05 · /history · /history/:id · /compare</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">History, match detail, compare</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Review work: Daylight by default, laptop gets the width. Match detail keeps every table from the PDF report, reorganised into three readable blocks instead of one long stack.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · /history</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+            <span>
+              <span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Match history</span>
+              <span style="display: block; font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">27 saved sessions</span>
+            </span>
+            <span style="width: 40px; height: 40px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #46524A; box-shadow: 0 2px 8px -5px rgba(16,25,20,0.4);">⌕</span>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <div style="flex: 1; border-radius: 20px; background: #FFFFFF; padding: 14px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em;">18</div><div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-top: 4px;">Matches</div></div>
+            <div style="flex: 1; border-radius: 20px; background: #101914; color: #F5F4EF; padding: 14px;"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #D7F25C;">11</div><div style="font-size: 12px; font-weight: 700; color: rgba(245,244,239,0.6); margin-top: 4px;">Wins</div></div>
+            <div style="flex: 1; border-radius: 20px; background: #FFFFFF; padding: 14px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em;">9</div><div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-top: 4px;">Practice</div></div>
+          </div>
+          <div style="display: flex; gap: 4px; padding: 5px; border-radius: 18px; background: #EAE9E2; margin-top: 14px;">
+            <span style="flex: 1; height: 38px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; box-shadow: 0 2px 8px -5px rgba(16,25,20,0.4);">All 27</span>
+            <span style="flex: 1; height: 38px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #46524A;">Matches</span>
+            <span style="flex: 1; height: 38px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #46524A;">Practice</span>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 800; color: #6B7A6E; margin: 18px 0 10px;">July 2026</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 44px; height: 44px; border-radius: 15px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; flex-shrink: 0;">W</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Karthik Iyer</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">Chennai Open · QF · 28 Jul</span></span>
+              <span style="text-align: right;"><span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;">6-4 4-6</span><span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: #43601A;">[10-7]</span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 44px; height: 44px; border-radius: 15px; background: #F7DDD7; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; flex-shrink: 0;">L</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Aditya Rao</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">Bengaluru ITF · R16 · 21 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: #96331E;">3-6 5-7</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 44px; height: 44px; border-radius: 15px; background: #EAE9E2; color: #46524A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">PR</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Wall drill session</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">Practice to 21 · 19 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;">21-14</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 44px; height: 44px; border-radius: 15px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; flex-shrink: 0;">W</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14.5px; font-weight: 700;">Sanjay Menon</span><span style="display: block; font-size: 12.5px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">Coimbatore U16 · R32 · 11 Jul</span></span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: #43601A;">6-2 6-3</span>
+            </div>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; text-align: center; margin-top: 16px;">Swipe a row for PDF · delete</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · /history/:id</div>
+        <div style="width: 700px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="border-radius: 26px; background: #101914; color: #F5F4EF; padding: 22px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+              <span>
+                <span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(215,242,92,0.18); color: #D7F25C; font-size: 12px; font-weight: 800;">Won · match tiebreak</span>
+                <span style="display: block; font-size: 28px; font-weight: 800; letter-spacing: -0.038em; margin-top: 12px;">You vs Karthik Iyer</span>
+                <span style="display: block; font-size: 13px; font-weight: 500; color: rgba(245,244,239,0.6); margin-top: 5px;">Chennai Open · quarter-final · 28 Jul · best of 3 (MTB-10)</span>
+              </span>
+              <span style="text-align: right;">
+                <span style="display: flex; gap: 6px; justify-content: flex-end;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700; padding: 6px 12px; border-radius: 12px; background: rgba(245,244,239,0.1);">6</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700; padding: 6px 12px; border-radius: 12px; background: rgba(245,244,239,0.1);">4</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 700; padding: 6px 12px; border-radius: 12px; background: #D7F25C; color: #101914;">10</span></span>
+                <span style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: rgba(245,244,239,0.06); color: rgba(245,244,239,0.7);">4</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: rgba(245,244,239,0.06); color: rgba(245,244,239,0.7);">6</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; padding: 6px 12px; border-radius: 12px; background: rgba(245,244,239,0.06); color: rgba(245,244,239,0.7);">7</span></span>
+                <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: rgba(245,244,239,0.55); margin-top: 8px;">2:04:11 · 200 points</span>
+              </span>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 18px;">
+              <span style="padding: 13px 20px; border-radius: 16px; background: #D7F25C; color: #101914; font-size: 14px; font-weight: 800;">Download PDF report</span>
+              <span style="padding: 13px 20px; border-radius: 16px; background: rgba(245,244,239,0.12); font-size: 14px; font-weight: 700;">Add point detail</span>
+              <span style="padding: 13px 20px; border-radius: 16px; background: rgba(245,244,239,0.12); font-size: 14px; font-weight: 700;">Rate your skills</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Match totals</div>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Winners / forced</span><span><span style="color: #43601A; font-weight: 800;">41</span> <span style="color: #6B7A6E;">vs</span> <span style="color: #96331E; font-weight: 800;">33</span></span></span><span style="display: flex; gap: 4px; height: 10px;"><span style="flex: 41; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 33; border-radius: 999px; background: #E0B4A8;"></span></span></span>
+                <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Unforced errors</span><span><span style="color: #43601A; font-weight: 800;">22</span> <span style="color: #6B7A6E;">vs</span> <span style="color: #96331E; font-weight: 800;">29</span></span></span><span style="display: flex; gap: 4px; height: 10px;"><span style="flex: 22; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 29; border-radius: 999px; background: #E0B4A8;"></span></span></span>
+                <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Points won</span><span><span style="color: #43601A; font-weight: 800;">104</span> <span style="color: #6B7A6E;">vs</span> <span style="color: #96331E; font-weight: 800;">96</span></span></span><span style="display: flex; gap: 4px; height: 10px;"><span style="flex: 104; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 96; border-radius: 999px; background: #E0B4A8;"></span></span></span>
+                <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; padding-top: 10px; border-top: 1px solid #E1E4DD;"><span>W/FE : UE ratio</span><span><span style="color: #43601A; font-weight: 800;">1.86</span> <span style="color: #6B7A6E;">vs</span> <span style="color: #96331E; font-weight: 800;">1.14</span></span></span>
+              </div>
+            </div>
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Serve &amp; return</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px;">
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em;">64.2%</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">1st serve in</span></span>
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em;">6 / 3</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Aces / DF</span></span>
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em; color: #7FA31C;">5 / 8</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">BP saved</span></span>
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em; color: #7FA31C;">6 / 9</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">BP won</span></span>
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em;">72%</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Service games won</span></span>
+                <span style="background: #FFFFFF; border-radius: 16px; padding: 12px;"><span style="display: block; font-size: 20px; font-weight: 800; letter-spacing: -0.04em;">14</span><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E; margin-top: 3px;">Return winners</span></span>
+              </div>
+            </div>
+            <div style="grid-column: span 2; border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Where the points went</span>
+                <span style="display: flex; gap: 14px; font-size: 12px; font-weight: 700; color: #6B7A6E;"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #7FA31C;"></span>Winner</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #E09A1F;"></span>Forced</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C0432F;"></span>Unforced</span></span>
+              </div>
+              <div style="display: flex; gap: 12px; margin-top: 14px;">
+                <div style="flex: 1; border-radius: 18px; background: #FFFFFF; padding: 12px;">
+                  <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">You · hit from</div>
+                  <div style="height: 110px; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 3px;">
+                    <span style="background: rgba(127,163,28,0.5); border-radius: 4px;"></span><span style="background: rgba(127,163,28,0.18); border-radius: 4px;"></span><span style="background: rgba(127,163,28,0.72); border-radius: 4px;"></span>
+                    <span style="background: rgba(192,67,47,0.22); border-radius: 4px;"></span><span style="background: rgba(192,67,47,0.42); border-radius: 4px;"></span><span style="background: rgba(224,154,31,0.3); border-radius: 4px;"></span>
+                  </div>
+                </div>
+                <div style="flex: 1; border-radius: 18px; background: #FFFFFF; padding: 12px;">
+                  <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Iyer · dropped at</div>
+                  <div style="height: 110px; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 3px;">
+                    <span style="background: rgba(192,67,47,0.55); border-radius: 4px;"></span><span style="background: rgba(127,163,28,0.2); border-radius: 4px;"></span><span style="background: rgba(192,67,47,0.3); border-radius: 4px;"></span>
+                    <span style="background: rgba(127,163,28,0.34); border-radius: 4px;"></span><span style="background: rgba(224,154,31,0.38); border-radius: 4px;"></span><span style="background: rgba(127,163,28,0.5); border-radius: 4px;"></span>
+                  </div>
+                </div>
+                <div style="flex: 1; border-radius: 18px; background: #FFFFFF; padding: 12px;">
+                  <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Coaching note</div>
+                  <div style="font-size: 13px; line-height: 1.55; font-weight: 500; color: #46524A;">Backhand errors cluster in the mid-court band — take some pace off and add spin for control when pushed there.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · /compare</div>
+        <div style="width: 1140px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+            <span>
+              <span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Compare</span>
+              <span style="display: block; font-size: 13.5px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Two or more saved matches, side by side</span>
+            </span>
+            <span style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 16px; background: #F5F4EF;">
+              <span style="padding: 9px 16px; border-radius: 12px; background: #101914; color: #F5F4EF; font-size: 13px; font-weight: 800;">My matches</span>
+              <span style="padding: 9px 16px; border-radius: 12px; color: #46524A; font-size: 13px; font-weight: 700;">Players</span>
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 14px; margin-top: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+                <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Your rivalries</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                  <span style="padding: 14px; border-radius: 18px; background: #FFFFFF;">
+                    <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 14px; font-weight: 700;">Karthik Iyer</span><span style="font-size: 14px; font-weight: 800;"><span style="color: #43601A;">3</span><span style="color: #6B7A6E;">–</span><span style="color: #96331E;">1</span></span></span>
+                    <span style="display: flex; gap: 4px; height: 8px; margin-top: 10px;"><span style="flex: 3; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 1; border-radius: 999px; background: #E0B4A8;"></span></span>
+                    <span style="display: block; font-size: 12px; font-weight: 600; color: #6B7A6E; margin-top: 8px;">Leading · last 6-4 4-6 [10-7] W</span>
+                  </span>
+                  <span style="padding: 14px; border-radius: 18px; background: #FFFFFF;">
+                    <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 14px; font-weight: 700;">Aditya Rao</span><span style="font-size: 14px; font-weight: 800;"><span style="color: #43601A;">1</span><span style="color: #6B7A6E;">–</span><span style="color: #96331E;">2</span></span></span>
+                    <span style="display: flex; gap: 4px; height: 8px; margin-top: 10px;"><span style="flex: 1; border-radius: 999px; background: #7FA31C;"></span><span style="flex: 2; border-radius: 999px; background: #E0B4A8;"></span></span>
+                    <span style="display: block; font-size: 12px; font-weight: 600; color: #6B7A6E; margin-top: 8px;">Trailing · last 3-6 5-7 L</span>
+                  </span>
+                </div>
+              </div>
+              <div style="border-radius: 24px; background: #F5F4EF; padding: 8px;">
+                <span style="display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 18px; background: #101914; color: #F5F4EF;"><span style="width: 20px; height: 20px; border-radius: 7px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;">✓</span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">vs Iyer · 28 Jul</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;">6-4 4-6 [10-7]</span></span>
+                <span style="display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 18px; background: #101914; color: #F5F4EF; margin-top: 6px;"><span style="width: 20px; height: 20px; border-radius: 7px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;">✓</span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">vs Rao · 21 Jul</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;">3-6 5-7</span></span>
+                <span style="display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 18px;"><span style="width: 20px; height: 20px; border-radius: 7px; border: 2px solid #C9CEC4;"></span><span style="flex: 1; font-size: 13.5px; font-weight: 700;">vs Menon · 11 Jul</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #6B7A6E;">6-2 6-3</span></span>
+                <span style="display: flex; align-items: center; justify-content: center; height: 50px; border-radius: 18px; background: #D7F25C; color: #101914; font-size: 14px; font-weight: 800; margin-top: 6px;">Compare 2 selected</span>
+              </div>
+            </div>
+
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #E1E4DD;">
+                <span style="font-size: 13px; font-weight: 700; color: #6B7A6E;">Metric</span>
+                <span style="font-size: 13.5px; font-weight: 800;">Iyer · 28 Jul</span>
+                <span style="font-size: 13.5px; font-weight: 800;">Rao · 21 Jul</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">Result</span><span style="font-weight: 800; color: #43601A;">Won</span><span style="font-weight: 800; color: #96331E;">Lost</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">Winners / forced</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">41</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">28</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">Unforced errors</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">22</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">34</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">W/FE : UE ratio</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: #43601A;">1.86</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: #96331E;">0.82</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">1st serve %</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: #43601A;">64.2%</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: #96331E;">51.8%</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">Aces / double faults</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">6 / 3</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">2 / 7</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid #EAE9E2; font-size: 13.5px;"><span style="font-weight: 600;">Break points saved</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">5 / 8</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">2 / 7</span></div>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding: 11px 0; font-size: 13.5px;"><span style="font-weight: 600;">Break points won</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">6 / 9</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600;">1 / 5</span></div>
+              <div style="border-radius: 18px; background: #101914; color: #F5F4EF; padding: 16px; margin-top: 14px;">
+                <div style="font-size: 12.5px; font-weight: 800; color: #D7F25C;">Gap insight</div>
+                <div style="font-size: 14px; line-height: 1.55; font-weight: 500; margin-top: 7px;">First-serve percentage is the swing factor — 64% in the win, 52% in the loss. Unforced errors climbed 55% while winners fell by a third.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Tournaments">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">06 · /tournaments · draws · order of play</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Tournaments &amp; draws</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Organizer actions stay where they are (factsheet upload, manual create). The draw gets the real fix: a round-by-round list on phone, the horizontal bracket in a scroll region on laptop, and the OOP table only where it fits.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · /tournaments</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Tournaments</div>
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Live events &amp; draw tracker</div>
+          <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <span style="flex: 1.4; height: 50px; border-radius: 18px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 800;">⬆ Upload factsheet</span>
+            <span style="flex: 1; height: 50px; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.3);">+ Create</span>
+          </div>
+          <div style="display: flex; gap: 11px; align-items: flex-start; padding: 14px; border-radius: 20px; background: #FDF2EF; margin-top: 14px;">
+            <span style="color: #96331E; font-size: 16px; line-height: 1.1;">⚠</span>
+            <span style="font-size: 13px; line-height: 1.55; font-weight: 600; color: #96331E;">Complete your profile to enter tournaments — missing <strong>Date of birth</strong> and <strong>State</strong>. <span style="text-decoration: underline;">Update profile →</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+            <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                <span style="min-width: 0;"><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">SMTA AITA Circuit</span><span style="display: block; font-size: 13px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">Chennai Open Championship</span></span>
+                <span style="padding: 6px 11px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11.5px; font-weight: 800; white-space: nowrap;">4 events</span>
+              </div>
+              <div style="display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap;">
+                <span style="padding: 6px 11px; border-radius: 999px; background: #F5F4EF; font-size: 12px; font-weight: 700;">Hard</span>
+                <span style="padding: 6px 11px; border-radius: 999px; background: #F5F4EF; font-size: 12px; font-weight: 700; color: #46524A;">TN-2026-07</span>
+                <span style="padding: 6px 11px; border-radius: 999px; background: #F5F4EF; font-size: 12px; font-weight: 700; color: #46524A;">6 courts</span>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 12px;">Chennai, TN · SDAT Tennis Stadium</div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">27–31 Jul 2026</div>
+            </div>
+            <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                <span style="min-width: 0;"><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Bengaluru ITF J30</span><span style="display: block; font-size: 13px; font-weight: 500; color: #6B7A6E; margin-top: 3px;">ITF Junior Circuit</span></span>
+                <span style="padding: 6px 11px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11.5px; font-weight: 800; white-space: nowrap;">2 events</span>
+              </div>
+              <div style="display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap;">
+                <span style="padding: 6px 11px; border-radius: 999px; background: #F5F4EF; font-size: 12px; font-weight: 700;">Hard</span>
+                <span style="padding: 6px 11px; border-radius: 999px; background: #FDF2EF; color: #96331E; font-size: 12px; font-weight: 800;">Entry closes in 2d</span>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 12px;">Bengaluru, KA · KSLTA · 4–9 Aug</div>
+            </div>
+            <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25); opacity: 0.75;">
+              <div style="font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Coimbatore U16 Series</div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 8px;">Clay · 3 events · Coimbatore, TN · 9–13 Jul</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · draw, round by round</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E;">Chennai Open · main draw 32</div>
+          <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.035em; margin-top: 4px;">Boys U16 singles</div>
+          <div style="display: flex; gap: 6px; margin-top: 14px; overflow: hidden;">
+            <span style="padding: 9px 14px; border-radius: 999px; background: #FFFFFF; font-size: 12.5px; font-weight: 700; color: #46524A; white-space: nowrap;">R32</span>
+            <span style="padding: 9px 14px; border-radius: 999px; background: #101914; color: #F5F4EF; font-size: 12.5px; font-weight: 800; white-space: nowrap;">R16</span>
+            <span style="padding: 9px 14px; border-radius: 999px; background: #FFFFFF; font-size: 12.5px; font-weight: 700; color: #46524A; white-space: nowrap;">QF</span>
+            <span style="padding: 9px 14px; border-radius: 999px; background: #FFFFFF; font-size: 12.5px; font-weight: 700; color: #46524A; white-space: nowrap;">SF</span>
+            <span style="padding: 9px 14px; border-radius: 999px; background: #FFFFFF; font-size: 12.5px; font-weight: 700; color: #46524A; white-space: nowrap;">F</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+            <div style="border-radius: 22px; background: #FFFFFF; overflow: hidden; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px; background: #E8F4C8;">
+                <span style="font-size: 12px; font-weight: 800; color: #43601A; width: 16px;">1</span>
+                <span style="flex: 1; font-size: 14.5px; font-weight: 800;">Reddy, Demo</span>
+                <span style="font-size: 13px; font-weight: 800; color: #43601A;">✓</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px;">
+                <span style="width: 16px;"></span>
+                <span style="flex: 1; font-size: 14.5px; font-weight: 600; color: #46524A;">Menon, Sanjay</span>
+              </div>
+              <div style="padding: 10px 14px; background: #F5F4EF; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: #46524A;">6-2 6-3 · complete</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; overflow: hidden; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px;">
+                <span style="font-size: 12px; font-weight: 800; color: #43601A; width: 16px;">4</span>
+                <span style="flex: 1; font-size: 14.5px; font-weight: 700;">Iyer, Karthik</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px; border-top: 1px solid #EAE9E2;">
+                <span style="width: 16px;"></span>
+                <span style="flex: 1; font-size: 14.5px; font-weight: 700;">Khan, Imran</span>
+              </div>
+              <div style="padding: 12px 14px; background: #101914; color: #D7F25C; font-size: 13px; font-weight: 800; text-align: right;">Enter score →</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; overflow: hidden; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25); opacity: 0.7;">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px;">
+                <span style="width: 16px;"></span>
+                <span style="flex: 1; font-size: 14px; font-weight: 600; font-style: italic; color: #6B7A6E;">Winner of M12</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 14px; border-top: 1px solid #EAE9E2;">
+                <span style="width: 16px;"></span>
+                <span style="flex: 1; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; color: #6B7A6E;">BYE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · bracket + order of play</div>
+        <div style="width: 1140px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+            <span>
+              <span style="display: block; font-size: 13px; font-weight: 600; color: #6B7A6E;">SMTA AITA Circuit · AITA CS-7 · Chennai</span>
+              <span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.038em; margin-top: 4px;">Boys U16 singles</span>
+            </span>
+            <span style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 16px; background: #F5F4EF;">
+              <span style="padding: 9px 15px; border-radius: 12px; background: #101914; color: #F5F4EF; font-size: 13px; font-weight: 800;">Bracket</span>
+              <span style="padding: 9px 15px; border-radius: 12px; color: #46524A; font-size: 13px; font-weight: 700;">Draw sheet</span>
+              <span style="padding: 9px 15px; border-radius: 12px; color: #46524A; font-size: 13px; font-weight: 700;">Entries</span>
+              <span style="padding: 9px 15px; border-radius: 12px; color: #46524A; font-size: 13px; font-weight: 700;">PDF</span>
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 14px; margin-top: 16px;">
+            <div style="border-radius: 26px; background: #F5F4EF; padding: 18px;">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; font-size: 12px; font-weight: 800; color: #6B7A6E; margin-bottom: 12px;"><span style="text-align: center;">Round of 16</span><span style="text-align: center;">Quarter-final</span><span style="text-align: center;">Semi-final</span></div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <div style="border-radius: 18px; background: #FFFFFF; overflow: hidden;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #E8F4C8;"><span style="font-size: 11.5px; font-weight: 800; color: #43601A;">1</span><span style="flex: 1; font-size: 13px; font-weight: 800;">Reddy, D</span><span style="font-size: 11.5px; color: #43601A;">✓</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px;"><span style="width: 8px;"></span><span style="flex: 1; font-size: 13px; font-weight: 600;">Menon, S</span></div>
+                    <div style="padding: 7px 12px; background: #F5F4EF; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #46524A;">6-2 6-3</div>
+                  </div>
+                  <div style="border-radius: 18px; background: #FFFFFF; overflow: hidden;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px;"><span style="font-size: 11.5px; font-weight: 800; color: #43601A;">4</span><span style="flex: 1; font-size: 13px; font-weight: 700;">Iyer, K</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid #EAE9E2;"><span style="width: 8px;"></span><span style="flex: 1; font-size: 13px; font-weight: 700;">Khan, I</span></div>
+                    <div style="padding: 8px 12px; background: #101914; color: #D7F25C; font-size: 11.5px; font-weight: 800; text-align: right;">Enter score</div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                  <div style="border-radius: 18px; background: #FFFFFF; overflow: hidden;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px;"><span style="font-size: 11.5px; font-weight: 800; color: #43601A;">1</span><span style="flex: 1; font-size: 13px; font-weight: 800;">Reddy, D</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid #EAE9E2;"><span style="width: 8px;"></span><span style="flex: 1; font-size: 13px; font-weight: 600; font-style: italic; color: #6B7A6E;">Winner M6</span></div>
+                    <div style="padding: 7px 12px; background: #F5F4EF; font-size: 11.5px; font-weight: 700; color: #46524A;">Today 14:00 · Court 3</div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                  <div style="border-radius: 18px; background: #EFF0EA; padding: 18px 12px; text-align: center; font-size: 12px; font-weight: 700; color: #6B7A6E;">To be decided</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius: 26px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                <span><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Order of play</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">28 matches · 22 scheduled · <span style="color: #8A5F00; font-weight: 800;">⚠ 2 conflicts</span></span></span>
+                <span style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: #FFFFFF;"><span style="padding: 7px 11px; border-radius: 10px; background: #101914; color: #F5F4EF; font-size: 12px; font-weight: 800;">Table</span><span style="padding: 7px 11px; border-radius: 10px; color: #46524A; font-size: 12px; font-weight: 700;">Board</span></span>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 14px;">
+                <span style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 14px; background: #FFFFFF; font-size: 12.5px; font-weight: 700;">Courts <strong>6</strong></span>
+                <span style="padding: 9px 14px; border-radius: 14px; background: #101914; color: #F5F4EF; font-size: 12.5px; font-weight: 800;">⚡ Auto-schedule</span>
+                <span style="padding: 9px 14px; border-radius: 14px; background: #FFFFFF; font-size: 12.5px; font-weight: 700;">⬇ PDF</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+                <div style="border-radius: 16px; background: #FFFFFF; padding: 12px 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 13.5px; font-weight: 700;">Reddy, D. vs Menon, S.</span><span style="padding: 4px 9px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11px; font-weight: 800;">Complete</span></div>
+                  <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 600; color: #6B7A6E; margin-top: 7px;"><span>U16 BS · R2</span><span>Day 2</span><span>Court 3</span><span>#1</span></div>
+                </div>
+                <div style="border-radius: 16px; background: #FFF6E4; padding: 12px 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 13.5px; font-weight: 700;"><span style="color: #8A5F00;">⚠</span> Iyer, K. vs Khan, I.</span><span style="padding: 4px 9px; border-radius: 999px; background: #FFFFFF; color: #8A5F00; font-size: 11px; font-weight: 800;">Conflict</span></div>
+                  <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 600; color: #8A5F00; margin-top: 7px;"><span>U16 BS · R2</span><span>Day 2</span><span>Court 1</span><span>#2</span></div>
+                </div>
+                <div style="border-radius: 16px; background: #FFFFFF; padding: 12px 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 13.5px; font-weight: 700;">Nair, P. vs Shah, R.</span><span style="padding: 4px 9px; border-radius: 999px; background: #EAE9E2; color: #46524A; font-size: 11px; font-weight: 800;">Unscheduled</span></div>
+                  <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 600; color: #6B7A6E; margin-top: 7px;"><span>U14 GD · R1 [Q]</span><span>—</span><span>—</span><span>—</span></div>
+                </div>
+              </div>
+              <div style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 12px; line-height: 1.5;">Board view swaps these rows for one column per court, cards in match order — that's the view that survives the phone breakpoint.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · /aita-rankings</div>
+        <div style="width: 700px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 14px;">
+            <span><span style="display: block; font-size: 13px; font-weight: 600; color: #6B7A6E;">Mirrored from aitatennis.com</span><span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.038em; margin-top: 4px;">AITA rankings</span></span>
+            <span style="padding: 11px 18px; border-radius: 16px; background: #101914; color: #F5F4EF; font-size: 13.5px; font-weight: 800;">⟳ Sync now</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px;">
+            <span style="height: 44px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 700;">Youth <span style="margin-left: auto; color: #6B7A6E;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 700;">U16 Boys <span style="margin-left: auto; color: #6B7A6E;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 700;">28 Jul 2026 <span style="margin-left: auto; color: #6B7A6E;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #F5F4EF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #6B7A6E;">⌕ Search player</span>
+          </div>
+          <div style="font-size: 13px; font-weight: 700; color: #6B7A6E; margin-top: 12px;">2,418 players · page 5 of 49</div>
+          <div style="border-radius: 24px; background: #F5F4EF; padding: 8px; margin-top: 12px;">
+            <div style="display: grid; grid-template-columns: 64px 1.6fr 1fr 0.7fr 0.8fr 0.8fr; gap: 10px; padding: 10px 14px; font-size: 12px; font-weight: 700; color: #6B7A6E;"><span>Rank</span><span>Player</span><span>Reg no.</span><span>State</span><span>Singles</span><span>Total</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1.6fr 1fr 0.7fr 0.8fr 0.8fr; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 18px; background: #FFFFFF; font-size: 13.5px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 30px; border-radius: 10px; background: #FFF6E4; color: #8A5F00; font-weight: 800;">1</span><span style="font-weight: 800;">Sharma, Vihaan</span><span style="font-family: 'IBM Plex Mono', monospace; color: #6B7A6E;">1102341</span><span style="font-weight: 700;">MH</span><span style="font-family: 'IBM Plex Mono', monospace;">1240</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 800; color: #43601A;">1385</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1.6fr 1fr 0.7fr 0.8fr 0.8fr; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 18px; font-size: 13.5px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 30px; border-radius: 10px; background: #EAE9E2; color: #46524A; font-weight: 800;">2</span><span style="font-weight: 800;">Iyer, Karthik</span><span style="font-family: 'IBM Plex Mono', monospace; color: #6B7A6E;">1103998</span><span style="font-weight: 700;">TN</span><span style="font-family: 'IBM Plex Mono', monospace;">1105</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 800; color: #43601A;">1244</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1.6fr 1fr 0.7fr 0.8fr 0.8fr; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 18px; background: #101914; color: #F5F4EF; font-size: 13.5px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 30px; border-radius: 10px; background: #D7F25C; color: #101914; font-weight: 800;">214</span><span style="font-weight: 800;">Reddy, Demo <span style="padding: 2px 8px; border-radius: 999px; background: rgba(215,242,92,0.2); color: #D7F25C; font-size: 11px; font-weight: 800; margin-left: 6px;">You</span></span><span style="font-family: 'IBM Plex Mono', monospace; color: rgba(245,244,239,0.65);">1104782</span><span style="font-weight: 700;">TN</span><span style="font-family: 'IBM Plex Mono', monospace;">148</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 800; color: #D7F25C;">171</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1.6fr 1fr 0.7fr 0.8fr 0.8fr; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 18px; font-size: 13.5px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 30px; border-radius: 10px; background: #EAE9E2; color: #46524A; font-weight: 700;">215</span><span style="font-weight: 700;">Khan, Imran</span><span style="font-family: 'IBM Plex Mono', monospace; color: #6B7A6E;">1105210</span><span style="font-weight: 700;">KA</span><span style="font-family: 'IBM Plex Mono', monospace;">145</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 800; color: #43601A;">169</span></div>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 12px; line-height: 1.5;">Under 768 px each row becomes a card: rank chip, name, total points, then a 3-up breakdown (singles / doubles / 25% best doubles). Your own row is pinned to the top.</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · /aita-calendar</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E;">Mirrored from aitatennis.com</div>
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em; margin-top: 4px;">AITA calendar</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px;">
+            <span style="height: 44px; border-radius: 16px; background: #101914; color: #F5F4EF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 700;">Under 16 <span style="margin-left: auto;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #46524A;">All cities <span style="margin-left: auto; color: #6B7A6E;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #46524A;">All grades <span style="margin-left: auto; color: #6B7A6E;">▾</span></span>
+            <span style="height: 44px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: #6B7A6E;">⌕ Search</span>
+          </div>
+          <div style="display: flex; gap: 4px; padding: 5px; border-radius: 18px; background: #EAE9E2; margin-top: 12px;">
+            <span style="flex: 1; height: 38px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: #46524A;">All dates</span>
+            <span style="flex: 1; height: 38px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; box-shadow: 0 2px 8px -5px rgba(16,25,20,0.4);">This month</span>
+            <span style="flex: 1.2; height: 38px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: #46524A;">Next 3 mo</span>
+          </div>
+          <div style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 10px;">Last synced 22 min ago</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.025em;">Bengaluru ITF J30</div>
+              <div style="display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap;">
+                <span style="padding: 5px 10px; border-radius: 999px; background: #F5F4EF; font-size: 11.5px; font-weight: 700;">Under 16</span>
+                <span style="padding: 5px 10px; border-radius: 999px; background: #F5F4EF; font-size: 11.5px; font-weight: 700;">CS 7-day</span>
+                <span style="padding: 5px 10px; border-radius: 999px; background: #FDF2EF; color: #96331E; font-size: 11.5px; font-weight: 800;">Closes in 2d</span>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 10px;">Bengaluru · KSLTA Stadium · 4 Aug</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.025em;">Hyderabad Nationals</div>
+              <div style="display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap;">
+                <span style="padding: 5px 10px; border-radius: 999px; background: #F5F4EF; font-size: 11.5px; font-weight: 700;">Under 16</span>
+                <span style="padding: 5px 10px; border-radius: 999px; background: #F5F4EF; font-size: 11.5px; font-weight: 700;">Nationals</span>
+                <span style="padding: 5px 10px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11.5px; font-weight: 800;">Closes in 6d</span>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 10px;">Hyderabad · Gachibowli · 11 Aug</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.025em;">Pune Talent Series</div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 10px;">Pune · Deccan Gymkhana · 18 Aug</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Training and daily">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">07 · /drills · /nutrition · /messages · /profile</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Daily logging &amp; account</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Phone-first, mostly indoors. Drill types get typographic tokens instead of emoji; nutrition keeps the compliance hero, macro donut and water tracker; profile groups its long field set into collapsible blocks.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · /drills</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Drills</div>
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Training library · videos &amp; intensity</div>
+          <div style="border-radius: 24px; background: #101914; color: #F5F4EF; padding: 18px; margin-top: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: rgba(245,244,239,0.6);">This week</span><span style="display: block; font-size: 34px; font-weight: 800; letter-spacing: -0.045em; margin-top: 6px;">310<span style="font-size: 15px; font-weight: 700; color: rgba(245,244,239,0.6);"> min</span></span></span>
+              <span style="text-align: right;"><span style="display: block; font-size: 20px; font-weight: 800; color: #D7F25C;">5</span><span style="display: block; font-size: 12px; font-weight: 700; color: rgba(245,244,239,0.6); margin-top: 2px;">sessions</span><span style="display: block; font-size: 12px; font-weight: 700; color: #F0937F; margin-top: 8px;">2 high intensity</span></span>
+            </div>
+            <div style="display: flex; gap: 4px; margin-top: 16px;">
+              <span style="flex: 1; height: 8px; border-radius: 999px; background: #D7F25C;"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: #D7F25C;"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: #E09A1F;"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: #D7F25C;"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: #E09A1F;"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: rgba(245,244,239,0.15);"></span><span style="flex: 1; height: 8px; border-radius: 999px; background: rgba(245,244,239,0.15);"></span>
+            </div>
+          </div>
+          <div style="height: 52px; border-radius: 18px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; margin-top: 12px;">+ Log a drill</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <span style="width: 44px; height: 44px; border-radius: 15px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">FH</span>
+                <span style="flex: 1; min-width: 0;">
+                  <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="font-size: 15px; font-weight: 800;">Forehand</span><span style="padding: 4px 9px; border-radius: 999px; background: #FDF2EF; color: #96331E; font-size: 11px; font-weight: 800;">High</span><span style="font-size: 12px; font-weight: 800; color: #7FA31C;">▷ Video</span></span>
+                  <span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 5px;">30 Jul · 75 min</span>
+                  <span style="display: block; font-size: 13px; font-weight: 500; color: #46524A; line-height: 1.55; margin-top: 7px;">Cross-court depth ladder, 4 sets. Contact point felt late on the run.</span>
+                </span>
+              </div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 44px; height: 44px; border-radius: 15px; background: #FFF6E4; color: #8A5F00; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">SV</span>
+                <span style="flex: 1; min-width: 0;"><span style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 15px; font-weight: 800;">Serve</span><span style="padding: 4px 9px; border-radius: 999px; background: #FFF6E4; color: #8A5F00; font-size: 11px; font-weight: 800;">Medium</span></span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 5px;">29 Jul · 45 min · kick-serve ladder from Coach</span></span>
+              </div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 44px; height: 44px; border-radius: 15px; background: #EAE9E2; color: #46524A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">FW</span>
+                <span style="flex: 1; min-width: 0;"><span style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 15px; font-weight: 800;">Footwork</span><span style="padding: 4px 9px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11px; font-weight: 800;">Low</span></span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 5px;">28 Jul · 30 min</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · /nutrition</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Nutrition</div>
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Match day · plan by Dr. Meera</div>
+          <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; margin-top: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <span style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Compliance</span>
+              <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: #7FA31C;">86%</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+              <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Calories</span><span style="color: #6B7A6E;">2,410 / 2,800 kcal</span></span><span style="display: block; height: 9px; border-radius: 999px; background: #EAE9E2;"><span style="display: block; height: 9px; width: 86%; border-radius: 999px; background: #7FA31C;"></span></span></span>
+              <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Carbs</span><span style="color: #6B7A6E;">352 / 420 g</span></span><span style="display: block; height: 9px; border-radius: 999px; background: #EAE9E2;"><span style="display: block; height: 9px; width: 84%; border-radius: 999px; background: #E09A1F;"></span></span></span>
+              <span><span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;"><span>Protein ✓</span><span style="color: #6B7A6E;">128 / 120 g</span></span><span style="display: block; height: 9px; border-radius: 999px; background: #EAE9E2;"><span style="display: block; height: 9px; width: 100%; border-radius: 999px; background: #43601A;"></span></span></span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <div style="flex: 1; border-radius: 24px; background: #FFFFFF; padding: 16px; text-align: center; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="font-size: 13px; font-weight: 700; color: #6B7A6E;">Macros</div>
+              <div style="width: 96px; height: 96px; border-radius: 50%; margin: 12px auto 0; background: conic-gradient(#E09A1F 0 46%, #7FA31C 46% 72%, #2E7BE8 72% 100%); display: flex; align-items: center; justify-content: center;"><span style="width: 68px; height: 68px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; letter-spacing: -0.03em;">2410</span></div>
+              <div style="display: flex; justify-content: center; gap: 10px; margin-top: 12px; font-size: 11.5px; font-weight: 700; color: #6B7A6E;"><span>C 46</span><span>P 26</span><span>F 28</span></div>
+            </div>
+            <div style="flex: 1; border-radius: 24px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="font-size: 13px; font-weight: 700; color: #6B7A6E;">Water</div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 14px;">
+                <span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span><span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span><span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span><span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span>
+                <span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span><span style="height: 30px; border-radius: 9px; background: #2E7BE8;"></span><span style="height: 30px; border-radius: 9px; background: #E3E9F5;"></span><span style="height: 30px; border-radius: 9px; background: #E3E9F5;"></span>
+              </div>
+              <div style="font-size: 12.5px; font-weight: 700; color: #6B7A6E; margin-top: 12px;">2.6 / 3.5 L</div>
+              <div style="height: 38px; border-radius: 13px; background: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 10px;">+ 250 ml</div>
+            </div>
+          </div>
+          <div style="border-radius: 24px; background: #101914; color: #F5F4EF; padding: 18px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: #D7F25C;">◔ Fuel your match by the clock</span>
+              <span style="padding: 5px 11px; border-radius: 999px; background: rgba(245,244,239,0.12); font-size: 11.5px; font-weight: 800;">Session live</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <span style="flex: 1; height: 44px; border-radius: 14px; background: rgba(245,244,239,0.1); display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: rgba(245,244,239,0.75);">Minutes until match · 45</span>
+              <span style="padding: 0 18px; height: 44px; border-radius: 14px; background: #D7F25C; color: #101914; display: flex; align-items: center; font-size: 13.5px; font-weight: 800;">▷ Start</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: 14px; background: rgba(245,244,239,0.07);"><span style="width: 22px; height: 22px; border-radius: 8px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;">✓</span><span style="flex: 1; font-size: 13.5px; font-weight: 600;">Checkpoint done</span></span>
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: 14px; background: rgba(245,244,239,0.07);"><span style="width: 22px; height: 22px; border-radius: 8px; border: 2px solid rgba(245,244,239,0.3);"></span><span style="flex: 1; font-size: 13.5px; font-weight: 600;">Next checkpoint</span></span>
+              <span style="display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-radius: 14px; background: rgba(245,244,239,0.07);"><span style="width: 22px; height: 22px; border-radius: 8px; border: 2px solid rgba(245,244,239,0.3);"></span><span style="flex: 1; font-size: 13.5px; font-weight: 600;">Final checkpoint</span></span>
+            </div>
+            <div style="height: 44px; border-radius: 14px; background: rgba(245,244,239,0.12); display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800; margin-top: 12px;">End session</div>
+            <div style="font-size: 12px; font-weight: 600; color: rgba(245,244,239,0.55); margin-top: 10px; line-height: 1.5;">Checkpoint copy comes from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;">PeriMatchFuelTimer</code> in NutritionCoachingPanel — tick each as you take it.</div>
+          </div>
+          <div style="height: 52px; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.3);">+ Log a meal</div>
+          <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px;">
+            <div style="border-radius: 20px; background: #FFFFFF; padding: 14px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);"><div style="font-size: 14px; font-weight: 800;">Pre-match · today</div><div style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Banana, oats, honey · 420 kcal · 12 g protein</div></div>
+            <div style="border-radius: 20px; background: #FFFFFF; padding: 14px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);"><div style="font-size: 14px; font-weight: 800;">Breakfast · today</div><div style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Eggs, toast, curd · 610 kcal · 34 g protein</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Floodlight · /profile</div>
+        <div style="width: 390px; background: #0B0F0D; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(11,15,13,0.7);">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="width: 68px; height: 68px; border-radius: 24px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; flex-shrink: 0;">DR</span>
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.035em; color: #F2F5F0;">Demo Reddy</span>
+              <span style="display: block; font-size: 13px; font-weight: 600; color: #7C8A80; margin-top: 4px;">AITA 1104782 · TN · U16</span>
+              <span style="display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(200,255,77,0.16); color: #C8FF4D; font-size: 11.5px; font-weight: 800; margin-top: 8px;">Player</span>
+            </span>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <div style="flex: 1; border-radius: 20px; background: #141A16; border: 1px solid #212A23; padding: 14px; text-align: center;"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #C8FF4D;">214</div><div style="font-size: 11.5px; font-weight: 700; color: #7C8A80; margin-top: 4px;">Rank</div></div>
+            <div style="flex: 1; border-radius: 20px; background: #141A16; border: 1px solid #212A23; padding: 14px; text-align: center;"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #F2F5F0;">171</div><div style="font-size: 11.5px; font-weight: 700; color: #7C8A80; margin-top: 4px;">Points</div></div>
+            <div style="flex: 1; border-radius: 20px; background: #141A16; border: 1px solid #212A23; padding: 14px; text-align: center;"><div style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #F2F5F0;">6</div><div style="font-size: 11.5px; font-weight: 700; color: #7C8A80; margin-top: 4px;">Entries</div></div>
+          </div>
+          <div style="border-radius: 24px; background: #141A16; border: 1px solid #212A23; padding: 16px; margin-top: 14px;">
+            <div style="font-size: 15px; font-weight: 800; color: #F2F5F0; letter-spacing: -0.02em;">Identity</div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+              <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Display name *</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">Demo Reddy</span></span>
+              <span style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Phone</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">+91 98400…</span></span>
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Home court</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">SDAT</span></span>
+              </span>
+            </div>
+          </div>
+          <div style="border-radius: 24px; background: #141A16; border: 1px solid #212A23; padding: 16px; margin-top: 12px;">
+            <div style="font-size: 15px; font-weight: 800; color: #F2F5F0; letter-spacing: -0.02em;">Player details</div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+              <span style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">AITA reg no.</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; color: #F2F5F0;">1104782</span></span>
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Current ranking</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; color: #F2F5F0;">214</span></span>
+              </span>
+              <span style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Date of birth</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; color: #F2F5F0;">2010-04-18</span></span>
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">State</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">TN <span style="margin-left: auto; color: #7C8A80;">▾</span></span></span>
+              </span>
+              <span style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Plays</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">Right <span style="margin-left: auto; color: #7C8A80;">▾</span></span></span>
+                <span><span style="display: block; font-size: 12.5px; font-weight: 700; color: #7C8A80; margin-bottom: 6px;">Backhand</span><span style="display: flex; align-items: center; height: 48px; padding: 0 15px; border-radius: 16px; background: #0F1411; font-size: 14.5px; font-weight: 600; color: #F2F5F0;">Two-handed <span style="margin-left: auto; color: #7C8A80;">▾</span></span></span>
+              </span>
+            </div>
+          </div>
+          <div style="border-radius: 24px; background: #141A16; border: 1px solid #212A23; padding: 16px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <span style="font-size: 15px; font-weight: 800; color: #F2F5F0; letter-spacing: -0.02em;">Equipment</span>
+              <span style="font-size: 13px; font-weight: 700; color: #7C8A80;">6 fields ▾</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 600; color: #7C8A80; margin-top: 8px; line-height: 1.5;">Yonex racquet · 52 lbs · Asics shoes · Wilson grip</div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 24px; background: #141A16; border: 1px solid #212A23; padding: 16px; margin-top: 12px;">
+            <span><span style="display: block; font-size: 14.5px; font-weight: 800; color: #F2F5F0;">Match reminders</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #7C8A80; margin-top: 3px;">Daily at 07:30</span></span>
+            <span style="width: 48px; height: 28px; border-radius: 999px; background: #C8FF4D; display: flex; align-items: center; justify-content: flex-end; padding: 0 3px;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #0B0F0D;"></span></span>
+          </div>
+          <div style="height: 54px; border-radius: 20px; background: #C8FF4D; color: #0B0F0D; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; margin-top: 12px;">Save profile</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · /messages</div>
+        <div style="width: 700px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Messages</div>
+          <div style="display: grid; grid-template-columns: 236px 1fr; gap: 12px; margin-top: 16px;">
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 8px; height: fit-content;">
+              <span style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px; background: #FFFFFF;">
+                <span style="width: 38px; height: 38px; border-radius: 13px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">CR</span>
+                <span style="min-width: 0;"><span style="display: block; font-size: 13.5px; font-weight: 800;">Coach Ramesh</span><span style="display: block; font-size: 12px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Assigned the kick-serve…</span></span>
+              </span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px;">
+                <span style="width: 38px; height: 38px; border-radius: 13px; background: #EAE9E2; color: #46524A; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">PR</span>
+                <span style="min-width: 0;"><span style="display: block; font-size: 13.5px; font-weight: 700;">Priya (parent)</span><span style="display: block; font-size: 12px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Court 3 at 2pm?</span></span>
+                <span style="width: 20px; height: 20px; border-radius: 999px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">2</span>
+              </span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px;">
+                <span style="width: 38px; height: 38px; border-radius: 13px; background: #EAE9E2; color: #46524A; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;">DM</span>
+                <span style="min-width: 0;"><span style="display: block; font-size: 13.5px; font-weight: 700;">Dr. Meera</span><span style="display: block; font-size: 12px; font-weight: 500; color: #6B7A6E; margin-top: 2px;">Match-day plan updated</span></span>
+              </span>
+            </div>
+            <div style="border-radius: 24px; background: #F5F4EF; display: flex; flex-direction: column; height: 380px; overflow: hidden;">
+              <div style="padding: 16px 18px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 15px; font-weight: 800;">Coach Ramesh</span>
+                <span style="font-size: 12.5px; font-weight: 600; color: #6B7A6E;">· coach · online</span>
+              </div>
+              <div style="flex: 1; padding: 0 18px; display: flex; flex-direction: column; gap: 12px;">
+                <span style="align-self: flex-start; max-width: 78%; border-radius: 20px 20px 20px 6px; background: #FFFFFF; padding: 12px 14px;">
+                  <span style="display: block; font-size: 14px; line-height: 1.55; font-weight: 500;">Nice break-point conversion today — 6 of 9. Second serve still sitting up though.</span>
+                  <span style="display: block; font-size: 11.5px; font-weight: 600; color: #6B7A6E; text-align: right; margin-top: 6px;">09:12</span>
+                </span>
+                <span style="align-self: flex-end; max-width: 78%; border-radius: 20px 20px 6px 20px; background: #101914; color: #F5F4EF; padding: 12px 14px;">
+                  <span style="display: block; font-size: 14px; line-height: 1.55; font-weight: 500;">Kick serve felt short in the wind. Drill it Thursday?</span>
+                  <span style="display: block; font-size: 11.5px; font-weight: 600; color: rgba(245,244,239,0.6); text-align: right; margin-top: 6px;">09:20</span>
+                </span>
+                <span style="align-self: flex-start; max-width: 78%; border-radius: 20px 20px 20px 6px; background: #FFFFFF; padding: 12px 14px;">
+                  <span style="display: block; font-size: 14px; line-height: 1.55; font-weight: 500;">Assigned you the kick-serve ladder — it's in Drills.</span>
+                  <span style="display: block; font-size: 11.5px; font-weight: 600; color: #6B7A6E; text-align: right; margin-top: 6px;">09:24</span>
+                </span>
+              </div>
+              <div style="padding: 16px 18px; display: flex; gap: 10px;">
+                <span style="flex: 1; height: 48px; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; padding: 0 16px; font-size: 14px; font-weight: 500; color: #6B7A6E;">Type a message…</span>
+                <span style="padding: 0 22px; height: 48px; border-radius: 18px; background: #D7F25C; color: #101914; display: flex; align-items: center; font-size: 14px; font-weight: 800;">Send</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto 60px;" data-screen-label="Role homes">
+    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #6B7A6E;">08 · role home screens</div>
+    <h2 style="font-weight: 800; letter-spacing: -0.032em; font-size: 32px; margin: 10px 0 6px;">Coach, parent, organizer, nutritionist</h2>
+    <p style="font-size: 15.5px; line-height: 1.6; color: #46524A; max-width: 720px; margin: 0 0 24px;">Four landings behind one route. Same chrome, same tokens — only the content model changes.</p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Laptop ≥1024 · Daylight · coach intelligence</div>
+        <div style="width: 700px; background: #E6E9E4; border-radius: 30px; padding: 18px; box-shadow: 0 24px 60px -32px rgba(16,25,20,0.42);">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+            <span>
+              <span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Skill groups</span>
+              <span style="display: block; font-size: 13.5px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">Roster segmented by the gap the match data shows</span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 12px;">
+              <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 800; color: #7FA31C;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #7FA31C;"></span>Analytics fresh</span>
+              <span style="padding: 12px 18px; border-radius: 16px; background: #101914; color: #F5F4EF; font-size: 13.5px; font-weight: 800;">Log a session</span>
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px;">
+            <span style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 16px; background: #F5F4EF; flex-wrap: wrap;">
+              <span style="padding: 9px 14px; border-radius: 12px; background: #101914; color: #F5F4EF; font-size: 12.5px; font-weight: 800;">Skill groups</span>
+              <span style="padding: 9px 14px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Roster</span>
+              <span style="padding: 9px 14px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Drill library</span>
+              <span style="padding: 9px 14px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Correlation</span>
+              <span style="padding: 9px 14px; border-radius: 12px; color: #46524A; font-size: 12.5px; font-weight: 700;">Leaderboard</span>
+            </span>
+            <span style="font-size: 12.5px; font-weight: 600; color: #6B7A6E; white-space: nowrap;">7 sessions this week · 9 players</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Second-serve leak</span><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #96331E;">4</span></div>
+              <div style="font-size: 13px; font-weight: 500; color: #46524A; line-height: 1.55; margin-top: 7px;">2nd-serve points won under 40% across the last 5 matches</div>
+              <div style="display: flex; gap: 6px; margin-top: 12px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">DR</span><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">KI</span><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">SM</span><span style="width: 30px; height: 30px; border-radius: 10px; background: #EAE9E2; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800; color: #46524A;">+1</span></div>
+              <div style="height: 44px; border-radius: 14px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 12px;">Assign kick-serve ladder</div>
+            </div>
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Backhand UE cluster</span><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #8A5F00;">3</span></div>
+              <div style="font-size: 13px; font-weight: 500; color: #46524A; line-height: 1.55; margin-top: 7px;">Backhand unforced errors above 35% of all errors</div>
+              <div style="display: flex; gap: 6px; margin-top: 12px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">PN</span><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">RS</span><span style="width: 30px; height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;">II</span></div>
+              <div style="height: 44px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 12px;">Open group</div>
+            </div>
+            <div style="border-radius: 24px; background: #101914; color: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 16px; font-weight: 800; letter-spacing: -0.025em;">Converting well</span><span style="font-size: 24px; font-weight: 800; letter-spacing: -0.04em; color: #D7F25C;">2</span></div>
+              <div style="font-size: 13px; font-weight: 500; color: rgba(245,244,239,0.7); line-height: 1.55; margin-top: 7px;">Break points won above 55% — keep the routine as it is</div>
+            </div>
+            <div style="border-radius: 24px; background: #F5F4EF; padding: 18px;">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+                <span><span style="display: block; font-size: 12px; font-weight: 800; color: #7FA31C;">Working</span><span style="display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.025em; margin-top: 5px;">Kick-serve ladder → Second serve</span></span>
+                <span style="text-align: right;"><span style="display: block; font-size: 11.5px; font-weight: 700; color: #6B7A6E;">Success rate</span><span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.045em; color: #7FA31C;">67%</span></span>
+              </div>
+              <div style="font-size: 12px; font-weight: 600; color: #6B7A6E; margin-top: 8px; line-height: 1.5;">3 of 4 assigned players with data · 3×/week · 4-week block · started 30 Jun 2026</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                <span style="display: grid; grid-template-columns: 104px 1fr 46px; gap: 10px; align-items: center;"><span style="font-size: 12px; font-weight: 700; color: #6B7A6E;">4 before</span><span style="height: 9px; border-radius: 999px; background: #EAE9E2;"><span style="display: block; height: 9px; width: 62%; border-radius: 999px; background: #A9B5AC;"></span></span><span style="font-size: 13px; font-weight: 800; color: #6B7A6E; text-align: right;">41%</span></span>
+                <span style="display: grid; grid-template-columns: 104px 1fr 46px; gap: 10px; align-items: center;"><span style="font-size: 12px; font-weight: 700; color: #6B7A6E;">4 after</span><span style="height: 9px; border-radius: 999px; background: #EAE9E2;"><span style="display: block; height: 9px; width: 100%; border-radius: 999px; background: #7FA31C;"></span></span><span style="font-size: 13px; font-weight: 800; color: #43601A; text-align: right;">66%</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · parent portal</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E;">Parent portal</div>
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em; margin-top: 4px;">Welcome back, Priya</div>
+          <div style="border-radius: 24px; background: #101914; color: #F5F4EF; padding: 18px; margin-top: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: #D7F25C;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #D7F25C;"></span>Demo is on court in 42 min</div>
+            <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em; margin-top: 10px;">Quarter-final vs Karthik Iyer</div>
+            <div style="font-size: 13px; font-weight: 500; color: rgba(245,244,239,0.6); margin-top: 5px;">Chennai Open · Court 3 · 14:00</div>
+          </div>
+          <div style="font-size: 13px; font-weight: 800; color: #6B7A6E; margin: 18px 0 10px;">Linked players (2)</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 46px; height: 46px; border-radius: 16px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0;">DR</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 15px; font-weight: 800;">Demo Reddy</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">Rank 214 · 61% win rate · 12d streak</span></span>
+              <span style="color: #6B7A6E; font-size: 18px;">›</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <span style="width: 46px; height: 46px; border-radius: 16px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0;">AR</span>
+              <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 15px; font-weight: 800;">Anika Reddy</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">U14 · AITA 1106340 · 4d streak</span></span>
+              <span style="color: #6B7A6E; font-size: 18px;">›</span>
+            </div>
+          </div>
+          <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="font-size: 14.5px; font-weight: 800;">Read-only access</div>
+            <div style="font-size: 13px; font-weight: 500; color: #46524A; line-height: 1.55; margin-top: 6px;">You can see dashboards, results and messages. Only the player and their coach can log points.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · organizer home</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E;">Kovai Tennis Club · <span style="color: #43601A; font-weight: 800;">Verified</span></div>
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em; margin-top: 4px;">Welcome back, Suresh</div>
+          <div style="border-radius: 24px; background: #101914; color: #F5F4EF; padding: 18px; margin-top: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: #D7F25C;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #D7F25C;"></span>Chennai Open · day 2 live</div>
+            <div style="display: flex; gap: 12px; margin-top: 14px;">
+              <span style="flex: 1;"><span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: #F0937F;">6</span><span style="display: block; font-size: 12px; font-weight: 700; color: rgba(245,244,239,0.6); margin-top: 3px;">Scores pending</span></span>
+              <span style="flex: 1;"><span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.04em;">4</span><span style="display: block; font-size: 12px; font-weight: 700; color: rgba(245,244,239,0.6); margin-top: 3px;">Draws to seed</span></span>
+              <span style="flex: 1;"><span style="display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.04em;">2</span><span style="display: block; font-size: 12px; font-weight: 700; color: rgba(245,244,239,0.6); margin-top: 3px;">Withdrawals</span></span>
+            </div>
+            <div style="height: 48px; border-radius: 16px; background: #D7F25C; color: #101914; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 800; margin-top: 16px;">Open order of play</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 15px; font-weight: 800;">Boys U16 singles</span><span style="padding: 5px 10px; border-radius: 999px; background: #FDF2EF; color: #96331E; font-size: 11.5px; font-weight: 800;">3 pending</span></div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 7px;">R16 · draw 32 · 4 seeds placed</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 15px; font-weight: 800;">Girls U14 doubles</span><span style="padding: 5px 10px; border-radius: 999px; background: #E8F4C8; color: #43601A; font-size: 11.5px; font-weight: 800;">Published</span></div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 7px;">Qualifying complete · OOP ready</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><span style="font-size: 15px; font-weight: 800;">Bengaluru ITF J30</span><span style="padding: 5px 10px; border-radius: 999px; background: #EAE9E2; color: #46524A; font-size: 11.5px; font-weight: 800;">Entry open</span></div>
+              <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 7px;">38 entries · closes in 2 days</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #6B7A6E; margin-bottom: 10px;">Phone · Daylight · nutritionist command centre</div>
+        <div style="width: 390px; background: #F5F4EF; border-radius: 34px; padding: 16px 14px; box-shadow: 0 24px 60px -28px rgba(16,25,20,0.45);">
+          <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.038em;">Hi, Dr. Meera</div>
+          <div style="font-size: 13px; font-weight: 600; color: #6B7A6E; margin-top: 4px;">9 athletes · 2 need attention</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 44px; height: 44px; border-radius: 15px; background: #F7DDD7; color: #96331E; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">DR</span>
+                <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 15px; font-weight: 800;">Demo Reddy</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">Hydration short 3 days running</span></span>
+                <span style="font-size: 19px; font-weight: 800; letter-spacing: -0.04em; color: #96331E;">61%</span>
+              </div>
+              <div style="height: 42px; border-radius: 14px; background: #101914; color: #F5F4EF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 12px;">Adjust match-day plan</div>
+            </div>
+            <div style="border-radius: 22px; background: #FFFFFF; padding: 16px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 44px; height: 44px; border-radius: 15px; background: #E8F4C8; color: #43601A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">KI</span>
+                <span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 15px; font-weight: 800;">Karthik Iyer</span><span style="display: block; font-size: 12.5px; font-weight: 600; color: #6B7A6E; margin-top: 3px;">On plan · match-day loading</span></span>
+                <span style="font-size: 19px; font-weight: 800; letter-spacing: -0.04em; color: #43601A;">92%</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-radius: 24px; background: #FFFFFF; padding: 18px; margin-top: 12px; box-shadow: 0 2px 10px -6px rgba(16,25,20,0.25);">
+            <div style="font-size: 15px; font-weight: 800; letter-spacing: -0.02em;">Day-type macros</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+              <span style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #101914; color: #F5F4EF;"><span style="flex: 1; font-size: 13.5px; font-weight: 800;">Match</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;">2800 · 420C · 120P</span></span>
+              <span style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #F5F4EF;"><span style="flex: 1; font-size: 13.5px; font-weight: 700;">Training</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #46524A;">2500 · 340C · 130P</span></span>
+              <span style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #F5F4EF;"><span style="flex: 1; font-size: 13.5px; font-weight: 700;">Rest</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #46524A;">2200 · 240C · 140P</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="max-width: 1240px; margin: 0 auto; padding-top: 34px; border-top: 1px solid #C9CEC4; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px; border-left: 4px solid #E09A1F;">
+      <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px;">Glyphs are stand-ins</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Ship the <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">lucide-react</code> icons already imported, not these characters: <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">LayoutDashboard ▤</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Activity ◈</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">History ◷</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Trophy ♛</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Dumbbell ◇</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Droplet ◉</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Bell ◔</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">GitCompare ⇄</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Calendar ▦</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Medal ★</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">MessageCircle ✉</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Video ▷</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">Undo2 ↩</code>, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">LogOut ⇥</code>. Only the brand mark is a real asset.</p>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px;">
+      <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px;">Covered here</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Chrome · login · player dashboard · live track (Floodlight, Glare, landscape, laptop) · match detail · history · compare · tournaments · draw · order of play · AITA rankings · AITA calendar · drills · nutrition · messages · profile · coach · parent · organizer · nutritionist.</p>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 20px;">
+      <h3 style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px;">Not drawn yet</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: #46524A; margin: 0;">Video analysis (beta), tournament entry &amp; withdrawal flows, retroactive point entry, highlight-reel export, AITA factsheet parser review. Say the word and they follow the same language.</p>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
