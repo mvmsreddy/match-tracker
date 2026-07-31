@@ -104,9 +104,18 @@ export async function getSession() {
 
 export function onAuthStateChange(callback) {
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+    // INITIAL_SESSION fires once, synchronously on subscribe, with whatever
+    // session already exists (or null) — handling it here means AuthContext
+    // no longer needs its own separate supabase.auth.getSession() call on
+    // mount. That used to race this subscription: both paths independently
+    // loaded the profile and called setUser for the same sign-in, and if the
+    // first of the two ever hit a transient hiccup fetching the profile, the
+    // app would briefly render as "role not confirmed" before the second
+    // call corrected it — a spurious remount that re-fired every dashboard
+    // fetch a second time. One event stream now, so that race can't happen.
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
       callback(publicUser(session.user));
-    } else if (event === 'SIGNED_OUT') {
+    } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
       callback(null);
     }
   });

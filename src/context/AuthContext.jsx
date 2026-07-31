@@ -32,14 +32,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
-    api.getSession().then(async (session) => {
-      if (!cancelled) {
-        const fullUser = session ? await loadFullUser(session.user) : null;
-        setUser(fullUser);
-        setLoading(false);
-      }
-    });
-
+    // Supabase mode: a single onAuthStateChange stream covers the initial
+    // session check too (its first event is always INITIAL_SESSION — see
+    // supabaseApi.js) — no separate getSession() call, so there's no longer
+    // a race between two independent paths loading the profile for the same
+    // sign-in. Mock mode has no such stream, so it keeps the one-shot check.
     if (api.onAuthStateChange) {
       const unsubscribe = api.onAuthStateChange(async (authUser) => {
         if (!cancelled) {
@@ -50,6 +47,14 @@ export function AuthProvider({ children }) {
       });
       return () => { cancelled = true; unsubscribe(); };
     }
+
+    api.getSession().then(async (session) => {
+      if (!cancelled) {
+        const fullUser = session ? await loadFullUser(session.user) : null;
+        setUser(fullUser);
+        setLoading(false);
+      }
+    });
 
     return () => { cancelled = true; };
   }, []);

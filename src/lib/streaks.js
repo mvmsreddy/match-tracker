@@ -49,16 +49,24 @@ export function computeStreak(logDates, { today, graceDays = 1, freezeDates = []
 
   // Best-ever streak: strict scan across all logged dates (no grace —
   // matches ACE Tracker's "best" definition), frozen dates still bridge gaps.
+  // Gap size is computed from the millisecond difference between dates, not
+  // by walking day-by-day — a single bad/far-off date (bad data, timezone
+  // bug, stray test record) would otherwise turn that walk into a loop of
+  // months' or years' worth of iterations and freeze the tab.
   const sortedDates = [...loggedSet].sort();
+  const sortedFrozen = [...frozenSet].sort();
   let best = 0;
   let run = 0;
   let prevIso = null;
   for (const iso of sortedDates) {
     if (prevIso) {
-      let gap = 0;
-      for (let c = addDays(prevIso, 1); c < iso; c = addDays(c, 1)) {
-        if (!frozenSet.has(c)) gap += 1;
-      }
+      const daysBetween = Math.round(
+        (new Date(iso + 'T00:00:00').getTime() - new Date(prevIso + 'T00:00:00').getTime()) / 86400000,
+      ) - 1;
+      const frozenInGap = daysBetween > 0
+        ? sortedFrozen.filter(f => f > prevIso && f < iso).length
+        : 0;
+      const gap = Math.max(0, daysBetween - frozenInGap);
       run = gap === 0 ? run + 1 : 1;
     } else {
       run = 1;
