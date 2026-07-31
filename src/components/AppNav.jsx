@@ -412,7 +412,7 @@ export default function AppNav({ children }) {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[10.5px] font-bold transition-colors ${
+                `flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[12px] font-bold transition-colors ${
                   isActive ? 'bg-primary text-primary-foreground' : 'text-white/65'
                 }`
               }
@@ -425,7 +425,7 @@ export default function AppNav({ children }) {
         })}
         <button
           onClick={() => setMoreOpen(true)}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[10.5px] font-bold text-white/65"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[12px] font-bold text-white/65"
           aria-label="More"
           data-testid="bottom-bar-more"
         >

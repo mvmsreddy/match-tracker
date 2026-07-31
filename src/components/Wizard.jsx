@@ -385,13 +385,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
               {(['self', 'opp']).map((who) => (
                 <div key={who} className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass(who)}>{playerName(who)}</div>
-                  <ChipButton variant="self" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
+                  <ChipButton variant="self" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
                     Winner
                   </ChipButton>
-                  <ChipButton variant="forced" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
+                  <ChipButton variant="forced" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
                     Forced Error
                   </ChipButton>
-                  <ChipButton variant="warn" className="min-h-[76px] flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
+                  <ChipButton variant="warn" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
                     Unforced Error
                   </ChipButton>
                 </div>

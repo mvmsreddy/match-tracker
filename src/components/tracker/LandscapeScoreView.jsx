@@ -57,8 +57,8 @@ export default function LandscapeScoreView({
       {/* Center: giant score */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <div
-          className="font-display font-black tracking-tighter leading-none text-center text-foreground"
-          style={{ fontSize: 'clamp(6rem, 22vw, 20rem)' }}
+          className="font-mono font-extrabold tracking-tighter leading-none text-center text-foreground tabular-nums"
+          style={{ fontSize: '62px' }}
           data-testid="landscape-game-score"
         >
           {gameScore}

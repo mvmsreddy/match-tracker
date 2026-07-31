@@ -223,9 +223,9 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 /* ---------- Role picker (signup) ---------- */
 
 /* ---------- Role badges ---------- */
-.role-badge-player    { background: rgba(106,175,90,0.15);  color: var(--win-text);    border: 1px solid var(--win); }
-.role-badge-coach     { background: rgba(184,146,42,0.15);  color: var(--forced-text); border: 1px solid var(--forced); }
-.role-badge-organizer { background: rgba(198,226,61,0.12);  color: var(--accent);      border: 1px solid var(--accent); }
+.role-badge-player    { background: color-mix(in srgb, var(--win) 15%, transparent);    color: var(--win-text);    border: 1px solid var(--win); }
+.role-badge-coach     { background: color-mix(in srgb, var(--forced) 15%, transparent); color: var(--forced-text); border: 1px solid var(--forced); }
+.role-badge-organizer { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent);      border: 1px solid var(--accent); }
 
 /* Smaller inline badge used in drawer */
 .drawer-role-badge { display: inline-block; margin-bottom: 10px; }
@@ -236,18 +236,18 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 .role-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
 .role-overlay-card { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 0; }
 .role-overlay-logo { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem; color: var(--accent); margin-bottom: 24px; }
-.role-overlay-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.6rem; margin: 0 0 8px; text-align: center; }
+.role-overlay-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.6rem; margin: 0 0 8px; text-align: center; color: var(--text); }
 .role-overlay-sub { font-family: 'Inter', sans-serif; font-size: 0.88rem; color: var(--text3); text-align: center; margin: 0 0 28px; max-width: 420px; line-height: 1.6; }
 .role-overlay-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
 @media (min-width: 560px) { .role-overlay-grid { flex-direction: row; } }
 .role-overlay-card-btn { flex: 1; display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--bg2); border: 2px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.15s; }
 .role-overlay-card-btn:hover { border-color: var(--text3); }
-.role-overlay-card-btn.selected { border-color: var(--accent); background: rgba(198,226,61,0.06); }
+.role-overlay-card-btn.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .role-overlay-card-label { font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
 .role-overlay-card-btn.selected .role-overlay-card-label { color: var(--accent); }
 .role-overlay-card-desc { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--text2); line-height: 1.5; }
 .role-overlay-card-detail { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 4px; letter-spacing: 0.03em; }
-.role-overlay-confirm { width: 100%; background: var(--accent); color: var(--bg); border: none; padding: 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.role-overlay-confirm { width: 100%; background: var(--accent); color: var(--accent-text); border: none; padding: 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
 .role-overlay-confirm:hover:not(:disabled) { opacity: 0.9; }
 .role-overlay-confirm:disabled { opacity: 0.4; cursor: default; }
 .role-overlay-note { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text4); margin-top: 12px; text-align: center; }
@@ -256,7 +256,7 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 .t-section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin: 14px 0 8px; }
 
 /* WD label — still used by BracketMatchCard (EventDetailPage.jsx) */
-.t-wd-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; color: #e05252; }
+.t-wd-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; color: var(--danger); }
 
 .t-ds-withdrawn { color: hsl(var(--app-muted-foreground)); opacity: 0.65; }
 
@@ -270,8 +270,8 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 .t-ds-bye   { color: hsl(var(--app-muted-foreground)); background: rgba(255,255,255,0.01); }
 .t-ds-empty { background: rgba(255,255,255,0.01); }
 .t-ds-swappable { cursor: pointer; }
-.t-ds-swappable:hover { background: rgba(255,200,0,0.06); }
-.t-ds-selected  { background: rgba(255,200,0,0.12) !important; }
+.t-ds-swappable:hover { background: color-mix(in srgb, hsl(var(--app-forced)) 8%, transparent); }
+.t-ds-selected  { background: color-mix(in srgb, hsl(var(--app-forced)) 14%, transparent) !important; }
 .t-ds-pos  { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: hsl(var(--app-muted-foreground)); width: 22px; flex-shrink: 0; }
 .t-ds-seed { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; color: hsl(var(--app-primary)); flex-shrink: 0; }
 .t-ds-name { font-weight: 600; color: hsl(var(--app-foreground)); flex: 1; }
