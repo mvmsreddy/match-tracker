@@ -3,11 +3,11 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme, PRE_DAWN, PRE_DUSK } from '@/context/ThemeContext';
 import { getInitials } from '@/lib/initials';
-import { getNavItems, getPrimaryNavItems } from '@/lib/navItems';
+import { getNavItems } from '@/lib/navItems';
 import { downloadAppGuide } from '@/lib/appGuidePdf';
 import NotificationsBell from '@/components/NotificationsBell';
 import {
-  Trophy, Menu, X, MoreHorizontal, User, LogOut, FileDown,
+  Trophy, Menu, X, User, LogOut, FileDown,
   Sun, Moon, SunMoon, Contrast,
 } from 'lucide-react';
 
@@ -137,12 +137,11 @@ function MoreSheet({ open, onClose, items, role, onLogout }) {
         data-testid="more-sheet-overlay"
       />
       <div
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-[26px] border-t border-border bg-card text-card-foreground p-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] shadow-2xl md:hidden"
+        className="fixed inset-y-0 left-0 z-50 h-full w-[85vw] max-w-[320px] overflow-y-auto border-r border-border bg-card text-card-foreground p-4 pt-[calc(16px+env(safe-area-inset-top,0px))] pb-[calc(16px+env(safe-area-inset-bottom,0px))] shadow-2xl md:hidden"
         data-testid="more-sheet"
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[15px] font-extrabold">More</span>
+          <span className="text-[15px] font-extrabold">Menu</span>
           <button
             onClick={onClose}
             className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
@@ -153,7 +152,7 @@ function MoreSheet({ open, onClose, items, role, onLogout }) {
           </button>
         </div>
 
-        <nav className="grid grid-cols-2 gap-2 mb-4" onClick={onClose}>
+        <nav className="flex flex-col gap-1 mb-4" onClick={onClose}>
           {items.map((item) => {
             const Icon = item.icon;
             return (
@@ -162,7 +161,7 @@ function MoreSheet({ open, onClose, items, role, onLogout }) {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-[18px] px-3 py-3 text-sm font-bold transition-colors ${
+                  `flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-sm font-bold transition-colors ${
                     isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-secondary'
                   }`
                 }
@@ -203,7 +202,7 @@ function MoreSheet({ open, onClose, items, role, onLogout }) {
 }
 
 // Single nav shell for the whole app, presented three ways off one
-// getNavItems(role) source of truth: a floating bottom bar + More sheet
+// getNavItems(role) source of truth: a hamburger-triggered side drawer
 // below 768px, a 72px icon-only rail 768-1023px, and a 226px labelled rail
 // at 1024px+. Replaces AppShell + NavDrawer + MTNavChrome/TopNav, which each
 // rendered navigation independently and could disagree on what was in it.
@@ -241,7 +240,6 @@ export default function AppNav({ children }) {
   const initials = getInitials(displayName);
 
   const items = getNavItems(role);
-  const primaryItems = getPrimaryNavItems(role);
   const activeItem = items.find((i) => (i.end ? location.pathname === i.to : location.pathname.startsWith(i.to)));
   const pageTitle = activeItem ? activeItem.label : 'Match Tracker';
 
@@ -394,45 +392,10 @@ export default function AppNav({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 pb-[92px] md:pb-8" data-testid="app-nav-content">
+        <main className="flex-1 pb-6 md:pb-8" data-testid="app-nav-content">
           {children}
         </main>
       </div>
-
-      {/* Phone bottom bar (<768) */}
-      <nav
-        className="md:hidden fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1.5 rounded-t-[26px] bg-[#101914] p-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))] shadow-2xl"
-        data-testid="app-nav-bottom-bar"
-      >
-        {primaryItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.id}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[12px] font-bold transition-colors ${
-                  isActive ? 'bg-primary text-primary-foreground' : 'text-white/65'
-                }`
-              }
-              data-testid={`bottom-bar-item-${item.id}`}
-            >
-              <Icon className="w-[18px] h-[18px]" strokeWidth={2.25} />
-              <span className="truncate max-w-full px-0.5">{item.label}</span>
-            </NavLink>
-          );
-        })}
-        <button
-          onClick={() => setMoreOpen(true)}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-[18px] py-1.5 text-[12px] font-bold text-white/65"
-          aria-label="More"
-          data-testid="bottom-bar-more"
-        >
-          <MoreHorizontal className="w-[18px] h-[18px]" strokeWidth={2.25} />
-          <span>More</span>
-        </button>
-      </nav>
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} items={items} role={role} onLogout={logout} />
     </div>

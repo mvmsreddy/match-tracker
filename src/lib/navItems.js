@@ -3,8 +3,8 @@ import {
   Calendar, Medal, Video, Apple, MessageCircle, Dumbbell,
 } from 'lucide-react';
 
-// Canonical nav list per role, shared by every nav presentation (phone bottom
-// bar + More sheet, tablet icon rail, laptop labelled rail). Moved here from
+// Canonical nav list per role, shared by every nav presentation (phone side
+// drawer, tablet icon rail, laptop labelled rail). Moved here from
 // NavDrawer so AppNav can consume the exact same list instead of a second,
 // independently-curated one (that's what left .mt-rail/.mt-tabbar showing a
 // different, stale link set before this migration).
@@ -35,12 +35,4 @@ export function getNavItems(role) {
     return [dashboard, myParentPlayers, messages, tournaments, calendar, profile];
   }
   return [dashboard, track, drills, videoAnalysis, tournaments, compare, nutrition, messages, myCoaches, myParents, calendar, profile];
-}
-
-// Bottom bar / tablet rail only have room for a handful of items — first 4
-// (plus a trailing "More" tile that opens the full list) rather than a
-// second hand-curated list, so there's exactly one source of truth for "what
-// can this role navigate to" and its order.
-export function getPrimaryNavItems(role) {
-  return getNavItems(role).slice(0, 4);
 }
