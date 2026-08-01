@@ -134,6 +134,81 @@ That's it — every match you generate a PDF for now gets saved permanently to
 your own Postgres database, viewable any time from **Match History**, and
 comparable on the **Compare** page.
 
+## Tournament entry payments (Razorpay, optional)
+
+If a tournament organiser sets an entry fee (Singles/Doubles ₹ fields on a
+tournament week), players are asked to pay before their self-entry is
+confirmed. Without the setup below, every event just behaves as if it were
+free — the "Pay ₹X & Enter" button never appears, and the older `selfEnterSingles`
+flow (no payment) is what runs.
+
+1. **Create a Razorpay account** at https://razorpay.com and switch to Test
+   Mode while developing.
+2. **Get your keys**: Settings → API Keys → generate a Test key. You'll get a
+   `Key Id` and a `Key Secret`.
+3. **Create a webhook** (Settings → Webhooks): point it at
+   `https://<your-deployed-domain>/api/razorpay-webhook`, subscribe to
+   `payment.captured` and `payment.failed`, and copy the **Webhook Secret**
+   it generates.
+4. **Get a Supabase service-role key**: Project Settings → API → `service_role`
+   secret (different from the `anon` key already in your `.env` — this one
+   must never be exposed to the browser).
+5. **Configure env vars** — add to `.env` (local) and to your Vercel
+   project's Environment Variables (deployed):
+   ```
+   VITE_RAZORPAY_KEY_ID=rzp_test_xxxxxxxx
+   RAZORPAY_KEY_SECRET=your-key-secret
+   RAZORPAY_WEBHOOK_SECRET=your-webhook-secret
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+   The order-create/verify/webhook endpoints (`api/razorpay-*.js`) also reuse
+   the existing `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` values — nothing
+   new needed there.
+6. **Run the migration**: paste `supabase/phase43_event_payments.sql` into
+   the Supabase SQL Editor and run it (adds the `event_payments` table and a
+   `payment_id` column on `draw_entries`).
+7. **Set an entry fee**: as an organiser, edit a tournament week and fill in
+   "Entry Fee – Singles (₹)". Any player self-entering a singles event in
+   that week now sees "Pay ₹X & Enter" instead of "Confirm Entry".
+
+Note for the Android build: Razorpay's standard Checkout runs fine inside a
+Capacitor WebView in the common case, but verify on a real device build
+before shipping — don't assume desktop-browser testing covers it.
+
+## Computed skill rating ("Tracker Rating", Glicko-2)
+
+Alongside the official AITA rank sync, the app can compute its own
+Glicko-2-based rating from **completed official tournament bracket
+matches** (not self-tracked practice sessions — see
+`supabase/functions/compute-ratings/index.ts` for why). This is genuinely
+additive: with no setup, `PlayerRatingCard` on the player dashboard just
+shows its "not rated yet" empty state, and nothing else changes.
+
+1. **Run the migration**: paste `supabase/phase44_player_ratings.sql` into
+   the Supabase SQL Editor and run everything above the `cron.schedule`
+   block first (creates `player_ratings`, `rating_history`, and a
+   `rating_computed_at` marker column on `tournament_weeks`).
+2. **Deploy the Edge Function**:
+   ```
+   supabase functions deploy compute-ratings
+   ```
+   Reuses the `SYNC_SECRET` already configured for `sync-aita-calendar` /
+   `sync-aita-rankings` — nothing new to set there.
+3. **Schedule it**: fill in the placeholders in `phase44_player_ratings.sql`'s
+   `cron.schedule` block (project URL, service-role key, sync secret) and run
+   just that block. It runs daily and only does work when a completed
+   tournament week hasn't been folded into ratings yet.
+4. **Or trigger it manually** as an organiser: call
+   `api.triggerComputeRatings()` (there's no dedicated button yet — wire one
+   into an admin page if you want on-demand recomputation instead of waiting
+   for the daily cron).
+
+Ratings only ever come from singles events with `status: 'complete'`
+matches that have a real winner — walkovers are excluded (no games were
+actually played). A player needs no platform account to be rated: entries
+without one are tracked by AITA reg number instead, the same cross-event
+identity key the rest of the tournament module already uses.
+
 ## Viewing and comparing saved matches
 
 - **Match History** (`/history`) lists every saved match/practice session.

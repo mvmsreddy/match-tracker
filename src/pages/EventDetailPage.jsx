@@ -10,6 +10,7 @@ import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { Table, TableHeader, TableBody, TableRow as UITableRow, TableHead, TableCell } from '@/components/primitives/table';
 import { cn } from '../lib/utils';
+import { toDisplayRating } from '../lib/glicko2';
 
 const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
 
@@ -1123,7 +1124,7 @@ const scBadgeCls = 'inline-flex items-center rounded-sm bg-secondary text-second
 const moveSelectCls = 'text-[0.68rem] rounded-sm border border-input bg-transparent px-1 py-1';
 const iconBtnCls = 'w-7 h-7 shrink-0 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary text-muted-foreground';
 
-function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, currentGroup }) {
+function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, currentGroup, trackerRating }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
@@ -1158,12 +1159,22 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
             {entry.isAlternate && (
               <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.62rem] font-bold mt-0.5">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
             )}
+            {entry.paymentId && (
+              <span className="inline-flex items-center rounded-sm bg-primary/15 text-primary px-2 py-0.5 text-[0.62rem] font-bold mt-0.5" title="Entry fee paid via Razorpay">PAID</span>
+            )}
           </>
         )}
       </TableCell>
       <TableCell>{entry.aitaReg || <Dash />}</TableCell>
       <TableCell>{entry.playerState || <Dash />}</TableCell>
-      <TableCell>{entry.ranking || <Dash />}</TableCell>
+      <TableCell>
+        {entry.ranking || <Dash />}
+        {trackerRating && (
+          <div className="text-[0.62rem] text-muted-foreground font-semibold mt-0.5" title={`Computed Tracker Rating from ${trackerRating.matchesCount} rated match${trackerRating.matchesCount === 1 ? '' : 'es'}`}>
+            ★ {toDisplayRating(trackerRating.rating).toFixed(1)}
+          </div>
+        )}
+      </TableCell>
       <TableCell>
         {entry.statusCode ? <span className={scBadgeCls}>{entry.statusCode}</span> : <Dash />}
       </TableCell>
@@ -1858,6 +1869,28 @@ export default function EventDetailPage() {
       .catch(e  => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
+
+  // Phase 44 — computed Tracker Rating, batched once per entries load rather
+  // than one query per row. Keyed by playerId (preferred) or aitaReg, so
+  // EntryRow can look a rating up the same way compute-ratings identifies a
+  // subject. Singles only — this is a seeding aid for the pre-draw list.
+  const [ratingsBySubjectKey, setRatingsBySubjectKey] = useState(new Map());
+  useEffect(() => {
+    if (event?.isDoubles || entries.length === 0) { setRatingsBySubjectKey(new Map()); return; }
+    let cancelled = false;
+    const playerIds = [...new Set(entries.map(e => e.playerId).filter(Boolean))];
+    const aitaRegs = [...new Set(entries.filter(e => !e.playerId).map(e => e.aitaReg).filter(Boolean))];
+    if (playerIds.length === 0 && aitaRegs.length === 0) { setRatingsBySubjectKey(new Map()); return; }
+    api.getPlayerRatingsBatch({ playerIds, aitaRegs })
+      .then(ratings => {
+        if (cancelled) return;
+        const map = new Map();
+        for (const r of ratings) map.set(r.subjectKey, r);
+        setRatingsBySubjectKey(map);
+      })
+      .catch(() => { if (!cancelled) setRatingsBySubjectKey(new Map()); });
+    return () => { cancelled = true; };
+  }, [entries, event?.isDoubles]);
 
   // Load matches whenever event status is past 'setup'
   useEffect(() => {
@@ -2699,6 +2732,7 @@ export default function EventDetailPage() {
                       onWithdraw={e => setWithdrawingEntry(e)}
                       onMove={isOwner ? handleMoveEntry : undefined}
                       currentGroup={activeTab}
+                      trackerRating={ratingsBySubjectKey.get(entry.playerId || entry.aitaReg)}
                     />
                   ))}
                 </TableBody>

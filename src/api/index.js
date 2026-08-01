@@ -2,6 +2,7 @@ import * as mockApi from './mockApi';
 import * as supabaseApi from './supabaseApi';
 import * as nutritionMock from './nutritionMock';
 import * as tournamentsMock from './tournamentsMock';
+import * as razorpayApi from './razorpayApi';
 import { generateMockRankingHistory } from '../lib/mockRankingHistory';
 
 const hasSupabaseConfig = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -151,6 +152,14 @@ export const selfEnterSingles          = hasSupabaseConfig ? supabaseApi.selfEnt
 export const withdrawFromEvent         = hasSupabaseConfig ? supabaseApi.withdrawFromEvent         : noSupabase;
 export const getMyEntries              = hasSupabaseConfig ? supabaseApi.getMyEntries              : tournamentsMock.getMyEntries;
 
+// Phase 43 — Paid self-entry (Razorpay). Like the rest of the tournament
+// module, these require Supabase (a logged-in session + the event_payments
+// table) — no mock-mode fallback.
+export const createEntryOrder     = hasSupabaseConfig ? razorpayApi.createEntryOrder     : noSupabase;
+export const verifyEntryPayment   = hasSupabaseConfig ? razorpayApi.verifyEntryPayment   : noSupabase;
+export const finalizePaidEntry    = hasSupabaseConfig ? supabaseApi.finalizePaidEntry    : noSupabase;
+export const getMyUnclaimedPayment = hasSupabaseConfig ? supabaseApi.getMyUnclaimedPayment : async () => null;
+
 // Phase 19 — Doubles invitations
 export const searchDoublesPartners     = hasSupabaseConfig ? supabaseApi.searchDoublesPartners     : async () => [];
 export const sendDoublesInvitation     = hasSupabaseConfig ? supabaseApi.sendDoublesInvitation     : noSupabase;
@@ -176,6 +185,12 @@ export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRan
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
 export const triggerAitaRankingsSync = hasSupabaseConfig ? supabaseApi.triggerAitaRankingsSync : noSupabase;
+
+// Phase 44 — Computed skill rating (Glicko-2)
+export const getPlayerRating        = hasSupabaseConfig ? supabaseApi.getPlayerRating        : async () => null;
+export const getPlayerRatingHistory = hasSupabaseConfig ? supabaseApi.getPlayerRatingHistory  : async () => [];
+export const getPlayerRatingsBatch  = hasSupabaseConfig ? supabaseApi.getPlayerRatingsBatch   : async () => [];
+export const triggerComputeRatings  = hasSupabaseConfig ? supabaseApi.triggerComputeRatings   : noSupabase;
 
 // Player Performance tab — auto-discovers every circuit a reg_no is ranked in.
 // In mock mode we synthesise a deterministic multi-circuit trajectory per

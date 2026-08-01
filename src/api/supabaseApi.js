@@ -649,6 +649,8 @@ function rowToEntry(row) {
     enteredBy: row.entered_by || null,
     withdrawalDate: row.withdrawal_date || null,
     withdrawalType: row.withdrawal_type || null,
+    // Phase 43 — paid entry
+    paymentId: row.payment_id || null,
   };
 }
 
@@ -1068,6 +1070,104 @@ export async function selfEnterSingles(eventId, profile) {
   };
   const entry = await applyCascadingPlacement(eventId, placement, newEntrantRow);
   return { entry, placement };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 43 — Paid self-entry (Razorpay)
+// ---------------------------------------------------------------------------
+
+// Finalizes a paid entry: api/razorpay-verify.js only flips event_payments
+// to 'paid' (it has no user session to work with, by design — see that
+// file's comment). This runs under the player's own session, so it reuses
+// the exact same placement + apply_self_entry_placement path selfEnterSingles
+// uses for free events — one implementation of the cascading-placement
+// logic, not two. Idempotent: if this payment already produced a
+// draw_entries row (e.g. called once right after checkout, and again by the
+// "finish confirming" recovery affordance after a reload), it just returns
+// that existing entry instead of erroring or double-entering.
+export async function finalizePaidEntry(paymentId, profile) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not logged in');
+
+  const { data: payment, error: payErr } = await supabase
+    .from('event_payments')
+    .select('id, event_id, user_id, status')
+    .eq('id', paymentId)
+    .single();
+  if (payErr || !payment) throw new Error('Payment record not found');
+  if (payment.user_id !== user.id) throw new Error('This payment does not belong to you');
+  if (payment.status !== 'paid') throw new Error(`Payment is ${payment.status}, not paid yet`);
+
+  const { data: already } = await supabase
+    .from('draw_entries')
+    .select('*')
+    .eq('payment_id', paymentId)
+    .limit(1);
+  if (already && already.length > 0) return { entry: rowToEntry(already[0]) };
+
+  const existingActive = await getMyEventEntry(payment.event_id);
+  if (existingActive) return { entry: existingActive };
+
+  const placement = await computeSelfEntryPlacement(payment.event_id, profile.ranking);
+
+  const requiredGender = categoryGender(placement.event?.category);
+  if (requiredGender && profile.gender && profile.gender !== requiredGender) {
+    throw new Error(`This is a ${placement.event.category} event — your profile gender doesn't match. Contact the organiser if this is a mistake.`);
+  }
+
+  const newEntrantRow = {
+    event_id: payment.event_id,
+    is_bye: false,
+    family_name: profile.familyName || profile.displayName?.split(' ').pop() || '',
+    first_name: profile.firstName || (profile.displayName?.split(' ').slice(0, -1).join(' ')) || '',
+    aita_reg: profile.aitaReg || null,
+    player_state: profile.stateAbbr || null,
+    ranking: profile.ranking ? Number(profile.ranking) : null,
+    date_of_birth: profile.dateOfBirth || null,
+    player_id: user.id,
+    entry_source: 'player',
+    entry_status: 'placed',
+    entered_by: user.id,
+  };
+  const entry = await applyCascadingPlacement(payment.event_id, placement, newEntrantRow);
+
+  const { error: linkErr } = await supabase
+    .from('draw_entries')
+    .update({ payment_id: paymentId })
+    .eq('id', entry.id);
+  if (linkErr) throw new Error(linkErr.message);
+
+  return { entry: { ...entry, paymentId } };
+}
+
+// For the "finish confirming your paid entry" recovery affordance: finds a
+// payment that succeeded but never got turned into a draw_entries row (the
+// browser closed between Checkout success and finalizePaidEntry). Returns
+// null when there's nothing to recover — either no paid-but-unclaimed
+// payment exists, or it's already claimed.
+export async function getMyUnclaimedPayment(eventId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: payments, error } = await supabase
+    .from('event_payments')
+    .select('id, amount, status')
+    .eq('event_id', eventId)
+    .eq('user_id', user.id)
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error || !payments || payments.length === 0) return null;
+
+  const payment = payments[0];
+  const { data: linked } = await supabase
+    .from('draw_entries')
+    .select('id')
+    .eq('payment_id', payment.id)
+    .limit(1);
+  if (linked && linked.length > 0) return null;
+
+  return payment;
 }
 
 // Player withdraws from an event. The on-time/late/frozen distinction is
@@ -2800,6 +2900,109 @@ export async function triggerAitaSync() {
 
 export async function triggerAitaRankingsSync() {
   const { data, error } = await supabase.functions.invoke('sync-aita-rankings', { body: {} });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 44 — Computed skill rating (Glicko-2), singles only. Distinct from
+// the official AITA rank above: this is an algorithmic rating computed by
+// supabase/functions/compute-ratings from official tournament bracket
+// results (see that file's header for why practice matches aren't used).
+// Read-only from the client — the Edge Function is the only writer.
+// ---------------------------------------------------------------------------
+
+function rowToPlayerRating(row) {
+  return {
+    subjectKey: row.subject_key,
+    subjectType: row.subject_type,
+    playerId: row.player_id,
+    format: row.format,
+    rating: Number(row.rating),
+    rd: Number(row.rd),
+    volatility: Number(row.volatility),
+    matchesCount: row.matches_count,
+    lastUpdated: row.last_updated,
+  };
+}
+
+// Looks up a computed rating by platform player_id first, falling back to
+// aita_reg — covers players who competed (and got rated from those
+// results) before ever creating an account, or who never will.
+export async function getPlayerRating({ playerId, aitaReg }, format = 'singles') {
+  if (playerId) {
+    const { data, error } = await supabase
+      .from('player_ratings')
+      .select('*')
+      .eq('player_id', playerId)
+      .eq('format', format)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (data) return rowToPlayerRating(data);
+  }
+  if (aitaReg) {
+    const { data, error } = await supabase
+      .from('player_ratings')
+      .select('*')
+      .eq('subject_key', aitaReg)
+      .eq('subject_type', 'aita_reg')
+      .eq('format', format)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (data) return rowToPlayerRating(data);
+  }
+  return null;
+}
+
+// Trend snapshots for PlayerRatingCard's sparkline — one row per
+// tournament week the subject was rated in.
+export async function getPlayerRatingHistory({ playerId, aitaReg }, format = 'singles', limit = 30) {
+  const rating = await getPlayerRating({ playerId, aitaReg }, format);
+  if (!rating) return [];
+  const { data, error } = await supabase
+    .from('rating_history')
+    .select('rating, rd, matches_count, created_at')
+    .eq('subject_key', rating.subjectKey)
+    .eq('format', format)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data || []).map(r => ({
+    rating: Number(r.rating),
+    rd: Number(r.rd),
+    matchesCount: r.matches_count,
+    createdAt: r.created_at,
+  }));
+}
+
+// Batched lookup for the pre-draw entries list (EventDetailPage) — one pair
+// of queries for the whole visible list instead of one per row.
+export async function getPlayerRatingsBatch({ playerIds = [], aitaRegs = [] }, format = 'singles') {
+  const results = [];
+  if (playerIds.length > 0) {
+    const { data, error } = await supabase
+      .from('player_ratings')
+      .select('*')
+      .eq('format', format)
+      .in('player_id', playerIds);
+    if (error) throw new Error(error.message);
+    results.push(...(data || []).map(rowToPlayerRating));
+  }
+  if (aitaRegs.length > 0) {
+    const { data, error } = await supabase
+      .from('player_ratings')
+      .select('*')
+      .eq('format', format)
+      .eq('subject_type', 'aita_reg')
+      .in('subject_key', aitaRegs);
+    if (error) throw new Error(error.message);
+    results.push(...(data || []).map(rowToPlayerRating));
+  }
+  return results;
+}
+
+export async function triggerComputeRatings() {
+  const { data, error } = await supabase.functions.invoke('compute-ratings', { body: {} });
   if (error) throw new Error(error.message);
   return data;
 }

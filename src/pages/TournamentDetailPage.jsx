@@ -3,9 +3,25 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
+import { openRazorpayCheckout } from '../lib/razorpay';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { cn } from '../lib/utils';
+
+// Shared by the free and paid self-entry paths so both send the exact same
+// entrant fields to the backend.
+function buildEntryProfile(user) {
+  return {
+    familyName: user.displayName?.split(' ').slice(-1)[0] || user.displayName || '',
+    firstName: user.displayName?.split(' ').slice(0, -1).join(' ') || '',
+    aitaReg: user.aitaReg || '',
+    stateAbbr: user.stateAbbr || '',
+    ranking: user.ranking || null,
+    dateOfBirth: user.dateOfBirth || '',
+    gender: user.gender || '',
+    displayName: user.displayName || '',
+  };
+}
 
 // Phase 41 — tournament email-sharing (PRD §2.10). Simplified from ACE
 // Tracker's version: emails an HTML summary (name/dates/events/entry
@@ -175,7 +191,7 @@ function EntryStageBadge({ stage }) {
 // EventCard
 // ---------------------------------------------------------------------------
 
-function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithdraw, onInvitePartner, entryStage }) {
+function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithdraw, onInvitePartner, entryStage, pendingPayment, onFinishPayment, finishingPayment }) {
   const entryOpen = entryStage === ENTRY_STAGE.OPEN;
   const withdrawOpen = entryStage !== ENTRY_STAGE.FROZEN;
   const canEnterSingles = !event.isDoubles && !myEntry && entryOpen;
@@ -207,6 +223,18 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
         </div>
       </Link>
       <div className="flex items-center gap-2 shrink-0">
+        {onFinishPayment && !isEntered && pendingPayment && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-primary border-primary"
+            onClick={() => onFinishPayment(event.id)}
+            disabled={finishingPayment}
+            title="Your payment went through but the entry wasn't confirmed — finish confirming it now"
+          >
+            {finishingPayment ? 'Confirming…' : 'Finish confirming paid entry →'}
+          </Button>
+        )}
         {onEnter && isEntered && (
           <Button
             size="sm"
@@ -255,6 +283,11 @@ export default function TournamentDetailPage() {
   const [myEntries, setMyEntries] = useState({}); // { [eventId]: entry | null }
   const [entryError, setEntryError] = useState('');
   const [enteringSelf, setEnteringSelf] = useState(false);
+  // Phase 43 — paid self-entry: payments that succeeded but never made it
+  // into a draw_entries row (browser closed mid-flow) — see the "Finish
+  // confirming paid entry" affordance on EventCard.
+  const [pendingPayments, setPendingPayments] = useState({}); // { [eventId]: payment | null }
+  const [finishingPaymentId, setFinishingPaymentId] = useState(null);
   // Doubles invitation state
   const [inviteModal, setInviteModal] = useState(null); // { event }
   const [partnerQuery, setPartnerQuery] = useState('');
@@ -279,6 +312,17 @@ export default function TournamentDetailPage() {
             catch { map[ev.id] = null; }
           }));
           if (!cancelled) setMyEntries(map);
+
+          // Only worth checking events where the entry didn't already load above.
+          const unentered = evList.filter(ev => !map[ev.id]);
+          if (unentered.length > 0) {
+            const payMap = {};
+            await Promise.all(unentered.map(async ev => {
+              try { payMap[ev.id] = await api.getMyUnclaimedPayment(ev.id); }
+              catch { payMap[ev.id] = null; }
+            }));
+            if (!cancelled) setPendingPayments(payMap);
+          }
         }
       })
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournament'); });
@@ -355,22 +399,86 @@ export default function TournamentDetailPage() {
     setEnteringSelf(true);
     setEntryError('');
     try {
-      const result = await api.selfEnterSingles(entryModal.event.id, {
-        familyName: user.displayName?.split(' ').slice(-1)[0] || user.displayName || '',
-        firstName: user.displayName?.split(' ').slice(0, -1).join(' ') || '',
-        aitaReg: user.aitaReg || '',
-        stateAbbr: user.stateAbbr || '',
-        ranking: user.ranking || null,
-        dateOfBirth: user.dateOfBirth || '',
-        gender: user.gender || '',
-        displayName: user.displayName || '',
-      });
+      const result = await api.selfEnterSingles(entryModal.event.id, buildEntryProfile(user));
       setMyEntries(prev => ({ ...prev, [entryModal.event.id]: result.entry }));
       setEntryModal(null);
     } catch (err) {
       setEntryError(err.message);
     } finally {
       setEnteringSelf(false);
+    }
+  }
+
+  // Paid entry: create a Razorpay order for the event's fee, open Checkout,
+  // then verify + finalize on success. If entryFeeSingles turns out to be
+  // unset (race with an organiser edit, or a doubles event slipping through),
+  // api.createEntryOrder reports requiresPayment: false and this just falls
+  // through to the exact same free path as handleSelfEnter.
+  async function handlePayAndEnter() {
+    if (!entryModal || enteringSelf) return;
+    setEnteringSelf(true);
+    setEntryError('');
+    try {
+      const order = await api.createEntryOrder(entryModal.event.id);
+      if (!order.requiresPayment) {
+        const result = await api.selfEnterSingles(entryModal.event.id, buildEntryProfile(user));
+        setMyEntries(prev => ({ ...prev, [entryModal.event.id]: result.entry }));
+        setEntryModal(null);
+        setEnteringSelf(false);
+        return;
+      }
+
+      await openRazorpayCheckout({
+        orderId: order.orderId,
+        amount: order.amount,
+        keyId: order.keyId,
+        name: week.name,
+        description: `${entryModal.event.category} ${entryModal.event.ageGroup} entry`,
+        prefill: order.prefill,
+        onSuccess: async (response) => {
+          try {
+            await api.verifyEntryPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            const result = await api.finalizePaidEntry(order.paymentId, buildEntryProfile(user));
+            setMyEntries(prev => ({ ...prev, [entryModal.event.id]: result.entry }));
+            setPendingPayments(prev => ({ ...prev, [entryModal.event.id]: null }));
+            setEntryModal(null);
+          } catch (err) {
+            // Payment succeeded but confirming the entry failed (e.g. dropped
+            // connection) — the "Finish confirming paid entry" affordance on
+            // the event card recovers from this on next load.
+            setEntryError(err.message || 'Payment succeeded, but confirming your entry failed. Reload this page — you\'ll see a "Finish confirming paid entry" option.');
+          } finally {
+            setEnteringSelf(false);
+          }
+        },
+        onFailure: (err) => {
+          setEntryError(err.message || 'Payment was not completed.');
+          setEnteringSelf(false);
+        },
+      });
+    } catch (err) {
+      setEntryError(err.message);
+      setEnteringSelf(false);
+    }
+  }
+
+  async function handleFinishConfirmingPayment(eventId) {
+    const payment = pendingPayments[eventId];
+    if (!payment || finishingPaymentId) return;
+    setFinishingPaymentId(eventId);
+    setEntryError('');
+    try {
+      const result = await api.finalizePaidEntry(payment.id, buildEntryProfile(user));
+      setMyEntries(prev => ({ ...prev, [eventId]: result.entry }));
+      setPendingPayments(prev => ({ ...prev, [eventId]: null }));
+    } catch (err) {
+      setEntryError(err.message);
+    } finally {
+      setFinishingPaymentId(null);
     }
   }
 
@@ -642,11 +750,20 @@ export default function TournamentDetailPage() {
                     : <span className="text-primary font-semibold">Qualifying Draw — position {entryModal.placement.position}</span>
                 }
               </p>
+              {week.entryFeeSingles > 0 && (
+                <p>Entry fee: <strong>₹{week.entryFeeSingles}</strong></p>
+              )}
             </div>
             {entryError && <div className="text-sm text-destructive mb-2">{entryError}</div>}
             <div className="flex gap-2">
-              <Button onClick={handleSelfEnter} disabled={enteringSelf}>{enteringSelf ? 'Entering…' : 'Confirm Entry'}</Button>
-              <Button variant="outline" onClick={() => { setEntryModal(null); setEntryError(''); }}>Cancel</Button>
+              {week.entryFeeSingles > 0 ? (
+                <Button onClick={handlePayAndEnter} disabled={enteringSelf}>
+                  {enteringSelf ? 'Processing…' : `Pay ₹${week.entryFeeSingles} & Enter`}
+                </Button>
+              ) : (
+                <Button onClick={handleSelfEnter} disabled={enteringSelf}>{enteringSelf ? 'Entering…' : 'Confirm Entry'}</Button>
+              )}
+              <Button variant="outline" onClick={() => { setEntryModal(null); setEntryError(''); }} disabled={enteringSelf}>Cancel</Button>
             </div>
           </div>
         </div>
@@ -719,6 +836,9 @@ export default function TournamentDetailPage() {
               onWithdraw={isPlayer ? handleWithdraw : undefined}
               onInvitePartner={isPlayer ? (event) => { setInviteModal({ event }); setPartnerQuery(''); setPartnerResults([]); setInviteError(''); } : undefined}
               entryStage={entryStage}
+              pendingPayment={isPlayer ? pendingPayments[ev.id] : undefined}
+              onFinishPayment={isPlayer ? handleFinishConfirmingPayment : undefined}
+              finishingPayment={finishingPaymentId === ev.id}
             />
           ))}
         </div>

@@ -17,6 +17,7 @@ import { Button } from '@/components/primitives/button';
 import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
 import { LogTodayReminder, QuickAddGrid, Recent5Strip, DigestPreviewCard } from '@/components/DashboardExtras';
 import SkillRadarCard from '@/components/SkillRadarCard';
+import PlayerRatingCard from '@/components/PlayerRatingCard';
 import PerformanceSummarySection from '@/components/PerformanceSummarySection';
 import MomentumMeter from '@/components/motivation/MomentumMeter';
 import WeeklyGoalRings from '@/components/motivation/WeeklyGoalRings';
@@ -657,7 +658,7 @@ export default function DashboardPage() {
         )
       )}
 
-      {/* Skill Radar + Digest Preview (player only) */}
+      {/* Skill Radar + Tracker Rating + Digest Preview (player only) */}
       {role === 'player' && matches && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <SkillRadarCard
@@ -666,6 +667,7 @@ export default function DashboardPage() {
             onCta={matchesOnly.length > 0 ? () => window.location.assign(`/history/${matchesOnly[0].id}`) : null}
             ctaLabel={matchesOnly.length > 0 ? 'Rate your latest match' : 'Play a match first'}
           />
+          <PlayerRatingCard playerId={user.id} aitaReg={user.aitaReg} />
           <DigestPreviewCard matches={matches} streak={streak} />
         </div>
       )}
