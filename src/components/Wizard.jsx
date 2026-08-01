@@ -5,7 +5,6 @@ import ChipButton from './tracker/ChipButton';
 import { cn } from '../lib/utils';
 
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
-const OTHER_SUB_TYPES = ['Net Touch', 'Double Bounce', 'Foot Fault', 'Code Violation'];
 
 
 function getActiveStep(pending, trackingMode = 'expert') {
@@ -14,7 +13,6 @@ function getActiveStep(pending, trackingMode = 'expert') {
   const wantsRallyCount = trackingMode !== 'basic';      // rally-length step
   const wantsErrorLocation = trackingMode !== 'basic';   // Long/Wide/Net for unforced errors
   const wantsCourtTap = trackingMode === 'expert';       // hit-from/dropped-at diagram
-  const wantsInfraction = trackingMode === 'expert';     // optional infraction step
 
   if (!pending.serviceChoice) return 'serviceScreen';
   if (pending.serviceChoice === 'faultPending') return 'faultLocation';
@@ -37,8 +35,6 @@ function getActiveStep(pending, trackingMode = 'expert') {
   if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && shotDetailDone && wantsErrorLocation && !pending.location) {
     return 'errorLocation';
   }
-  // Optional infraction step — only for ballIn, only if not yet answered
-  if (pending.serviceChoice === 'ballIn' && shotDetailDone && wantsInfraction && pending.infraction === null) return 'infractionSelect';
   return null;
 }
 
@@ -108,8 +104,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // Different tracking tiers finish on different steps (a skipped step can no
   // longer call commit itself), so completion is driven by "no more steps
   // left" rather than any one step's handler. Individual handlers below still
-  // commit directly when they're unconditionally terminal (ace, double fault,
-  // infraction chips) — this is the catch-all for every other case.
+  // commit directly when they're unconditionally terminal (ace, double
+  // fault) — this is the catch-all for every other case.
   useEffect(() => {
     if (pending.serviceChoice && activeStep === null) {
       commitAndReset();
@@ -210,11 +206,10 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
   function handleErrorLocation(location) {
     if (pending.serviceChoice === 'returnError') {
-      // Return errors have no Infraction step — this is always the last one.
+      // Return errors have no further step — this is always the last one.
       commitAndReset({ location });
     } else {
-      // Ball-in points: in Expert tier the optional Infraction step is still ahead — don't
-      // commit yet. Lower tiers skip it; the generic "no steps left" effect commits instead.
+      // Ball-in points: nothing left to ask — the generic "no steps left" effect commits.
       setPendingStep((p) => ({ ...p, location }));
     }
   }
@@ -458,23 +453,6 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
             </div>
           </>
         )}
-
-        {activeStep === 'infractionSelect' && (
-          <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Infraction? (Optional)</div>
-            <div className="flex flex-wrap gap-2">
-              {OTHER_SUB_TYPES.map((sub) => (
-                <ChipButton key={sub} className="flex-[1_1_calc(50%-4px)]" onClick={() => commitAndReset({ infraction: sub })}>
-                  {sub}
-                </ChipButton>
-              ))}
-              <ChipButton variant="let" full onClick={() => commitAndReset({ infraction: 'none' })}>
-                Skip — No Infraction
-              </ChipButton>
-            </div>
-          </>
-        )}
-
 
       </div>
     </div>
