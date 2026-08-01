@@ -37,7 +37,7 @@ export default function LandscapeScoreView({
       {/* Top bar: names + exit */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-baseline gap-4 font-mono text-xs uppercase tracking-widest">
-          <span className={server === 'self' ? 'text-primary font-bold' : 'text-muted-foreground'}>
+          <span className={server === 'self' ? 'text-accent-ink font-bold' : 'text-muted-foreground'}>
             ● {selfName || 'You'}
           </span>
           <span className="text-muted-foreground">vs</span>
@@ -83,7 +83,7 @@ export default function LandscapeScoreView({
       <div className="mt-4 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs sm:text-sm font-bold uppercase tracking-widest">
+            <span className="rounded-full bg-primary/10 text-accent-ink px-3 py-1.5 text-xs sm:text-sm font-bold uppercase tracking-widest">
               ● {serverName} serves
             </span>
             <span
@@ -102,7 +102,7 @@ export default function LandscapeScoreView({
             {streakInfo && (
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-bold uppercase tracking-widest ${
-                  streakInfo.side === 'self' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'
+                  streakInfo.side === 'self' ? 'bg-primary/15 text-accent-ink' : 'bg-destructive/15 text-destructive'
                 }`}
               >
                 {streakInfo.side === 'self' ? <Flame className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}

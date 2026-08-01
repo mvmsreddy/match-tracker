@@ -61,7 +61,7 @@ export default function MatchHistoryPage() {
               <Trophy className="w-3.5 h-3.5" />
               <span>Wins</span>
             </div>
-            <div className="font-display font-extrabold text-2xl tracking-tighter text-primary">{wins}</div>
+            <div className="font-display font-extrabold text-2xl tracking-tighter text-accent-ink">{wins}</div>
           </Card>
           <Card className="p-3 sm:p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">
@@ -146,7 +146,7 @@ export default function MatchHistoryPage() {
                 <Link to={'/history/' + m.id} className="flex-1 min-w-0 flex items-center gap-3">
                   {!isPractice && (isWin || isLoss) && (
                     <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                      isWin ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
+                      isWin ? 'bg-primary/10 text-accent-ink' : 'bg-destructive/10 text-destructive'
                     }`}>
                       {isWin ? 'W' : 'L'}
                     </div>
@@ -164,7 +164,7 @@ export default function MatchHistoryPage() {
                   </div>
                 </Link>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Link to={'/history/' + m.id} className={`text-sm font-bold ${isWin ? 'text-primary' : isLoss ? 'text-destructive' : ''}`}>
+                  <Link to={'/history/' + m.id} className={`text-sm font-bold ${isWin ? 'text-accent-ink' : isLoss ? 'text-destructive' : ''}`}>
                     {m.scoreSummary}
                   </Link>
                   <Button

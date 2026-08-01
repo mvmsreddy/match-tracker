@@ -63,7 +63,7 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
           <div className="text-xs text-muted-foreground mt-1">
             {total} prior meeting{total === 1 ? '' : 's'} · last {last?.date || ''}
             {last && (
-              <span className={`ml-1.5 font-bold ${lastWon ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`ml-1.5 font-bold ${lastWon ? 'text-accent-ink' : 'text-destructive'}`}>
                 ({lastWon ? 'W' : 'L'})
               </span>
             )}
@@ -72,12 +72,12 @@ export default function H2HRivalryCard({ upcomingMatches = [], history = [] }) {
           {/* Record */}
           <div className="mt-3 flex items-baseline gap-3">
             <div className="font-display font-extrabold text-2xl tracking-tighter">
-              <span className="text-primary">{wins}</span>
+              <span className="text-accent-ink">{wins}</span>
               <span className="text-muted-foreground mx-1.5 text-lg">-</span>
               <span className="text-destructive">{losses}</span>
             </div>
             <div className={`inline-flex items-center gap-1 text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              dominant ? 'bg-primary/10 text-primary' : even ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'
+              dominant ? 'bg-primary/10 text-accent-ink' : even ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'
             }`}>
               {dominant ? <TrendingUp className="w-3 h-3" /> : even ? <Trophy className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {dominant ? 'Leading' : even ? 'Even' : 'Trailing'} · {winPct}%

@@ -98,7 +98,7 @@ export default function MomentumMeter({ momentum }) {
       </div>
 
       {score >= 80 && (
-        <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary">
+        <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-accent-ink">
           <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
           You're peaking — ride this wave.
         </div>

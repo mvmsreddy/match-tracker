@@ -250,7 +250,7 @@ export default function LiveMatchCommandCenter({
               {streakInfo && (
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider ${
-                    streakInfo.side === 'self' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'
+                    streakInfo.side === 'self' ? 'bg-primary/15 text-accent-ink' : 'bg-destructive/15 text-destructive'
                   }`}
                   data-testid="streak-indicator"
                 >
@@ -289,13 +289,13 @@ export default function LiveMatchCommandCenter({
       {advisorOpen && (
         <div className="rounded-xl bg-primary/5 border-l-4 border-l-primary p-3" data-testid="advisor-inline">
           <div className="flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={2.2} />
+            <Sparkles className="w-4 h-4 text-accent-ink shrink-0 mt-0.5" strokeWidth={2.2} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[12px] uppercase tracking-widest font-bold text-primary">AI Coach</span>
+                <span className="text-[12px] uppercase tracking-widest font-bold text-accent-ink">AI Coach</span>
                 <div className="flex items-center gap-2">
                   {advisorState === 'done' && (
-                    <button onClick={fetchAdvisor} className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1">
+                    <button onClick={fetchAdvisor} className="text-[11px] font-bold text-accent-ink hover:underline inline-flex items-center gap-1">
                       <RefreshCw className="w-3 h-3" />New
                     </button>
                   )}
@@ -321,7 +321,7 @@ export default function LiveMatchCommandCenter({
       <div className="flex items-center gap-2 mt-1">
         <button
           onClick={fetchAdvisor}
-          className="flex-1 rounded-full bg-primary/10 text-primary text-xs font-bold py-2 inline-flex items-center justify-center gap-1.5 hover:bg-primary/20 active:scale-[0.98] transition-all"
+          className="flex-1 rounded-full bg-primary/10 text-accent-ink text-xs font-bold py-2 inline-flex items-center justify-center gap-1.5 hover:bg-primary/20 active:scale-[0.98] transition-all"
           data-testid="advisor-quick-btn"
           disabled={advisorState === 'streaming'}
         >

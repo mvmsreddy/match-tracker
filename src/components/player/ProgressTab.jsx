@@ -197,7 +197,7 @@ export default function ProgressTab({ circuit, playerId }) {
                       <div className="flex items-center gap-1">
                         <span className="font-semibold">{r.rank}</span>
                         {idx < monthlyRows.length - 1 && monthlyRows[idx + 1].rank && (
-                          <span className={`text-xs ${r.rank < monthlyRows[idx + 1].rank ? 'text-primary' : 'text-destructive'}`}>
+                          <span className={`text-xs ${r.rank < monthlyRows[idx + 1].rank ? 'text-accent-ink' : 'text-destructive'}`}>
                             {r.rank < monthlyRows[idx + 1].rank ? '↑' : '↓'}
                           </span>
                         )}
@@ -210,7 +210,7 @@ export default function ProgressTab({ circuit, playerId }) {
                       {r.training > 0 ? (
                         <>
                           <span className="font-semibold">{r.training}</span>
-                          {r.training >= 10 && <Award className="w-4 h-4 text-primary" />}
+                          {r.training >= 10 && <Award className="w-4 h-4 text-accent-ink" />}
                         </>
                       ) : '—'}
                     </div>

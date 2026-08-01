@@ -402,11 +402,11 @@ function H2HInsight({ matches }) {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-sm font-bold">
-                    <span className="text-primary">{r.wins}</span>
+                    <span className="text-accent-ink">{r.wins}</span>
                     <span className="text-muted-foreground mx-1">-</span>
                     <span className="text-destructive">{r.losses}</span>
                   </div>
-                  <div className={`text-[12px] font-bold uppercase tracking-wider ${dominant ? 'text-primary' : even ? 'text-muted-foreground' : 'text-destructive'}`}>
+                  <div className={`text-[12px] font-bold uppercase tracking-wider ${dominant ? 'text-accent-ink' : even ? 'text-muted-foreground' : 'text-destructive'}`}>
                     {dominant ? 'Leading' : even ? 'Even' : 'Trailing'}
                   </div>
                 </div>

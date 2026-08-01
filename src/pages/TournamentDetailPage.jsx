@@ -68,7 +68,7 @@ function ShareTournamentDialog({ week, events, user, onClose }) {
           <button onClick={onClose} className="w-8 h-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground">✕</button>
         </div>
         {sent ? (
-          <div className="text-sm text-primary">Sent!</div>
+          <div className="text-sm text-accent-ink">Sent!</div>
         ) : (
           <>
             <div className="space-y-3">
@@ -143,7 +143,7 @@ function Field({ label, children }) {
 
 const STATUS_STYLES = {
   setup: 'bg-muted text-muted-foreground',
-  draw_ready: 'bg-primary/10 text-primary',
+  draw_ready: 'bg-primary/10 text-accent-ink',
   in_progress: 'bg-chart-2/15 text-chart-2',
   complete: 'bg-chart-3/15 text-chart-3',
 };
@@ -227,7 +227,7 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
           <Button
             size="sm"
             variant="outline"
-            className="text-primary border-primary"
+            className="text-accent-ink border-primary"
             onClick={() => onFinishPayment(event.id)}
             disabled={finishingPayment}
             title="Your payment went through but the entry wasn't confirmed — finish confirming it now"
@@ -602,7 +602,7 @@ export default function TournamentDetailPage() {
                 </span>
               )}
             </div>
-            <button onClick={() => setShowDetails(v => !v)} className="bg-transparent text-primary text-xs whitespace-nowrap px-1.5">
+            <button onClick={() => setShowDetails(v => !v)} className="bg-transparent text-accent-ink text-xs whitespace-nowrap px-1.5">
               {showDetails ? '▲ Less' : '▼ More info'}
             </button>
           </div>
@@ -747,7 +747,7 @@ export default function TournamentDetailPage() {
                   ? <span className="text-chart-2 font-semibold">Alternate (draw is full)</span>
                   : entryModal.placement.drawType === 'main'
                     ? <span className="text-chart-3 font-semibold">Main Draw — position {entryModal.placement.position}</span>
-                    : <span className="text-primary font-semibold">Qualifying Draw — position {entryModal.placement.position}</span>
+                    : <span className="text-accent-ink font-semibold">Qualifying Draw — position {entryModal.placement.position}</span>
                 }
               </p>
               {week.entryFeeSingles > 0 && (
@@ -822,7 +822,7 @@ export default function TournamentDetailPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Events ({events.length})</span>
-            <Link to={`/tournaments/${weekId}/oop`} className="text-sm text-primary hover:underline">Order of Play →</Link>
+            <Link to={`/tournaments/${weekId}/oop`} className="text-sm text-accent-ink hover:underline">Order of Play →</Link>
           </div>
           {events.map(ev => (
             <EventCard

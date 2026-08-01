@@ -223,7 +223,7 @@ export default function CoachPlayersPage() {
                   <div className="flex-1 min-w-40">
                     <div className="text-sm font-semibold">
                       {isCoach
-                        ? <Link to={`/coach/players/${other?.id}`} className="hover:text-primary">{other?.displayName || '—'}</Link>
+                        ? <Link to={`/coach/players/${other?.id}`} className="hover:text-accent-ink">{other?.displayName || '—'}</Link>
                         : (other?.displayName || '—')}
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">

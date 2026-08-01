@@ -66,9 +66,9 @@ function TournamentMatches({ entry, circuit, trackedByEventMatch, onOpenMatch, i
               })}
             >
               <div className="text-xs text-muted-foreground w-12 shrink-0">{round}</div>
-              <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${won ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{won ? 'W' : 'L'}</span>
+              <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${won ? 'bg-primary/10 text-accent-ink' : 'bg-destructive/10 text-destructive'}`}>{won ? 'W' : 'L'}</span>
               <div className="flex-1 min-w-32 text-sm font-semibold">{opponentName}</div>
-              <div className={`text-sm font-bold shrink-0 ${won ? 'text-primary' : 'text-destructive'}`}>{m.score || '—'}</div>
+              <div className={`text-sm font-bold shrink-0 ${won ? 'text-accent-ink' : 'text-destructive'}`}>{m.score || '—'}</div>
               <div className="text-xs text-muted-foreground shrink-0">{formatDate(entry.event.week?.startDate)}</div>
               <Badge variant={tracked ? 'default' : 'secondary'} className="shrink-0">{tracked ? 'Full stats' : 'Score only'}</Badge>
             </button>
@@ -220,7 +220,7 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
       )}
       {entries !== null && segmentEntries.length > 0 && filteredEntries.length === 0 && (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground" data-testid="tournaments-empty-filtered">
-          No tournaments match this filter. <button onClick={() => setFilter('all')} className="text-primary font-semibold hover:underline">Clear filter</button>
+          No tournaments match this filter. <button onClick={() => setFilter('all')} className="text-accent-ink font-semibold hover:underline">Clear filter</button>
         </div>
       )}
 
@@ -249,7 +249,7 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
         </div>
       ))}
 
-      <Link to="/tournaments" className="inline-block text-sm font-semibold text-primary hover:underline">Browse the full tournament calendar &rarr;</Link>
+      <Link to="/tournaments" className="inline-block text-sm font-semibold text-accent-ink hover:underline">Browse the full tournament calendar &rarr;</Link>
 
       {modalMatch && <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />}
     </div>
@@ -334,7 +334,7 @@ function TournamentHistoryFilter({ filter, onFilter, years, months, rangeFrom, r
           {(rangeFrom || rangeTo) && (
             <button
               onClick={() => { onRangeFrom(''); onRangeTo(''); }}
-              className="text-xs text-primary font-semibold hover:underline"
+              className="text-xs text-accent-ink font-semibold hover:underline"
             >
               Clear dates
             </button>

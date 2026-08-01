@@ -16,7 +16,7 @@ const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 tex
 
 const STATUS_STYLES = {
   setup: 'bg-muted text-muted-foreground',
-  draw_ready: 'bg-primary/10 text-primary',
+  draw_ready: 'bg-primary/10 text-accent-ink',
   in_progress: 'bg-chart-2/15 text-chart-2',
   complete: 'bg-chart-3/15 text-chart-3',
 };
@@ -949,7 +949,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
                   >
                     <span className="text-sm font-semibold flex items-center gap-1.5">
                       {p.familyName ? `${p.familyName}${p.firstName ? ', ' + p.firstName : ''}` : p.displayName}
-                      {p._source === 'aita' && <span className="inline-flex items-center rounded-sm bg-primary/10 text-primary px-1.5 py-0.5 text-[0.6rem] font-bold">AITA</span>}
+                      {p._source === 'aita' && <span className="inline-flex items-center rounded-sm bg-primary/10 text-accent-ink px-1.5 py-0.5 text-[0.6rem] font-bold">AITA</span>}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {[p.aitaReg, p.stateAbbr || p.state, p.ranking && `Rank ${p.ranking}`, p.ageGroup].filter(Boolean).join(' · ')}
@@ -1160,7 +1160,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
               <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.62rem] font-bold mt-0.5">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
             )}
             {entry.paymentId && (
-              <span className="inline-flex items-center rounded-sm bg-primary/15 text-primary px-2 py-0.5 text-[0.62rem] font-bold mt-0.5" title="Entry fee paid via Razorpay">PAID</span>
+              <span className="inline-flex items-center rounded-sm bg-primary/15 text-accent-ink px-2 py-0.5 text-[0.62rem] font-bold mt-0.5" title="Entry fee paid via Razorpay">PAID</span>
             )}
           </>
         )}
@@ -2572,10 +2572,10 @@ export default function EventDetailPage() {
 
       {error && <div className="text-sm text-destructive">{error}</div>}
       {(activeTab === 'main' || activeTab === 'qualifying') && swapMode && (
-        <div className="rounded-sm bg-primary/10 border border-primary/30 text-primary text-sm px-3 py-2 flex items-center gap-3">
+        <div className="rounded-sm bg-primary/10 border border-primary/30 text-accent-ink text-sm px-3 py-2 flex items-center gap-3">
           {selectedEntry ? `Click another player to swap with ${selectedEntry.familyName}.`
             : 'Click any player to select, then click another to swap positions.'}
-          <button className="ml-auto bg-transparent text-primary underline text-sm" onClick={toggleSwapMode}>Cancel</button>
+          <button className="ml-auto bg-transparent text-accent-ink underline text-sm" onClick={toggleSwapMode}>Cancel</button>
         </div>
       )}
 

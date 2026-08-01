@@ -106,7 +106,7 @@ export default function SkillGroupDetailView({ groupKey, roster, onBack }) {
         <Card className="p-4 sm:p-6 border-l-4 border-primary">
           {routine ? (
             <>
-              <div className="text-xs font-bold uppercase tracking-wider text-primary">Suggested routine</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-accent-ink">Suggested routine</div>
               <div className="font-display font-extrabold text-lg tracking-tighter mt-2">{routine.title}</div>
               <div className="text-sm text-muted-foreground mt-2">{routine.description}</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
@@ -146,7 +146,7 @@ export default function SkillGroupDetailView({ groupKey, roster, onBack }) {
                 return (
                   <button
                     key={m.playerId}
-                    className={`px-3 py-1.5 rounded-sm text-xs font-semibold border ${on ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                    className={`px-3 py-1.5 rounded-sm text-xs font-semibold border ${on ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border text-muted-foreground'}`}
                     onClick={() => setUnpicked(u => ({ ...u, [m.playerId]: on }))}
                   >
                     {m.name}

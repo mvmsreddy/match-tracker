@@ -46,7 +46,7 @@ function GoalBar({ label, value, goal, unit }) {
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="font-semibold">{label}</span>
         <span className="text-muted-foreground">
-          {value}{unit} {goal ? `/ ${goal}${unit}` : ''} {hit && <span className="text-primary font-bold">✓</span>}
+          {value}{unit} {goal ? `/ ${goal}${unit}` : ''} {hit && <span className="text-accent-ink font-bold">✓</span>}
         </span>
       </div>
       <div className="h-2 rounded-sm bg-muted">
@@ -189,7 +189,7 @@ export default function NutritionPage() {
       <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Today's Targets</div>
-          <button className="text-xs font-semibold text-primary hover:underline" onClick={() => setEditingGoals(v => !v)}>
+          <button className="text-xs font-semibold text-accent-ink hover:underline" onClick={() => setEditingGoals(v => !v)}>
             {editingGoals ? 'Cancel' : 'Edit goals'}
           </button>
         </div>

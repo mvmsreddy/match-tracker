@@ -133,11 +133,11 @@ export function WaterTracker({ userId, goalMl }) {
           <div className="text-sm font-bold mt-0.5">Tap to log water</div>
         </div>
         <div className="text-right">
-          <div className={`font-display font-extrabold text-2xl tracking-tighter transition-colors ${pulse ? 'text-primary' : ''}`}>
+          <div className={`font-display font-extrabold text-2xl tracking-tighter transition-colors ${pulse ? 'text-accent-ink' : ''}`}>
             {current}
             <span className="text-sm text-muted-foreground ml-1">/ {goal} ml</span>
           </div>
-          <div className="text-xs font-semibold text-primary mt-0.5">{pct}%</div>
+          <div className="text-xs font-semibold text-accent-ink mt-0.5">{pct}%</div>
         </div>
       </div>
 
@@ -156,7 +156,7 @@ export function WaterTracker({ userId, goalMl }) {
             className="flex flex-col items-center gap-1 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors active:scale-95"
             data-testid={`water-add-${ml}`}
           >
-            <Droplet className="w-5 h-5 text-primary" fill="currentColor" />
+            <Droplet className="w-5 h-5 text-accent-ink" fill="currentColor" />
             <span className="text-xs font-bold">+{ml}ml</span>
           </button>
         ))}
@@ -218,7 +218,7 @@ export function WeeklyAverageCard({ logs, goals }) {
                 {c.value}<span className="text-xs text-muted-foreground ml-0.5">{c.unit}</span>
               </div>
               {c.goal && (
-                <div className={`text-[12px] font-semibold mt-1 ${onTrack ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div className={`text-[12px] font-semibold mt-1 ${onTrack ? 'text-accent-ink' : 'text-muted-foreground'}`}>
                   {pct}% of {c.goal}{c.unit}
                 </div>
               )}

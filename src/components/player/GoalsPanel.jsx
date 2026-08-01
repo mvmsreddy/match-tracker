@@ -145,8 +145,8 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
           </div>
           {activeGoal.targetRank && (
             <div className="text-center sm:text-left p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="text-[12px] uppercase tracking-wider font-bold text-primary">Target</div>
-              <div className="font-display font-extrabold text-xl sm:text-2xl text-primary mt-0.5">#{activeGoal.targetRank}</div>
+              <div className="text-[12px] uppercase tracking-wider font-bold text-accent-ink">Target</div>
+              <div className="font-display font-extrabold text-xl sm:text-2xl text-accent-ink mt-0.5">#{activeGoal.targetRank}</div>
             </div>
           )}
           {pointsNeeded != null && (
@@ -167,7 +167,7 @@ export default function GoalsPanel({ circuit, playerId, isOwnDashboard = true })
         <div className="mt-5">
           <div className="flex items-center justify-between text-xs mb-2">
             <span className="text-muted-foreground font-semibold uppercase tracking-wider">Progress</span>
-            <span className="font-bold text-primary">{rankProgress}%</span>
+            <span className="font-bold text-accent-ink">{rankProgress}%</span>
           </div>
           <div className="relative h-3 rounded-full bg-muted overflow-hidden">
             <div 

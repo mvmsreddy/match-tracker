@@ -76,10 +76,10 @@ export default function LiveMatchAdvisor({ matchContext }) {
       <div className="p-4 sm:p-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-primary" strokeWidth={2.2} />
+            <Sparkles className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-primary">AI Coach</div>
+            <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-accent-ink">AI Coach</div>
             <div className="text-sm font-bold">Next-point plan</div>
           </div>
           {!busy && (
@@ -93,7 +93,7 @@ export default function LiveMatchAdvisor({ matchContext }) {
             </button>
           )}
           {busy && (
-            <div className="rounded-full bg-primary/10 text-primary px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5">
+            <div className="rounded-full bg-primary/10 text-accent-ink px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
             </div>
           )}

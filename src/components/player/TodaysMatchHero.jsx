@@ -103,7 +103,7 @@ export default function TodaysMatchHero({ upcoming, circuit, isOwnDashboard }) {
               {primary.grade && <> · {primary.grade}</>}
             </div>
             {primary.h2h && (
-              <div className="mt-2 inline-block rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[12px] font-bold uppercase tracking-widest">
+              <div className="mt-2 inline-block rounded-full bg-primary/10 text-accent-ink px-2 py-0.5 text-[12px] font-bold uppercase tracking-widest">
                 {primary.h2h}
               </div>
             )}

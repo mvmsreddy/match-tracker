@@ -219,7 +219,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   const playerName = (who) => (who === 'self' ? (selfName || 'You') : (oppName || 'Opponent'));
   const colClass = (who) => cn(
     'rounded-t-lg border-b px-1.5 py-1.5 text-center font-mono text-xs font-semibold uppercase tracking-wide',
-    who === 'self' ? 'text-primary' : 'text-destructive',
+    who === 'self' ? 'text-accent-ink' : 'text-destructive',
     pending.server === who
       ? (who === 'self' ? 'border-b-2 border-primary bg-primary/10' : 'border-b-2 border-destructive bg-destructive/10')
       : 'border-border'
@@ -261,7 +261,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         {(history.length > 0 || canUndo) && (
           <button
             type="button"
-            className="mb-1 flex-shrink-0 cursor-pointer self-start bg-transparent font-mono text-xs text-muted-foreground hover:text-primary"
+            className="mb-1 flex-shrink-0 cursor-pointer self-start bg-transparent font-mono text-xs text-muted-foreground hover:text-accent-ink"
             onClick={goBack}
             title="Go back one step (or swipe right)"
           >
@@ -271,7 +271,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'faultLocation' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">
               {pending.serveAttempt === '2nd' ? 'Double Fault — Where?' : '1st Serve Fault — Where?'}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -284,7 +284,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'serviceScreen' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{serveLabel}</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">{serveLabel}</div>
             <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {/* Left column: always self */}
               <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
@@ -328,7 +328,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'returnErrorType' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{playerName(receiver)} — Return Error</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">{playerName(receiver)} — Return Error</div>
             <div className="flex flex-wrap gap-2">
               <ChipButton variant="forced" full onClick={() => handleReturnErrorReason('ForcedError')}>
                 Forced Error
@@ -342,7 +342,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'rallySelect' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Rally Length</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Rally Length</div>
             <div className="mb-2 grid grid-cols-2 gap-2.5">
               <div className={colClass('self')}>{playerName('self')}</div>
               <div className={colClass('opp')}>{playerName('opp')}</div>
@@ -363,7 +363,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'ballInPlay' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Ball in Play</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Ball in Play</div>
             <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
               {(['self', 'opp']).map((who) => (
                 <div key={who} className="flex min-h-0 flex-col gap-2 overflow-y-auto">
@@ -387,7 +387,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Select Wing</div>
+              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Select Wing</div>
               <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
                 <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
@@ -416,7 +416,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
           const hitter = pending.serviceChoice === 'returnWinner' ? receiver : (pending.ballInWho || receiver);
           return (
             <>
-              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">{pending.shotWing} — Select Shot</div>
+              <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">{pending.shotWing} — Select Shot</div>
               <div className="grid flex-1 grid-cols-2 items-stretch gap-2.5">
                 <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
                   <div className={colClass('self')}>{playerName('self')}</div>
@@ -445,7 +445,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'errorLocation' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-primary">Unforced Error — Where did it go?</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Unforced Error — Where did it go?</div>
             <div className="flex flex-wrap gap-2">
               <ChipButton variant="warn" onClick={() => handleErrorLocation('Long')}>Long</ChipButton>
               <ChipButton variant="warn" onClick={() => handleErrorLocation('Wide')}>Wide</ChipButton>

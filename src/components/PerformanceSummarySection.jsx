@@ -59,7 +59,7 @@ export default function PerformanceSummarySection() {
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <BarChart3 className="w-5 h-5 text-primary" />
+          <BarChart3 className="w-5 h-5 text-accent-ink" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">My Performance</div>
@@ -96,7 +96,7 @@ export default function PerformanceSummarySection() {
           <div className="flex items-baseline gap-1.5 mt-1">
             <div className="font-display font-extrabold text-xl tracking-tighter">#{active.latest.rank}</div>
             {rankDelta !== 0 && (
-              <span className={`text-[12px] font-bold ${rankDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`text-[12px] font-bold ${rankDelta > 0 ? 'text-accent-ink' : 'text-destructive'}`}>
                 {rankDelta > 0 ? '▲' : '▼'}{Math.abs(rankDelta)}
               </span>
             )}
@@ -105,9 +105,9 @@ export default function PerformanceSummarySection() {
         <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/10">
           <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Points</div>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <div className="font-display font-extrabold text-xl tracking-tighter text-primary">{active.latest.totalPoints}</div>
+            <div className="font-display font-extrabold text-xl tracking-tighter text-accent-ink">{active.latest.totalPoints}</div>
             {pointsDelta !== 0 && (
-              <span className={`text-[12px] font-bold ${pointsDelta > 0 ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`text-[12px] font-bold ${pointsDelta > 0 ? 'text-accent-ink' : 'text-destructive'}`}>
                 {pointsDelta > 0 ? '+' : ''}{pointsDelta}
               </span>
             )}

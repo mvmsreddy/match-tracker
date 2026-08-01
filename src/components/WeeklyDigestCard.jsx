@@ -119,7 +119,7 @@ export default function WeeklyDigestCard({ user }) {
     <Card className="p-4 sm:p-5 shadow-sm" data-testid="weekly-digest-card">
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Mail className="w-5 h-5 text-primary" strokeWidth={2.2} />
+          <Mail className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">

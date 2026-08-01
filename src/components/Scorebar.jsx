@@ -20,7 +20,7 @@ function SetBox({ children, live, future }) {
     <div
       className={cn(
         'flex min-w-[28px] items-center justify-center rounded-md border px-1.5 py-0.5 font-mono text-xs tabular-nums',
-        live && 'border-primary text-primary font-semibold',
+        live && 'border-primary text-accent-ink font-semibold',
         future && 'border-border/50 text-muted-foreground/50',
         !live && !future && 'border-border text-foreground'
       )}
@@ -85,7 +85,7 @@ export default function Scorebar({ header, sessionType, formatPreset, pointTarge
         {/* Players + per-set history */}
         <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
           <div className="flex items-center gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold text-primary">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold text-accent-ink">
               {nextServer === 'self' && <span className="inline-block h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-primary" />}
               <span className="truncate">{selfName}</span>
             </div>
@@ -135,7 +135,7 @@ export default function Scorebar({ header, sessionType, formatPreset, pointTarge
         )}
 
         {engine.matchOver && (
-          <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-center font-mono text-xs font-semibold uppercase tracking-wider text-primary">
+          <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-center font-mono text-xs font-semibold uppercase tracking-wider text-accent-ink">
             {(engine.matchWinner === 'self' ? selfName : oppName)}{' '}
             {isPractice ? 'wins the session' : 'wins the match'}
           </div>

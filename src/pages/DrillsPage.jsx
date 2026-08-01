@@ -88,7 +88,7 @@ export default function DrillsPage() {
           <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">
             <Clock className="w-3.5 h-3.5" />Time
           </div>
-          <div className="font-display font-extrabold text-2xl tracking-tighter text-primary">{totalMinsThisWeek}</div>
+          <div className="font-display font-extrabold text-2xl tracking-tighter text-accent-ink">{totalMinsThisWeek}</div>
           <div className="text-[12px] text-muted-foreground uppercase font-bold mt-0.5">Minutes</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-destructive/5 border-l-4 border-l-destructive">
@@ -128,7 +128,7 @@ export default function DrillsPage() {
                     onClick={() => setForm({ ...form, type: t.value })}
                     className={`p-2 rounded-lg border text-xs font-semibold transition-all ${
                       form.type === t.value
-                        ? 'border-primary bg-primary/10 text-primary'
+                        ? 'border-primary bg-primary/10 text-accent-ink'
                         : 'border-border hover:border-primary/50'
                     }`}
                     data-testid={`drill-type-${t.value}`}
@@ -149,7 +149,7 @@ export default function DrillsPage() {
                     type="button"
                     onClick={() => setForm({ ...form, intensity: i.value })}
                     className={`py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all ${
-                      form.intensity === i.value ? 'border-primary bg-primary/10 text-primary' : 'border-border'
+                      form.intensity === i.value ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border'
                     }`}
                     data-testid={`drill-intensity-${i.value}`}
                   >
@@ -207,7 +207,7 @@ export default function DrillsPage() {
                       </span>
                     )}
                     {d.videoUrl && (
-                      <a href={d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-primary hover:underline">
+                      <a href={d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-accent-ink hover:underline">
                         <Video className="w-3 h-3" /> Video
                       </a>
                     )}

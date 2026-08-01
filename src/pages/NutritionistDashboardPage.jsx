@@ -73,10 +73,10 @@ export default function NutritionistDashboardPage() {
     <div className="mx-auto max-w-6xl p-3 sm:p-6 space-y-4" data-testid="nutritionist-dashboard">
       <div className="flex items-center gap-3">
         <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Apple className="w-6 h-6 text-primary" strokeWidth={2.2} />
+          <Apple className="w-6 h-6 text-accent-ink" strokeWidth={2.2} />
         </div>
         <div>
-          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-primary">Nutritionist Console</div>
+          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-accent-ink">Nutritionist Console</div>
           <h1 className="font-display font-extrabold text-2xl leading-tight">Hi, {user.displayName || user.name}</h1>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function NutritionistDashboardPage() {
             <div className="font-bold text-sm">{selectedAthlete.name}</div>
           </div>
           <button
-            className="text-xs font-bold text-primary underline"
+            className="text-xs font-bold text-accent-ink underline"
             onClick={() => { setSelectedAthlete(null); setTab('roster'); }}
             data-testid="nutritionist-clear-athlete"
           >
@@ -410,7 +410,7 @@ function MealTemplatesTab({ nutritionistId }) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div className="font-bold text-sm">{t.name}</div>
-                <span className="text-[12px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{t.tag}</span>
+                <span className="text-[12px] uppercase tracking-wider font-bold text-accent-ink bg-primary/10 px-1.5 py-0.5 rounded">{t.tag}</span>
               </div>
               {t.description && <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>}
               <div className="text-xs font-mono mt-1 text-muted-foreground">
@@ -462,7 +462,7 @@ function BodyCompositionTab({ athleteId }) {
               <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">Weight</div>
               <div className="font-display font-extrabold text-2xl tracking-tighter">{latest.weightKg}<span className="text-sm text-muted-foreground">kg</span></div>
               {wDelta !== 0 && (
-                <div className={`text-[12px] font-bold ${wDelta > 0 ? 'text-amber-500' : 'text-primary'}`}>
+                <div className={`text-[12px] font-bold ${wDelta > 0 ? 'text-amber-500' : 'text-accent-ink'}`}>
                   {wDelta > 0 ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />} {wDelta > 0 ? '+' : ''}{wDelta.toFixed(1)} kg
                 </div>
               )}

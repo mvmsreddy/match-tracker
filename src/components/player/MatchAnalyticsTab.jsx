@@ -313,13 +313,13 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`text-xs font-bold uppercase tracking-wider ${i.positive ? 'text-primary' : 'text-destructive'}`}>
+                  <div className={`text-xs font-bold uppercase tracking-wider ${i.positive ? 'text-accent-ink' : 'text-destructive'}`}>
                     {i.kind}
                   </div>
-                  <IconComponent className={`w-5 h-5 ${i.positive ? 'text-primary' : 'text-destructive'}`} />
+                  <IconComponent className={`w-5 h-5 ${i.positive ? 'text-accent-ink' : 'text-destructive'}`} />
                 </div>
                 <div className="text-sm font-bold mb-1">{i.title}</div>
-                <div className={`font-display font-extrabold text-3xl tracking-tighter mb-3 ${i.positive ? 'text-primary' : 'text-destructive'}`}>
+                <div className={`font-display font-extrabold text-3xl tracking-tighter mb-3 ${i.positive ? 'text-accent-ink' : 'text-destructive'}`}>
                   {i.value}
                 </div>
                 <div className="text-xs text-muted-foreground leading-relaxed">{i.body}</div>
@@ -344,12 +344,12 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-48">
                       <div className="flex items-center gap-2 mb-1">
-                        <TrendIcon className={`w-4 h-4 ${t.positive ? 'text-primary' : 'text-destructive'}`} />
+                        <TrendIcon className={`w-4 h-4 ${t.positive ? 'text-accent-ink' : 'text-destructive'}`} />
                         <div className="text-sm font-bold">{t.title}</div>
                       </div>
                       <div className="text-xs text-muted-foreground leading-relaxed">{t.evidence}</div>
                     </div>
-                    <div className={`font-display font-extrabold text-2xl ${t.positive ? 'text-primary' : 'text-destructive'}`}>
+                    <div className={`font-display font-extrabold text-2xl ${t.positive ? 'text-accent-ink' : 'text-destructive'}`}>
                       {t.stat}
                     </div>
                   </div>

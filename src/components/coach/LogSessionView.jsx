@@ -134,7 +134,7 @@ export default function LogSessionView({ roster }) {
                     <div className="text-sm font-semibold truncate">{a.drillTitle}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">{a.category} {a.subcategory} &middot; {SKILL_LABELS[a.skillKey] || a.skillKey}</div>
                   </div>
-                  <div className={`text-xs font-bold shrink-0 ${on ? 'text-primary' : 'text-muted-foreground'}`}>{a.playerIds.length} players</div>
+                  <div className={`text-xs font-bold shrink-0 ${on ? 'text-accent-ink' : 'text-muted-foreground'}`}>{a.playerIds.length} players</div>
                 </button>
               );
             })}
@@ -149,7 +149,7 @@ export default function LogSessionView({ roster }) {
               return (
                 <button
                   key={p.id}
-                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold border ${on ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold border ${on ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border text-muted-foreground'}`}
                   onClick={() => { setPresentPlayers(pr => ({ ...pr, [p.id]: !on })); setSaved(false); }}
                 >
                   {p.displayName}
@@ -180,7 +180,7 @@ export default function LogSessionView({ roster }) {
             </div>
             <div className="flex items-center justify-between gap-3 p-3 rounded-sm bg-secondary/50">
               <div className="text-xs text-muted-foreground">Players present</div>
-              <div className={`font-bold text-sm ${presentIds.length ? 'text-primary' : 'text-destructive'}`}>{presentIds.length}</div>
+              <div className={`font-bold text-sm ${presentIds.length ? 'text-accent-ink' : 'text-destructive'}`}>{presentIds.length}</div>
             </div>
             <div className="flex items-center justify-between gap-3 p-3 rounded-sm bg-secondary/50">
               <div className="text-xs text-muted-foreground">Session rows to write</div>

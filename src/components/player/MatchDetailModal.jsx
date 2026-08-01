@@ -29,8 +29,8 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
     const unforced = points.filter(pt => pt.endedBy === 'self' && pt.reason === 'UnforcedError').length;
     return [
       { label: '1st serve in', value: `${Math.round(serve.firstPct)}%`, cls: 'text-foreground' },
-      { label: 'Aces / DF', value: `${serve.aces} / ${serve.dfs}`, cls: 'text-primary' },
-      { label: 'Winners', value: String(winners), cls: 'text-primary' },
+      { label: 'Aces / DF', value: `${serve.aces} / ${serve.dfs}`, cls: 'text-accent-ink' },
+      { label: 'Winners', value: String(winners), cls: 'text-accent-ink' },
       { label: 'Unforced', value: String(unforced), cls: 'text-destructive' },
     ];
   }, [tm, points]);
@@ -76,7 +76,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-48">
-            <div className={`text-xs font-bold uppercase tracking-wider ${match.won ? 'text-primary' : 'text-destructive'}`}>
+            <div className={`text-xs font-bold uppercase tracking-wider ${match.won ? 'text-accent-ink' : 'text-destructive'}`}>
               {match.won ? 'Won' : 'Lost'}
             </div>
             <div className="font-display font-extrabold text-lg tracking-tighter mt-1">
@@ -85,7 +85,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
             <div className="text-xs text-muted-foreground mt-1">{metaParts.join(' · ')}{match.date ? ` · ${formatDate(match.date)}` : ''}</div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <div className={`font-display font-extrabold text-base ${match.won ? 'text-primary' : 'text-destructive'}`}>{match.score || '—'}</div>
+            <div className={`font-display font-extrabold text-base ${match.won ? 'text-accent-ink' : 'text-destructive'}`}>{match.score || '—'}</div>
             <button className="w-7 h-7 rounded-sm hover:bg-secondary flex items-center justify-center" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
                     <div key={w.name}>
                       <div className="flex items-baseline justify-between mb-1">
                         <div className="text-sm font-semibold">{w.name}</div>
-                        <div className={`text-sm font-bold ${w.positive ? 'text-primary' : 'text-blue-400'}`}>{w.value}</div>
+                        <div className={`text-sm font-bold ${w.positive ? 'text-accent-ink' : 'text-blue-400'}`}>{w.value}</div>
                       </div>
                       <div className="h-2 rounded-sm bg-muted">
                         <div className={`h-full rounded-sm ${w.positive ? 'bg-primary' : 'bg-blue-400'}`} style={{ width: w.w }} />

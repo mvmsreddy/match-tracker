@@ -321,7 +321,7 @@ export default function AppNav({ children }) {
             className="w-full flex items-center gap-2.5 p-2.5 rounded-[11px] bg-card border border-border hover:border-primary/40 transition-colors"
             data-testid="rail-user-btn"
           >
-            <div className="w-[30px] h-[30px] rounded-lg bg-muted flex items-center justify-center text-primary text-xs font-bold shrink-0">
+            <div className="w-[30px] h-[30px] rounded-lg bg-muted flex items-center justify-center text-accent-ink text-xs font-bold shrink-0">
               {initials}
             </div>
             <div className="min-w-0 text-left">

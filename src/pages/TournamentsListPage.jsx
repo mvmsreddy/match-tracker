@@ -280,9 +280,9 @@ export default function TournamentsListPage() {
             </div>
 
             {parsedFromPdf && step === 1 && (
-              <div className="rounded-sm bg-primary/10 border border-primary/30 text-primary text-sm px-3 py-2 mb-4 flex items-center gap-2">
+              <div className="rounded-sm bg-primary/10 border border-primary/30 text-accent-ink text-sm px-3 py-2 mb-4 flex items-center gap-2">
                 <span>✓ Auto-filled from Factsheet PDF — review and edit before submitting</span>
-                <button type="button" className="ml-auto bg-transparent text-primary" onClick={() => setParsedFromPdf(false)} title="Dismiss">✕</button>
+                <button type="button" className="ml-auto bg-transparent text-accent-ink" onClick={() => setParsedFromPdf(false)} title="Dismiss">✕</button>
               </div>
             )}
 
@@ -576,7 +576,7 @@ export default function TournamentsListPage() {
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {w.surface && <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.surface}</span>}
                   {w.tournamentCode && <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.tournamentCode}</span>}
-                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
+                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-full bg-primary/10 text-accent-ink px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 flex-wrap">
                   {(w.city || w.stateAbbr) && (

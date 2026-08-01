@@ -21,7 +21,7 @@ export default function PointLog({ points, header }) {
             {points.slice().reverse().map((pt, i) => (
               <tr key={points.length - 1 - i} className="border-b border-border last:border-0">
                 <td className="px-3 py-2 tabular-nums">{String(pt.scoreAfter)}</td>
-                <td className={'px-3 py-2 ' + (pt.endedBy === 'self' ? 'text-primary' : 'text-destructive')}>
+                <td className={'px-3 py-2 ' + (pt.endedBy === 'self' ? 'text-accent-ink' : 'text-destructive')}>
                   {reasonLabel(pt, selfName, oppName)}
                 </td>
                 <td className="px-3 py-2 tabular-nums">{pt.rally}</td>

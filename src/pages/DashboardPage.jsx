@@ -50,7 +50,7 @@ function EmptyState({ children }) {
 
 function ResultChip({ won }) {
   return (
-    <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold ${won ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+    <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold ${won ? 'bg-primary/10 text-accent-ink' : 'bg-destructive/10 text-destructive'}`}>
       {won ? 'W' : 'L'}
     </span>
   );
@@ -83,7 +83,7 @@ function OrganizerBanner({ user }) {
       subtitle={
         <>
           {user.clubName || 'Create and manage AITA tournament events'}
-          {user.isVerified && <span className="ml-2 text-primary font-bold">Verified</span>}
+          {user.isVerified && <span className="ml-2 text-accent-ink font-bold">Verified</span>}
         </>
       }
       ctaLabel="My Events →"
@@ -124,7 +124,7 @@ function PlayerBanner({ user, links }) {
           {user.stateAbbr || ''}
           {coachCount > 0 && ` · ${coachCount} coach${coachCount !== 1 ? 'es' : ''}`}
           {pendingCount > 0 && (
-            <span className="text-primary font-semibold"> · {pendingCount} coach request{pendingCount !== 1 ? 's' : ''}</span>
+            <span className="text-accent-ink font-semibold"> · {pendingCount} coach request{pendingCount !== 1 ? 's' : ''}</span>
           )}
         </>
       }
@@ -145,7 +145,7 @@ function PlayerLiveBanner({ todayMatches }) {
   return (
     <Card className="p-4 border-l-4 border-primary flex items-center justify-between gap-3 flex-wrap">
       <div>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-ink">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           On court today
         </div>
@@ -177,11 +177,11 @@ function StreakCard({ streak, tokenState, protection }) {
     <Card className="p-5 sm:p-6 bg-card border-l-4 border-l-primary shadow-sm" data-testid="streak-card">
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <Flame className="w-7 h-7 sm:w-8 sm:h-8 text-primary" strokeWidth={2.5} />
+          <Flame className="w-7 h-7 sm:w-8 sm:h-8 text-accent-ink" strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <div className="font-display font-extrabold text-3xl sm:text-4xl tracking-tighter text-primary">{streak.current}</div>
+            <div className="font-display font-extrabold text-3xl sm:text-4xl tracking-tighter text-accent-ink">{streak.current}</div>
             <div className="text-sm sm:text-base uppercase tracking-wider font-bold text-muted-foreground">day streak</div>
           </div>
           <div className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
@@ -328,7 +328,7 @@ function PlayerTournamentSections({ loading, error, tournaments, todayMatches, r
       <div className="space-y-2">
         {tournaments.map(({ week, events }) => (
           <Card key={week.id} className="p-3">
-            <Link to={`/tournaments/${week.id}`} className="text-sm font-bold hover:text-primary">{week.name}</Link>
+            <Link to={`/tournaments/${week.id}`} className="text-sm font-bold hover:text-accent-ink">{week.name}</Link>
             <div className="text-xs text-muted-foreground mt-0.5">
               {[week.location, week.city, week.startDate].filter(Boolean).join(' · ')}
             </div>
@@ -337,7 +337,7 @@ function PlayerTournamentSections({ loading, error, tournaments, todayMatches, r
                 <Link
                   key={entry.id}
                   to={`/tournaments/${week.id}/events/${event.id}`}
-                  className="flex items-center justify-between gap-2 text-xs py-1 hover:text-primary"
+                  className="flex items-center justify-between gap-2 text-xs py-1 hover:text-accent-ink"
                 >
                   <span>{event.ageGroup} {event.category}{entry.drawType === 'qualifying' ? ' (Qualifying)' : ''}</span>
                   <span className="text-muted-foreground">
@@ -741,7 +741,7 @@ export default function DashboardPage() {
                 <div>
                   <Link
                     to={`/tournaments/${entry.event?.week?.id}/events/${entry.eventId}`}
-                    className="text-sm font-bold hover:text-primary"
+                    className="text-sm font-bold hover:text-accent-ink"
                   >
                     {entry.event?.category} {entry.event?.ageGroup}
                   </Link>
@@ -751,7 +751,7 @@ export default function DashboardPage() {
                     {entry.isAlternate ? 'Alternate' : entry.drawType === 'main' ? `Main Draw #${entry.position}` : `Qualifying #${entry.position}`}
                   </div>
                 </div>
-                <span className={`text-xs font-bold rounded-sm px-1.5 py-0.5 ${entry.entryStatus === 'placed' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                <span className={`text-xs font-bold rounded-sm px-1.5 py-0.5 ${entry.entryStatus === 'placed' ? 'bg-primary/10 text-accent-ink' : 'bg-muted text-muted-foreground'}`}>
                   {entry.entryStatus === 'placed' ? 'Entered' : entry.entryStatus}
                 </span>
               </div>
@@ -806,9 +806,9 @@ export default function DashboardPage() {
                 </Card>
                 <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary">
                   <div className="flex items-center justify-between mb-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <TrendingUp className="w-5 h-5 text-accent-ink" />
                   </div>
-                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-primary">{wins}</div>
+                  <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-accent-ink">{wins}</div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Wins</div>
                 </Card>
                 <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-destructive/10 border-l-4 border-l-destructive">
@@ -862,7 +862,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                   {matches.length > 5 && (
-                    <Link to="/history" className="inline-block mt-2 text-sm font-semibold text-primary hover:underline">
+                    <Link to="/history" className="inline-block mt-2 text-sm font-semibold text-accent-ink hover:underline">
                       View all matches →
                     </Link>
                   )}

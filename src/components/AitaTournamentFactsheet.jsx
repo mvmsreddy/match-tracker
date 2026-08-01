@@ -195,18 +195,18 @@ function FieldValue({ value, href }) {
   const shown = !isLong || expanded ? textOnly : `${textOnly.slice(0, TRUNCATE_AT).trimEnd()}…`;
   return (
     <span className="whitespace-pre-wrap">
-      {linkable ? <a className="text-primary underline underline-offset-2 hover:no-underline" href={href}>{shown}</a> : shown}
+      {linkable ? <a className="text-accent-ink underline underline-offset-2 hover:no-underline" href={href}>{shown}</a> : shown}
       {isLong && (
         <>
           {' '}
-          <button type="button" className="text-primary text-xs font-semibold hover:underline" onClick={() => setExpanded(e => !e)}>
+          <button type="button" className="text-accent-ink text-xs font-semibold hover:underline" onClick={() => setExpanded(e => !e)}>
             {expanded ? 'Show less' : 'Show more'}
           </button>
         </>
       )}
       {urls.map(u => (
         <div key={u} className="mt-1">
-          <a className="text-primary underline underline-offset-2 hover:no-underline" href={u} target="_blank" rel="noopener noreferrer">
+          <a className="text-accent-ink underline underline-offset-2 hover:no-underline" href={u} target="_blank" rel="noopener noreferrer">
             {MAPS_URL_RE.test(u) ? '📍 Open in Google Maps ↗' : `${u.length > 46 ? `${u.slice(0, 46)}…` : u} ↗`}
           </a>
         </div>

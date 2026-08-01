@@ -55,7 +55,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Sparkles className="w-5 h-5 text-accent-ink" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-bold">Rate your skills</div>
@@ -67,7 +67,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
         <div className="text-right shrink-0">
           {avg && (
             <>
-              <div className="font-display font-extrabold text-2xl tracking-tighter text-primary">{avg}</div>
+              <div className="font-display font-extrabold text-2xl tracking-tighter text-accent-ink">{avg}</div>
               <div className="text-[12px] uppercase font-bold text-muted-foreground">Avg / 10</div>
             </>
           )}
@@ -84,7 +84,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
           ))}
           <button
             onClick={() => setExpanded(true)}
-            className="text-xs font-bold uppercase tracking-wider text-primary hover:underline ml-auto"
+            className="text-xs font-bold uppercase tracking-wider text-accent-ink hover:underline ml-auto"
           >
             Edit
           </button>
@@ -100,7 +100,7 @@ export default function MatchSkillRating({ userId, matchId, existing, onSaved })
                   <span className="text-sm font-bold">{s.label}</span>
                   <span className="text-[12px] text-muted-foreground ml-2">{s.hint}</span>
                 </div>
-                <span className="text-sm font-bold text-primary">{ratings[s.key] || '—'}/10</span>
+                <span className="text-sm font-bold text-accent-ink">{ratings[s.key] || '—'}/10</span>
               </div>
               <div className="grid grid-cols-10 gap-1">
                 {[1,2,3,4,5,6,7,8,9,10].map(n => (

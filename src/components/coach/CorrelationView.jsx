@@ -5,7 +5,7 @@ import { SKILL_LABELS } from './SkillGroupsView';
 import { Card } from '@/components/primitives/card';
 
 function verdict(rate) {
-  if (rate >= 60) return { label: 'Working', cls: 'text-primary', barCls: 'bg-primary' };
+  if (rate >= 60) return { label: 'Working', cls: 'text-accent-ink', barCls: 'bg-primary' };
   if (rate >= 40) return { label: 'Modest gain', cls: 'text-blue-400', barCls: 'bg-blue-400' };
   return { label: 'Not working', cls: 'text-destructive', barCls: 'bg-destructive' };
 }

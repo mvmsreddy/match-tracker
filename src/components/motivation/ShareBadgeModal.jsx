@@ -222,7 +222,7 @@ export default function ShareBadgeModal({ badge, playerName, onClose }) {
         </button>
 
         <div className="p-4 pb-3">
-          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-primary">Share your badge</div>
+          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-accent-ink">Share your badge</div>
           <div className="text-sm text-muted-foreground mt-0.5">Instagram Stories · 1080×1920</div>
         </div>
 

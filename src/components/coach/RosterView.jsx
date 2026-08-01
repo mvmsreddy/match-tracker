@@ -79,14 +79,14 @@ function RosterRow({ player }) {
           {recent === null ? <span className="text-xs text-muted-foreground">…</span> :
             recent.length === 0 ? <span className="text-xs text-muted-foreground">—</span> :
             recent.map((won, i) => (
-              <span key={i} className={`w-5 h-5 rounded-sm flex items-center justify-center text-[12px] font-bold ${won ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{won ? 'W' : 'L'}</span>
+              <span key={i} className={`w-5 h-5 rounded-sm flex items-center justify-center text-[12px] font-bold ${won ? 'bg-primary/15 text-accent-ink' : 'bg-destructive/15 text-destructive'}`}>{won ? 'W' : 'L'}</span>
             ))}
         </div>
       </TableCell>
       <TableCell className="text-right text-muted-foreground">{hours30d == null ? '—' : `${hours30d}h`}</TableCell>
-      <TableCell className={`text-right text-xs font-bold ${paceOn == null ? 'text-muted-foreground' : (paceOn ? 'text-primary' : 'text-destructive')}`}>{paceLabel}</TableCell>
+      <TableCell className={`text-right text-xs font-bold ${paceOn == null ? 'text-muted-foreground' : (paceOn ? 'text-accent-ink' : 'text-destructive')}`}>{paceLabel}</TableCell>
       <TableCell className="text-right">
-        <Link to={`/coach/players/${player.id}/dashboard`} className="text-xs font-semibold text-primary hover:underline whitespace-nowrap">Dashboard &rarr;</Link>
+        <Link to={`/coach/players/${player.id}/dashboard`} className="text-xs font-semibold text-accent-ink hover:underline whitespace-nowrap">Dashboard &rarr;</Link>
       </TableCell>
     </TableRow>
   );

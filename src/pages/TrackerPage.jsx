@@ -397,9 +397,9 @@ function MatchRunningView({ t, onGoTrack }) {
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-4">
         <div>
-          <div className="mb-2 font-mono text-xs font-bold uppercase tracking-wider text-primary">Match in Progress</div>
+          <div className="mb-2 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Match in Progress</div>
           <div className="mb-3 text-sm">
-            <span className="font-semibold text-primary">{t.header.selfName || 'You'}</span>
+            <span className="font-semibold text-accent-ink">{t.header.selfName || 'You'}</span>
             {' vs '}
             <span className="font-semibold text-destructive">{t.header.oppName || 'Opponent'}</span>
             {t.header.tournament ? <span className="text-muted-foreground"> · {t.header.tournament}</span> : null}
@@ -864,7 +864,7 @@ function TournamentFactsPanel({ tour }) {
   const referee = [tour.refereeName, tour.refereePhone, tour.refereeEmail].filter(Boolean).join(' · ');
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
-      <div className="text-sm font-semibold text-primary">{tour.name} — {tour.ageGroup}</div>
+      <div className="text-sm font-semibold text-accent-ink">{tour.name} — {tour.ageGroup}</div>
       <div className="grid grid-cols-2 gap-2.5">
         <Fact label="Court Type" value={tour.surface} />
         <Fact label="Draw Size" value={tour.drawSize} />
@@ -881,7 +881,7 @@ function TournamentFactsPanel({ tour }) {
       <Fact label="Tournament Director" value={director} />
       <Fact label="Tournament Referee" value={referee} />
       {tour.factsheetUrl && (
-        <a href={tour.factsheetUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-primary underline">
+        <a href={tour.factsheetUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-accent-ink underline">
           View full fact sheet PDF ↗
         </a>
       )}
@@ -901,7 +901,7 @@ function MatchOverBlock({ sessionType, selfName, oppName, winner, header, points
             {isPractice ? 'Session complete' : 'Match complete'}
           </div>
           <div className="font-display text-xl font-bold uppercase tracking-tight">
-            <span className={winner === 'self' ? 'text-primary' : 'text-destructive'}>{winnerName}</span>
+            <span className={winner === 'self' ? 'text-accent-ink' : 'text-destructive'}>{winnerName}</span>
             {isPractice ? ' wins the session' : ' wins'}
           </div>
           <div className="flex justify-center gap-2">
@@ -963,14 +963,14 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-6">
         <div className="text-center">
-          <div className={cn('font-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-primary' : 'text-destructive')}>
+          <div className={cn('font-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-accent-ink' : 'text-destructive')}>
             {headline}
           </div>
           <div className="mt-1 font-mono text-sm text-muted-foreground">{subline}</div>
           {type !== 'match' && nextServer && (
             <div className="mt-2 text-xs text-muted-foreground">
               Serves next:&nbsp;
-              <span className={nextServer === 'self' ? 'font-semibold text-primary' : 'font-semibold text-destructive'}>
+              <span className={nextServer === 'self' ? 'font-semibold text-accent-ink' : 'font-semibold text-destructive'}>
                 {nextServer === 'self' ? selfName : oppName}
               </span>
             </div>
@@ -983,45 +983,45 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
             <TableBody>
               <TableRow>
                 <TableHead>Metric</TableHead>
-                <TableHead className="text-primary">{selfName}</TableHead>
+                <TableHead className="text-accent-ink">{selfName}</TableHead>
                 <TableHead className="text-destructive">{oppName}</TableHead>
               </TableRow>
               <TableRow>
                 <TableCell>Points Won</TableCell>
-                <TableCell className="text-primary">{stats.self.pointCount}</TableCell>
+                <TableCell className="text-accent-ink">{stats.self.pointCount}</TableCell>
                 <TableCell className="text-destructive">{stats.opp.pointCount}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Winners / FE</TableCell>
-                <TableCell className="text-primary">{stats.self.wfe}</TableCell>
+                <TableCell className="text-accent-ink">{stats.self.wfe}</TableCell>
                 <TableCell className="text-destructive">{stats.opp.wfe}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Unforced Errors</TableCell>
-                <TableCell className="text-primary">{stats.self.ue}</TableCell>
+                <TableCell className="text-accent-ink">{stats.self.ue}</TableCell>
                 <TableCell className="text-destructive">{stats.opp.ue}</TableCell>
               </TableRow>
               {hasServeData && (
                 <>
                   <TableRow>
                     <TableCell>1st Serve %</TableCell>
-                    <TableCell className="text-primary">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</TableCell>
+                    <TableCell className="text-accent-ink">{ss.totalServicePts > 0 ? ss.firstPct.toFixed(0) + '%' : '—'}</TableCell>
                     <TableCell className="text-destructive">{so.totalServicePts > 0 ? so.firstPct.toFixed(0) + '%' : '—'}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Won on 1st</TableCell>
-                    <TableCell className="text-primary">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</TableCell>
+                    <TableCell className="text-accent-ink">{ss.firstIn > 0 ? `${ss.wonOn1st}/${ss.firstIn}` : '—'}</TableCell>
                     <TableCell className="text-destructive">{so.firstIn > 0 ? `${so.wonOn1st}/${so.firstIn}` : '—'}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Won on 2nd</TableCell>
-                    <TableCell className="text-primary">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</TableCell>
+                    <TableCell className="text-accent-ink">{ss.secondIn > 0 ? `${ss.wonOn2nd}/${ss.secondIn}` : '—'}</TableCell>
                     <TableCell className="text-destructive">{so.secondIn > 0 ? `${so.wonOn2nd}/${so.secondIn}` : '—'}</TableCell>
                   </TableRow>
                   {(ss.aces > 0 || so.aces > 0 || ss.dfs > 0 || so.dfs > 0) && (
                     <TableRow>
                       <TableCell>Aces / DFs</TableCell>
-                      <TableCell className="text-primary">{ss.aces} / {ss.dfs}</TableCell>
+                      <TableCell className="text-accent-ink">{ss.aces} / {ss.dfs}</TableCell>
                       <TableCell className="text-destructive">{so.aces} / {so.dfs}</TableCell>
                     </TableRow>
                   )}
@@ -1046,7 +1046,7 @@ function LiveTrackBar({ selfName, oppName, nextServer, setServerChoice, serverEx
   return (
     <Card className={cn('my-4', !serverExplicitlyChosen && 'border-primary')}>
       <CardContent className="flex flex-col items-center gap-3 pt-4 sm:flex-row">
-        <span className={cn('font-mono text-xs uppercase tracking-widest', !serverExplicitlyChosen ? 'font-bold text-primary' : 'text-muted-foreground')}>
+        <span className={cn('font-mono text-xs uppercase tracking-widest', !serverExplicitlyChosen ? 'font-bold text-accent-ink' : 'text-muted-foreground')}>
           Serves first
         </span>
         <div className="flex flex-1 gap-2">

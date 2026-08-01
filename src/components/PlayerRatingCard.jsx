@@ -49,7 +49,7 @@ export default function PlayerRatingCard({ playerId, aitaReg }) {
         </div>
         {rating && (
           <div className="text-right">
-            <div className="font-display font-extrabold text-2xl tracking-tighter text-primary" data-testid="player-rating-value">
+            <div className="font-display font-extrabold text-2xl tracking-tighter text-accent-ink" data-testid="player-rating-value">
               {display.toFixed(1)}
             </div>
             <div className="text-[12px] text-muted-foreground uppercase font-bold">/ 10</div>

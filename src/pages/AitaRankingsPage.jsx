@@ -220,7 +220,7 @@ export default function AitaRankingsPage() {
                         <TableCell>{r.pointsBreakdown?.singlesPts ?? '—'}</TableCell>
                         <TableCell>{r.pointsBreakdown?.doublesPts ?? '—'}</TableCell>
                         <TableCell>{r.pointsBreakdown?.best25DoublesPts ?? '—'}</TableCell>
-                        <TableCell className="font-bold text-primary">{r.totalPoints}</TableCell>
+                        <TableCell className="font-bold text-accent-ink">{r.totalPoints}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -261,7 +261,7 @@ export default function AitaRankingsPage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-display font-extrabold text-xl tracking-tighter text-primary">{r.totalPoints}</div>
+                        <div className="font-display font-extrabold text-xl tracking-tighter text-accent-ink">{r.totalPoints}</div>
                         <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">pts</div>
                       </div>
                     </div>

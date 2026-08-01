@@ -27,7 +27,7 @@ export default function SkillRadarCard({ ratings, stats, onCta, ctaLabel = 'Rate
         </div>
         {stats && (
           <div className="text-right">
-            <div className="font-display font-extrabold text-lg tracking-tighter text-primary">{stats.winRate}%</div>
+            <div className="font-display font-extrabold text-lg tracking-tighter text-accent-ink">{stats.winRate}%</div>
             <div className="text-[12px] text-muted-foreground uppercase font-bold">Win Rate</div>
           </div>
         )}
@@ -40,7 +40,7 @@ export default function SkillRadarCard({ ratings, stats, onCta, ctaLabel = 'Rate
           {onCta && (
             <button
               onClick={onCta}
-              className="text-xs font-bold uppercase tracking-wider text-primary hover:underline"
+              className="text-xs font-bold uppercase tracking-wider text-accent-ink hover:underline"
               data-testid="skill-radar-cta"
             >
               {ctaLabel} →

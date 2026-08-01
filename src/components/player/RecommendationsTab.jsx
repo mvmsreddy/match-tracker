@@ -135,7 +135,7 @@ export default function RecommendationsTab({ circuit, playerId }) {
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Gap to goal</div>
           <div className="text-sm mt-1">
             {rankGap > 0
-              ? <>You need to climb <span className="font-bold text-primary">{rankGap} ranking places</span> to reach top {activeGoal.targetRank} in {circuit.category} {circuit.subcategory}.</>
+              ? <>You need to climb <span className="font-bold text-accent-ink">{rankGap} ranking places</span> to reach top {activeGoal.targetRank} in {circuit.category} {circuit.subcategory}.</>
               : <>You're already at or ahead of your top {activeGoal.targetRank} target for {circuit.category} {circuit.subcategory}.</>}
           </div>
         </Card>
@@ -143,7 +143,7 @@ export default function RecommendationsTab({ circuit, playerId }) {
 
       <Card className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-2">
-          <Badge className="bg-primary/10 text-primary border-transparent">Entry strategy</Badge>
+          <Badge className="bg-primary/10 text-accent-ink border-transparent">Entry strategy</Badge>
           <span className="text-xs font-bold text-muted-foreground">Priority 1</span>
         </div>
         <div className="font-bold text-sm">Events you haven't entered yet in this segment</div>
@@ -163,7 +163,7 @@ export default function RecommendationsTab({ circuit, playerId }) {
                 </div>
                 {e.seedLabel && <Badge variant="secondary">{e.seedLabel}</Badge>}
                 <div className="text-right shrink-0 min-w-16">
-                  <div className="font-display font-extrabold text-base text-primary">{e.expected != null ? `~${e.expected}` : '—'}</div>
+                  <div className="font-display font-extrabold text-base text-accent-ink">{e.expected != null ? `~${e.expected}` : '—'}</div>
                   <div className="text-[9px] text-muted-foreground mt-0.5">Expected pts</div>
                 </div>
               </div>

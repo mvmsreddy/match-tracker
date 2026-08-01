@@ -183,12 +183,12 @@ export default function HighlightReelCard({
       {/* Hero band */}
       <div className={`px-5 py-6 ${isSelfWin ? 'bg-primary/10' : 'bg-destructive/5'} border-b border-border`}>
         <div className="flex items-center gap-2 mb-2">
-          <Trophy className={`w-4 h-4 ${isSelfWin ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Trophy className={`w-4 h-4 ${isSelfWin ? 'text-accent-ink' : 'text-muted-foreground'}`} />
           <span className="font-mono text-[12px] uppercase tracking-widest font-bold text-muted-foreground">
             Match highlight reel
           </span>
         </div>
-        <div className={`font-display font-black text-3xl tracking-tighter ${isSelfWin ? 'text-primary' : 'text-foreground'}`}>
+        <div className={`font-display font-black text-3xl tracking-tighter ${isSelfWin ? 'text-accent-ink' : 'text-foreground'}`}>
           {winnerName} wins
         </div>
         <div className="mt-1 font-mono text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ export default function HighlightReelCard({
       {/* Swings */}
       <div className="grid grid-cols-2 gap-0 border-b border-border">
         <div className="p-4 border-r border-border" data-testid="swing-win">
-          <div className="flex items-center gap-1 text-primary mb-1">
+          <div className="flex items-center gap-1 text-accent-ink mb-1">
             <Flame className="w-3.5 h-3.5" />
             <span className="text-[12px] uppercase tracking-widest font-bold">Best run</span>
           </div>
@@ -224,14 +224,14 @@ export default function HighlightReelCard({
       {/* AI recap */}
       <div className="p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-1.5 text-primary">
+          <div className="inline-flex items-center gap-1.5 text-accent-ink">
             <Sparkles className="w-4 h-4" />
             <span className="text-[12px] uppercase tracking-widest font-bold">AI recap</span>
           </div>
           {state === 'done' && (
             <button
               onClick={fetchRecap}
-              className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1"
+              className="text-[11px] font-bold text-accent-ink hover:underline inline-flex items-center gap-1"
               data-testid="highlight-regen-btn"
             >
               <RefreshCw className="w-3 h-3" />Regenerate
@@ -271,7 +271,7 @@ export default function HighlightReelCard({
       <div className="grid grid-cols-3 gap-0 border-t border-border">
         <button
           onClick={handleShare}
-          className="py-3 inline-flex items-center justify-center gap-2 text-sm font-bold text-primary hover:bg-primary/5 border-r border-border"
+          className="py-3 inline-flex items-center justify-center gap-2 text-sm font-bold text-accent-ink hover:bg-primary/5 border-r border-border"
           data-testid="highlight-share-btn"
         >
           <Share2 className="w-4 h-4" />Share

@@ -94,7 +94,7 @@ function SessionVideo({ session, onAttached }) {
   }
 
   return (
-    <label className="text-[12px] font-semibold text-primary hover:underline cursor-pointer shrink-0">
+    <label className="text-[12px] font-semibold text-accent-ink hover:underline cursor-pointer shrink-0">
       {uploading ? 'Uploading…' : '+ Video'}
       <input type="file" accept="video/*" className="hidden" onChange={handleFile} disabled={uploading} />
       {error && <div className="text-destructive text-[12px]">{error}</div>}

@@ -51,7 +51,7 @@ function entryUrgency(entryDeadline) {
   if (days === null) return null;
   if (days < 0) return { label: 'Entries closed', className: 'bg-muted text-muted-foreground' };
   if (days <= 3) return { label: days === 0 ? 'Entries close today' : `Closes in ${days}d`, className: 'bg-destructive/10 text-destructive' };
-  if (days <= 7) return { label: `Closes in ${days}d`, className: 'bg-primary/10 text-primary' };
+  if (days <= 7) return { label: `Closes in ${days}d`, className: 'bg-primary/10 text-accent-ink' };
   return null;
 }
 
@@ -272,7 +272,7 @@ export default function AitaCalendarPage() {
             </div>
             <AitaTournamentFactsheet t={selected} />
             <div className="pt-3">
-              <Link to={`/aita-calendar/${selected.id}`} className="text-sm text-primary hover:underline">
+              <Link to={`/aita-calendar/${selected.id}`} className="text-sm text-accent-ink hover:underline">
                 Open as full page ↗
               </Link>
             </div>

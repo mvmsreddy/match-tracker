@@ -138,7 +138,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="flex items-center justify-between mb-2">
             <Calendar className="w-5 h-5 text-muted-foreground" />
             {monthStats?.matchesThisMonth > 0 && (
-              <span className="text-xs font-bold text-primary">+{monthStats.matchesThisMonth}</span>
+              <span className="text-xs font-bold text-accent-ink">+{monthStats.matchesThisMonth}</span>
             )}
           </div>
           <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">
@@ -151,7 +151,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="flex items-center justify-between mb-2">
             <Activity className="w-5 h-5 text-muted-foreground" />
             {monthStats?.avgPtsTrendUp != null && (
-              <span className={`text-xs font-bold ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
+              <span className={`text-xs font-bold ${monthStats.avgPtsTrendUp ? 'text-accent-ink' : 'text-destructive'}`}>
                 {monthStats.avgPtsTrendUp ? '↑' : '↓'}
               </span>
             )}
@@ -161,7 +161,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           </div>
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Avg points per match</div>
           {monthStats?.avgPtsTrendUp != null && (
-            <div className={`text-xs mt-1.5 font-semibold ${monthStats.avgPtsTrendUp ? 'text-primary' : 'text-destructive'}`}>
+            <div className={`text-xs mt-1.5 font-semibold ${monthStats.avgPtsTrendUp ? 'text-accent-ink' : 'text-destructive'}`}>
               {monthStats.avgPtsTrendUp ? '▲ Improving' : '▼ Needs work'} vs season avg
             </div>
           )}
@@ -169,12 +169,12 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
         
         <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between mb-2">
-            <Trophy className="w-5 h-5 text-primary" />
+            <Trophy className="w-5 h-5 text-accent-ink" />
             {monthStats?.winRate > 50 && (
-              <TrendingUp className="w-5 h-5 text-primary" />
+              <TrendingUp className="w-5 h-5 text-accent-ink" />
             )}
           </div>
-          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-primary">
+          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-accent-ink">
             {entries === null ? '—' : upcomingEntries.length}
           </div>
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Upcoming tournaments</div>
@@ -210,7 +210,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="font-display font-extrabold text-3xl tracking-tighter mt-2 text-primary">
+              <div className="font-display font-extrabold text-3xl tracking-tighter mt-2 text-accent-ink">
                 {monthStats.winRate}%
               </div>
               <div className="text-xs text-muted-foreground">Win Rate</div>
@@ -219,11 +219,11 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
               <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border-l-4 border-l-primary">
                 <div>
                   <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Wins</div>
-                  <div className="font-display font-extrabold text-2xl tracking-tighter text-primary mt-0.5">
+                  <div className="font-display font-extrabold text-2xl tracking-tighter text-accent-ink mt-0.5">
                     {monthStats.wins}
                   </div>
                 </div>
-                <TrendingUp className="w-6 h-6 text-primary" />
+                <TrendingUp className="w-6 h-6 text-accent-ink" />
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border-l-4 border-l-destructive">
                 <div>
@@ -257,7 +257,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
         </Card>
         <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/5">
           <div className="text-xs text-muted-foreground mb-1">Best rank</div>
-          <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter text-primary">{bestRank}</div>
+          <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter text-accent-ink">{bestRank}</div>
         </Card>
         <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
           <div className="text-xs text-muted-foreground mb-1">Best points</div>
@@ -266,7 +266,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       </div>
 
       {rankDelta !== 0 && (
-        <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold p-3 rounded-lg ${rankDelta > 0 ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
+        <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold p-3 rounded-lg ${rankDelta > 0 ? 'bg-primary/10 text-accent-ink border border-primary/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
           {rankDelta > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
           <span>{rankDelta > 0 ? '▲' : '▼'} {Math.abs(rankDelta)} since last update · first seen {formatDate(firstSeen)} · {snapshotCount} snapshots</span>
         </div>
@@ -317,7 +317,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
             <div className="font-bold text-sm">Upcoming matches</div>
             <div className="text-xs text-muted-foreground">Resolved from your entered draws in this segment</div>
           </div>
-          <button className="text-xs font-semibold text-primary hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>Full schedule</button>
+          <button className="text-xs font-semibold text-accent-ink hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>Full schedule</button>
         </div>
         {schedule.error && <div className="text-sm text-muted-foreground">{schedule.error}</div>}
         {schedule.loading && <div className="text-sm text-muted-foreground">Loading…</div>}
@@ -360,7 +360,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="font-bold text-sm">Recent results</div>
-          <button className="text-xs font-semibold text-primary hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>View all</button>
+          <button className="text-xs font-semibold text-accent-ink hover:underline shrink-0" onClick={() => onTabChange('tournaments')}>View all</button>
         </div>
         {!schedule.loading && schedule.recent.length === 0 && (
           <div className="text-sm text-muted-foreground">No completed {circuit.category} {circuit.subcategory} matches found yet.</div>
@@ -369,13 +369,13 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           <div className="space-y-2">
             {schedule.recent.slice(0, 5).map(m => (
               <button key={m.id} className="w-full flex items-center gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary text-left" onClick={() => setModalMatch(m)}>
-                <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${m.won ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{m.won ? 'W' : 'L'}</span>
+                <span className={`rounded-sm px-1.5 py-0.5 text-xs font-bold shrink-0 ${m.won ? 'bg-primary/10 text-accent-ink' : 'bg-destructive/10 text-destructive'}`}>{m.won ? 'W' : 'L'}</span>
                 <div className="flex-1 min-w-32">
                   <div className="text-sm font-semibold">{m.opponentName}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{m.tournamentName} &middot; {m.round} &middot; {formatDate(m.date)}</div>
                 </div>
-                <div className={`text-sm font-bold shrink-0 ${m.won ? 'text-primary' : 'text-destructive'}`}>{m.score || '—'}</div>
-                {m.tracked && <span className="rounded-sm px-2 py-0.5 text-[12px] font-bold bg-primary/10 text-primary shrink-0">Full stats</span>}
+                <div className={`text-sm font-bold shrink-0 ${m.won ? 'text-accent-ink' : 'text-destructive'}`}>{m.score || '—'}</div>
+                {m.tracked && <span className="rounded-sm px-2 py-0.5 text-[12px] font-bold bg-primary/10 text-accent-ink shrink-0">Full stats</span>}
                 <div className="text-muted-foreground shrink-0">→</div>
               </button>
             ))}

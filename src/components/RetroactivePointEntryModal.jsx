@@ -63,7 +63,7 @@ export default function RetroactivePointEntryModal({ match, onClose, onSaved }) 
               key={m.value}
               onClick={() => setTrackingMode(m.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                trackingMode === m.value ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                trackingMode === m.value ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border text-muted-foreground'
               }`}
             >
               {m.label}

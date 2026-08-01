@@ -40,7 +40,7 @@ export function ComplianceHero({ athleteId, logs }) {
     <Card className="p-4 sm:p-5 space-y-4" data-testid="compliance-hero">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-primary">Today's Plan</div>
+          <div className="text-[12px] uppercase tracking-[0.25em] font-bold text-accent-ink">Today's Plan</div>
           <div className="text-sm font-bold">{DAY_TYPE_LABELS[dayType]}</div>
         </div>
         <select
@@ -147,10 +147,10 @@ export function AiMealSuggester({ athleteId }) {
     <Card className="p-4 border-l-4 border-l-primary bg-primary/5" data-testid="ai-meal-suggester">
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
-          <Sparkles className="w-5 h-5 text-primary" strokeWidth={2.2} />
+          <Sparkles className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-primary">AI Dietitian</div>
+          <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-accent-ink">AI Dietitian</div>
           <div className="text-sm font-bold">What should I eat right now?</div>
         </div>
       </div>
@@ -322,7 +322,7 @@ export function WeeklyReportCard({ athleteId, logs }) {
     <Card className="p-4" data-testid="weekly-report-card">
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Trophy className="w-5 h-5 text-primary" strokeWidth={2.2} />
+          <Trophy className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
         </div>
         <div>
           <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">This Week</div>
@@ -424,7 +424,7 @@ export function WellnessQuickLog({ athleteId, onLogged }) {
     <Card className="p-4" data-testid="wellness-log">
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <MessageSquare className="w-5 h-5 text-primary" strokeWidth={2.2} />
+          <MessageSquare className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
         </div>
         <div>
           <div className="text-[12px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Quick Wellness Check-in</div>
@@ -486,7 +486,7 @@ export function DietitianChatCard({ athleteId }) {
       <button className="w-full flex items-center justify-between" onClick={() => setOpen(v => !v)}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 relative">
-            <MessageSquare className="w-5 h-5 text-primary" strokeWidth={2.2} />
+            <MessageSquare className="w-5 h-5 text-accent-ink" strokeWidth={2.2} />
             {unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">{unread}</span>}
           </div>
           <div className="text-left">

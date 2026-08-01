@@ -157,7 +157,7 @@ export default function DrillLibraryView() {
                     <div className="font-display font-extrabold text-base tracking-tighter mt-2">{d.title}</div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button className={`w-7 h-7 rounded-sm flex items-center justify-center hover:bg-secondary ${on ? 'text-primary' : 'text-muted-foreground'}`} onClick={() => setFavs(f => ({ ...f, [d.id]: !on }))}>★</button>
+                    <button className={`w-7 h-7 rounded-sm flex items-center justify-center hover:bg-secondary ${on ? 'text-accent-ink' : 'text-muted-foreground'}`} onClick={() => setFavs(f => ({ ...f, [d.id]: !on }))}>★</button>
                     <button className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-destructive" onClick={() => handleDelete(d.id)} title="Delete">✕</button>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function DrillLibraryView() {
                   <div className="flex-1 min-w-32">
                     <div className="text-xs text-muted-foreground">Success rate</div>
                     <div className="flex items-baseline gap-2 mt-1">
-                      <div className={`font-display font-extrabold text-xl ${avgRate == null ? 'text-muted-foreground' : (avgRate >= 60 ? 'text-primary' : 'text-destructive')}`}>{avgRate == null ? '—' : `${avgRate}%`}</div>
+                      <div className={`font-display font-extrabold text-xl ${avgRate == null ? 'text-muted-foreground' : (avgRate >= 60 ? 'text-accent-ink' : 'text-destructive')}`}>{avgRate == null ? '—' : `${avgRate}%`}</div>
                       <div className="text-[12px] text-muted-foreground">{stat ? `${stat.sampleImproved} of ${stat.sampleTotal} improved` : 'Not yet measured'}</div>
                     </div>
                   </div>

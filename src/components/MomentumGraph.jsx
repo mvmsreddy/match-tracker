@@ -49,7 +49,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
       <CardContent className="pt-0">
         {/* Streak summary */}
         <div className="mb-2 flex items-center justify-center gap-2 font-mono text-xs">
-          <span className="text-primary">{selfName}: {selfRecent}/{recent.length} recent</span>
+          <span className="text-accent-ink">{selfName}: {selfRecent}/{recent.length} recent</span>
           <span className="text-muted-foreground">|</span>
           <span className="text-destructive">{oppName}: {oppRecent}/{recent.length} recent</span>
         </div>
@@ -138,7 +138,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
         </div>
 
         <div className="mt-1 flex items-center justify-between font-mono text-[12px] text-muted-foreground">
-          <span className="text-primary">▲ {selfName} winning</span>
+          <span className="text-accent-ink">▲ {selfName} winning</span>
           <span>point #1 → #{points.length}</span>
           <span className="text-destructive">▼ {oppName} winning</span>
         </div>

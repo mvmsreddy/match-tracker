@@ -84,7 +84,7 @@ export function QuickAddGrid() {
               >
                 <Icon className="w-5 h-5" style={{ color: `var(--color-${t.color})` }} />
               </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-ink transition-colors" />
             </div>
             <div className="text-sm font-bold">{t.label}</div>
             <div className="text-xs text-muted-foreground mt-0.5">{t.desc}</div>
@@ -122,7 +122,7 @@ export function Recent5Strip({ matches, onSelect }) {
               data-testid={`recent-item-${m.id}`}
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                isWin ? 'bg-primary/15 text-primary' : isLoss ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'
+                isWin ? 'bg-primary/15 text-accent-ink' : isLoss ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'
               }`}>
                 {isWin ? 'W' : isLoss ? 'L' : isPractice ? 'PR' : '–'}
               </div>
@@ -132,7 +132,7 @@ export function Recent5Strip({ matches, onSelect }) {
                   {m.date} {m.tournament ? `· ${m.tournament}` : ''}
                 </div>
               </div>
-              <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-primary' : isLoss ? 'text-destructive' : ''}`}>
+              <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-accent-ink' : isLoss ? 'text-destructive' : ''}`}>
                 {m.scoreSummary || '—'}
               </div>
             </div>
@@ -178,7 +178,7 @@ export function DigestPreviewCard({ matches, streak, activeGoal }) {
           <div>
             <div className="text-[12px] uppercase tracking-wider font-bold text-muted-foreground">W - L</div>
             <div className="font-display font-extrabold text-xl tracking-tighter mt-0.5">
-              <span className="text-primary">{wins}</span>-<span className="text-destructive">{losses}</span>
+              <span className="text-accent-ink">{wins}</span>-<span className="text-destructive">{losses}</span>
             </div>
           </div>
           <div>

@@ -100,13 +100,13 @@ function ZoneTable({ selfBreakdown, oppBreakdown, selfName, oppName }) {
         <TableBody>
           <TableRow>
             <TableHead>Zone</TableHead>
-            <TableHead className="text-primary">{selfName} (W/F/UE)</TableHead>
+            <TableHead className="text-accent-ink">{selfName} (W/F/UE)</TableHead>
             <TableHead className="text-destructive">{oppName} (W/F/UE)</TableHead>
           </TableRow>
           {zoneIds.map((id) => (
             <TableRow key={id}>
               <TableCell>{id}</TableCell>
-              <TableCell className="text-primary">{fmt(selfBreakdown[id])}</TableCell>
+              <TableCell className="text-accent-ink">{fmt(selfBreakdown[id])}</TableCell>
               <TableCell className="text-destructive">{fmt(oppBreakdown[id])}</TableCell>
             </TableRow>
           ))}

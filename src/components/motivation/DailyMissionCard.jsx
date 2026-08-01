@@ -54,7 +54,7 @@ export default function DailyMissionCard({ mission, missionStreak, userId, onCom
               <ArrowRight className="w-3 h-3" />
             </button>
           ) : (
-            <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-primary">
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-accent-ink">
               <Check className="w-3.5 h-3.5" />
               Nailed it — come back tomorrow for a new mission.
             </div>

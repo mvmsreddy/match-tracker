@@ -206,7 +206,7 @@ function StreakFreezeCard({ userId }) {
     <Card className="p-4 sm:p-6 shadow-sm">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="w-5 h-5 text-accent-ink" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
           </svg>
         </div>
@@ -243,7 +243,7 @@ function StreakFreezeCard({ userId }) {
             {freezes.map(f => (
               <span
                 key={f.id}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5 bg-primary/10 text-primary border border-primary/20"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5 bg-primary/10 text-accent-ink border border-primary/20"
                 data-testid={`freeze-day-${f.id}`}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -252,7 +252,7 @@ function StreakFreezeCard({ userId }) {
                 {f.freezeDate}
                 <button
                   onClick={() => handleRemove(f.id)}
-                  className="ml-0.5 -mr-1 w-5 h-5 flex items-center justify-center rounded-full hover:bg-destructive hover:text-white transition-colors text-primary"
+                  className="ml-0.5 -mr-1 w-5 h-5 flex items-center justify-center rounded-full hover:bg-destructive hover:text-white transition-colors text-accent-ink"
                   title="Remove"
                   aria-label={`Remove freeze day ${f.freezeDate}`}
                 >
@@ -415,9 +415,9 @@ export default function ProfilePage() {
             <h1 className="font-display font-extrabold text-xl sm:text-2xl tracking-tighter">{form.displayName || 'Unnamed Player'}</h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <Badge variant="secondary">{ROLE_LABELS[form.role] || form.role}</Badge>
-              {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent">✓ Verified</Badge>}
+              {user.isVerified && <Badge className="bg-primary/10 text-accent-ink border-transparent">✓ Verified</Badge>}
               {isPlayer && form.ranking && (
-                <Badge className="bg-primary/10 text-primary border-transparent">Rank #{form.ranking}</Badge>
+                <Badge className="bg-primary/10 text-accent-ink border-transparent">Rank #{form.ranking}</Badge>
               )}
             </div>
           </div>
@@ -441,12 +441,12 @@ export default function ProfilePage() {
         <Card className="p-4 sm:p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Annual Entry Allowance</div>
-            <div className="text-xs font-bold text-primary">
+            <div className="text-xs font-bold text-accent-ink">
               {Math.round((entryCount / entryCap) * 100)}%
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="font-display font-extrabold text-3xl text-primary">{entryCount}</div>
+            <div className="font-display font-extrabold text-3xl text-accent-ink">{entryCount}</div>
             <div className="text-xs text-muted-foreground">of {entryCap} {ageGroup} tournaments used this year</div>
           </div>
           <div className="h-2.5 rounded-full bg-muted mt-3 overflow-hidden">
@@ -501,7 +501,7 @@ export default function ProfilePage() {
                     <button
                       key={r}
                       type="button"
-                      className={`px-2 py-1.5 rounded-sm text-xs font-semibold border ${form.role === r ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                      className={`px-2 py-1.5 rounded-sm text-xs font-semibold border ${form.role === r ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border text-muted-foreground'}`}
                       onClick={() => handleChange('role', r)}
                     >
                       {ROLE_LABELS[r]}
@@ -601,7 +601,7 @@ export default function ProfilePage() {
                   </select>
                 </Field>
               </div>
-              {user.isVerified && <Badge className="bg-primary/10 text-primary border-transparent mt-3">Verified Organizer</Badge>}
+              {user.isVerified && <Badge className="bg-primary/10 text-accent-ink border-transparent mt-3">Verified Organizer</Badge>}
             </Card>
           )}
 
@@ -642,7 +642,7 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Profile'}</Button>
-            {saved && <span className="text-sm text-primary font-semibold">Saved!</span>}
+            {saved && <span className="text-sm text-accent-ink font-semibold">Saved!</span>}
           </div>
         </form>
       ) : tab === 'bio' ? (

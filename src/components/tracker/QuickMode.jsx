@@ -28,7 +28,7 @@ function baseEntry(server, overrides) {
 
 const chipCls = (active) =>
   `cursor-pointer border font-display font-semibold text-sm px-2 py-3 rounded-lg min-h-[46px] ${
-    active ? 'border-primary bg-primary/15 text-primary' : 'border-border bg-secondary text-foreground'
+    active ? 'border-primary bg-primary/15 text-accent-ink' : 'border-border bg-secondary text-foreground'
   }`;
 
 export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onEndMatch }) {

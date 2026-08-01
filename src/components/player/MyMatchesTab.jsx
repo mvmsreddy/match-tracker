@@ -158,7 +158,7 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
                     onChange={() => toggleSelect(m.id)}
                   />
                   <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                    isWin ? 'bg-primary/10 text-primary' : 
+                    isWin ? 'bg-primary/10 text-accent-ink' : 
                     isLoss ? 'bg-destructive/10 text-destructive' : 
                     'bg-muted text-muted-foreground'
                   }`}>
@@ -170,7 +170,7 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
                       {m.tournament ? `${m.tournament} · ` : ''}{formatDate(m.date)}{m.sessionType === 'practice' ? ' · Practice' : ''}
                     </div>
                   </div>
-                  <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-primary' : isLoss ? 'text-destructive' : ''}`}>{m.scoreSummary || '—'}</div>
+                  <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-accent-ink' : isLoss ? 'text-destructive' : ''}`}>{m.scoreSummary || '—'}</div>
                   {isOwnDashboard && (
                     <Button
                       size="icon"

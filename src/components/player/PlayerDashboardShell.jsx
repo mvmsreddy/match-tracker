@@ -87,7 +87,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
                 <>
                   <span>→</span>
                   <span className="inline-flex items-center gap-1">
-                    Target <span className="font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">#{activeGoal.targetRank}</span>
+                    Target <span className="font-bold text-accent-ink bg-primary/10 px-1.5 py-0.5 rounded">#{activeGoal.targetRank}</span>
                   </span>
                 </>
               )}
@@ -125,7 +125,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
             <div className="w-full sm:w-40">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-muted-foreground font-semibold uppercase tracking-wider">Goal progress</span>
-                <span className="font-bold text-primary">{rankProgress}%</span>
+                <span className="font-bold text-accent-ink">{rankProgress}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                 <div 
