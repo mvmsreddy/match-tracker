@@ -3,8 +3,8 @@ import { formatGameScore, getNextServeCourtSide } from '../../lib/engine';
 import { useOrientation } from '../../hooks/useOrientation';
 import LandscapeScoreView from './LandscapeScoreView';
 import {
-  Undo2, Sparkles, Eye, EyeOff, Zap, Flame, TrendingUp,
-  TrendingDown, Coffee, X, Loader2, RefreshCw, Timer,
+  Undo2, Sparkles, Eye, EyeOff, Zap, Flame,
+  TrendingDown, Coffee, X, Loader2, RefreshCw,
 } from 'lucide-react';
 
 /**
@@ -207,23 +207,20 @@ export default function LiveMatchCommandCenter({
   }
 
   // ─── Distraction-free render short-circuit ──────────────────────────────
+  // Score/duration/sets live in the persistent Scorebar above (always visible
+  // regardless of this toggle) — this mode just strips everything else away
+  // so only the score and the point-entry buttons remain.
   if (distractionFree) {
     return (
-      <div className="flex flex-col gap-3" data-testid="live-command-center-distraction">
+      <div className="relative flex flex-col gap-3" data-testid="live-command-center-distraction">
+        {flash && <CommitFlash winner={flash} />}
         <button
           onClick={onToggleDistractionFree}
-          className="self-end text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-foreground"
+          className="relative z-10 self-end text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-foreground"
           data-testid="distraction-toggle-off"
         >
           <EyeOff className="w-3.5 h-3.5" />Exit focus
         </button>
-        <div className="relative rounded-2xl p-6 bg-card border-2 border-primary/20 text-center overflow-hidden">
-          {flash && <CommitFlash winner={flash} />}
-          <div className="font-display font-black text-6xl sm:text-7xl tracking-tighter mb-2">{gameScore}</div>
-          <div className="font-mono text-xs text-muted-foreground">
-            Set {setsSelf + setsOpp + 1} · {gamesSelf}-{gamesOpp} games
-          </div>
-        </div>
         {children}
       </div>
     );
@@ -231,96 +228,45 @@ export default function LiveMatchCommandCenter({
 
   return (
     <div className="flex flex-col gap-3 relative" data-testid="live-command-center">
-      {/* Score Hero */}
-      <div className="relative rounded-2xl bg-card border border-border p-4 overflow-hidden">
-        {flash && <CommitFlash winner={flash} />}
+      {/* Momentum + streak/break-point — score/duration/court-side/sets now live in the persistent Scorebar above */}
+      {(last8.length > 0 || streakInfo || isBreakPoint) && (
+        <div className="relative rounded-xl bg-card border border-border p-3 overflow-hidden">
+          {flash && <CommitFlash winner={flash} />}
 
-        <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`text-[12px] uppercase tracking-widest font-bold ${server === 'self' ? 'text-primary' : 'text-muted-foreground'}`}>
-              ● {server === 'self' ? (header.selfName || 'You') : (header.oppName || 'Opp')} serves
-            </span>
-            <span
-              className={`text-[12px] uppercase tracking-widest font-bold rounded-full px-1.5 py-0.5 border ${
-                courtSide === 'ad'
-                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-500'
-                  : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
-              }`}
-              data-testid="court-side-indicator"
-              title="Where the next serve will be played from"
-            >
-              {courtLabel}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[12px] text-muted-foreground inline-flex items-center gap-1" data-testid="match-duration">
-              <Timer className="w-3 h-3" />{durationLabel}
-            </span>
-            <button
-              onClick={onToggleDistractionFree}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              title="Focus mode — hide extras"
-              data-testid="distraction-toggle-on"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          {last8.length > 0 && (
+            <div className="flex items-center gap-1.5 relative z-10" data-testid="momentum-strip">
+              {last8.map((p, i) => (
+                <div
+                  key={i}
+                  className={`h-2 flex-1 rounded-full ${p.pointWinner === 'self' ? 'bg-primary' : 'bg-destructive/70'}`}
+                  title={p.pointWinner === 'self' ? 'Won' : 'Lost'}
+                />
+              ))}
+            </div>
+          )}
 
-        <div className="flex items-baseline gap-3 flex-wrap relative z-10">
-          <div className="font-display font-black text-4xl sm:text-5xl tracking-tighter leading-none" data-testid="live-game-score">
-            {gameScore}
-          </div>
-          <div className="flex items-baseline gap-2 text-sm font-mono text-muted-foreground">
-            <span>Set {setsSelf + setsOpp + 1}</span>
-            <span className="text-foreground/70">·</span>
-            <span className="font-bold text-foreground">{gamesSelf}-{gamesOpp}</span>
-          </div>
-          {(setsSelf > 0 || setsOpp > 0) && (
-            <div className="flex items-baseline gap-1 text-xs">
-              <span className="font-bold">{setsSelf}</span>
-              <span className="text-muted-foreground">-</span>
-              <span className="font-bold">{setsOpp}</span>
-              <span className="uppercase text-[9px] tracking-wider text-muted-foreground ml-1">sets</span>
+          {(streakInfo || isBreakPoint) && (
+            <div className={`relative z-10 flex flex-wrap gap-2 ${last8.length > 0 ? 'mt-2' : ''}`}>
+              {streakInfo && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider ${
+                    streakInfo.side === 'self' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'
+                  }`}
+                  data-testid="streak-indicator"
+                >
+                  {streakInfo.side === 'self' ? <Flame className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {streakInfo.count} in a row
+                </span>
+              )}
+              {isBreakPoint && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-500 animate-pulse">
+                  <Zap className="w-3 h-3" />Break point
+                </span>
+              )}
             </div>
           )}
         </div>
-
-        {/* Micro momentum strip */}
-        {last8.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-3 relative z-10" data-testid="momentum-strip">
-            {last8.map((p, i) => (
-              <div
-                key={i}
-                className={`h-2 flex-1 rounded-full ${p.pointWinner === 'self' ? 'bg-primary' : 'bg-destructive/70'}`}
-                title={p.pointWinner === 'self' ? 'Won' : 'Lost'}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Streak / break-point burst */}
-        {(streakInfo || isBreakPoint) && (
-          <div className="mt-2 relative z-10 flex flex-wrap gap-2">
-            {streakInfo && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider ${
-                  streakInfo.side === 'self' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'
-                }`}
-                data-testid="streak-indicator"
-              >
-                {streakInfo.side === 'self' ? <Flame className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                {streakInfo.count} in a row
-              </span>
-            )}
-            {isBreakPoint && (
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-500 animate-pulse">
-                <Zap className="w-3 h-3" />Break point
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Changeover countdown */}
       {changeoverActive && (
@@ -381,6 +327,14 @@ export default function LiveMatchCommandCenter({
         >
           {advisorState === 'streaming' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Ask coach
+        </button>
+        <button
+          onClick={onToggleDistractionFree}
+          className="rounded-full border border-border text-muted-foreground text-xs font-bold py-2 px-3 inline-flex items-center justify-center gap-1.5 hover:text-foreground hover:border-foreground/40 transition-colors"
+          title="Focus mode — hide extras"
+          data-testid="distraction-toggle-on"
+        >
+          <Eye className="w-3.5 h-3.5" />Focus
         </button>
       </div>
 
