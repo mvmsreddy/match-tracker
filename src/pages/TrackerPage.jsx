@@ -298,7 +298,6 @@ export default function TrackerPage() {
                       nextServer={t.nextServer}
                       onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
                       selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-                      onDelete={t.resetMatch}
                       trackingMode={t.trackingMode}
                     />
                   )}

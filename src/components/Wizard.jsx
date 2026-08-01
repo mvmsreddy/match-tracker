@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { freshPending, buildPointEntry } from '../lib/wizardLogic';
 import ShotLocationCourt from './ShotLocationCourt';
 import ChipButton from './tracker/ChipButton';
-import { Button } from './primitives/button';
 import { cn } from '../lib/utils';
 
 const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot', 'Dropshot'];
@@ -49,10 +48,9 @@ function shotLabel(type) {
   return type;
 }
 
-export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onDelete, trackingMode }) {
+export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, trackingMode }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
   const [history, setHistory] = useState([]);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
   const touchStartRef = useRef(null);
@@ -145,11 +143,6 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
       // Double fault — commit with both fault locations
       commitAndReset({ serviceChoice: 'doubleFault', faultLocation: location });
     }
-  }
-
-  // Let: repeats the same serve attempt — no DB write, no state change
-  function handleLet() {
-    setPendingStep((p) => ({ ...freshPending(p.server), serveAttempt: p.serveAttempt, firstFaultLocation: p.firstFaultLocation }));
   }
 
   function handleReturnWinner() {
@@ -335,11 +328,6 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                 )}
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <ChipButton variant="let" full onClick={handleLet}>
-                Let — Replay {pending.serveAttempt} Serve
-              </ChipButton>
-            </div>
           </>
         )}
 
@@ -488,18 +476,6 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
         )}
 
 
-      </div>
-
-      <div className="flex flex-shrink-0 items-center justify-between gap-2">
-        <Button variant="outline" size="sm" disabled={!canUndo} onClick={onUndo}>↩ Undo last point</Button>
-        {confirmDelete ? (
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive-solid" size="sm" onClick={onDelete}>Yes, Delete</Button>
-            <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-          </div>
-        ) : (
-          <Button variant="destructive" size="sm" className="ml-auto" onClick={() => setConfirmDelete(true)}>✕ Delete</Button>
-        )}
       </div>
     </div>
   );

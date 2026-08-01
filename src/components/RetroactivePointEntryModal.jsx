@@ -78,7 +78,6 @@ export default function RetroactivePointEntryModal({ match, onClose, onSaved }) 
           canUndo={t.canUndo}
           selfName={match.selfName || 'You'}
           oppName={match.oppName || 'Opponent'}
-          onDelete={onClose}
           trackingMode={trackingMode}
         />
 
