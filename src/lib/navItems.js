@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Activity, Trophy, GitCompare, User, Users,
-  Calendar, Medal, Video, Apple, MessageCircle, Dumbbell,
+  Calendar, Medal, Video, Apple, Dumbbell,
 } from 'lucide-react';
 
 // Canonical nav list per role, shared by every nav presentation (phone side
@@ -23,16 +23,15 @@ export function getNavItems(role) {
   const myParentPlayers = { id: 'my-parent-players', label: 'My Players', to: '/my-parents', icon: Users };
   const myParents = { id: 'my-parents', label: 'My Parents', to: '/my-parents', icon: Users };
   const nutrition = { id: 'nutrition', label: 'Nutrition', to: '/nutrition', icon: Apple };
-  const messages = { id: 'messages', label: 'Messages', to: '/messages', icon: MessageCircle };
 
   if (role === 'organizer') {
     return [dashboard, tournaments, calendar, rankings, profile];
   }
   if (role === 'coach') {
-    return [dashboard, track, drills, videoAnalysis, myPlayers, compare, nutrition, messages, tournaments, calendar, rankings, profile];
+    return [dashboard, track, drills, videoAnalysis, myPlayers, compare, nutrition, tournaments, calendar, rankings, profile];
   }
   if (role === 'parent') {
-    return [dashboard, myParentPlayers, messages, tournaments, calendar, profile];
+    return [dashboard, myParentPlayers, tournaments, calendar, profile];
   }
-  return [dashboard, track, drills, videoAnalysis, tournaments, compare, nutrition, messages, myCoaches, myParents, calendar, profile];
+  return [dashboard, track, drills, videoAnalysis, tournaments, compare, nutrition, myCoaches, myParents, calendar, profile];
 }

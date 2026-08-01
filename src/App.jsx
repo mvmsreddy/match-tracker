@@ -27,7 +27,6 @@ import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 import NutritionPage from './pages/NutritionPage';
 import DrillsPage from './pages/DrillsPage';
-import MessagesPage from './pages/MessagesPage';
 
 // Parent's home experience (linked-player list) is different enough from
 // DashboardPage's player/coach/organizer branches that it's routed here
@@ -61,7 +60,6 @@ export default function App() {
                 <Route path="/nutritionist" element={<NutritionistDashboardPage />} />
                 <Route path="/nutritionist/athlete/:athleteId" element={<NutritionistDashboardPage />} />
                 <Route path="/drills" element={<DrillsPage />} />
-                <Route path="/messages" element={<MessagesPage />} />
                 <Route path="/coach/players/:playerId/dashboard" element={<PlayerDashboardPage />} />
                 <Route path="/parent/players/:playerId/dashboard" element={<PlayerDashboardPage />} />
                 <Route path="/aita-calendar" element={<AitaCalendarPage />} />

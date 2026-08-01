@@ -45,11 +45,6 @@ export const getSavedCompares = hasSupabaseConfig ? supabaseApi.getSavedCompares
 export const createSavedCompare = hasSupabaseConfig ? supabaseApi.createSavedCompare : async () => {};
 export const deleteSavedCompare = hasSupabaseConfig ? supabaseApi.deleteSavedCompare : async () => {};
 
-// Phase 40 — Messaging
-export const getMyThreads = hasSupabaseConfig ? supabaseApi.getMyThreads : async () => [];
-export const getThreadMessages = hasSupabaseConfig ? supabaseApi.getThreadMessages : async () => ({ threadId: null, messages: [] });
-export const sendMessage = hasSupabaseConfig ? supabaseApi.sendMessage : async () => {};
-
 // Profile module
 export const getProfile = impl.getProfile;
 export const upsertProfile = impl.upsertProfile;
