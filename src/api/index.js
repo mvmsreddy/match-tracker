@@ -175,6 +175,26 @@ export const getAitaTournament    = hasSupabaseConfig ? supabaseApi.getAitaTourn
 export const getLatestAitaSyncLog = hasSupabaseConfig ? supabaseApi.getLatestAitaSyncLog : async () => null;
 export const triggerAitaSync      = hasSupabaseConfig ? supabaseApi.triggerAitaSync      : noSupabase;
 
+// Phase 45 — crowdsourced AITA participation (Supabase only, no mock fallback)
+export const declareAitaParticipation = hasSupabaseConfig ? supabaseApi.declareAitaParticipation : noSupabase;
+export const withdrawAitaParticipation = hasSupabaseConfig ? supabaseApi.withdrawAitaParticipation : noSupabase;
+export const getMyAitaParticipationForTournament = hasSupabaseConfig ? supabaseApi.getMyAitaParticipationForTournament : async () => null;
+export const getMyAitaParticipation = hasSupabaseConfig ? supabaseApi.getMyAitaParticipation : async () => [];
+export const uploadAitaDrawSheet = hasSupabaseConfig ? supabaseApi.uploadAitaDrawSheet : noSupabase;
+export const getMyAitaDrawUploads = hasSupabaseConfig ? supabaseApi.getMyAitaDrawUploads : async () => [];
+export const getAitaDrawUploadFileUrl = hasSupabaseConfig ? supabaseApi.getAitaDrawUploadFileUrl : async () => null;
+export const getPendingAitaDrawUploads = hasSupabaseConfig ? supabaseApi.getPendingAitaDrawUploads : async () => [];
+export const confirmAitaDrawUpload = hasSupabaseConfig ? supabaseApi.confirmAitaDrawUpload : noSupabase;
+export const rejectAitaDrawUpload = hasSupabaseConfig ? supabaseApi.rejectAitaDrawUpload : noSupabase;
+export const getConfirmedAitaDrawUploads = hasSupabaseConfig ? supabaseApi.getConfirmedAitaDrawUploads : async () => [];
+export const publishAitaDrawSheet = hasSupabaseConfig ? supabaseApi.publishAitaDrawSheet : noSupabase;
+export const uploadAitaResultsSheet = hasSupabaseConfig ? supabaseApi.uploadAitaResultsSheet : noSupabase;
+export const getMyAitaResultsUploads = hasSupabaseConfig ? supabaseApi.getMyAitaResultsUploads : async () => [];
+export const getAitaResultsUploadFileUrl = hasSupabaseConfig ? supabaseApi.getAitaResultsUploadFileUrl : async () => null;
+export const getPendingAitaResultsUploads = hasSupabaseConfig ? supabaseApi.getPendingAitaResultsUploads : async () => [];
+export const rejectAitaResultsUpload = hasSupabaseConfig ? supabaseApi.rejectAitaResultsUpload : noSupabase;
+export const applyAitaResultsSheet = hasSupabaseConfig ? supabaseApi.applyAitaResultsSheet : noSupabase;
+
 // Phase 27 — AITA Player Rankings mirror
 export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRankingFacets : async () => [];
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];

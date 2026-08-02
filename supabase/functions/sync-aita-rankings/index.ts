@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  // --- Auth: cron secret OR organizer JWT (same as sync-aita-calendar) ---
+  // --- Auth: cron secret OR super_admin JWT (same as sync-aita-calendar) ---
   let triggeredBy = 'cron';
   const cronHeader = req.headers.get('x-sync-secret');
   if (SYNC_SECRET && cronHeader === SYNC_SECRET) {
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('id', userData.user.id)
       .maybeSingle();
-    if (profile?.role !== 'organizer') {
+    if (profile?.role !== 'super_admin') {
       return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: corsHeaders });
     }
     triggeredBy = `manual:${userData.user.id}`;

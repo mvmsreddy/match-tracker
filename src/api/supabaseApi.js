@@ -351,6 +351,8 @@ function rowToWeek(row) {
     stringingCharges: row.stringing_charges,
     aitaCardRequired: row.aita_card_required || false,
     hotelOptions: row.hotel_options || [],
+    // Phase 45 — 'organiser' (default) | 'aita_crowdsourced'
+    source: row.source || 'organiser',
     // joined events count if present
     eventCount: row.events ? row.events.length : undefined,
   };
@@ -404,6 +406,9 @@ export async function createTournamentWeek(userId, week) {
     max_doubles_per_player: week.maxDoublesPerPlayer || 1,
     playing_up_allowed: week.playingUpAllowed !== undefined ? week.playingUpAllowed : true,
     playing_down_allowed: week.playingDownAllowed !== undefined ? week.playingDownAllowed : false,
+    // Phase 45 — 'organiser' (default) | 'aita_crowdsourced' for shadow weeks
+    // published from a crowdsourced AITA draw-sheet upload.
+    source: week.source || 'organiser',
     // Phase 12 — fact sheet fields (all optional)
     grade: week.grade || null,
     entry_deadline: week.entryDeadline || null,
@@ -823,7 +828,9 @@ export async function moveEntryToGroup(entryId, targetGroup, eventId) {
   return rowToEntry(data);
 }
 
-export async function bulkAddDrawEntries(eventId, drawType, entries) {
+// entrySource: 'organiser' (default, the two existing callers) | 'aita_import'
+// (phase 45 — entries transcribed from a crowdsourced draw-sheet upload).
+export async function bulkAddDrawEntries(eventId, drawType, entries, entrySource = 'organiser') {
   if (entries.length === 0) return [];
   const { data: { user } } = await supabase.auth.getUser();
   const isWd = drawType === 'withdrawal';
@@ -840,8 +847,7 @@ export async function bulkAddDrawEntries(eventId, drawType, entries) {
     ranking: e.ranking ? Number(e.ranking) : null,
     status_code: e.statusCode || null,
     is_alternate: e.isAlternate || false,
-    // Phase 14 — mark as organiser-entered
-    entry_source: 'organiser',
+    entry_source: entrySource,
     // draw_type='withdrawal' means they withdrew before the draw was made
     entry_status: isWd ? 'withdrawn' : 'placed',
     is_withdrawn: isWd ? true : false,
@@ -1230,10 +1236,14 @@ export async function getMyEntries(playerId) {
     if (!user) return [];
     effectiveId = user.id;
   }
+  // entered_by covers self-entries; player_id covers entries someone else
+  // created and linked to this account (organiser manual-link, or phase 45's
+  // admin-published crowdsourced draws) — without the OR, a linked-but-not-
+  // self-entered tournament would never show up here.
   const { data, error } = await supabase
     .from('draw_entries')
-    .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade))')
-    .eq('entered_by', effectiveId)
+    .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade, source))')
+    .or(`entered_by.eq.${effectiveId},player_id.eq.${effectiveId}`)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(row => ({
@@ -2823,6 +2833,8 @@ function rowToAitaTournament(row) {
       : null,
     lastSeenAt: row.last_seen_at,
     lastChangedAt: row.last_changed_at,
+    linkedTournamentWeekId: row.linked_tournament_week_id,
+    linkedEventId: row.linked_event_id,
   };
 }
 
@@ -2888,6 +2900,441 @@ export async function triggerAitaSync() {
   const { data, error } = await supabase.functions.invoke('sync-aita-calendar', { body: {} });
   if (error) throw new Error(error.message);
   return data;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 45 — crowdsourced AITA participation. A player declaring "I'm
+// playing" an AITA-calendar tournament (aita_participation_interest) is
+// deliberately separate from the real tournament module's draw_entries —
+// no draw exists yet at this point. See supabase/phase45_aita_crowdsourced.sql.
+// ---------------------------------------------------------------------------
+
+function rowToAitaParticipation(row) {
+  return {
+    id: row.id,
+    aitaTournamentId: row.aita_tournament_id,
+    status: row.status,
+    createdAt: row.created_at,
+    lastNudgedAt: row.last_nudged_at,
+    tournament: row.aita_tournaments ? rowToAitaTournament(row.aita_tournaments) : null,
+  };
+}
+
+// Idempotent — re-declaring after a withdrawal flips status back to 'declared'
+// instead of erroring on the (aita_tournament_id, user_id) unique constraint.
+export async function declareAitaParticipation(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('aita_participation_interest')
+    .upsert(
+      { aita_tournament_id: aitaTournamentId, user_id: user.id, status: 'declared' },
+      { onConflict: 'aita_tournament_id,user_id' },
+    )
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaParticipation(data);
+}
+
+export async function withdrawAitaParticipation(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('aita_participation_interest')
+    .update({ status: 'withdrawn' })
+    .eq('aita_tournament_id', aitaTournamentId)
+    .eq('user_id', user.id);
+  if (error) throw new Error(error.message);
+}
+
+// This player's own declared-interest row for one tournament, or null —
+// drives the "I'm Playing" button's state on the calendar card/factsheet.
+export async function getMyAitaParticipationForTournament(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from('aita_participation_interest')
+    .select('*')
+    .eq('aita_tournament_id', aitaTournamentId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? rowToAitaParticipation(data) : null;
+}
+
+// This player's full list of declared AITA tournaments, tournament facts
+// embedded — powers the dashboard's "My AITA Tournaments" card.
+export async function getMyAitaParticipation() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('aita_participation_interest')
+    .select('*, aita_tournaments(*)')
+    .eq('user_id', user.id)
+    .eq('status', 'declared')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaParticipation);
+}
+
+// ---------------------------------------------------------------------------
+// Phase 45 — crowdsourced draw-sheet uploads. A player uploads a photo/PDF
+// of the real draw (AITA doesn't give us this); a super_admin confirms it's
+// the right tournament before anything gets parsed or published. Storage
+// path is `<uploader_uid>/<aitaTournamentId>-<timestamp>.<ext>` so
+// storage.objects RLS can key off the folder name, same as
+// uploadTrainingVideo above.
+// ---------------------------------------------------------------------------
+
+const AITA_DRAW_UPLOADS_BUCKET = 'aita-draw-uploads';
+
+function rowToAitaDrawUpload(row) {
+  return {
+    id: row.id,
+    aitaTournamentId: row.aita_tournament_id,
+    uploadedBy: row.uploaded_by,
+    storagePath: row.storage_path,
+    uploadedAt: row.uploaded_at,
+    status: row.status,
+    reviewedBy: row.reviewed_by,
+    reviewedAt: row.reviewed_at,
+    parsedJson: row.parsed_json,
+    publishedEventId: row.published_event_id,
+    tournament: row.aita_tournaments ? rowToAitaTournament(row.aita_tournaments) : null,
+  };
+}
+
+export async function uploadAitaDrawSheet(aitaTournamentId, file) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${user.id}/${aitaTournamentId}-${Date.now()}.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from(AITA_DRAW_UPLOADS_BUCKET)
+    .upload(path, file, { contentType: file.type });
+  if (upErr) throw new Error(upErr.message);
+
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .insert({ aita_tournament_id: aitaTournamentId, uploaded_by: user.id, storage_path: path })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaDrawUpload(data);
+}
+
+export async function getMyAitaDrawUploads(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .select('*')
+    .eq('aita_tournament_id', aitaTournamentId)
+    .eq('uploaded_by', user.id)
+    .order('uploaded_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaDrawUpload);
+}
+
+export async function getAitaDrawUploadFileUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from(AITA_DRAW_UPLOADS_BUCKET).createSignedUrl(path, 3600);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
+}
+
+// super_admin review queue — every upload still awaiting a decision.
+export async function getPendingAitaDrawUploads() {
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .select('*, aita_tournaments(*)')
+    .eq('status', 'pending_review')
+    .order('uploaded_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaDrawUpload);
+}
+
+export async function confirmAitaDrawUpload(uploadId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .update({ status: 'confirmed', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', uploadId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaDrawUpload(data);
+}
+
+export async function rejectAitaDrawUpload(uploadId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .update({ status: 'confirmed_wrong', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', uploadId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaDrawUpload(data);
+}
+
+// Uploads the admin has confirmed belong to the right tournament, but hasn't
+// transcribed/published yet.
+export async function getConfirmedAitaDrawUploads() {
+  const { data, error } = await supabase
+    .from('aita_draw_uploads')
+    .select('*, aita_tournaments(*)')
+    .eq('status', 'confirmed')
+    .order('reviewed_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaDrawUpload);
+}
+
+// Turns a confirmed upload + the admin's transcribed entry list into a real
+// tournament_weeks/events/draw_entries/event_matches record — from this
+// point on it's indistinguishable from an organiser-run event, so the
+// existing bracket UI, TournamentsTab.jsx and match-tracker linking all
+// pick it up with zero further code. `entries` is
+// [{ position, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode }],
+// admin-typed off the uploaded photo/PDF (no OCR — see phase45 plan).
+export async function publishAitaDrawSheet({ uploadId, aitaTournamentId, entries }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  if (!entries || entries.length === 0) throw new Error('No entries to publish');
+
+  const t = await getAitaTournament(aitaTournamentId);
+
+  const week = await createTournamentWeek(user.id, {
+    name: t.name,
+    location: t.venue,
+    city: t.city,
+    surface: t.surface,
+    startDate: t.startDate,
+    grade: t.grade,
+    entryDeadline: t.entryDeadline,
+    withdrawalDeadline: t.withdrawalDeadline,
+    source: 'aita_crowdsourced',
+  });
+
+  const event = await createEvent(week.id, {
+    category: t.category || t.ageGroup || 'Singles',
+    ageGroup: t.ageGroup || '',
+    drawSize: entries.length,
+    numSeeds: entries.filter(e => e.seed).length,
+  });
+
+  const created = await bulkAddDrawEntries(event.id, 'main', entries, 'aita_import');
+
+  // Match transcribed entries to platform accounts by AITA reg, so their
+  // real tournament list / bracket / tracker linking picks this event up
+  // for free via TournamentsTab.jsx (which reads off draw_entries.player_id)
+  // — a raw single-column update here rather than updateDrawEntry(), which
+  // is a full-row replace and would need every other field re-supplied.
+  const regs = created.map(e => e.aitaReg).filter(Boolean);
+  let matchedPlayerIds = [];
+  if (regs.length > 0) {
+    const { data: matches } = await supabase
+      .from('user_profiles')
+      .select('id, aita_reg')
+      .eq('role', 'player')
+      .in('aita_reg', regs);
+    const byReg = new Map((matches || []).map(m => [m.aita_reg, m.id]));
+    const updates = created
+      .map(e => ({ entryId: e.id, playerId: byReg.get(e.aitaReg) }))
+      .filter(u => u.playerId);
+    await Promise.all(updates.map(u =>
+      supabase.from('draw_entries').update({ player_id: u.playerId }).eq('id', u.entryId)
+    ));
+    matchedPlayerIds = updates.map(u => u.playerId);
+  }
+
+  const sorted = [...created].sort((a, b) => a.position - b.position);
+  await initializeEventMatches(event.id, 'main', sorted, undefined);
+  await updateEvent(event.id, { status: 'draw_ready' });
+
+  await supabase.from('aita_tournaments')
+    .update({ linked_tournament_week_id: week.id, linked_event_id: event.id })
+    .eq('id', aitaTournamentId);
+
+  await supabase.from('aita_draw_uploads')
+    .update({ status: 'published', published_event_id: event.id })
+    .eq('id', uploadId);
+
+  if (matchedPlayerIds.length > 0) {
+    try {
+      await createNotificationsForUsers(matchedPlayerIds, {
+        type: 'draw_published',
+        title: `Draw published: ${t.name}`,
+        body: `A crowdsourced draw for ${t.name} has been added to your tournaments.`,
+        tournamentWeekId: week.id,
+        eventId: event.id,
+      });
+    } catch {
+      // best-effort, same as the organiser draw-publish notification path
+    }
+  }
+
+  return { week, event };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 45 — crowdsourced EOD results-sheet uploads. Any player already in a
+// published crowdsourced draw (draw_entries.player_id) can upload a results
+// photo/PDF; a super_admin always reviews before it's applied — no
+// auto-publish, unlike the lighter single-confirm draw-sheet gate. Same
+// bucket-path convention as draw uploads: `<uploader_uid>/<eventId>-<ts>.<ext>`.
+// ---------------------------------------------------------------------------
+
+const AITA_RESULTS_UPLOADS_BUCKET = 'aita-results-uploads';
+
+function rowToAitaResultsUpload(row) {
+  return {
+    id: row.id,
+    aitaTournamentId: row.aita_tournament_id,
+    eventId: row.event_id,
+    uploadedBy: row.uploaded_by,
+    storagePath: row.storage_path,
+    uploadedAt: row.uploaded_at,
+    status: row.status,
+    reviewedBy: row.reviewed_by,
+    reviewedAt: row.reviewed_at,
+    appliedAt: row.applied_at,
+    tournament: row.aita_tournaments ? rowToAitaTournament(row.aita_tournaments) : null,
+  };
+}
+
+// Callers only know the real eventId (e.g. TournamentsTab.jsx) — the
+// aita_tournaments row is resolved here via its reverse link (set at
+// publish time by publishAitaDrawSheet) rather than asking every call site
+// to carry both ids around.
+export async function uploadAitaResultsSheet(eventId, file) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+
+  const { data: t, error: tErr } = await supabase
+    .from('aita_tournaments')
+    .select('id')
+    .eq('linked_event_id', eventId)
+    .maybeSingle();
+  if (tErr) throw new Error(tErr.message);
+  if (!t) throw new Error('This event is not linked to an AITA calendar tournament');
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${user.id}/${eventId}-${Date.now()}.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from(AITA_RESULTS_UPLOADS_BUCKET)
+    .upload(path, file, { contentType: file.type });
+  if (upErr) throw new Error(upErr.message);
+
+  const { data, error } = await supabase
+    .from('aita_results_uploads')
+    .insert({ aita_tournament_id: t.id, event_id: eventId, uploaded_by: user.id, storage_path: path })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaResultsUpload(data);
+}
+
+export async function getMyAitaResultsUploads(eventId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('aita_results_uploads')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('uploaded_by', user.id)
+    .order('uploaded_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaResultsUpload);
+}
+
+export async function getAitaResultsUploadFileUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from(AITA_RESULTS_UPLOADS_BUCKET).createSignedUrl(path, 3600);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
+}
+
+export async function getPendingAitaResultsUploads() {
+  const { data, error } = await supabase
+    .from('aita_results_uploads')
+    .select('*, aita_tournaments(*)')
+    .eq('status', 'pending_review')
+    .order('uploaded_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaResultsUpload);
+}
+
+export async function rejectAitaResultsUpload(uploadId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('aita_results_uploads')
+    .update({ status: 'rejected', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', uploadId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAitaResultsUpload(data);
+}
+
+// results: [{ round, matchSlot, winnerPosition, score, outcomeType }], admin-
+// typed off the uploaded photo/PDF against the event's existing bracket
+// (round/match_slot already exist from the draw-publish step — see
+// publishAitaDrawSheet). Reuses the exact same updateMatchScore +
+// advanceWinner + draw_ready->in_progress flip the organiser score-entry UI
+// already does (EventDetailPage.jsx's handleScoreMatch), so bracket state
+// stays consistent whichever path wrote it.
+export async function applyAitaResultsSheet({ uploadId, eventId, results }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  if (!results || results.length === 0) throw new Error('No results to apply');
+
+  const [{ data: entries, error: eErr }, { data: matches, error: mErr }, event] = await Promise.all([
+    supabase.from('draw_entries').select('id, position').eq('event_id', eventId).eq('draw_type', 'main'),
+    supabase.from('event_matches').select('id, round, match_slot').eq('event_id', eventId).eq('draw_type', 'main'),
+    getEvent(eventId),
+  ]);
+  if (eErr) throw new Error(eErr.message);
+  if (mErr) throw new Error(mErr.message);
+
+  const idByPosition = new Map((entries || []).map(e => [e.position, e.id]));
+  const matchByRoundSlot = new Map((matches || []).map(m => [`${m.round}|${m.match_slot}`, m.id]));
+  const totalRounds = Math.ceil(Math.log2(event.drawSize || (matches || []).length * 2));
+  const wasDrawReady = event.status === 'draw_ready';
+
+  let applied = 0;
+  for (const r of results) {
+    const matchId = matchByRoundSlot.get(`${r.round}|${r.matchSlot}`);
+    const winnerEntryId = idByPosition.get(Number(r.winnerPosition));
+    if (!matchId || !winnerEntryId) continue;
+    await updateMatchScore(matchId, {
+      score: r.score || null,
+      winnerEntryId,
+      outcomeType: r.outcomeType || 'score',
+      status: 'complete',
+      umpire: null,
+    });
+    if (r.round < totalRounds) {
+      await advanceWinner(eventId, 'main', r.round, r.matchSlot, winnerEntryId);
+    }
+    applied++;
+  }
+
+  if (wasDrawReady && applied > 0) {
+    await updateEvent(eventId, { status: 'in_progress' });
+  }
+
+  await supabase.from('aita_results_uploads')
+    .update({ status: 'applied', applied_at: new Date().toISOString(), reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', uploadId);
+
+  return { applied };
 }
 
 // ---------------------------------------------------------------------------

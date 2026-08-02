@@ -60,7 +60,7 @@ const selectCls = 'rounded-sm border border-input bg-transparent px-2.5 py-1.5 t
 
 export default function AitaCalendarPage() {
   const { user } = useAuth();
-  const isOrganizer = user?.role === 'organizer';
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const [tournaments, setTournaments] = useState(null);
   const [error, setError] = useState('');
@@ -155,7 +155,7 @@ export default function AitaCalendarPage() {
           <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Mirrored from aitatennis.com</div>
           <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">AITA Calendar</h1>
         </div>
-        {isOrganizer && (
+        {isSuperAdmin && (
           <Button onClick={handleSyncNow} disabled={syncing}>
             {syncing ? 'Syncing…' : '⟳ Sync Now'}
           </Button>

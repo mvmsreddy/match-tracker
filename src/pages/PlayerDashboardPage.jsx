@@ -11,6 +11,7 @@ import TrainingLogTab from '../components/player/TrainingLogTab';
 import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
 import ProgressTab from '../components/player/ProgressTab';
+import MyAitaParticipationCard from '../components/player/MyAitaParticipationCard';
 
 // Player Coaching Dashboard — multi-segment plan (all player-side tabs
 // implemented: Overview/Tournaments Phase 2, Goals/Training Phase 3,
@@ -67,6 +68,8 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
       viewPlayerName={viewPlayerName}
       viewerRole={viewerRole}
     >
+      {activeTab === 'overview' && <MyAitaParticipationCard isOwnDashboard={isOwnDashboard} />}
+
       {isOwnDashboard && error && <div className="history-empty">{error}</div>}
       {loading && <div className="history-empty">Loading segments…</div>}
 

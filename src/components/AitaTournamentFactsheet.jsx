@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '../lib/utils';
 import { buttonVariants } from './primitives/button';
+import { Button } from './primitives/button';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../api';
 
 // Scraped factsheet fields can balloon into a dump of the entire remaining
 // PDF text when the sync parser's end-label match fails on a given PDF
@@ -166,6 +169,80 @@ function findDrawEvent(events, matcher) {
   return events.find(e => matcher(e.event.toLowerCase())) || null;
 }
 
+// "I'm Playing" declaration (phase 45) — self-contained so both call sites
+// (the quick-view modal on AitaCalendarPage and the full-page factsheet)
+// get it for free. Only meaningful for players: this records intent, not a
+// real draw entry (no draw exists in our system yet for an AITA-mirrored
+// tournament), so it's what the dashboard card and the admin nudge job key
+// off until someone uploads the actual draw sheet.
+function ParticipationWidget({ aitaTournamentId }) {
+  const { user } = useAuth();
+  const [interest, setInterest] = useState(null); // undefined-until-loaded via null
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user?.role !== 'player') { setLoading(false); return; }
+    let cancelled = false;
+    api.getMyAitaParticipationForTournament(aitaTournamentId)
+      .then(row => { if (!cancelled) setInterest(row); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [aitaTournamentId, user?.role]);
+
+  if (user?.role !== 'player' || loading) return null;
+
+  async function handleDeclare() {
+    setBusy(true);
+    setError('');
+    try {
+      const row = await api.declareAitaParticipation(aitaTournamentId);
+      setInterest(row);
+    } catch (e) {
+      setError(e.message || 'Could not save — try again');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleWithdraw() {
+    setBusy(true);
+    setError('');
+    try {
+      await api.withdrawAitaParticipation(aitaTournamentId);
+      setInterest(null);
+    } catch (e) {
+      setError(e.message || 'Could not save — try again');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+      {interest ? (
+        <>
+          <span className="text-sm font-semibold text-accent-ink">✓ You're playing this</span>
+          <span className="text-xs text-muted-foreground">Track it from your dashboard — upload the draw sheet once it's out.</span>
+          <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground" onClick={handleWithdraw} disabled={busy}>
+            Not playing anymore
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="text-sm text-muted-foreground">Entering this tournament?</span>
+          <Button size="sm" className="ml-auto" onClick={handleDeclare} disabled={busy}>
+            I'm Playing This
+          </Button>
+        </>
+      )}
+      {error && <div className="w-full text-xs text-destructive">{error}</div>}
+    </div>
+  );
+}
+
 function formatDateRange(first, last) {
   if (first && last) return first === last ? first : `${first} – ${last}`;
   return first || last || '';
@@ -315,6 +392,8 @@ export default function AitaTournamentFactsheet({ t }) {
         )}
         {t.startDate && <span className="text-sm text-muted-foreground">{t.startDate}</span>}
       </div>
+
+      <ParticipationWidget aitaTournamentId={t.id} />
 
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
         <TableRow label="Tournament Category" value={t.grade} />

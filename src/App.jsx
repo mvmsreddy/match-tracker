@@ -27,15 +27,20 @@ import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 import NutritionPage from './pages/NutritionPage';
 import DrillsPage from './pages/DrillsPage';
+import AitaAdminReviewPage from './pages/AitaAdminReviewPage';
 
 // Parent's home experience (linked-player list) is different enough from
 // DashboardPage's player/coach/organizer branches that it's routed here
 // instead of adding a 4th branch to that already-large component. The
 // nutritionist has an entirely separate command centre — same story.
+// super_admin follows suit: its only job is the upload review queue, so
+// that's its home too rather than a 4th/5th branch grafted onto
+// DashboardPage.
 function HomeRoute() {
   const { user } = useAuth();
   if (user?.role === 'parent') return <ParentDashboardPage />;
   if (user?.role === 'nutritionist') return <NutritionistDashboardPage />;
+  if (user?.role === 'super_admin') return <AitaAdminReviewPage />;
   return <DashboardPage />;
 }
 
@@ -65,6 +70,7 @@ export default function App() {
                 <Route path="/aita-calendar" element={<AitaCalendarPage />} />
                 <Route path="/aita-calendar/:id" element={<AitaTournamentFactsheetPage />} />
                 <Route path="/aita-rankings" element={<AitaRankingsPage />} />
+                <Route path="/admin/aita-review" element={<AitaAdminReviewPage />} />
                 <Route path="/tournaments" element={<TournamentsListPage />} />
                 <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
                 <Route path="/tournaments/:id/events/:eventId" element={<EventDetailPage />} />

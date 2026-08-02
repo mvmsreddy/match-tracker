@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
@@ -7,6 +7,69 @@ import { todayLocalIso, toLocalIso } from '../../lib/dates';
 import LogMatchButton from '../tournaments/LogMatchButton';
 import MatchDetailModal from './MatchDetailModal';
 import { Badge } from '@/components/primitives/badge';
+
+const RESULTS_UPLOAD_STATUS_LABEL = {
+  pending_review: 'Uploaded — waiting for admin review',
+  rejected: "That upload wasn't applied — try again below",
+  applied: 'Applied — thanks!',
+};
+
+// Results-sheet upload for a crowdsourced (phase 45) tournament — AITA
+// doesn't give us live results for these, so any matched player in the draw
+// can upload an EOD results photo/PDF; a super_admin transcribes it into
+// the bracket from the admin review queue. Only rendered for
+// week.source === 'aita_crowdsourced' (see below); organiser-run events get
+// their scores from the organiser directly and don't need this.
+function ResultsSheetUploader({ eventId }) {
+  const [uploads, setUploads] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+
+  function reload() {
+    return api.getMyAitaResultsUploads(eventId).then(setUploads).catch(() => setUploads([]));
+  }
+
+  useEffect(() => { reload(); }, [eventId]);
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api.uploadAitaResultsSheet(eventId, file);
+      await reload();
+    } catch (err) {
+      setError(err.message || 'Upload failed — try again');
+    } finally {
+      setBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  if (uploads === null) return null;
+  const latest = uploads[0] || null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs p-3 rounded-sm bg-secondary/50 mb-2">
+      <span className="font-semibold">Results sheet:</span>
+      {latest && <span className="text-muted-foreground">{RESULTS_UPLOAD_STATUS_LABEL[latest.status] || latest.status}</span>}
+      <label className={`inline-flex items-center gap-1.5 rounded-sm border border-dashed border-border px-2.5 py-1 font-semibold cursor-pointer hover:border-primary ${busy ? 'opacity-60 pointer-events-none' : ''}`}>
+        {busy ? 'Uploading…' : 'Upload today’s results'}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          className="hidden"
+          onChange={handleFileChange}
+          disabled={busy}
+        />
+      </label>
+      {error && <span className="text-destructive">{error}</span>}
+    </div>
+  );
+}
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -243,6 +306,9 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
           </button>
           {openId === e.id && (
             <div className="px-3 pb-3 border-t border-border">
+              {isOwnDashboard && e.event.week?.source === 'aita_crowdsourced' && (
+                <ResultsSheetUploader eventId={e.event.id} />
+              )}
               <TournamentMatches entry={e} circuit={circuit} trackedByEventMatch={trackedByEventMatch} onOpenMatch={setModalMatch} isOwnDashboard={isOwnDashboard} />
             </div>
           )}

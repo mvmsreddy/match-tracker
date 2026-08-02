@@ -14,7 +14,7 @@
 //     runs at all — x-sync-secret is the actual check performed here.
 //   - the "Sync Now" button, via a normal user JWT (Authorization header,
 //     attached automatically by supabase.functions.invoke) — the caller's
-//     user_profiles.role must be 'organizer'.
+//     user_profiles.role must be 'super_admin'.
 //
 // Runs with the service-role key (auto-injected by the Edge Runtime) so it
 // can write to aita_tournaments / aita_sync_log / Storage, all of which
@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('id', userData.user.id)
       .maybeSingle();
-    if (profile?.role !== 'organizer') {
+    if (profile?.role !== 'super_admin') {
       return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: corsHeaders });
     }
     triggeredBy = `manual:${userData.user.id}`;
