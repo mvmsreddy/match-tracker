@@ -173,6 +173,7 @@ function parseDrawText(text) {
 }
 
 function PublishDrawForm({ upload, onPublished }) {
+  const [drawType, setDrawType] = useState('main');
   const [text, setText] = useState('');
   const [preview, setPreview] = useState(null);
   const [parseErrors, setParseErrors] = useState([]);
@@ -192,6 +193,7 @@ function PublishDrawForm({ upload, onPublished }) {
       const result = await api.publishAitaDrawSheet({
         uploadId: upload.id,
         aitaTournamentId: upload.aitaTournamentId,
+        drawType,
         entries: preview,
       });
       onPublished(upload.id, result);
@@ -203,6 +205,17 @@ function PublishDrawForm({ upload, onPublished }) {
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center gap-3 text-xs font-semibold">
+        <span className="text-muted-foreground">This upload is the:</span>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name={`drawType-${upload.id}`} checked={drawType === 'qualifying'} onChange={() => setDrawType('qualifying')} />
+          Qualifying Draw
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name={`drawType-${upload.id}`} checked={drawType === 'main'} onChange={() => setDrawType('main')} />
+          Main Draw
+        </label>
+      </div>
       <textarea
         className="w-full h-32 rounded-sm border border-border bg-background p-2 text-xs font-mono"
         placeholder="One entry per line: Position, FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode"
@@ -215,7 +228,7 @@ function PublishDrawForm({ upload, onPublished }) {
         </Button>
         {preview && preview.length > 0 && (
           <Button size="sm" onClick={handlePublish} disabled={busy}>
-            {busy ? 'Publishing…' : `Publish Draw (${preview.length} entries)`}
+            {busy ? 'Publishing…' : `Publish ${drawType === 'qualifying' ? 'Qualifying' : 'Main'} Draw (${preview.length} entries)`}
           </Button>
         )}
       </div>

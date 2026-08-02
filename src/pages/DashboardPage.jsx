@@ -25,7 +25,8 @@ import DailyMissionCard from '@/components/motivation/DailyMissionCard';
 import AchievementsReel from '@/components/motivation/AchievementsReel';
 import NextMilestoneCard from '@/components/motivation/NextMilestoneCard';
 import H2HRivalryCard from '@/components/H2HRivalryCard';
-import MyAitaParticipationCard from '@/components/player/MyAitaParticipationCard';
+import { DrawSheetUploader } from '@/components/player/MyAitaParticipationCard';
+import { Badge } from '@/components/primitives/badge';
 import { SegmentProvider, useSegment, useOptionalSegment } from '../context/SegmentContext';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
@@ -316,40 +317,94 @@ function ResultRow({ match, showOwner, ownerName }) {
   );
 }
 
-function PlayerTournamentSections({ loading, error, tournaments, todayMatches, recentResults }) {
+// Real entry -> status badge. 'pending' means the organiser has accepted
+// the entry but hasn't drawn/locked the bracket yet (still in the
+// acceptance list); 'placed' means a real draw position exists, so the
+// draw_type tells us qualifying vs main.
+function entryStatusBadge(entry) {
+  if (entry.entryStatus === 'withdrawn') return { label: 'Withdrawn', className: 'bg-muted text-muted-foreground' };
+  if (entry.entryStatus !== 'placed') return { label: 'Accepted List', className: 'bg-muted text-muted-foreground' };
+  return entry.drawType === 'qualifying'
+    ? { label: 'Qualifying Draw', className: 'bg-primary/10 text-accent-ink' }
+    : { label: 'Main Draw', className: 'bg-primary/10 text-accent-ink' };
+}
+
+// Declared-only (aita_participation_interest, no organiser/real entry yet)
+// -> a date-driven prompt using the AITA factsheet dates we already have
+// (aita_tournaments.qualifyingStartDate/startDate), instead of a flat
+// "waiting" message the whole time.
+function declaredTournamentStatus(t) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (t.qualifyingStartDate && today >= t.qualifyingStartDate && (!t.startDate || today < t.startDate)) {
+    return { label: 'Qualifying draw should be out', ctaLabel: 'Upload qualifying draw' };
+  }
+  if (t.startDate && today >= t.startDate) {
+    return { label: 'Main draw should be out', ctaLabel: 'Upload main draw' };
+  }
+  return { label: 'Waiting for draw', ctaLabel: 'Upload draw sheet' };
+}
+
+function PlayerTournamentSections({ loading, error, tournaments, todayMatches, recentResults, declaredOnly = [] }) {
   if (loading) return <EmptyState>Loading tournament activity…</EmptyState>;
   if (error) return <EmptyState>{error}</EmptyState>;
-  if (tournaments.length === 0) {
-    return <EmptyState>Not entered in any tournaments yet.</EmptyState>;
-  }
+
+  const hasAny = tournaments.length > 0 || declaredOnly.length > 0;
 
   return (
     <div>
       <SectionTitle>My Tournaments</SectionTitle>
-      <div className="space-y-2">
-        {tournaments.map(({ week, events }) => (
-          <Card key={week.id} className="p-3">
-            <Link to={`/tournaments/${week.id}`} className="text-sm font-bold hover:text-accent-ink">{week.name}</Link>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {[week.location, week.city, week.startDate].filter(Boolean).join(' · ')}
-            </div>
-            <div className="mt-2 space-y-1">
-              {events.map(({ event, entry }) => (
-                <Link
-                  key={entry.id}
-                  to={`/tournaments/${week.id}/events/${event.id}`}
-                  className="flex items-center justify-between gap-2 text-xs py-1 hover:text-accent-ink"
-                >
-                  <span>{event.ageGroup} {event.category}{entry.drawType === 'qualifying' ? ' (Qualifying)' : ''}</span>
-                  <span className="text-muted-foreground">
-                    {entry.seed ? `Seed ${entry.seed} · ` : ''}Pos {entry.position}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </Card>
-        ))}
-      </div>
+      {!hasAny ? (
+        <EmptyState>Not entered in any tournaments yet.</EmptyState>
+      ) : (
+        <div className="space-y-2">
+          {tournaments.map(({ week, events }) => (
+            <Card key={week.id} className="p-3">
+              <Link to={`/tournaments/${week.id}`} className="text-sm font-bold hover:text-accent-ink">{week.name}</Link>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {[week.location, week.city, week.startDate].filter(Boolean).join(' · ')}
+              </div>
+              <div className="mt-2 space-y-1">
+                {events.map(({ event, entry }) => {
+                  const status = entryStatusBadge(entry);
+                  return (
+                    <Link
+                      key={entry.id}
+                      to={`/tournaments/${week.id}/events/${event.id}`}
+                      className="flex items-center justify-between gap-2 text-xs py-1 hover:text-accent-ink"
+                    >
+                      <span>{event.ageGroup} {event.category}</span>
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        {entry.entryStatus === 'placed' && (
+                          <span>{entry.seed ? `Seed ${entry.seed} · ` : ''}Pos {entry.position}</span>
+                        )}
+                        <span className={`rounded-sm px-1.5 py-0.5 text-[0.68rem] font-semibold ${status.className}`}>{status.label}</span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </Card>
+          ))}
+
+          {declaredOnly.map(r => {
+            const t = r.tournament;
+            if (!t) return null;
+            const status = declaredTournamentStatus(t);
+            return (
+              <Card key={r.id} className="p-3 space-y-2">
+                <Link to={`/aita-calendar/${t.id}`} className="text-sm font-bold hover:text-accent-ink">{t.name}</Link>
+                <div className="text-xs text-muted-foreground -mt-1.5">
+                  {[t.venue, t.city, t.startDate].filter(Boolean).join(' · ')}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">{status.label}</Badge>
+                  <DrawSheetUploader aitaTournamentId={t.id} ctaLabel={status.ctaLabel} />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <SectionTitle>Today's Matches</SectionTitle>
       {todayMatches.length === 0 ? (
@@ -513,6 +568,7 @@ export default function DashboardPage() {
   const [links, setLinks]       = useState(null);
   const [error, setError]       = useState('');
   const [myEntries, setMyEntries]         = useState(null);
+  const [declaredTournaments, setDeclaredTournaments] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [streakInputs, setStreakInputs] = useState(null); // { sessionDates, freezeDates }
 
@@ -536,12 +592,17 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [user.id, role]);
 
-  // Load player's self-entered events + pending invitations
+  // Load player's self-entered events + pending invitations + AITA Calendar
+  // tournaments declared via "I'm Playing" but not yet a real entry (phase
+  // 45/46) — merged into the same list as myEntries in PlayerTournamentSections.
   useEffect(() => {
     if (role !== 'player') return;
     let cancelled = false;
     api.getMyEntries().then(data => { if (!cancelled) setMyEntries(data); }).catch(() => {});
     api.getMyPendingInvitations().then(data => { if (!cancelled) setPendingInvites(data); }).catch(() => {});
+    api.getMyAitaParticipation()
+      .then(data => { if (!cancelled) setDeclaredTournaments(data.filter(r => !r.tournament?.linkedTournamentWeekId)); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [role]);
 
@@ -761,12 +822,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Player: AITA Calendar tournaments declared via "I'm Playing" — not
-          yet a real entry (no draw published/claimed), so it's separate
-          from "My Entries" above, which only lists real draw_entries. */}
-      {role === 'player' && <MyAitaParticipationCard isOwnDashboard />}
-
-      {/* Player: tournament activity */}
+      {/* Player: tournament activity — real entries + AITA Calendar
+          tournaments declared via "I'm Playing" (not yet a real entry),
+          merged into one status-aware list (see PlayerTournamentSections). */}
       {role === 'player' && (
         <PlayerTournamentSections
           loading={activity.loading}
@@ -774,6 +832,7 @@ export default function DashboardPage() {
           tournaments={activity.tournaments}
           todayMatches={activity.todayMatches}
           recentResults={activity.recentResults}
+          declaredOnly={declaredTournaments}
         />
       )}
 

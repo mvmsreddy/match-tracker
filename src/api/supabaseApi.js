@@ -3101,33 +3101,55 @@ export async function getConfirmedAitaDrawUploads() {
 // pick it up with zero further code. `entries` is
 // [{ position, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode }],
 // admin-typed off the uploaded photo/PDF (no OCR — see phase45 plan).
-export async function publishAitaDrawSheet({ uploadId, aitaTournamentId, entries }) {
+// `drawType` ('qualifying' | 'main') matters because a qualifying draw is
+// often uploaded before the main draw exists — the SECOND publish for the
+// same tournament reuses the shadow week/event the first one created
+// (same event, two draw_types, exactly like an organiser-run event) rather
+// than creating a duplicate tournament.
+export async function publishAitaDrawSheet({ uploadId, aitaTournamentId, drawType, entries }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   if (!entries || entries.length === 0) throw new Error('No entries to publish');
+  if (drawType !== 'qualifying' && drawType !== 'main') throw new Error('drawType must be "qualifying" or "main"');
 
   const t = await getAitaTournament(aitaTournamentId);
 
-  const week = await createTournamentWeek(user.id, {
-    name: t.name,
-    location: t.venue,
-    city: t.city,
-    surface: t.surface,
-    startDate: t.startDate,
-    grade: t.grade,
-    entryDeadline: t.entryDeadline,
-    withdrawalDeadline: t.withdrawalDeadline,
-    source: 'aita_crowdsourced',
-  });
+  let week, event;
+  if (t.linkedTournamentWeekId) {
+    week = await getTournamentWeek(t.linkedTournamentWeekId);
+    // An organizer-claimed tournament (phase 46) is off-limits to the
+    // crowdsourced path — "everything done by the organizer" from there on.
+    if (week.source !== 'aita_crowdsourced') {
+      throw new Error('This tournament is already live on the platform through an organizer — crowdsourced publishing is no longer available.');
+    }
+    event = t.linkedEventId ? await getEvent(t.linkedEventId) : null;
+  }
+  if (!week) {
+    week = await createTournamentWeek(user.id, {
+      name: t.name,
+      location: t.venue,
+      city: t.city,
+      surface: t.surface,
+      startDate: t.startDate,
+      grade: t.grade,
+      entryDeadline: t.entryDeadline,
+      withdrawalDeadline: t.withdrawalDeadline,
+      source: 'aita_crowdsourced',
+    });
+    await supabase.from('aita_tournaments').update({ linked_tournament_week_id: week.id }).eq('id', aitaTournamentId);
+  }
+  if (!event) {
+    event = await createEvent(week.id, {
+      category: t.category || t.ageGroup || 'Singles',
+      ageGroup: t.ageGroup || '',
+      drawSize: entries.length,
+      numSeeds: entries.filter(e => e.seed).length,
+      hasQualifying: drawType === 'qualifying',
+    });
+    await supabase.from('aita_tournaments').update({ linked_event_id: event.id }).eq('id', aitaTournamentId);
+  }
 
-  const event = await createEvent(week.id, {
-    category: t.category || t.ageGroup || 'Singles',
-    ageGroup: t.ageGroup || '',
-    drawSize: entries.length,
-    numSeeds: entries.filter(e => e.seed).length,
-  });
-
-  const created = await bulkAddDrawEntries(event.id, 'main', entries, 'aita_import');
+  const created = await bulkAddDrawEntries(event.id, drawType, entries, 'aita_import');
 
   // Match transcribed entries to platform accounts by AITA reg, so their
   // real tournament list / bracket / tracker linking picks this event up
@@ -3153,12 +3175,13 @@ export async function publishAitaDrawSheet({ uploadId, aitaTournamentId, entries
   }
 
   const sorted = [...created].sort((a, b) => a.position - b.position);
-  await initializeEventMatches(event.id, 'main', sorted, undefined);
-  await updateEvent(event.id, { status: 'draw_ready' });
-
-  await supabase.from('aita_tournaments')
-    .update({ linked_tournament_week_id: week.id, linked_event_id: event.id })
-    .eq('id', aitaTournamentId);
+  await initializeEventMatches(event.id, drawType, sorted, undefined);
+  // Event status tracks the MAIN draw's lifecycle (matches the organiser
+  // flow's meaning of 'draw_ready') — a qualifying-only publish doesn't
+  // flip it, since the main draw isn't necessarily out yet.
+  if (drawType === 'main') {
+    await updateEvent(event.id, { status: 'draw_ready' });
+  }
 
   await supabase.from('aita_draw_uploads')
     .update({ status: 'published', published_event_id: event.id })

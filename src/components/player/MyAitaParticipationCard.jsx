@@ -24,8 +24,11 @@ const UPLOAD_STATUS_LABEL = {
 // Lets a player upload the draw-sheet photo/PDF for one declared tournament
 // and shows the status of their own most recent upload. Any of the players
 // who declared interest can be the one who uploads it — this widget doesn't
-// care who else has or hasn't.
-function DrawSheetUploader({ aitaTournamentId }) {
+// care who else has or hasn't. `ctaLabel` lets a caller override the
+// initial-upload button text (e.g. DashboardPage.jsx's date-driven "Upload
+// qualifying draw" / "Upload main draw" prompts) — the re-upload and
+// status-label states below are unaffected either way.
+export function DrawSheetUploader({ aitaTournamentId, ctaLabel }) {
   const [uploads, setUploads] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -67,7 +70,7 @@ function DrawSheetUploader({ aitaTournamentId }) {
       )}
       {canReupload && (
         <label className={`inline-flex items-center gap-1.5 rounded-sm border border-dashed border-border px-2.5 py-1 font-semibold cursor-pointer hover:border-primary ${busy ? 'opacity-60 pointer-events-none' : ''}`}>
-          {busy ? 'Uploading…' : (latest ? 'Try a different upload' : 'Upload draw sheet')}
+          {busy ? 'Uploading…' : (latest ? 'Try a different upload' : (ctaLabel || 'Upload draw sheet'))}
           <input
             ref={fileInputRef}
             type="file"
