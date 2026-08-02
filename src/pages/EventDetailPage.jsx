@@ -1463,6 +1463,117 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
 }
 
 // ---------------------------------------------------------------------------
+// EntriesSummaryTable — consolidated, ranking-sorted view merging main draw,
+// qualifying, alternates, withdrawals and the lucky-loser pool, so the
+// organiser can see everyone's draw status and payment status in one place
+// instead of checking each tab separately.
+// ---------------------------------------------------------------------------
+const STAGE_BADGE_STYLES = {
+  'Main Draw': 'bg-chart-3/15 text-chart-3',
+  'Qualifying': 'bg-primary/10 text-accent-ink',
+  'Alternate': 'bg-secondary text-secondary-foreground',
+  'Withdrawn': 'bg-destructive/15 text-destructive',
+  'Lucky Loser': 'bg-chart-2/15 text-chart-2',
+};
+
+function StageBadge({ stage }) {
+  return (
+    <span className={cn('inline-flex items-center rounded-sm px-2 py-0.5 text-[0.68rem] font-semibold', STAGE_BADGE_STYLES[stage] || 'bg-muted text-muted-foreground')}>
+      {stage}
+    </span>
+  );
+}
+
+// Merges the four independently-fetched entry lists into one array of
+// { entry, sourceGroup, stage } rows, sorted by ranking (unranked last) — the
+// same convention already used for the alternates waitlist sort.
+function buildEntriesSummary({ allMainEntries, allQualEntries, withdrawnEntries, luckyLosers, event }) {
+  const mainMax = bracketSize(event?.drawSize || 32);
+  const qualMax = bracketSize(event?.qualifyingSize || 32);
+
+  function stageFor(entry, maxPos, drawLabel) {
+    if (entry.isWithdrawn) return 'Withdrawn';
+    if (entry.position > maxPos) return 'Alternate';
+    return drawLabel;
+  }
+
+  const rows = [];
+  for (const entry of allMainEntries) {
+    if (entry.isBye) continue;
+    rows.push({ entry, sourceGroup: 'main', stage: stageFor(entry, mainMax, 'Main Draw') });
+  }
+  for (const entry of allQualEntries) {
+    if (entry.isBye) continue;
+    rows.push({ entry, sourceGroup: 'qualifying', stage: stageFor(entry, qualMax, 'Qualifying') });
+  }
+  for (const entry of withdrawnEntries) {
+    rows.push({ entry, sourceGroup: 'withdrawal', stage: 'Withdrawn' });
+  }
+  // Lucky losers already promoted into the main draw (status 'called_in')
+  // are reflected there instead — showing them here too would double-count.
+  for (const ll of luckyLosers) {
+    if (ll.status === 'called_in' || !ll.entry) continue;
+    rows.push({ entry: ll.entry, sourceGroup: 'lucky_loser', stage: 'Lucky Loser' });
+  }
+
+  return rows.sort((a, b) => (a.entry.ranking ?? Infinity) - (b.entry.ranking ?? Infinity));
+}
+
+function EntriesSummaryTable({ isDoubles, isOwner, rows, onTogglePayment }) {
+  if (rows.length === 0) {
+    return (
+      <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+        No players entered yet.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-sm border border-border overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <UITableRow>
+            <TableHead>{isDoubles ? 'Team' : 'Player'}</TableHead>
+            <TableHead>AITA Reg</TableHead>
+            <TableHead>State</TableHead>
+            <TableHead>Rank</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Payment</TableHead>
+          </UITableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(({ entry, sourceGroup, stage }) => (
+            <UITableRow key={`${sourceGroup}-${entry.id}`} className={stage === 'Withdrawn' ? 'opacity-60' : undefined}>
+              <TableCell>
+                <div className="font-semibold text-sm">
+                  {entry.familyName}
+                  {entry.firstName ? <span className="font-normal">, {entry.firstName}</span> : null}
+                </div>
+                {isDoubles && entry.partnerFamilyName && (
+                  <div className="text-xs text-muted-foreground">
+                    + {entry.partnerFamilyName}{entry.partnerFirstName ? `, ${entry.partnerFirstName}` : ''}
+                  </div>
+                )}
+              </TableCell>
+              <TableCell>{entry.aitaReg || <Dash />}</TableCell>
+              <TableCell>{entry.playerState || <Dash />}</TableCell>
+              <TableCell>{entry.ranking || <Dash />}</TableCell>
+              <TableCell><StageBadge stage={stage} /></TableCell>
+              <TableCell>
+                <PaymentBadge
+                  entry={entry}
+                  isOwner={isOwner}
+                  onTogglePayment={onTogglePayment ? (entryId, status) => onTogglePayment(entryId, status, sourceGroup) : undefined}
+                />
+              </TableCell>
+            </UITableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // AuditLogPanel  (Phase 18 — organiser-only withdrawal audit trail)
 // ---------------------------------------------------------------------------
 function AuditLogPanel({ eventId }) {
@@ -1929,7 +2040,7 @@ export default function EventDetailPage() {
   const [event,   setEvent]   = useState(null);
   const [entries, setEntries] = useState([]);
   const [drawType, setDrawType] = useState('main');
-  const [activeTab, setActiveTab] = useState('main'); // 'main' | 'qualifying' | 'lucky_losers'
+  const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'main' | 'qualifying' | 'alternates' | 'withdrawal' | 'lucky_losers' | 'audit_log'
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
 
@@ -2020,6 +2131,29 @@ export default function EventDetailPage() {
     return () => { cancelled = true; };
   }, [eventId, event]);
 
+  // Consolidated "Entries" tab — loads main + qualifying independently of
+  // drawType/activeTab (same reasoning as withdrawnEntries above) so the
+  // summary is always complete regardless of which other tab was last open.
+  const [allMainEntries, setAllMainEntries] = useState([]);
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    api.getDrawEntries(eventId, 'main')
+      .then(data => { if (!cancelled) setAllMainEntries(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [eventId, event]);
+
+  const [allQualEntries, setAllQualEntries] = useState([]);
+  useEffect(() => {
+    if (!event?.hasQualifying) return;
+    let cancelled = false;
+    api.getDrawEntries(eventId, 'qualifying')
+      .then(data => { if (!cancelled) setAllQualEntries(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [eventId, event?.hasQualifying]);
+
   // Load the lucky-loser pool whenever this event has qualifying — kept
   // independent of drawType/activeTab so the Withdraw modal can always see it.
   useEffect(() => {
@@ -2078,6 +2212,8 @@ export default function EventDetailPage() {
   const hasGaps     = mainEntries.length < maxPos;
   const drawFull    = mainEntries.length === maxPos && maxPos > 0;
 
+  const entriesSummaryRows = buildEntriesSummary({ allMainEntries, allQualEntries, withdrawnEntries, luckyLosers, event });
+
   // ---- CRUD ----------------------------------------------------------------
   async function handleSaveEntry(entryId, formData) {
     if (entryId) {
@@ -2102,6 +2238,20 @@ export default function EventDetailPage() {
   async function handleTogglePayment(entryId, status) {
     try {
       const updated = await api.updateEntryPaymentStatus(entryId, status);
+      setEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+    } catch (err) { setError(err.message); }
+  }
+
+  // Same payment toggle, routed to whichever state bucket the consolidated
+  // Entries tab pulled the row from, since that tab merges four separate
+  // lists (main/qualifying/withdrawal/lucky-loser) instead of one.
+  async function handleEntriesTabTogglePayment(entryId, status, sourceGroup) {
+    try {
+      const updated = await api.updateEntryPaymentStatus(entryId, status);
+      if (sourceGroup === 'main') setAllMainEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+      else if (sourceGroup === 'qualifying') setAllQualEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+      else if (sourceGroup === 'withdrawal') setWithdrawnEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+      else if (sourceGroup === 'lucky_loser') setLuckyLosers(prev => prev.map(ll => ll.entryId === entryId ? { ...ll, entry: updated } : ll));
       setEntries(prev => prev.map(e => e.id === entryId ? updated : e));
     } catch (err) { setError(err.message); }
   }
@@ -2488,8 +2638,8 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Action buttons — context-aware */}
-          {activeTab !== 'lucky_losers' && (
+          {/* Action buttons — context-aware; hidden on read-only summary tabs */}
+          {!['lucky_losers', 'entries'].includes(activeTab) && (
           <div className="flex flex-wrap items-start gap-2">
             {isOwner && viewMode !== 'bracket' && (
               <>
@@ -2613,6 +2763,10 @@ export default function EventDetailPage() {
 
       {/* Draw-type tabs — always visible */}
       <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
+        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'entries' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+          onClick={() => { setActiveTab('entries'); setSwapMode(false); setSelectedEntry(null); }}>
+          Entries{entriesSummaryRows.length > 0 ? ` (${entriesSummaryRows.length})` : ''}
+        </button>
         <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'main' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
           Main Draw ({event?.drawSize ?? '?'})
@@ -2701,7 +2855,14 @@ export default function EventDetailPage() {
       )}
 
       {/* ---- Content ---- */}
-      {activeTab === 'audit_log' ? (
+      {activeTab === 'entries' ? (
+        <EntriesSummaryTable
+          isDoubles={event?.isDoubles}
+          isOwner={isOwner}
+          rows={entriesSummaryRows}
+          onTogglePayment={isOwner ? handleEntriesTabTogglePayment : undefined}
+        />
+      ) : activeTab === 'audit_log' ? (
         <AuditLogPanel eventId={eventId} />
       ) : activeTab === 'lucky_losers' ? (
         <LuckyLosersPanel

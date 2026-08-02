@@ -387,9 +387,22 @@ export default function TournamentDetailPage() {
     }
   }
 
+  // Bulk-writes the same `entriesOpen` field the per-event Open/Close Entries
+  // button on EventDetailPage reads/writes — a convenience cascade, not a new
+  // gating mechanism. Organisers can still flip a single event afterward.
+  async function handleCascadeEntriesOpen(open) {
+    try {
+      const updated = await Promise.all(events.map(ev => api.updateEvent(ev.id, { entriesOpen: open })));
+      setEvents(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   const isOwner = week && user && week.createdBy === user.id;
   const isPlayer = user?.role === 'player';
   const entryStage = week ? getEntryStage(week) : ENTRY_STAGE.OPEN;
+  const openEventsCount = events.filter(ev => ev.entriesOpen).length;
 
   async function openEntryModal(event) {
     setEntryError('');
@@ -567,6 +580,33 @@ export default function TournamentDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Tournament-level Entries Open/Close — cascades to every event below;
+          each event's own Open/Close Entries button (on EventDetailPage) still
+          works afterward to override a single event. */}
+      {isOwner && events.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-card p-3">
+          <span className="text-sm text-muted-foreground mr-1">
+            Entries: <strong>{openEventsCount}/{events.length}</strong> event{events.length !== 1 ? 's' : ''} open
+          </span>
+          <Button
+            size="sm"
+            className="bg-chart-3 text-white hover:bg-chart-3/90"
+            disabled={openEventsCount === events.length}
+            onClick={() => handleCascadeEntriesOpen(true)}
+          >
+            Open All Entries
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={openEventsCount === 0}
+            onClick={() => handleCascadeEntriesOpen(false)}
+          >
+            Close All Entries
+          </Button>
+        </div>
+      )}
 
       {showShare && (
         <ShareTournamentDialog week={week} events={events} user={user} onClose={() => setShowShare(false)} />
