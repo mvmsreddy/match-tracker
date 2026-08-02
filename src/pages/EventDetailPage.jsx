@@ -912,7 +912,9 @@ function PaymentBadge({ entry, isOwner, canView, onTogglePayment }) {
   return null;
 }
 
-function EntryRow({ entry, isDoubles, isOwner, currentUserId, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, onTogglePayment, currentGroup, trackerRating }) {
+// Row actions (Edit/Withdraw/Move/Remove) live on the Entries tab only —
+// see EntriesSummaryTable — this list is display-only for the organiser.
+function EntryRow({ entry, isDoubles, isOwner, currentUserId, swapMode, selected, onSelect, onTogglePayment, trackerRating }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
@@ -964,31 +966,6 @@ function EntryRow({ entry, isDoubles, isOwner, currentUserId, swapMode, selected
       <TableCell>
         {entry.statusCode ? <span className={scBadgeCls}>{entry.statusCode}</span> : <Dash />}
       </TableCell>
-      {isOwner && !swapMode && (
-        <TableCell>
-          <div className="flex items-center gap-1">
-            {!isBye && <button className={iconBtnCls} onClick={() => onEdit(entry)} title="Edit">✎</button>}
-            {!isBye && !isWithdrawn && (
-              <button className={cn(iconBtnCls, 'hover:text-chart-2')} onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
-            )}
-            {!isBye && onMove && (
-              <select
-                className={moveSelectCls}
-                value=""
-                title="Move to group"
-                onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
-              >
-                <option value="">Move→</option>
-                {currentGroup !== 'main'       && <option value="main">Main Draw</option>}
-                {currentGroup !== 'qualifying' && <option value="qualifying">Qualifying</option>}
-                {currentGroup !== 'alternates' && <option value="alternates">Alternates</option>}
-                {currentGroup !== 'withdrawal' && <option value="withdrawal">Withdrawal</option>}
-              </select>
-            )}
-            <button className={cn(iconBtnCls, 'hover:text-destructive')} onClick={() => onDelete(entry.id)} title="Remove">✕</button>
-          </div>
-        </TableCell>
-      )}
     </UITableRow>
   );
 }
@@ -996,7 +973,8 @@ function EntryRow({ entry, isDoubles, isOwner, currentUserId, swapMode, selected
 // ---------------------------------------------------------------------------
 // AlternateRow  (alternates list — positions beyond the draw size)
 // ---------------------------------------------------------------------------
-function AlternateRow({ entry, maxPos, isOwner, currentUserId, onDelete, onMove, onTogglePayment }) {
+// Actions live on the Entries tab only — see EntriesSummaryTable.
+function AlternateRow({ entry, maxPos, isOwner, currentUserId, onTogglePayment }) {
   return (
     <UITableRow>
       <TableCell className="font-mono">#{entry.position - maxPos}</TableCell>
@@ -1015,26 +993,6 @@ function AlternateRow({ entry, maxPos, isOwner, currentUserId, onDelete, onMove,
       <TableCell>{entry.aitaReg || <Dash />}</TableCell>
       <TableCell>{entry.playerState || <Dash />}</TableCell>
       <TableCell>{entry.ranking || <Dash />}</TableCell>
-      {isOwner && (
-        <TableCell>
-          <div className="flex items-center gap-1">
-            {onMove && (
-              <select
-                className={moveSelectCls}
-                value=""
-                title="Move to group"
-                onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
-              >
-                <option value="">Move→</option>
-                <option value="main">Main Draw</option>
-                <option value="qualifying">Qualifying</option>
-                <option value="withdrawal">Withdrawal</option>
-              </select>
-            )}
-            <button className={cn(iconBtnCls, 'hover:text-destructive')} onClick={() => onDelete(entry.id)} title="Remove">✕</button>
-          </div>
-        </TableCell>
-      )}
     </UITableRow>
   );
 }
@@ -1268,7 +1226,14 @@ function buildEntriesSummary({ allMainEntries, allQualEntries, withdrawnEntries,
   return rows.sort((a, b) => (a.entry.ranking ?? Infinity) - (b.entry.ranking ?? Infinity));
 }
 
-function EntriesSummaryTable({ isDoubles, isOwner, currentUserId, rows, onTogglePayment }) {
+// Stage label -> the group key moveEntryToGroup/onMove expect. 'Lucky Loser'
+// rows are a secondary/derived view of an underlying qualifying entry (see
+// buildEntriesSummary) rather than a separately-manageable row, so they get
+// no action controls here — avoids two conflicting places to edit the same
+// person.
+const STAGE_TO_GROUP = { 'Main Draw': 'main', 'Qualifying': 'qualifying', 'Alternate': 'alternates', 'Withdrawn': 'withdrawal' };
+
+function EntriesSummaryTable({ isDoubles, isOwner, currentUserId, rows, onTogglePayment, onEdit, onWithdraw, onMove, onDelete }) {
   if (rows.length === 0) {
     return (
       <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
@@ -1287,10 +1252,13 @@ function EntriesSummaryTable({ isDoubles, isOwner, currentUserId, rows, onToggle
             <TableHead>Rank</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Payment</TableHead>
+            {isOwner && <TableHead />}
           </UITableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ entry, sourceGroup, stage }) => (
+          {rows.map(({ entry, sourceGroup, stage }) => {
+            const currentGroup = STAGE_TO_GROUP[stage];
+            return (
             <UITableRow key={`${sourceGroup}-${entry.id}`} className={stage === 'Withdrawn' ? 'opacity-60' : undefined}>
               <TableCell>
                 <div className="font-semibold text-sm">
@@ -1315,8 +1283,34 @@ function EntriesSummaryTable({ isDoubles, isOwner, currentUserId, rows, onToggle
                   onTogglePayment={onTogglePayment ? (entryId, status) => onTogglePayment(entryId, status, sourceGroup) : undefined}
                 />
               </TableCell>
+              {isOwner && (
+                <TableCell>
+                  {currentGroup && (
+                    <div className="flex items-center gap-1">
+                      <button className={iconBtnCls} onClick={() => onEdit(entry)} title="Edit">✎</button>
+                      {stage !== 'Withdrawn' && (
+                        <button className={cn(iconBtnCls, 'hover:text-chart-2')} onClick={() => onWithdraw(entry)} title="Withdraw">↯</button>
+                      )}
+                      <select
+                        className={moveSelectCls}
+                        value=""
+                        title="Move to group"
+                        onChange={e => { if (e.target.value) onMove(entry.id, e.target.value); }}
+                      >
+                        <option value="">Move→</option>
+                        {currentGroup !== 'main'       && <option value="main">Main Draw</option>}
+                        {currentGroup !== 'qualifying' && <option value="qualifying">Qualifying</option>}
+                        {currentGroup !== 'alternates' && <option value="alternates">Alternates</option>}
+                        {currentGroup !== 'withdrawal' && <option value="withdrawal">Withdrawal</option>}
+                      </select>
+                      <button className={cn(iconBtnCls, 'hover:text-destructive')} onClick={() => onDelete(entry.id)} title="Remove">✕</button>
+                    </div>
+                  )}
+                </TableCell>
+              )}
             </UITableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -1981,19 +1975,21 @@ export default function EventDetailPage() {
 
   async function handleSaveEntry(entryId, formData) {
     if (entryId) {
-      const updated = await api.updateDrawEntry(entryId, formData);
-      setEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+      await api.updateDrawEntry(entryId, formData);
     } else {
       await api.addDrawEntryWithPlacement(eventId, formData);
-      await reloadEntryBuckets();
     }
+    // Edits/adds can be triggered from the Entries tab for an entry that
+    // belongs to a different draw_type than the page's current `drawType` —
+    // reload everything rather than optimistically patching one list.
+    await reloadEntryBuckets();
   }
 
   async function handleDeleteEntry(entryId) {
     if (!window.confirm('Remove this entry from the draw?')) return;
     try {
       await api.deleteDrawEntry(entryId);
-      setEntries(prev => prev.filter(e => e.id !== entryId));
+      await reloadEntryBuckets();
       setWithdrawnEntries(prev => prev.filter(e => e.id !== entryId));
     } catch (err) { setError(err.message); }
   }
@@ -2022,21 +2018,14 @@ export default function EventDetailPage() {
 
   async function handleMoveEntry(entryId, targetGroup) {
     try {
-      const moved = await api.moveEntryToGroup(entryId, targetGroup, eventId);
-      // Remove from all local state lists, then add to the right one
-      setEntries(prev => prev.filter(e => e.id !== entryId));
-      setWithdrawnEntries(prev => prev.filter(e => e.id !== entryId));
-      if (targetGroup === 'withdrawal') {
-        setWithdrawnEntries(prev => [...prev, moved].sort((a, b) => a.position - b.position));
-      } else {
-        // main / qualifying / alternates — reload both main + qual entries since
-        // the moved entry may have changed draw_type
-        const [mainData, qualData] = await Promise.all([
-          api.getDrawEntries(eventId, 'main'),
-          api.getDrawEntries(eventId, 'qualifying'),
-        ]);
-        setEntries(drawType === 'qualifying' ? qualData : mainData);
-      }
+      await api.moveEntryToGroup(entryId, targetGroup, eventId);
+      // The entry may have moved into or out of any of the four buckets
+      // (main/qualifying/alternates share draw_type with main; withdrawal is
+      // its own draw_type) — reload all of them rather than guessing which
+      // local lists need patching.
+      await reloadEntryBuckets();
+      const freshWithdrawn = await api.getDrawEntries(eventId, 'withdrawal');
+      setWithdrawnEntries(freshWithdrawn);
     } catch (err) { setError(err.message); }
   }
 
@@ -2293,13 +2282,33 @@ export default function EventDetailPage() {
   }
 
   // ---- WITHDRAWALS / ALTERNATES / LUCKY LOSERS (Phase 10) -------------------
+  // Withdraw is triggered from the Entries tab for an entry that may belong
+  // to a different draw (main vs qualifying) than whatever the page's
+  // `drawType` currently is — WithdrawModal reads `matches`/`entries`
+  // (via alternateEntries) as page state, so switch + reload those for the
+  // entry's own draw BEFORE opening it, rather than showing stale data.
+  async function beginWithdraw(entry) {
+    const targetDrawType = entry.drawType === 'qualifying' ? 'qualifying' : 'main';
+    if (targetDrawType !== drawType) {
+      setDrawType(targetDrawType);
+      const [freshEntries, freshMatches] = await Promise.all([
+        api.getDrawEntries(eventId, targetDrawType),
+        event?.status === 'setup' ? Promise.resolve([]) : api.getEventMatches(eventId, targetDrawType),
+      ]);
+      setEntries(freshEntries);
+      setMatches(freshMatches);
+    }
+    setWithdrawingEntry(entry);
+  }
+
   async function reloadAfterWithdrawal() {
-    const [freshEntries, freshMatches] = await Promise.all([
-      api.getDrawEntries(eventId, drawType),
+    await reloadEntryBuckets();
+    const [freshMatches, freshWithdrawn] = await Promise.all([
       api.getEventMatches(eventId, drawType),
+      api.getDrawEntries(eventId, 'withdrawal'),
     ]);
-    setEntries(freshEntries);
     setMatches(freshMatches);
+    setWithdrawnEntries(freshWithdrawn);
     if (event?.hasQualifying) {
       api.getLuckyLosers(eventId).then(setLuckyLosers).catch(() => {});
     }
@@ -2650,6 +2659,10 @@ export default function EventDetailPage() {
           currentUserId={user?.id}
           rows={entriesSummaryRows}
           onTogglePayment={isOwner ? handleEntriesTabTogglePayment : undefined}
+          onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
+          onWithdraw={beginWithdraw}
+          onMove={handleMoveEntry}
+          onDelete={handleDeleteEntry}
         />
       ) : activeTab === 'audit_log' ? (
         <AuditLogPanel eventId={eventId} />
@@ -2676,12 +2689,11 @@ export default function EventDetailPage() {
                     <TableHead>AITA Reg</TableHead>
                     <TableHead>State</TableHead>
                     <TableHead>Rank</TableHead>
-                    {isOwner && <TableHead />}
                   </UITableRow>
                 </TableHeader>
                 <TableBody>
                   {alternateEntries.map(entry => (
-                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} currentUserId={user?.id} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} onTogglePayment={isOwner ? handleTogglePayment : undefined} />
+                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} currentUserId={user?.id} onTogglePayment={isOwner ? handleTogglePayment : undefined} />
                   ))}
                 </TableBody>
               </Table>
@@ -2773,87 +2785,36 @@ export default function EventDetailPage() {
           />
 
         ) : (
-          <div className="space-y-4">
-            <div className="rounded-sm border border-border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <UITableRow>
-                    <TableHead>Pos</TableHead>
-                    <TableHead>Seed</TableHead>
-                    <TableHead>{event?.isDoubles ? 'Team' : 'Player'}</TableHead>
-                    <TableHead>AITA Reg</TableHead>
-                    <TableHead>State</TableHead>
-                    <TableHead>Rank</TableHead>
-                    <TableHead>SC</TableHead>
-                    {isOwner && !swapMode && <TableHead />}
-                  </UITableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedEntries.map(entry => (
-                    <EntryRow
-                      key={entry.id}
-                      entry={entry}
-                      isDoubles={event?.isDoubles}
-                      isOwner={isOwner}
-                      currentUserId={user?.id}
-                      swapMode={swapMode}
-                      selected={swapMode && selectedEntry?.id === entry.id}
-                      onSelect={handleSelectForSwap}
-                      onEdit={e => { setEditingEntry(e); setShowAdd(true); }}
-                      onDelete={handleDeleteEntry}
-                      onWithdraw={e => setWithdrawingEntry(e)}
-                      onMove={isOwner ? handleMoveEntry : undefined}
-                      onTogglePayment={isOwner ? handleTogglePayment : undefined}
-                      currentGroup={activeTab}
-                      trackerRating={ratingsBySubjectKey.get(entry.playerId || entry.aitaReg)}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Alternates — only meaningful for the main draw */}
-            {activeTab === 'main' && !swapMode && (
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-2">
-                  Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
-                </div>
-                {alternateEntries.length === 0 ? (
-                  <div className="border border-dashed border-border rounded-sm p-4 text-center text-sm text-muted-foreground">
-                    None yet — alternates fill automatically from the Entries tab once the draw is full.
-                  </div>
-                ) : (
-                  <div className="rounded-sm border border-border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <UITableRow>
-                          <TableHead>#</TableHead>
-                          <TableHead>Player</TableHead>
-                          <TableHead>AITA Reg</TableHead>
-                          <TableHead>State</TableHead>
-                          <TableHead>Rank</TableHead>
-                          {isOwner && <TableHead />}
-                        </UITableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {alternateEntries.map(entry => (
-                          <AlternateRow
-                            key={entry.id}
-                            entry={entry}
-                            maxPos={maxPos}
-                            isOwner={isOwner}
-                            currentUserId={user?.id}
-                            onDelete={handleDeleteEntry}
-                            onMove={isOwner ? handleMoveEntry : undefined}
-                            onTogglePayment={isOwner ? handleTogglePayment : undefined}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="rounded-sm border border-border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <UITableRow>
+                  <TableHead>Pos</TableHead>
+                  <TableHead>Seed</TableHead>
+                  <TableHead>{event?.isDoubles ? 'Team' : 'Player'}</TableHead>
+                  <TableHead>AITA Reg</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Rank</TableHead>
+                  <TableHead>SC</TableHead>
+                </UITableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedEntries.map(entry => (
+                  <EntryRow
+                    key={entry.id}
+                    entry={entry}
+                    isDoubles={event?.isDoubles}
+                    isOwner={isOwner}
+                    currentUserId={user?.id}
+                    swapMode={swapMode}
+                    selected={swapMode && selectedEntry?.id === entry.id}
+                    onSelect={handleSelectForSwap}
+                    onTogglePayment={isOwner ? handleTogglePayment : undefined}
+                    trackerRating={ratingsBySubjectKey.get(entry.playerId || entry.aitaReg)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
@@ -2862,8 +2823,15 @@ export default function EventDetailPage() {
       {/* ---- Modals ---- */}
       {showAdd && (
         <AddEntryModal
-          event={event} week={week} drawType={drawType}
-          editingEntry={editingEntry} existingEntries={entries}
+          event={event} week={week}
+          // Edit can be triggered from the Entries tab for an entry that
+          // belongs to a different draw than the page's current `drawType`
+          // — derive both from the entry itself so position validation
+          // checks against the right bucket regardless of which tab it was
+          // opened from.
+          drawType={editingEntry ? editingEntry.drawType : drawType}
+          editingEntry={editingEntry}
+          existingEntries={editingEntry ? (editingEntry.drawType === 'qualifying' ? allQualEntries : allMainEntries) : entries}
           onSave={handleSaveEntry}
           onClose={() => { setShowAdd(false); setEditingEntry(null); }}
         />
