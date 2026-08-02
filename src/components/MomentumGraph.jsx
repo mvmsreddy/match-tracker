@@ -1,6 +1,25 @@
+import { useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 
+// Pixel budget per point — fixed regardless of match length so long matches
+// scroll horizontally instead of squeezing labels until they're unreadable.
+const PX_PER_POINT = 16;
+const MIN_WIDTH = 560;
+const H = 130;
+const PAD_X = 12;
+const PAD_Y = 20;
+
 export default function MomentumGraph({ points, selfName, oppName, analytics }) {
+  const scrollRef = useRef(null);
+
+  // Keep the latest point in view — matters most while a match is still
+  // being tracked live, but also gives a finished match's report a sensible
+  // default scroll position (showing how it ended) instead of the start.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [points.length]);
+
   if (points.length < 3) {
     return (
       <Card>
@@ -18,15 +37,12 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
     data.push(data[data.length - 1] + (pt.pointWinner === 'self' ? 1 : -1));
   }
 
-  const W = 600;
-  const H = 120;
-  const PX = 8;
-  const PY = 18;
+  const W = Math.max(MIN_WIDTH, (data.length - 1) * PX_PER_POINT + PAD_X * 2);
   const midY = H / 2;
   const maxAbs = Math.max(1, ...data.map(Math.abs));
 
-  const gx = (i) => PX + (i / (data.length - 1)) * (W - PX * 2);
-  const gy = (v) => midY - (v / maxAbs) * (midY - PY);
+  const gx = (i) => PAD_X + (i / (data.length - 1)) * (W - PAD_X * 2);
+  const gy = (v) => midY - (v / maxAbs) * (midY - PAD_Y);
 
   const gameBoundaries = analytics?.gameBoundaries || [];
 
@@ -47,15 +63,26 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
     <Card>
       <CardHeader><CardTitle>Live Momentum</CardTitle></CardHeader>
       <CardContent className="pt-0">
-        {/* Streak summary */}
-        <div className="mb-2 flex items-center justify-center gap-2 font-mono text-xs">
-          <span className="text-accent-ink">{selfName}: {selfRecent}/{recent.length} recent</span>
-          <span className="text-muted-foreground">|</span>
-          <span className="text-destructive">{oppName}: {oppRecent}/{recent.length} recent</span>
+        {/* Legend — kept outside the SVG so long names never collide with the
+            chart's own boundary labels */}
+        <div className="mb-1 flex items-center justify-center gap-4 font-mono text-xs">
+          <span className="inline-flex items-center gap-1.5 text-accent-ink font-semibold">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary" />{selfName}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-destructive font-semibold">
+            <span className="inline-block w-2 h-2 rounded-full bg-destructive" />{oppName}
+          </span>
         </div>
 
-        <div>
-          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-[120px] w-full">
+        {/* Streak summary */}
+        <div className="mb-2 flex items-center justify-center gap-2 font-mono text-xs">
+          <span className="text-accent-ink">{selfRecent}/{recent.length} recent</span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-destructive">{oppRecent}/{recent.length} recent</span>
+        </div>
+
+        <div ref={scrollRef} className="overflow-x-auto">
+          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
             <defs>
               <clipPath id="clip-above">
                 <rect x="0" y="0" width={W} height={midY} />
@@ -65,24 +92,16 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
               </clipPath>
             </defs>
 
-            {/* Player zone labels */}
-            <text x={PX} y={PY - 4} fill="var(--color-primary)" fontSize="9" fontFamily="monospace" opacity="0.8">
-              {selfName.slice(0, 14)}
-            </text>
-            <text x={PX} y={H - 3} fill="var(--color-destructive)" fontSize="9" fontFamily="monospace" opacity="0.8">
-              {oppName.slice(0, 14)}
-            </text>
-
             {/* Zero / neutral line */}
-            <line x1={PX} y1={midY} x2={W - PX} y2={midY} stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4,4" />
+            <line x1={PAD_X} y1={midY} x2={W - PAD_X} y2={midY} stroke="var(--color-border)" strokeWidth="1.5" strokeDasharray="4,4" />
 
-            {/* Game boundary markers */}
+            {/* Game boundary markers — running game score at each game's end */}
             {gameBoundaries.map((gb) => {
               const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
               return (
                 <g key={gb.index}>
-                  <line x1={px} y1={PY} x2={px} y2={H - PY} stroke="var(--color-border)" strokeWidth="0.75" opacity="0.6" />
-                  <text x={px} y={PY - 4} fill="var(--color-muted-foreground)" fontSize="7" fontFamily="monospace" textAnchor="middle">
+                  <line x1={px} y1={PAD_Y} x2={px} y2={H - PAD_Y} stroke="var(--color-border)" strokeWidth="0.75" opacity="0.6" />
+                  <text x={px} y={PAD_Y - 6} fill="var(--color-muted-foreground)" fontSize="9" fontFamily="monospace" textAnchor="middle">
                     {gb.label}
                   </text>
                 </g>
@@ -104,43 +123,21 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
               strokeLinecap="round"
             />
 
-            {/* Point-level markers: small tick + score label (e.g. 0-15, 15-30) at every point */}
-            {data.map((v, i) => {
-              const px = gx(i).toFixed(1);
-              const py = gy(v);
-              const tickTop = (py - 4).toFixed(1);
-              const tickBottom = (py + 4).toFixed(1);
-              const label = i === 0 ? null : points[i - 1].scoreAfter;
-              return (
-                <g key={i}>
-                  <line x1={px} y1={tickTop} x2={px} y2={tickBottom} stroke="var(--color-muted-foreground)" strokeWidth="0.6" opacity="0.6" />
-                  <circle cx={px} cy={py.toFixed(1)} r="1.2" fill={lineColor} opacity="0.9" />
-                  {label && (
-                    <text
-                      x={px}
-                      y={tickTop}
-                      transform={`rotate(-90 ${px} ${tickTop})`}
-                      fontSize="4.5"
-                      fill="var(--color-muted-foreground)"
-                      fontFamily="monospace"
-                      textAnchor="start"
-                    >
-                      {label}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
+            {/* Small point markers — exact per-point scores live in the
+                Point-by-Point Log below; this chart is about shape, not detail */}
+            {data.map((v, i) => (
+              <circle key={i} cx={gx(i).toFixed(1)} cy={gy(v).toFixed(1)} r="1.6" fill={lineColor} opacity="0.9" />
+            ))}
 
             {/* Current position dot */}
-            <circle cx={lastX} cy={lastY} r="4" fill={lineColor} />
+            <circle cx={lastX} cy={lastY} r="4.5" fill={lineColor} stroke="var(--color-card)" strokeWidth="1.5" />
           </svg>
         </div>
 
         <div className="mt-1 flex items-center justify-between font-mono text-[12px] text-muted-foreground">
-          <span className="text-accent-ink">▲ {selfName} winning</span>
-          <span>point #1 → #{points.length}</span>
-          <span className="text-destructive">▼ {oppName} winning</span>
+          <span className="text-accent-ink">&#9650; {selfName} winning</span>
+          <span>point #1 &rarr; #{points.length}</span>
+          <span className="text-destructive">&#9660; {oppName} winning</span>
         </div>
       </CardContent>
     </Card>
