@@ -269,12 +269,41 @@ function OrganizerClaimWidget({ aitaTournamentId }) {
 // Singles/Doubles line, the player is asked to confirm which category and
 // age group instead of us guessing (same clarity check
 // approveAitaOrganizerClaim uses to decide whether to auto-fill an event).
-const CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles'];
-const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
+const ALL_CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles'];
+const ALL_AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 
 function guessAgeGroup(rawAgeGroup) {
   const m = (rawAgeGroup || '').match(/^Under\s*(\d+)$/i);
   return m ? `U${m[1]}` : '';
+}
+
+// A "Category" line like "U-14 & 16 Boys & Girls" already tells us exactly
+// which age groups/genders this listing actually covers — showing the full
+// generic dropdowns when we have that info would just make it easier to
+// pick something wrong. Falls back to the full lists whenever nothing
+// recognizable is found, same as before.
+function extractAgeGroupsFromText(text) {
+  if (!text) return [];
+  const nums = [...new Set((text.match(/\b(10|12|14|16|18)\b/g) || []))];
+  return nums.map(n => `U${n}`);
+}
+
+function extractGendersFromText(text) {
+  if (!text) return [];
+  const genders = [];
+  if (/\bboys?\b/i.test(text)) genders.push('Boys');
+  if (/\bgirls?\b/i.test(text)) genders.push('Girls');
+  if (/\bmen\b/i.test(text)) genders.push('Men');
+  if (/\bwomen\b/i.test(text)) genders.push('Women');
+  return genders;
+}
+
+function buildCategoryOptions(genders) {
+  if (genders.length === 0) return ALL_CATEGORIES;
+  const opts = genders.flatMap(g => [`${g} Singles`, `${g} Doubles`]);
+  if (genders.includes('Boys') && genders.includes('Girls')) opts.push('Mixed Doubles');
+  if (genders.includes('Men') && genders.includes('Women')) opts.push('Mixed Doubles');
+  return opts;
 }
 
 function ParticipationWidget({ t }) {
@@ -285,8 +314,13 @@ function ParticipationWidget({ t }) {
   const [error, setError] = useState('');
 
   const categoryIsClear = t.category && /single|double/i.test(t.category);
-  const [pickCategory, setPickCategory] = useState('');
-  const [pickAgeGroup, setPickAgeGroup] = useState(guessAgeGroup(t.ageGroup));
+  const detectedAgeGroups = extractAgeGroupsFromText(t.category) || [];
+  const availableAgeGroups = detectedAgeGroups.length > 0
+    ? detectedAgeGroups
+    : (guessAgeGroup(t.ageGroup) ? [guessAgeGroup(t.ageGroup)] : ALL_AGE_GROUPS);
+  const availableCategories = buildCategoryOptions(extractGendersFromText(t.category));
+  const [pickCategory, setPickCategory] = useState(availableCategories.length === 1 ? availableCategories[0] : '');
+  const [pickAgeGroup, setPickAgeGroup] = useState(availableAgeGroups.length === 1 ? availableAgeGroups[0] : '');
 
   useEffect(() => {
     if (user?.role !== 'player') { setLoading(false); return; }
@@ -363,7 +397,7 @@ function ParticipationWidget({ t }) {
             onChange={e => setPickAgeGroup(e.target.value)}
           >
             <option value="">Age group…</option>
-            {AGE_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+            {availableAgeGroups.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
           <select
             className="rounded-sm border border-input bg-transparent px-2 py-1 text-xs"
@@ -371,7 +405,7 @@ function ParticipationWidget({ t }) {
             onChange={e => setPickCategory(e.target.value)}
           >
             <option value="">Category…</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       )}
