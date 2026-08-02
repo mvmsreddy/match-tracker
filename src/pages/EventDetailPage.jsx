@@ -2045,7 +2045,14 @@ export default function EventDetailPage() {
   // rank-based cascading engine, same as a single Add Player.
   async function handleBulkImportPlacement(entries, withdrawalEntries, { onProgress } = {}) {
     if (withdrawalEntries?.length) {
-      const created = await api.bulkAddDrawEntries(eventId, 'withdrawal', withdrawalEntries);
+      // Withdrawal rows carry no position from parseBulkPlacement (it's not
+      // used for rank-based placement) — assign compact positions continuing
+      // after whatever's already in the withdrawal bucket.
+      const startPos = withdrawnEntries.length
+        ? Math.max(...withdrawnEntries.map(e => e.position)) + 1
+        : 1;
+      const positioned = withdrawalEntries.map((e, i) => ({ ...e, position: startPos + i }));
+      const created = await api.bulkAddDrawEntries(eventId, 'withdrawal', positioned);
       setWithdrawnEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
     }
     if (entries?.length) {

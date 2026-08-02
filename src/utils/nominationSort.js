@@ -25,9 +25,21 @@ function nextOpenPosition(taken, from, upTo) {
   return pos;
 }
 
+// Alternates always live under draw_type='main' at a position beyond the
+// main draw itself (drawSize), regardless of whether they cascaded down
+// from Main or from Qualifying. The floor must be drawSize, not just "one
+// past the highest existing alternate" — Math.max() of an empty altEntries
+// list is 0, which without this floor would place the very first alternate
+// at position 1 and collide with Main's real position-1 entry.
+function nextAlternatePosition(altEntries, drawSize) {
+  const altTaken = new Set(altEntries.map(e => e.position));
+  const from = Math.max(drawSize, ...altEntries.map(e => e.position), 0) + 1;
+  return nextOpenPosition(altTaken, from);
+}
+
 // Places `demoted` into qualifying, bumping the worst qualifying entry to
 // alternates if qualifying is full and `demoted` outranks it.
-function placeIntoQualifying(demoted, qualEntries, altEntries, maxQualDirect, qualifyingSize) {
+function placeIntoQualifying(demoted, qualEntries, altEntries, maxQualDirect, qualifyingSize, drawSize) {
   const bumps = [];
   if (qualEntries.length < maxQualDirect) {
     const taken = new Set(qualEntries.map(e => e.position));
@@ -37,14 +49,12 @@ function placeIntoQualifying(demoted, qualEntries, altEntries, maxQualDirect, qu
 
   const worstQual = worstOf(qualEntries);
   if (worstQual && rankOf(demoted) < rankOf(worstQual)) {
-    const altTaken = new Set(altEntries.map(e => e.position));
-    const altPosition = nextOpenPosition(altTaken, Math.max(...altEntries.map(e => e.position), 0) + 1);
+    const altPosition = nextAlternatePosition(altEntries, drawSize);
     bumps.push({ id: worstQual.id, drawType: 'main', position: altPosition, isAlternate: true, from: 'qualifying' });
     return { placement: { drawType: 'qualifying', position: worstQual.position, isAlternate: false }, bumps };
   }
 
-  const altTaken = new Set(altEntries.map(e => e.position));
-  const altPosition = nextOpenPosition(altTaken, Math.max(...altEntries.map(e => e.position), 0) + 1);
+  const altPosition = nextAlternatePosition(altEntries, drawSize);
   return { placement: { drawType: 'main', position: altPosition, isAlternate: true }, bumps };
 }
 
@@ -63,11 +73,11 @@ export function computeCascadingPlacement(mainEntries, qualEntries, altEntries, 
   const worstMain = worstOf(mainEntries);
   if (worstMain && rankOf(newEntrant) < rankOf(worstMain)) {
     const { placement: demotedPlacement, bumps: innerBumps } =
-      placeIntoQualifying(worstMain, qualEntries, altEntries, maxQualDirect, qualifyingSize);
+      placeIntoQualifying(worstMain, qualEntries, altEntries, maxQualDirect, qualifyingSize, drawSize);
     const bumps = [...innerBumps, { id: worstMain.id, ...demotedPlacement, from: 'main' }];
     return { placement: { drawType: 'main', position: worstMain.position, isAlternate: false }, bumps };
   }
 
-  const { placement, bumps } = placeIntoQualifying(newEntrant, qualEntries, altEntries, maxQualDirect, qualifyingSize);
+  const { placement, bumps } = placeIntoQualifying(newEntrant, qualEntries, altEntries, maxQualDirect, qualifyingSize, drawSize);
   return { placement, bumps };
 }
