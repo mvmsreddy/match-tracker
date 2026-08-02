@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { reasonLabel } from '../lib/format';
 import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 
 // Pixel budget per point — fixed regardless of match length so long matches
@@ -11,6 +12,9 @@ const PAD_Y = 20;
 
 export default function MomentumGraph({ points, selfName, oppName, analytics }) {
   const scrollRef = useRef(null);
+  // Which point's detail is shown below the chart — defaults to the latest
+  // point (tap/hover any earlier point to inspect it instead).
+  const [activeIdx, setActiveIdx] = useState(points.length);
 
   // Keep the latest point in view — matters most while a match is still
   // being tracked live, but also gives a finished match's report a sensible
@@ -18,6 +22,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = el.scrollWidth;
+    setActiveIdx(points.length);
   }, [points.length]);
 
   if (points.length < 3) {
@@ -51,13 +56,17 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
 
   const lastVal = data[data.length - 1];
   const lineColor = lastVal >= 0 ? 'var(--color-primary)' : 'var(--color-destructive)';
-  const lastX = gx(data.length - 1).toFixed(1);
-  const lastY = gy(lastVal).toFixed(1);
 
   // Count streaks: last 5 points
   const recent = points.slice(-5);
   const selfRecent = recent.filter((p) => p.pointWinner === 'self').length;
   const oppRecent = recent.length - selfRecent;
+
+  const safeActiveIdx = Math.min(activeIdx, data.length - 1);
+  const activePt = safeActiveIdx > 0 ? points[safeActiveIdx - 1] : null;
+  const activeDetail = activePt
+    ? { score: activePt.scoreAfter, text: reasonLabel(activePt, selfName, oppName), self: activePt.endedBy === 'self' }
+    : { score: '0-0', text: 'Match start', self: null };
 
   return (
     <Card>
@@ -123,15 +132,43 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
               strokeLinecap="round"
             />
 
-            {/* Small point markers — exact per-point scores live in the
-                Point-by-Point Log below; this chart is about shape, not detail */}
-            {data.map((v, i) => (
-              <circle key={i} cx={gx(i).toFixed(1)} cy={gy(v).toFixed(1)} r="1.6" fill={lineColor} opacity="0.9" />
-            ))}
-
-            {/* Current position dot */}
-            <circle cx={lastX} cy={lastY} r="4.5" fill={lineColor} stroke="var(--color-card)" strokeWidth="1.5" />
+            {/* Point markers — tap/hover any point to see its detail below;
+                keeps the chart itself uncluttered while still exposing every
+                point that was captured. */}
+            {data.map((v, i) => {
+              const cx = gx(i).toFixed(1);
+              const cy = gy(v).toFixed(1);
+              const isActive = i === safeActiveIdx;
+              const label = i === 0
+                ? 'Match start'
+                : `#${i} — ${points[i - 1].scoreAfter} — ${reasonLabel(points[i - 1], selfName, oppName)}`;
+              return (
+                <g
+                  key={i}
+                  className="cursor-pointer"
+                  onMouseEnter={() => setActiveIdx(i)}
+                  onClick={() => setActiveIdx(i)}
+                >
+                  <title>{label}</title>
+                  {/* Generous invisible hit target, small visible dot */}
+                  <circle cx={cx} cy={cy} r="7" fill="transparent" />
+                  {isActive && <circle cx={cx} cy={cy} r="6" fill="none" stroke={lineColor} strokeWidth="1.5" opacity="0.9" />}
+                  <circle cx={cx} cy={cy} r={isActive ? 3 : 1.6} fill={lineColor} opacity={isActive ? 1 : 0.9} />
+                </g>
+              );
+            })}
           </svg>
+        </div>
+
+        {/* Active point detail — defaults to the latest point */}
+        <div className="mt-2 flex items-center gap-2 rounded-sm border border-border bg-secondary/50 px-3 py-2 text-xs">
+          <span className="font-mono font-bold tabular-nums shrink-0">
+            {safeActiveIdx === 0 ? 'Start' : `#${safeActiveIdx}`}
+          </span>
+          <span className="font-mono tabular-nums text-muted-foreground shrink-0">{activeDetail.score}</span>
+          <span className={activeDetail.self === null ? 'text-muted-foreground' : activeDetail.self ? 'text-accent-ink' : 'text-destructive'}>
+            {activeDetail.text}
+          </span>
         </div>
 
         <div className="mt-1 flex items-center justify-between font-mono text-[12px] text-muted-foreground">
