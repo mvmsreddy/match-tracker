@@ -3405,13 +3405,30 @@ function rowToAitaOrganizerClaim(row) {
   };
 }
 
+// Idempotent (upsert on aita_tournament_id+claimed_by) — an organizer
+// re-claiming after a rejection, or after deleting the tournament_weeks row
+// an earlier approval created (which resets aita_tournaments.
+// linked_tournament_week_id to null via ON DELETE SET NULL, so the "Claim
+// as Organizer" button reappears even though their old claim row is still
+// sitting there), resets that row back to 'pending' instead of hitting the
+// (aita_tournament_id, claimed_by) unique constraint on a fresh insert.
 export async function claimAitaTournamentAsOrganizer(aitaTournamentId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
 
   const { data, error } = await supabase
     .from('aita_organizer_claims')
-    .insert({ aita_tournament_id: aitaTournamentId, claimed_by: user.id })
+    .upsert(
+      {
+        aita_tournament_id: aitaTournamentId,
+        claimed_by: user.id,
+        status: 'pending',
+        reviewed_by: null,
+        reviewed_at: null,
+        tournament_week_id: null,
+      },
+      { onConflict: 'aita_tournament_id,claimed_by' },
+    )
     .select()
     .single();
   if (error) throw new Error(error.message);
