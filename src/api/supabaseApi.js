@@ -1129,7 +1129,25 @@ export async function selfEnterSingles(eventId, profile) {
 // doubles fields, onsite sign-in, replacing name, ...) that the self-entry
 // RPC deliberately omits.
 
-function buildOrganiserEntryRow(eventId, placement, entry, userId) {
+// Organiser-added entries in a paid event are treated the same as a player
+// who self-enters offline (phase47_offline_entry_payment.sql): tagged
+// payment_status='pending' so the organiser can track/confirm the fee via
+// the Payment column, rather than leaving it blank/untrackable. Mirrors
+// apply_self_entry_placement's server-side fee lookup exactly, just for
+// whichever fee (singles/doubles) applies to this event. null (no fee) is
+// left alone, matching the column's "free event" semantics.
+async function computeOfflinePaymentStatus(eventId) {
+  const { data, error } = await supabase
+    .from('events')
+    .select('is_doubles, tournament_week:tournament_weeks(entry_fee_singles, entry_fee_doubles)')
+    .eq('id', eventId)
+    .single();
+  if (error) throw new Error(error.message);
+  const fee = data.is_doubles ? data.tournament_week?.entry_fee_doubles : data.tournament_week?.entry_fee_singles;
+  return fee > 0 ? 'pending' : null;
+}
+
+function buildOrganiserEntryRow(eventId, placement, entry, userId, paymentStatus) {
   return {
     event_id: eventId,
     draw_type: placement.drawType,
@@ -1157,6 +1175,7 @@ function buildOrganiserEntryRow(eventId, placement, entry, userId) {
     entry_source: 'organiser',
     entry_status: 'placed',
     entered_by: userId,
+    payment_status: paymentStatus,
   };
 }
 
@@ -1167,7 +1186,7 @@ function buildOrganiserEntryRow(eventId, placement, entry, userId) {
 // previous write in the chain just vacated. No temporary out-of-range
 // position (cf. swapEntryPositions) is needed here since a bump always
 // moves an entry to a different tier, never to another live row's slot.
-async function applyOrganiserCascadingPlacement(eventId, placement, entry) {
+async function applyOrganiserCascadingPlacement(eventId, placement, entry, paymentStatus) {
   const { data: { user } } = await supabase.auth.getUser();
 
   for (const bump of placement.bumps) {
@@ -1178,7 +1197,7 @@ async function applyOrganiserCascadingPlacement(eventId, placement, entry) {
     if (error) throw new Error(error.message);
   }
 
-  const row = buildOrganiserEntryRow(eventId, placement, entry, user?.id || null);
+  const row = buildOrganiserEntryRow(eventId, placement, entry, user?.id || null, paymentStatus);
   const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
   if (error) throw new Error(error.message);
   return rowToEntry(data);
@@ -1188,8 +1207,11 @@ async function applyOrganiserCascadingPlacement(eventId, placement, entry) {
 // rank/cap, then applies it. No manual draw/position choice at creation time
 // by design; use moveEntryToGroup afterward for exceptions (wildcards, fixes).
 export async function addDrawEntryWithPlacement(eventId, entry) {
-  const placement = await computeSelfEntryPlacement(eventId, entry.ranking);
-  return applyOrganiserCascadingPlacement(eventId, placement, entry);
+  const [placement, paymentStatus] = await Promise.all([
+    computeSelfEntryPlacement(eventId, entry.ranking),
+    computeOfflinePaymentStatus(eventId),
+  ]);
+  return applyOrganiserCascadingPlacement(eventId, placement, entry, paymentStatus);
 }
 
 // Organiser Bulk Import (Entries tab) — places a batch of new entries by
@@ -1203,12 +1225,13 @@ export async function addDrawEntryWithPlacement(eventId, entry) {
 // (rather than skipping) on the first row that fails, so the caller can
 // report exactly how far the import got instead of silently dropping rows.
 export async function bulkAddDrawEntriesWithPlacement(eventId, entries, { onProgress } = {}) {
+  const paymentStatus = await computeOfflinePaymentStatus(eventId);
   const sorted = [...entries].sort((a, b) => (a.ranking || Infinity) - (b.ranking || Infinity));
   const placed = [];
   for (let i = 0; i < sorted.length; i++) {
     try {
       const placement = await computeSelfEntryPlacement(eventId, sorted[i].ranking);
-      const result = await applyOrganiserCascadingPlacement(eventId, placement, sorted[i]);
+      const result = await applyOrganiserCascadingPlacement(eventId, placement, sorted[i], paymentStatus);
       placed.push(result);
     } catch (error) {
       return { placed, failed: { row: sorted[i], index: i, error } };
