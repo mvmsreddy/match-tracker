@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { applySeeding, randomizeDraw, buildByeEntries, buildR1Matches, swapPositions } from '../utils/drawEngine';
 import { generateDrawSheetPDF } from '../utils/drawPdf';
+import { parseDrawSheetPdf } from '../utils/parseDrawSheet';
 import { checkAgeEligibility, minEligibleAgeGroup } from '../utils/eligibility';
 import { DOUBLES_MIN_PAIRS_FOR_POINTS, ANNUAL_TOURNAMENT_LIMITS, bracketSize } from '../utils/aitaGradeRules';
 import { Button } from '@/components/primitives/button';
@@ -1782,6 +1783,182 @@ function InterestedPlayersPanel({ eventId, onAccepted }) {
 }
 
 // ---------------------------------------------------------------------------
+// UploadDrawSheetModal — parses an official AITA draw-sheet PDF client-side
+// (src/utils/parseDrawSheet.js) and previews it before publishing. Unlike
+// BulkImportModal/AddEntryModal, positions come straight off the sheet —
+// no rank-based cascading — because a real draw sheet's positions are
+// already final (post-draw-ceremony). Publishing REPLACES every entry
+// currently in the chosen draw (see api.publishDrawSheet).
+// ---------------------------------------------------------------------------
+function UploadDrawSheetModal({ event, drawType, onPublish, onClose }) {
+  const [parsed, setParsed]         = useState(null); // { meta, entries, errors, drawSize, numSeeds }
+  const [fileName, setFileName]     = useState('');
+  const [parsing, setParsing]       = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError]           = useState('');
+  const [chosenDrawType, setChosenDrawType] = useState(drawType);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setParsing(true);
+    setError('');
+    setParsed(null);
+    try {
+      const result = await parseDrawSheetPdf(file);
+      if (result.entries.length === 0) {
+        throw new Error("No draw positions found in this PDF — check it's an AITA singles draw sheet.");
+      }
+      setParsed(result);
+      if (result.meta.drawType) setChosenDrawType(result.meta.drawType);
+    } catch (err) {
+      setError(err.message || 'Could not read this PDF');
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!parsed) return;
+    setPublishing(true);
+    setError('');
+    try {
+      await onPublish(chosenDrawType, parsed.entries, { drawSize: parsed.drawSize, numSeeds: parsed.numSeeds });
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Could not publish this draw');
+      setPublishing(false);
+    }
+  }
+
+  const categoryMismatch = parsed?.meta.category && parsed.meta.category !== event.category;
+  const ageGroupMismatch = parsed?.meta.ageGroup && parsed.meta.ageGroup !== event.ageGroup;
+  const currentDrawSize  = chosenDrawType === 'main' ? event.drawSize : (event.qualifyingSize || event.drawSize);
+  const sizeMismatch     = parsed && currentDrawSize && parsed.drawSize !== currentDrawSize;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-sm max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span className="text-lg font-display font-extrabold tracking-tight">Upload Draw Sheet</span>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary shrink-0">✕</button>
+        </div>
+
+        <div className="text-sm text-muted-foreground mb-3">
+          Upload the official AITA draw sheet PDF for this event — positions, seeds and BYEs are read straight
+          off it and <strong>replace</strong> whatever is currently in that draw.
+        </div>
+
+        {!parsed && (
+          <>
+            <input type="file" accept="application/pdf" onChange={handleFile} disabled={parsing} className="text-sm" />
+            {parsing && <div className="text-sm text-muted-foreground mt-2">Reading {fileName}…</div>}
+          </>
+        )}
+
+        {parsed && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-xs font-semibold">
+              <span className="text-muted-foreground">Publish as:</span>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" checked={chosenDrawType === 'main'} onChange={() => setChosenDrawType('main')} />
+                Main Draw
+              </label>
+              {event.hasQualifying && (
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" checked={chosenDrawType === 'qualifying'} onChange={() => setChosenDrawType('qualifying')} />
+                  Qualifying
+                </label>
+              )}
+            </div>
+
+            <div className="rounded-sm border border-border bg-muted/30 p-3 text-xs space-y-1">
+              <div>
+                <span className="text-muted-foreground">Detected:</span>{' '}
+                {[parsed.meta.tournamentTitle, parsed.meta.category, parsed.meta.ageGroup].filter(Boolean).join(' — ')}
+                {parsed.meta.drawType && ` — ${parsed.meta.drawType === 'qualifying' ? 'Qualifying' : 'Main'} Draw`}
+              </div>
+              {(parsed.meta.city || parsed.meta.referee) && (
+                <div>
+                  <span className="text-muted-foreground">Venue:</span> {parsed.meta.city}
+                  {parsed.meta.referee ? ` · Referee ${parsed.meta.referee}` : ''}
+                </div>
+              )}
+              <div><span className="text-muted-foreground">Draw size:</span> {parsed.drawSize} ({parsed.numSeeds} seeds)</div>
+            </div>
+
+            {categoryMismatch && (
+              <div className="text-xs text-chart-2 font-semibold">
+                ⚠ This sheet looks like "{parsed.meta.category}" but this event is "{event.category}" — double-check it's the right file.
+              </div>
+            )}
+            {ageGroupMismatch && (
+              <div className="text-xs text-chart-2 font-semibold">
+                ⚠ This sheet looks like {parsed.meta.ageGroup} but this event is {event.ageGroup}.
+              </div>
+            )}
+            {sizeMismatch && (
+              <div className="text-xs text-chart-2 font-semibold">
+                ⚠ This event is currently set up as a {currentDrawSize}-draw — publishing will resize it to {parsed.drawSize} to match the sheet.
+              </div>
+            )}
+            {parsed.errors.length > 0 && (
+              <div className="text-xs text-destructive space-y-0.5">
+                {parsed.errors.map((e, i) => <div key={i}>{e}</div>)}
+              </div>
+            )}
+
+            <div className="border border-border rounded-sm overflow-auto max-h-72">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 sticky top-0">
+                  <tr>
+                    <th className="p-1.5 text-left">Pos</th>
+                    <th className="p-1.5 text-left">Seed</th>
+                    <th className="p-1.5 text-left">Status</th>
+                    <th className="p-1.5 text-left">Name</th>
+                    <th className="p-1.5 text-left">AITA Reg</th>
+                    <th className="p-1.5 text-left">State</th>
+                    <th className="p-1.5 text-left">Rank</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsed.entries.map((e, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="p-1.5">{e.position}</td>
+                      <td className="p-1.5">{e.seed || ''}</td>
+                      <td className="p-1.5">{e.statusCode}</td>
+                      <td className="p-1.5">
+                        {e.isBye ? <span className="italic text-muted-foreground">BYE</span> : `${e.familyName}${e.firstName ? ', ' + e.firstName : ''}`}
+                      </td>
+                      <td className="p-1.5">{e.aitaReg || ''}</td>
+                      <td className="p-1.5">{e.playerState || ''}</td>
+                      <td className="p-1.5">{e.ranking || ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {error && <div className="text-sm text-destructive">{error}</div>}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button disabled={publishing} onClick={handlePublish}>
+                {publishing ? 'Publishing…' : `Publish ${chosenDrawType === 'qualifying' ? 'Qualifying' : 'Main'} Draw (${parsed.entries.length} entries)`}
+              </Button>
+              <Button variant="outline" onClick={() => { setParsed(null); setError(''); }} disabled={publishing}>Choose Different File</Button>
+              <Button variant="outline" onClick={onClose} disabled={publishing}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {error && !parsed && <div className="text-sm text-destructive mt-2">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // EventDetailPage
 // ---------------------------------------------------------------------------
 export default function EventDetailPage() {
@@ -1803,6 +1980,7 @@ export default function EventDetailPage() {
   const [showAdd,        setShowAdd]        = useState(false);
   const [editingEntry,   setEditingEntry]   = useState(null);
   const [showBulk,       setShowBulk]       = useState(false);
+  const [showUploadDraw, setShowUploadDraw] = useState(false);
   const [seeding,        setSeeding]        = useState(false);
 
   // Phase 5 — bracket + score state
@@ -2210,6 +2388,29 @@ export default function EventDetailPage() {
     }
   }
 
+  // ---- UPLOAD DRAW SHEET (parsed PDF) --------------------------------------
+  // Publishes a full, already-final draw (positions/seeds/BYEs straight off
+  // the PDF — see src/utils/parseDrawSheet.js) in one server call, replacing
+  // whatever is currently in that draw_type. targetDrawType may differ from
+  // the page's current `drawType` state if the organiser uploaded a sheet
+  // whose header didn't match the tab they opened the modal from.
+  async function handleUploadDrawSheet(targetDrawType, parsedEntries, { drawSize, numSeeds }) {
+    const result = await api.publishDrawSheet(eventId, targetDrawType, parsedEntries, { drawSize, numSeeds });
+    await reloadEntryBuckets();
+    if (result.event) setEvent(result.event);
+    if (targetDrawType === drawType) {
+      setMatches(result.matches);
+      setViewMode('bracket');
+    }
+
+    const playerIds = result.entries.filter(e => e.playerId && !e.isBye).map(e => e.playerId);
+    notifyUsers(playerIds, {
+      type: 'draw_published',
+      title: `Draw published: ${event?.category} ${event?.ageGroup}`,
+      body: `The ${targetDrawType === 'qualifying' ? 'qualifying' : 'main'} draw for ${week?.name || 'your tournament'} has been published.`,
+    });
+  }
+
   // ---- PROMOTE QUALIFIERS (Phase 6) ----------------------------------------
   // Shared by the manual button and the auto-trigger fired when the
   // qualifying Final completes (see handleScoreMatch). Safe to re-run —
@@ -2503,6 +2704,11 @@ export default function EventDetailPage() {
               <Button onClick={handleRandomizeDraw} disabled={seeding}>
                 {seeding ? 'Shuffling…' : '🎲 Randomize Draw'}
               </Button>
+            )}
+            {/* Upload Draw Sheet — parses the official AITA PDF and publishes
+                it straight to whichever tab (main/qualifying) is active. */}
+            {isOwner && viewMode !== 'bracket' && (activeTab === 'main' || activeTab === 'qualifying') && (
+              <Button variant="outline" onClick={() => setShowUploadDraw(true)}>⇧ Upload Draw Sheet</Button>
             )}
             {/* Publish Draw / Re-generate Bracket */}
             {isOwner && playerCount > 0 && (
@@ -2875,6 +3081,14 @@ export default function EventDetailPage() {
           onImport={handleBulkImportPlacement}
           onWithdraw={handleBulkWithdraw}
           onClose={() => setShowBulk(false)}
+        />
+      )}
+      {showUploadDraw && (
+        <UploadDrawSheetModal
+          event={event}
+          drawType={drawType}
+          onPublish={handleUploadDrawSheet}
+          onClose={() => setShowUploadDraw(false)}
         />
       )}
       {scoringMatch && (() => {

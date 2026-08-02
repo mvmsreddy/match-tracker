@@ -102,6 +102,8 @@ export const getPlayerWeekParticipation = hasSupabaseConfig ? supabaseApi.getPla
 // Organiser cascading placement — Entries tab Add Player / Bulk Import
 export const addDrawEntryWithPlacement = hasSupabaseConfig ? supabaseApi.addDrawEntryWithPlacement : noSupabase;
 export const bulkAddDrawEntriesWithPlacement = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntriesWithPlacement : async () => ({ placed: [], failed: null });
+// Draw-sheet PDF upload — publishes a full, already-final draw in one call
+export const publishDrawSheet = hasSupabaseConfig ? supabaseApi.publishDrawSheet : noSupabase;
 
 // Event Matches
 export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : tournamentsMock.getEventMatches;

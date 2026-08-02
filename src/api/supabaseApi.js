@@ -2125,6 +2125,51 @@ export async function advanceWinner(eventId, drawType, currentRound, currentSlot
   return { ok: true };
 }
 
+// Publish a full draw (every position at once — main or qualifying) for an
+// event that already exists, e.g. from a parsed AITA draw-sheet PDF
+// (see src/utils/parseDrawSheet.js). Unlike bulkAddDrawEntriesWithPlacement
+// (Entries tab Add Player / Bulk Import), positions are taken exactly as
+// given — no rank-based cascading placement — because a real draw sheet's
+// positions are already final, seeding ceremony and all. Mirrors what
+// EventDetailPage's handleRandomizeDraw + handleGenerateBracket do together
+// (replace entries -> build R1+ matches -> auto-advance BYE-adjacent R1
+// matches -> mark draw_ready) as one call instead of several
+// client-orchestrated round trips.
+export async function publishDrawSheet(eventId, drawType, entries, { drawSize, numSeeds } = {}) {
+  if (!entries || entries.length === 0) throw new Error('No entries to publish');
+
+  const eventUpdates = {};
+  if (drawSize !== undefined) eventUpdates.drawSize = drawSize;
+  if (numSeeds !== undefined) eventUpdates.numSeeds = numSeeds;
+  if (Object.keys(eventUpdates).length > 0) await updateEvent(eventId, eventUpdates);
+
+  const saved = await saveDrawEntries(eventId, drawType, entries);
+  const sorted = [...saved].sort((a, b) => a.position - b.position);
+  const matches = await initializeEventMatches(eventId, drawType, sorted, undefined);
+
+  const entryMap = new Map(saved.map(e => [e.id, e]));
+  const r1 = matches.filter(m => m.round === 1);
+  await Promise.all(r1.map(async match => {
+    const e1 = entryMap.get(match.entry1Id);
+    const e2 = entryMap.get(match.entry2Id);
+    const byeWin = (e1?.isBye && e2 && !e2.isBye) ? e2 : (e2?.isBye && e1 && !e1.isBye) ? e1 : null;
+    if (byeWin) {
+      await updateMatchScore(match.id, {
+        winnerEntryId: byeWin.id, outcomeType: 'walkover', status: 'complete', score: null, umpire: null,
+      });
+      await advanceWinner(eventId, drawType, 1, match.matchSlot, byeWin.id);
+    }
+  }));
+
+  // Event status tracks the MAIN draw's lifecycle — a qualifying-only
+  // publish doesn't flip it, since the main draw isn't necessarily out yet
+  // (same rule as publishAitaDrawSheet's crowdsourced-import path).
+  const event = drawType === 'main' ? await updateEvent(eventId, { status: 'draw_ready' }) : null;
+  const freshMatches = await getEventMatches(eventId, drawType);
+
+  return { entries: saved, matches: freshMatches, event };
+}
+
 // ---------------------------------------------------------------------------
 // Phase 7 — Order of Play (cross-event scheduling)
 // ---------------------------------------------------------------------------
