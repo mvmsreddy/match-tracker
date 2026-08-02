@@ -236,15 +236,22 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
           </Button>
         )}
         {onEnter && isEntered && (
-          <Button
-            size="sm"
-            className="bg-chart-3 text-white hover:bg-chart-3/90 disabled:opacity-60"
-            onClick={withdrawOpen ? () => onWithdraw(event.id) : undefined}
-            disabled={!withdrawOpen}
-            title={withdrawOpen ? 'Withdraw from this event' : 'Freeze deadline passed — contact the tournament referee to withdraw'}
-          >
-            ✓ Entered
-          </Button>
+          <>
+            {!myEntry.paymentId && myEntry.paymentStatus === 'pending' && (
+              <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.68rem] font-semibold" title="Pay the organiser in cash/UPI at the venue">
+                Payment pending
+              </span>
+            )}
+            <Button
+              size="sm"
+              className="bg-chart-3 text-white hover:bg-chart-3/90 disabled:opacity-60"
+              onClick={withdrawOpen ? () => onWithdraw(event.id) : undefined}
+              disabled={!withdrawOpen}
+              title={withdrawOpen ? 'Withdraw from this event' : 'Freeze deadline passed — contact the tournament referee to withdraw'}
+            >
+              ✓ Entered
+            </Button>
+          </>
         )}
         {onEnter && canEnterSingles && (
           <Button size="sm" variant="outline" onClick={() => onEnter(event)} title="Enter this event">Enter →</Button>
@@ -755,16 +762,25 @@ export default function TournamentDetailPage() {
               )}
             </div>
             {entryError && <div className="text-sm text-destructive mb-2">{entryError}</div>}
-            <div className="flex gap-2">
-              {week.entryFeeSingles > 0 ? (
-                <Button onClick={handlePayAndEnter} disabled={enteringSelf}>
+            {week.entryFeeSingles > 0 ? (
+              <div className="space-y-2">
+                <Button className="w-full" onClick={handlePayAndEnter} disabled={enteringSelf}>
                   {enteringSelf ? 'Processing…' : `Pay ₹${week.entryFeeSingles} & Enter`}
                 </Button>
-              ) : (
+                <Button className="w-full" variant="outline" onClick={handleSelfEnter} disabled={enteringSelf}>
+                  {enteringSelf ? 'Entering…' : 'Enter Now — Pay Offline'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Pay offline: you're entered immediately and pay the organiser in cash/UPI at the venue. They'll mark your payment received.
+                </p>
+                <Button className="w-full" variant="ghost" onClick={() => { setEntryModal(null); setEntryError(''); }} disabled={enteringSelf}>Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
                 <Button onClick={handleSelfEnter} disabled={enteringSelf}>{enteringSelf ? 'Entering…' : 'Confirm Entry'}</Button>
-              )}
-              <Button variant="outline" onClick={() => { setEntryModal(null); setEntryError(''); }} disabled={enteringSelf}>Cancel</Button>
-            </div>
+                <Button variant="outline" onClick={() => { setEntryModal(null); setEntryError(''); }} disabled={enteringSelf}>Cancel</Button>
+              </div>
+            )}
           </div>
         </div>
       )}

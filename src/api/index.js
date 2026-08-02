@@ -95,6 +95,8 @@ export const updateDrawEntry = hasSupabaseConfig ? supabaseApi.updateDrawEntry :
 export const swapEntryPositions = hasSupabaseConfig ? supabaseApi.swapEntryPositions : noSupabase;
 export const deleteDrawEntry = hasSupabaseConfig ? supabaseApi.deleteDrawEntry : async () => {};
 export const moveEntryToGroup = hasSupabaseConfig ? supabaseApi.moveEntryToGroup : noSupabase;
+// Phase 47 — organiser confirms/reverts an offline entry-fee payment
+export const updateEntryPaymentStatus = hasSupabaseConfig ? supabaseApi.updateEntryPaymentStatus : noSupabase;
 export const bulkAddDrawEntries = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntries : async () => [];
 export const getPlayerWeekParticipation = hasSupabaseConfig ? supabaseApi.getPlayerWeekParticipation : async () => [];
 

@@ -671,6 +671,11 @@ function rowToEntry(row) {
     withdrawalType: row.withdrawal_type || null,
     // Phase 43 — paid entry
     paymentId: row.payment_id || null,
+    // Phase 47 — offline entry-fee tracking. paymentId (above) is the
+    // authoritative "paid online via Razorpay" signal; paymentStatus only
+    // covers the offline path ('pending' = entered, not yet paid; 'paid' =
+    // organiser confirmed cash/UPI at venue).
+    paymentStatus: row.payment_status || null,
   };
 }
 
@@ -778,6 +783,23 @@ export async function updateDrawEntry(entryId, updates) {
   };
   const { data, error } = await supabase
     .from('draw_entries').update(row).eq('id', entryId).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+// Phase 47 — organiser marks/unmarks an offline entry-fee payment as
+// received. Only meaningful for entries that self-entered a paid event
+// without going through Razorpay (paymentStatus 'pending'/'paid', no
+// paymentId). Relies on the "Event week creator can update draw entries"
+// RLS policy (tournaments_schema.sql) — organisers aren't restricted from
+// writing 'paid' the way players are (see phase47_offline_entry_payment.sql).
+export async function updateEntryPaymentStatus(entryId, status) {
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({ payment_status: status })
+    .eq('id', entryId)
+    .select()
+    .single();
   if (error) throw new Error(error.message);
   return rowToEntry(data);
 }

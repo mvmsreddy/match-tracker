@@ -134,13 +134,17 @@ That's it — every match you generate a PDF for now gets saved permanently to
 your own Postgres database, viewable any time from **Match History**, and
 comparable on the **Compare** page.
 
-## Tournament entry payments (Razorpay, optional)
+## Tournament entry payments (Razorpay, optional — offline fallback always on)
 
-If a tournament organiser sets an entry fee (Singles/Doubles ₹ fields on a
-tournament week), players are asked to pay before their self-entry is
-confirmed. Without the setup below, every event just behaves as if it were
-free — the "Pay ₹X & Enter" button never appears, and the older `selfEnterSingles`
-flow (no payment) is what runs.
+If a tournament organiser sets a Singles entry fee on a tournament week, a
+player self-entering that event sees two options: **"Pay ₹X & Enter"**
+(Razorpay Checkout — only works once the setup below is done) and
+**"Enter Now — Pay Offline"**, which enters the player immediately and tags
+the entry `payment_status = 'pending'` (shown to the organiser as an
+**UNPAID** badge with a **Mark Paid** button on the event's Players tab, and
+to the player as a "Payment pending" note on their event card). This is the
+only path that works until Razorpay is configured — see
+`supabase/phase47_offline_entry_payment.sql`.
 
 1. **Create a Razorpay account** at https://razorpay.com and switch to Test
    Mode while developing.
@@ -164,12 +168,16 @@ flow (no payment) is what runs.
    The order-create/verify/webhook endpoints (`api/razorpay-*.js`) also reuse
    the existing `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` values — nothing
    new needed there.
-6. **Run the migration**: paste `supabase/phase43_event_payments.sql` into
+6. **Run the migrations**: paste `supabase/phase43_event_payments.sql` into
    the Supabase SQL Editor and run it (adds the `event_payments` table and a
-   `payment_id` column on `draw_entries`).
+   `payment_id` column on `draw_entries`), then run
+   `supabase/phase47_offline_entry_payment.sql` (adds the `payment_status`
+   column and the offline-entry RLS/RPC changes — needed even if you never
+   configure Razorpay, since it's what the offline path relies on).
 7. **Set an entry fee**: as an organiser, edit a tournament week and fill in
    "Entry Fee – Singles (₹)". Any player self-entering a singles event in
-   that week now sees "Pay ₹X & Enter" instead of "Confirm Entry".
+   that week now sees both "Pay ₹X & Enter" and "Enter Now — Pay Offline"
+   instead of "Confirm Entry".
 
 Note for the Android build: Razorpay's standard Checkout runs fine inside a
 Capacitor WebView in the common case, but verify on a real device build

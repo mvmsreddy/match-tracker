@@ -1123,8 +1123,47 @@ function Dash() { return <span className="text-muted-foreground">—</span>; }
 const scBadgeCls = 'inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold';
 const moveSelectCls = 'text-[0.68rem] rounded-sm border border-input bg-transparent px-1 py-1';
 const iconBtnCls = 'w-7 h-7 shrink-0 flex items-center justify-center rounded-sm bg-transparent hover:bg-secondary text-muted-foreground';
+const paidBadgeCls = 'inline-flex items-center rounded-sm bg-primary/15 text-accent-ink px-2 py-0.5 text-[0.62rem] font-bold';
+const unpaidBadgeCls = 'inline-flex items-center rounded-sm bg-destructive/15 text-destructive px-2 py-0.5 text-[0.62rem] font-bold';
 
-function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, currentGroup, trackerRating }) {
+// Phase 47 — entry-fee payment status. entry.paymentId means paid online via
+// Razorpay (unchanged, not revertible here). entry.paymentStatus covers the
+// offline path: 'pending' = self-entered a paid event without paying yet,
+// 'paid' = organiser confirmed cash/UPI at venue.
+function PaymentBadge({ entry, isOwner, onTogglePayment }) {
+  if (entry.paymentId) {
+    return <span className={cn(paidBadgeCls, 'mt-0.5')} title="Entry fee paid via Razorpay">PAID</span>;
+  }
+  if (entry.paymentStatus === 'paid') {
+    return (
+      <span className="inline-flex items-center gap-1.5 mt-0.5">
+        <span className={paidBadgeCls} title="Entry fee paid offline (organiser-confirmed)">PAID (offline)</span>
+        {isOwner && onTogglePayment && (
+          <button type="button" className="text-[0.62rem] text-muted-foreground underline decoration-dotted hover:text-foreground"
+            onClick={e => { e.stopPropagation(); onTogglePayment(entry.id, 'pending'); }} title="Revert to unpaid">
+            undo
+          </button>
+        )}
+      </span>
+    );
+  }
+  if (entry.paymentStatus === 'pending') {
+    return (
+      <span className="inline-flex items-center gap-1.5 mt-0.5">
+        <span className={unpaidBadgeCls} title="Entered — entry fee not yet paid">UNPAID</span>
+        {isOwner && onTogglePayment && (
+          <button type="button" className="text-[0.62rem] font-bold text-accent-ink underline decoration-dotted hover:no-underline"
+            onClick={e => { e.stopPropagation(); onTogglePayment(entry.id, 'paid'); }} title="Mark this player's entry fee as received">
+            Mark Paid
+          </button>
+        )}
+      </span>
+    );
+  }
+  return null;
+}
+
+function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, onTogglePayment, currentGroup, trackerRating }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
@@ -1159,9 +1198,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
             {entry.isAlternate && (
               <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.62rem] font-bold mt-0.5">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
             )}
-            {entry.paymentId && (
-              <span className="inline-flex items-center rounded-sm bg-primary/15 text-accent-ink px-2 py-0.5 text-[0.62rem] font-bold mt-0.5" title="Entry fee paid via Razorpay">PAID</span>
-            )}
+            <PaymentBadge entry={entry} isOwner={isOwner} onTogglePayment={onTogglePayment} />
           </>
         )}
       </TableCell>
@@ -1210,12 +1247,12 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
 // ---------------------------------------------------------------------------
 // AlternateRow  (alternates list — positions beyond the draw size)
 // ---------------------------------------------------------------------------
-function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove }) {
+function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove, onTogglePayment }) {
   return (
     <UITableRow>
       <TableCell className="font-mono">#{entry.position - maxPos}</TableCell>
       <TableCell>
-        <div className="font-semibold text-sm flex items-center gap-1.5">
+        <div className="font-semibold text-sm flex items-center gap-1.5 flex-wrap">
           {entry.familyName}
           {entry.firstName ? <span className="font-normal">, {entry.firstName}</span> : null}
           {entry.isOnsiteSignin && (
@@ -1223,6 +1260,7 @@ function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove }) {
               ONSITE
             </span>
           )}
+          <PaymentBadge entry={entry} isOwner={isOwner} onTogglePayment={onTogglePayment} />
         </div>
       </TableCell>
       <TableCell>{entry.aitaReg || <Dash />}</TableCell>
@@ -2060,6 +2098,14 @@ export default function EventDetailPage() {
     } catch (err) { setError(err.message); }
   }
 
+  // Phase 47 — organiser confirms/reverts an offline entry-fee payment.
+  async function handleTogglePayment(entryId, status) {
+    try {
+      const updated = await api.updateEntryPaymentStatus(entryId, status);
+      setEntries(prev => prev.map(e => e.id === entryId ? updated : e));
+    } catch (err) { setError(err.message); }
+  }
+
   async function handleMoveEntry(entryId, targetGroup) {
     try {
       const moved = await api.moveEntryToGroup(entryId, targetGroup, eventId);
@@ -2685,7 +2731,7 @@ export default function EventDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {alternateEntries.map(entry => (
-                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} />
+                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} onTogglePayment={isOwner ? handleTogglePayment : undefined} />
                   ))}
                 </TableBody>
               </Table>
@@ -2806,6 +2852,7 @@ export default function EventDetailPage() {
                       onDelete={handleDeleteEntry}
                       onWithdraw={e => setWithdrawingEntry(e)}
                       onMove={isOwner ? handleMoveEntry : undefined}
+                      onTogglePayment={isOwner ? handleTogglePayment : undefined}
                       currentGroup={activeTab}
                       trackerRating={ratingsBySubjectKey.get(entry.playerId || entry.aitaReg)}
                     />
@@ -2846,6 +2893,7 @@ export default function EventDetailPage() {
                             isOwner={isOwner}
                             onDelete={handleDeleteEntry}
                             onMove={isOwner ? handleMoveEntry : undefined}
+                            onTogglePayment={isOwner ? handleTogglePayment : undefined}
                           />
                         ))}
                       </TableBody>
