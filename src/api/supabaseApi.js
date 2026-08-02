@@ -780,6 +780,11 @@ export async function updateDrawEntry(entryId, updates) {
     is_alternate: updates.isAlternate || false,
     is_onsite_signin: updates.isOnsiteSignin || false,
     replacing_name: updates.replacingName || null,
+    // This form only ever edits a slot into a real player (BYE placeholders
+    // are created by buildByeEntries/bulkAddDrawEntries, never through here),
+    // so clear is_bye unconditionally — otherwise a BYE slot manually edited
+    // into a wildcard/direct entry stays flagged as a bye forever.
+    is_bye: false,
   };
   const { data, error } = await supabase
     .from('draw_entries').update(row).eq('id', entryId).select().single();
@@ -2571,6 +2576,39 @@ export async function callInReplacement(targetEntryId, sourceEntry, sourceKind) 
       .update({ status: 'called_in', called_into_entry_id: targetEntryId })
       .eq('entry_id', sourceEntry.id);
   }
+  await supabase.from('draw_entries').delete().eq('id', sourceEntry.id);
+
+  return rowToEntry(data);
+}
+
+// Fills a still-open BYE slot with a lucky loser — distinct from
+// callInReplacement() above, which is for replacing a *withdrawn* player and
+// always writes a withdrawal_audit row. A BYE slot was never occupied, so
+// logging a "withdrawal" for it would fabricate audit history; this just
+// overwrites the BYE placeholder directly and marks the pool entry consumed.
+export async function fillOpenSlotWithLuckyLoser(targetEntryId, sourceEntry) {
+  const { data, error } = await supabase
+    .from('draw_entries')
+    .update({
+      family_name: sourceEntry.familyName,
+      first_name: sourceEntry.firstName || null,
+      aita_reg: sourceEntry.aitaReg || null,
+      player_state: sourceEntry.playerState || null,
+      ranking: sourceEntry.ranking || null,
+      date_of_birth: sourceEntry.dateOfBirth || null,
+      player_id: sourceEntry.playerId || null,
+      status_code: 'LL',
+      is_bye: false,
+    })
+    .eq('id', targetEntryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  await supabase
+    .from('lucky_losers')
+    .update({ status: 'called_in', called_into_entry_id: targetEntryId })
+    .eq('entry_id', sourceEntry.id);
   await supabase.from('draw_entries').delete().eq('id', sourceEntry.id);
 
   return rowToEntry(data);

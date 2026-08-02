@@ -1102,7 +1102,12 @@ function WithdrawModal({ entry, event, drawType, matches, alternateEntries, luck
 function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandomDraw, onCallIn }) {
   const [pickedTarget, setPickedTarget] = useState({});
 
+  // A lucky loser can fill either a slot that opened up from a withdrawal,
+  // or a still-open BYE that was never played — e.g. a draw padded with
+  // more BYEs than were actually needed once qualifiers are known.
   const unresolvedWithdrawn = mainEntries.filter(e => e.isWithdrawn && !e.isAlternate);
+  const openByes = mainEntries.filter(e => e.isBye);
+  const fillableSlots = [...unresolvedWithdrawn, ...openByes];
   const hasAny = luckyLosers.length > 0;
 
   return (
@@ -1139,7 +1144,7 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
                   {isOwner && (
                     <TableCell>
                       {ll.status === 'waiting' && (
-                        unresolvedWithdrawn.length === 0 ? (
+                        fillableSlots.length === 0 ? (
                           <span className="text-muted-foreground">No open slot</span>
                         ) : (
                           <div className="flex items-center gap-1.5">
@@ -1150,7 +1155,10 @@ function LuckyLosersPanel({ luckyLosers, mainEntries, isOwner, drawing, onRandom
                             >
                               <option value="">Fill which slot?</option>
                               {unresolvedWithdrawn.map(e => (
-                                <option key={e.id} value={e.id}>Pos {e.position} — {e.familyName}</option>
+                                <option key={e.id} value={e.id}>Pos {e.position} — {e.familyName} (withdrawn)</option>
+                              ))}
+                              {openByes.map(e => (
+                                <option key={e.id} value={e.id}>Pos {e.position} — open BYE</option>
                               ))}
                             </select>
                             <Button size="sm" disabled={!pickedTarget[ll.id]} onClick={() => onCallIn(pickedTarget[ll.id], ll)}>Call In</Button>
@@ -2390,7 +2398,12 @@ export default function EventDetailPage() {
   async function handleCallInLuckyLoserFromTab(targetEntryId, ll) {
     setError('');
     try {
-      await api.callInReplacement(targetEntryId, ll.entry, 'lucky_loser');
+      const target = mainEntries.find(e => e.id === targetEntryId);
+      if (target?.isBye) {
+        await api.fillOpenSlotWithLuckyLoser(targetEntryId, ll.entry);
+      } else {
+        await api.callInReplacement(targetEntryId, ll.entry, 'lucky_loser');
+      }
       await api.clearScheduleForEntry(targetEntryId);
       const [freshEntries, freshLL] = await Promise.all([
         api.getDrawEntries(eventId, 'main'),

@@ -137,6 +137,7 @@ export const sendPushNotifications  = hasSupabaseConfig ? supabaseApi.sendPushNo
 export const setEntryWithdrawn      = hasSupabaseConfig ? supabaseApi.setEntryWithdrawn      : noSupabase;
 export const bulkSetWithdrawn       = hasSupabaseConfig ? supabaseApi.bulkSetWithdrawn       : noSupabase;
 export const callInReplacement      = hasSupabaseConfig ? supabaseApi.callInReplacement      : noSupabase;
+export const fillOpenSlotWithLuckyLoser = hasSupabaseConfig ? supabaseApi.fillOpenSlotWithLuckyLoser : noSupabase;
 export const processWalkoverIfNeeded = hasSupabaseConfig ? supabaseApi.processWalkoverIfNeeded : async () => null;
 export const clearScheduleForEntry  = hasSupabaseConfig ? supabaseApi.clearScheduleForEntry  : async () => ({ ok: true });
 export const getQualifyingLosers    = hasSupabaseConfig ? supabaseApi.getQualifyingLosers    : async () => null;
