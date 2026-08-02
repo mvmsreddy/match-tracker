@@ -76,6 +76,21 @@
   --app-chart-1: 79 100% 65%; --app-chart-2: 217 91% 60%; --app-chart-3: 79 100% 65%;
   --app-chart-4: 11 79% 72%; --app-chart-5: 137 6% 51%;
 }
+/* Native form-control chrome (select popup lists, the date-input calendar
+   icon/picker, scrollbars, spell-check UI) is drawn by the OS/browser, not
+   by our own CSS — `background`/`color` rules on <select>/<option> can't
+   reliably reach it (Chromium in particular ignores most of that styling
+   for the open dropdown list). `color-scheme` is the actual hook browsers
+   expose for this: it tells the browser which OS-native light/dark palette
+   to draw that chrome in, so a <select> opened while the page is dark gets
+   the OS's dark popup (light text on a dark background) instead of always
+   defaulting to a light popup — which is what was rendering as unreadable
+   near-white-on-white text, and a near-invisible dark calendar icon on a
+   dark input. */
+:root, [data-tier="day"] { color-scheme: light; }
+[data-tier="night"], .dark { color-scheme: dark; }
+[data-tier="glare"] { color-scheme: light; }
+
 [data-tier="glare"] {
   --app-background: 0 0% 100%; --app-foreground: 206 60% 7%;
   --app-card: 0 0% 100%; --app-card-foreground: 206 60% 7%;
