@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 const NATIVE_OAUTH_REDIRECT = 'com.matchtrackerpro.app://login-callback';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
-import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender, getAitaDrawDefaults } from '../utils/aitaGradeRules';
+import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender, getAitaDrawDefaults, extractAgeGroupsFromCategoryText, extractGendersFromCategoryText, categoriesForGenders } from '../utils/aitaGradeRules';
 import { buildCircuits } from '../lib/segments';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { computeStreak } from '../lib/streaks';
@@ -3501,28 +3501,49 @@ export async function approveAitaOrganizerClaim(claimId) {
     source: 'aita_claimed',
   });
 
-  // Auto-fill a starting event from the official AITA data we already have
-  // (age_group from the calendar, category from the "Category - ..." line
-  // on the detail page) rather than handing the organizer an empty
-  // tournament — they can edit or add more events afterward from the
-  // normal event UI. Skipped when the category isn't a recognizable
-  // singles/doubles line (some AITA pages combine "Boys & Girls Singles"
-  // into one category, which getAitaDrawDefaults can't resolve to a single
-  // draw size) — guessing wrong there makes more cleanup work than none.
-  let event = null;
-  if (t.category && /single|double/i.test(t.category)) {
-    const ageGroup = mapAitaAgeGroupToU(t.ageGroup) || 'Open';
-    const defaults = getAitaDrawDefaults(t.grade, t.category);
-    event = await createEvent(week.id, {
-      category: t.category,
-      ageGroup,
-      drawSize: defaults.drawSize,
-      numSeeds: defaults.numSeeds,
-      hasQualifying: defaults.hasQualifying,
-      qualifyingSize: defaults.qualifyingSize,
-      qualifyingSpots: defaults.qualifyingSpots,
-    });
+  // Auto-fill every event this tournament likely has, from the official
+  // AITA data we already have — rather than handing the organizer an empty
+  // tournament (or just one event) to build up by hand. A "Category" line
+  // like "U-14 & 16 Boys & Girls" tells us the full set: every detected age
+  // group x every detected gender's Singles/Doubles (+ Mixed Doubles when
+  // both halves of a pair are present) — see aitaGradeRules.js. Wrong or
+  // extra guesses are just an edit/delete away, per the call to keep this
+  // auto-fill aggressive rather than conservative. Falls back to a single
+  // event when the category is already one clean Singles/Doubles line (the
+  // common case), and creates nothing when there's no usable signal at all.
+  const detectedAgeGroups = extractAgeGroupsFromCategoryText(t.category);
+  const ageGroups = detectedAgeGroups.length > 0
+    ? detectedAgeGroups
+    : [mapAitaAgeGroupToU(t.ageGroup) || 'Open'];
+
+  const detectedCategories = categoriesForGenders(extractGendersFromCategoryText(t.category));
+  const categories = detectedCategories.length > 0
+    ? detectedCategories
+    : (t.category && /single|double/i.test(t.category) ? [t.category] : []);
+
+  const createdEvents = [];
+  for (const ageGroup of ageGroups) {
+    for (const category of categories) {
+      const defaults = getAitaDrawDefaults(t.grade, category);
+      // eslint-disable-next-line no-await-in-loop
+      const ev = await createEvent(week.id, {
+        category,
+        ageGroup,
+        drawSize: defaults.drawSize,
+        numSeeds: defaults.numSeeds,
+        hasQualifying: defaults.hasQualifying,
+        qualifyingSize: defaults.qualifyingSize,
+        qualifyingSpots: defaults.qualifyingSpots,
+      });
+      createdEvents.push(ev);
+    }
   }
+  // linked_event_id only makes sense for a single-event tournament (the
+  // crowdsourced draw-publish path, which is always exactly one draw) — a
+  // claimed tournament with 0 or many auto-filled events has no single
+  // "the" event, so this stays null and only linked_tournament_week_id
+  // marks it live on the platform.
+  const event = createdEvents.length === 1 ? createdEvents[0] : null;
 
   await supabase.from('aita_tournaments')
     .update({ linked_tournament_week_id: week.id, linked_event_id: event?.id || null })
@@ -3541,19 +3562,25 @@ export async function approveAitaOrganizerClaim(claimId) {
     .neq('id', claimId);
 
   try {
+    let body;
+    if (createdEvents.length === 1) {
+      body = `You're now the organizer for ${t.name}. We've pre-filled ${event.category} ${event.ageGroup} — review and adjust it, then add any other events.`;
+    } else if (createdEvents.length > 1) {
+      body = `You're now the organizer for ${t.name}. We've pre-filled ${createdEvents.length} events (${createdEvents.map(e => `${e.ageGroup} ${e.category}`).join(', ')}) — review, edit, or delete any that don't apply.`;
+    } else {
+      body = `You're now the organizer for ${t.name}. Add your events to get started.`;
+    }
     await createNotificationsForUsers([claimRow.claimed_by], {
       type: 'aita_claim_approved',
       title: `Claim approved: ${t.name}`,
-      body: event
-        ? `You're now the organizer for ${t.name}. We've pre-filled ${event.category} ${event.ageGroup} — review and adjust it, then add any other events.`
-        : `You're now the organizer for ${t.name}. Add your events to get started.`,
+      body,
       tournamentWeekId: week.id,
     });
   } catch {
     // best-effort
   }
 
-  return { week, event };
+  return { week, event, events: createdEvents };
 }
 
 export async function rejectAitaOrganizerClaim(claimId) {

@@ -579,7 +579,7 @@ function OrganizerClaimsQueue() {
       })}
       {Object.entries(approved).map(([claimId, result]) => (
         <div key={claimId} className="rounded-sm border border-border bg-card p-4 text-sm">
-          Approved —{' '}
+          Approved — {result.events?.length || 0} event{result.events?.length === 1 ? '' : 's'} pre-filled.{' '}
           <Link
             to={result.event ? `/tournaments/${result.week.id}/events/${result.event.id}` : `/tournaments/${result.week.id}`}
             className="text-accent-ink underline underline-offset-2"

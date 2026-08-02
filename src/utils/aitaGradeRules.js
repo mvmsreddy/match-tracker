@@ -218,6 +218,44 @@ export function categoryGender(category) {
   return /girl|women/.test(c) ? 'F' : 'M';
 }
 
+// ---------------------------------------------------------------------------
+// AITA calendar/factsheet "Category" line parsing — e.g. "U-14 & 16 Boys &
+// Girls" — used both by the player-facing "I'm Playing" age-group/category
+// picker (AitaTournamentFactsheet.jsx, only shown when the category isn't a
+// single clean Singles/Doubles line) and by the organizer-claim auto-fill
+// (supabaseApi.js's approveAitaOrganizerClaim, which creates one event per
+// detected age-group x category combination). Both return [] when nothing
+// recognizable is found — each caller decides its own fallback (a generic
+// full option list for the picker; "create nothing" for auto-fill, since a
+// wrong guess there is more cleanup than an empty tournament).
+// ---------------------------------------------------------------------------
+
+export function extractAgeGroupsFromCategoryText(text) {
+  if (!text) return [];
+  const nums = [...new Set((text.match(/\b(10|12|14|16|18)\b/g) || []))];
+  return nums.map(n => `U${n}`);
+}
+
+export function extractGendersFromCategoryText(text) {
+  if (!text) return [];
+  const genders = [];
+  if (/\bboys?\b/i.test(text)) genders.push('Boys');
+  if (/\bgirls?\b/i.test(text)) genders.push('Girls');
+  if (/\bmen\b/i.test(text)) genders.push('Men');
+  if (/\bwomen\b/i.test(text)) genders.push('Women');
+  return genders;
+}
+
+// Singles + Doubles per detected gender, plus Mixed Doubles when both halves
+// of a binary pair (Boys & Girls, or Men & Women) are both present.
+export function categoriesForGenders(genders) {
+  if (!genders || genders.length === 0) return [];
+  const opts = genders.flatMap(g => [`${g} Singles`, `${g} Doubles`]);
+  if (genders.includes('Boys') && genders.includes('Girls')) opts.push('Mixed Doubles');
+  if (genders.includes('Men') && genders.includes('Women')) opts.push('Mixed Doubles');
+  return opts;
+}
+
 // ============================================================
 // Ranking points by round — Section 13 of
 // New folder/AITA_Rules_Knowledge_Base.md ("Ranking Points by Round"),

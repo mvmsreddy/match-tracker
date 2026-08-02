@@ -5,6 +5,7 @@ import { buttonVariants } from './primitives/button';
 import { Button } from './primitives/button';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
+import { extractAgeGroupsFromCategoryText, extractGendersFromCategoryText, categoriesForGenders } from '../utils/aitaGradeRules';
 
 // Scraped factsheet fields can balloon into a dump of the entire remaining
 // PDF text when the sync parser's end-label match fails on a given PDF
@@ -281,29 +282,11 @@ function guessAgeGroup(rawAgeGroup) {
 // which age groups/genders this listing actually covers — showing the full
 // generic dropdowns when we have that info would just make it easier to
 // pick something wrong. Falls back to the full lists whenever nothing
-// recognizable is found, same as before.
-function extractAgeGroupsFromText(text) {
-  if (!text) return [];
-  const nums = [...new Set((text.match(/\b(10|12|14|16|18)\b/g) || []))];
-  return nums.map(n => `U${n}`);
-}
-
-function extractGendersFromText(text) {
-  if (!text) return [];
-  const genders = [];
-  if (/\bboys?\b/i.test(text)) genders.push('Boys');
-  if (/\bgirls?\b/i.test(text)) genders.push('Girls');
-  if (/\bmen\b/i.test(text)) genders.push('Men');
-  if (/\bwomen\b/i.test(text)) genders.push('Women');
-  return genders;
-}
-
+// recognizable is found. Same extraction approveAitaOrganizerClaim uses to
+// auto-fill an organizer's events (src/utils/aitaGradeRules.js) — kept in
+// one place so the picker and the auto-fill never disagree.
 function buildCategoryOptions(genders) {
-  if (genders.length === 0) return ALL_CATEGORIES;
-  const opts = genders.flatMap(g => [`${g} Singles`, `${g} Doubles`]);
-  if (genders.includes('Boys') && genders.includes('Girls')) opts.push('Mixed Doubles');
-  if (genders.includes('Men') && genders.includes('Women')) opts.push('Mixed Doubles');
-  return opts;
+  return genders.length > 0 ? categoriesForGenders(genders) : ALL_CATEGORIES;
 }
 
 function ParticipationWidget({ t }) {
@@ -314,11 +297,11 @@ function ParticipationWidget({ t }) {
   const [error, setError] = useState('');
 
   const categoryIsClear = t.category && /single|double/i.test(t.category);
-  const detectedAgeGroups = extractAgeGroupsFromText(t.category) || [];
+  const detectedAgeGroups = extractAgeGroupsFromCategoryText(t.category);
   const availableAgeGroups = detectedAgeGroups.length > 0
     ? detectedAgeGroups
     : (guessAgeGroup(t.ageGroup) ? [guessAgeGroup(t.ageGroup)] : ALL_AGE_GROUPS);
-  const availableCategories = buildCategoryOptions(extractGendersFromText(t.category));
+  const availableCategories = buildCategoryOptions(extractGendersFromCategoryText(t.category));
   const [pickCategory, setPickCategory] = useState(availableCategories.length === 1 ? availableCategories[0] : '');
   const [pickAgeGroup, setPickAgeGroup] = useState(availableAgeGroups.length === 1 ? availableAgeGroups[0] : '');
 
