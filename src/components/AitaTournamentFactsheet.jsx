@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { buttonVariants } from './primitives/button';
 import { Button } from './primitives/button';
@@ -169,6 +170,90 @@ function findDrawEvent(events, matcher) {
   return events.find(e => matcher(e.event.toLowerCase())) || null;
 }
 
+// Once an AITA calendar row is "live on the platform" — either an organizer
+// claimed it (phase 46) or a crowdsourced draw got published (phase 45) —
+// linkedTournamentWeekId is set and neither the player "I'm Playing"
+// declaration nor the organizer claim button make sense anymore; this
+// replaces both with a direct link to the real tournament.
+function LiveOnPlatformBanner({ t }) {
+  const to = t.linkedEventId
+    ? `/tournaments/${t.linkedTournamentWeekId}/events/${t.linkedEventId}`
+    : `/tournaments/${t.linkedTournamentWeekId}`;
+  return (
+    <div className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+      <span className="text-sm font-semibold text-accent-ink">✓ Live on our platform</span>
+      <Link to={to} className="text-sm text-accent-ink underline underline-offset-2 ml-auto">
+        View / enter here ↗
+      </Link>
+    </div>
+  );
+}
+
+// Lets a verified real-world organizer claim an AITA-calendar tournament
+// they actually run (phase 46) — a super_admin approves before it becomes a
+// real tournament_weeks row. Self-contained, same pattern as
+// ParticipationWidget below.
+function OrganizerClaimWidget({ aitaTournamentId }) {
+  const { user } = useAuth();
+  const [claim, setClaim] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user?.role !== 'organizer') { setLoading(false); return; }
+    let cancelled = false;
+    api.getMyAitaClaimForTournament(aitaTournamentId)
+      .then(row => { if (!cancelled) setClaim(row); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [aitaTournamentId, user?.role]);
+
+  if (user?.role !== 'organizer' || loading) return null;
+
+  async function handleClaim() {
+    setBusy(true);
+    setError('');
+    try {
+      const row = await api.claimAitaTournamentAsOrganizer(aitaTournamentId);
+      setClaim(row);
+    } catch (e) {
+      setError(e.message || 'Could not submit — try again');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (claim?.status === 'pending') {
+    return (
+      <div className="rounded-sm border border-border bg-card p-3 text-sm text-muted-foreground">
+        Claim submitted — waiting for admin approval.
+      </div>
+    );
+  }
+  if (claim?.status === 'rejected') {
+    return (
+      <div className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground">Your last claim wasn't approved.</span>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={handleClaim} disabled={busy}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+      <span className="text-sm text-muted-foreground">Are you organizing this tournament?</span>
+      <Button size="sm" className="ml-auto" onClick={handleClaim} disabled={busy}>
+        {busy ? 'Submitting…' : 'Claim as Organizer'}
+      </Button>
+      {error && <div className="w-full text-xs text-destructive">{error}</div>}
+    </div>
+  );
+}
+
 // "I'm Playing" declaration (phase 45) — self-contained so both call sites
 // (the quick-view modal on AitaCalendarPage and the full-page factsheet)
 // get it for free. Only meaningful for players: this records intent, not a
@@ -240,6 +325,20 @@ function ParticipationWidget({ aitaTournamentId }) {
       )}
       {error && <div className="w-full text-xs text-destructive">{error}</div>}
     </div>
+  );
+}
+
+// Picks the right action widget for this tournament + viewer: once it's
+// live on the platform (either path), everyone just sees a link to it;
+// otherwise players get the "I'm Playing" declaration and organizers get
+// the claim button. Neither renders for other roles (coach, parent, etc).
+function AitaTournamentActionWidget({ t }) {
+  if (t.linkedTournamentWeekId) return <LiveOnPlatformBanner t={t} />;
+  return (
+    <>
+      <ParticipationWidget aitaTournamentId={t.id} />
+      <OrganizerClaimWidget aitaTournamentId={t.id} />
+    </>
   );
 }
 
@@ -393,7 +492,7 @@ export default function AitaTournamentFactsheet({ t }) {
         {t.startDate && <span className="text-sm text-muted-foreground">{t.startDate}</span>}
       </div>
 
-      <ParticipationWidget aitaTournamentId={t.id} />
+      <AitaTournamentActionWidget t={t} />
 
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
         <TableRow label="Tournament Category" value={t.grade} />

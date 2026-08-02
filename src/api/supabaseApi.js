@@ -3338,6 +3338,256 @@ export async function applyAitaResultsSheet({ uploadId, eventId, results }) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 46 — organizer claims on AITA Calendar tournaments. A verified
+// real-world organizer can claim a listed tournament instead of it only
+// ever being crowdsourced; a super_admin approves, which creates a real
+// tournament_weeks row (source='aita_claimed') and links it back via
+// linked_tournament_week_id — the same "is this AITA row already live on
+// the platform" signal the crowdsourced draw-publish path also sets.
+// ---------------------------------------------------------------------------
+
+function rowToAitaOrganizerClaim(row) {
+  return {
+    id: row.id,
+    aitaTournamentId: row.aita_tournament_id,
+    claimedBy: row.claimed_by,
+    status: row.status,
+    createdAt: row.created_at,
+    reviewedBy: row.reviewed_by,
+    reviewedAt: row.reviewed_at,
+    tournamentWeekId: row.tournament_week_id,
+    tournament: row.aita_tournaments ? rowToAitaTournament(row.aita_tournaments) : null,
+  };
+}
+
+export async function claimAitaTournamentAsOrganizer(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+
+  const { data, error } = await supabase
+    .from('aita_organizer_claims')
+    .insert({ aita_tournament_id: aitaTournamentId, claimed_by: user.id })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  try {
+    const [{ data: admins }, t] = await Promise.all([
+      supabase.from('user_profiles').select('id').eq('role', 'super_admin'),
+      getAitaTournament(aitaTournamentId),
+    ]);
+    const adminIds = (admins || []).map(a => a.id);
+    if (adminIds.length > 0) {
+      await createNotificationsForUsers(adminIds, {
+        type: 'aita_claim_requested',
+        title: `Organizer claim: ${t.name}`,
+        body: `An organizer wants to run ${t.name} on the platform — review it in Admin Review.`,
+      });
+    }
+  } catch {
+    // best-effort, same as every other notification path in this file
+  }
+
+  return rowToAitaOrganizerClaim(data);
+}
+
+// This organizer's own most recent claim for one tournament, or null —
+// drives the claim button's state on the calendar card/factsheet.
+export async function getMyAitaClaimForTournament(aitaTournamentId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from('aita_organizer_claims')
+    .select('*')
+    .eq('aita_tournament_id', aitaTournamentId)
+    .eq('claimed_by', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? rowToAitaOrganizerClaim(data) : null;
+}
+
+export async function getPendingAitaOrganizerClaims() {
+  const { data, error } = await supabase
+    .from('aita_organizer_claims')
+    .select('*, aita_tournaments(*)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  const claims = data.map(rowToAitaOrganizerClaim);
+
+  // aita_organizer_claims.claimed_by references auth.users, not
+  // user_profiles, so PostgREST can't embed this join — fetched separately
+  // and merged client-side instead.
+  const claimantIds = [...new Set(claims.map(c => c.claimedBy))];
+  if (claimantIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, club_name, is_verified')
+      .in('id', claimantIds);
+    const byId = new Map((profiles || []).map(p => [p.id, p]));
+    for (const c of claims) {
+      const p = byId.get(c.claimedBy);
+      c.claimant = p ? { id: p.id, displayName: p.display_name, clubName: p.club_name, isVerified: p.is_verified } : null;
+    }
+  }
+  return claims;
+}
+
+export async function approveAitaOrganizerClaim(claimId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+
+  const { data: claimRow, error: cErr } = await supabase.from('aita_organizer_claims').select('*').eq('id', claimId).single();
+  if (cErr) throw new Error(cErr.message);
+
+  const t = await getAitaTournament(claimRow.aita_tournament_id);
+
+  const week = await createTournamentWeek(claimRow.claimed_by, {
+    name: t.name,
+    location: t.venue,
+    city: t.city,
+    surface: t.surface,
+    startDate: t.startDate,
+    grade: t.grade,
+    entryDeadline: t.entryDeadline,
+    withdrawalDeadline: t.withdrawalDeadline,
+    source: 'aita_claimed',
+  });
+
+  await supabase.from('aita_tournaments').update({ linked_tournament_week_id: week.id }).eq('id', claimRow.aita_tournament_id);
+
+  await supabase.from('aita_organizer_claims')
+    .update({ status: 'approved', reviewed_by: user.id, reviewed_at: new Date().toISOString(), tournament_week_id: week.id })
+    .eq('id', claimId);
+
+  // Any other still-pending claims on the same tournament are now moot —
+  // only one organizer can run it.
+  await supabase.from('aita_organizer_claims')
+    .update({ status: 'rejected', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('aita_tournament_id', claimRow.aita_tournament_id)
+    .eq('status', 'pending')
+    .neq('id', claimId);
+
+  try {
+    await createNotificationsForUsers([claimRow.claimed_by], {
+      type: 'aita_claim_approved',
+      title: `Claim approved: ${t.name}`,
+      body: `You're now the organizer for ${t.name}. Add your events to get started.`,
+      tournamentWeekId: week.id,
+    });
+  } catch {
+    // best-effort
+  }
+
+  return { week };
+}
+
+export async function rejectAitaOrganizerClaim(claimId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data: claimRow, error } = await supabase
+    .from('aita_organizer_claims')
+    .update({ status: 'rejected', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', claimId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  try {
+    const t = await getAitaTournament(claimRow.aita_tournament_id);
+    await createNotificationsForUsers([claimRow.claimed_by], {
+      type: 'aita_claim_rejected',
+      title: `Claim not approved: ${t.name}`,
+      body: `Your request to organize ${t.name} on the platform wasn't approved.`,
+    });
+  } catch {
+    // best-effort
+  }
+
+  return rowToAitaOrganizerClaim(claimRow);
+}
+
+// Players who declared "I'm playing" this AITA tournament before it was
+// claimed, not yet resolved into (or out of) this specific event's entries.
+// Resolved via the event's tournament_week -> aita_tournaments reverse link
+// (linked_tournament_week_id), same lookup shape as uploadAitaResultsSheet.
+export async function getUnresolvedAitaInterestForEvent(eventId) {
+  const { data: event, error: eErr } = await supabase.from('events').select('tournament_week_id').eq('id', eventId).single();
+  if (eErr) throw new Error(eErr.message);
+
+  const { data: t, error: tErr } = await supabase
+    .from('aita_tournaments')
+    .select('id')
+    .eq('linked_tournament_week_id', event.tournament_week_id)
+    .maybeSingle();
+  if (tErr) throw new Error(tErr.message);
+  if (!t) return [];
+
+  const { data, error } = await supabase
+    .from('aita_participation_interest')
+    .select('id, user_id, created_at, user:user_profiles(id, display_name, aita_reg, state_abbr, ranking, date_of_birth)')
+    .eq('aita_tournament_id', t.id)
+    .eq('status', 'declared')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return (data || []).map(row => ({
+    id: row.id,
+    userId: row.user_id,
+    createdAt: row.created_at,
+    displayName: row.user?.display_name || 'Unknown player',
+    aitaReg: row.user?.aita_reg || null,
+    stateAbbr: row.user?.state_abbr || null,
+    ranking: row.user?.ranking || null,
+    dateOfBirth: row.user?.date_of_birth || null,
+  }));
+}
+
+// interestRow is exactly one entry from getUnresolvedAitaInterestForEvent's
+// return — accepting creates a real draw_entries row (via the same
+// addDrawEntry organizer manual-entry already uses, so it defaults to
+// entry_source='organiser'/entry_status='placed' the normal way) at the
+// next open position; declining just resolves the interest row.
+export async function resolveAitaInterest(interestRow, eventId, accept) {
+  let entryId = null;
+
+  if (accept) {
+    const { data: maxRow } = await supabase
+      .from('draw_entries')
+      .select('position')
+      .eq('event_id', eventId)
+      .eq('draw_type', 'main')
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextPos = (maxRow?.position || 0) + 1;
+
+    const displayName = interestRow.displayName || '';
+    const created = await addDrawEntry(eventId, 'main', {
+      position: nextPos,
+      familyName: displayName.split(' ').pop() || displayName || 'Player',
+      firstName: displayName.split(' ').slice(0, -1).join(' ') || null,
+      aitaReg: interestRow.aitaReg || null,
+      playerState: interestRow.stateAbbr || null,
+      ranking: interestRow.ranking || null,
+      dateOfBirth: interestRow.dateOfBirth || null,
+      playerId: interestRow.userId,
+    });
+    entryId = created.id;
+  }
+
+  const { error } = await supabase
+    .from('aita_participation_interest')
+    .update({ status: accept ? 'accepted' : 'declined', resolved_event_id: eventId, resolved_entry_id: entryId })
+    .eq('id', interestRow.id);
+  if (error) throw new Error(error.message);
+
+  return { entryId };
+}
+
+// ---------------------------------------------------------------------------
 // AITA Player Rankings — mirrored from https://aitatennis.com/playerranking/
 // Read-only from the client. Historical data came from local backfill
 // scripts (scripts/aita-rankings/backfill.mjs); ongoing freshness is

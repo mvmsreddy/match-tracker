@@ -195,6 +195,15 @@ export const getPendingAitaResultsUploads = hasSupabaseConfig ? supabaseApi.getP
 export const rejectAitaResultsUpload = hasSupabaseConfig ? supabaseApi.rejectAitaResultsUpload : noSupabase;
 export const applyAitaResultsSheet = hasSupabaseConfig ? supabaseApi.applyAitaResultsSheet : noSupabase;
 
+// Phase 46 — organizer claims on AITA Calendar tournaments
+export const claimAitaTournamentAsOrganizer = hasSupabaseConfig ? supabaseApi.claimAitaTournamentAsOrganizer : noSupabase;
+export const getMyAitaClaimForTournament = hasSupabaseConfig ? supabaseApi.getMyAitaClaimForTournament : async () => null;
+export const getPendingAitaOrganizerClaims = hasSupabaseConfig ? supabaseApi.getPendingAitaOrganizerClaims : async () => [];
+export const approveAitaOrganizerClaim = hasSupabaseConfig ? supabaseApi.approveAitaOrganizerClaim : noSupabase;
+export const rejectAitaOrganizerClaim = hasSupabaseConfig ? supabaseApi.rejectAitaOrganizerClaim : noSupabase;
+export const getUnresolvedAitaInterestForEvent = hasSupabaseConfig ? supabaseApi.getUnresolvedAitaInterestForEvent : async () => [];
+export const resolveAitaInterest = hasSupabaseConfig ? supabaseApi.resolveAitaInterest : noSupabase;
+
 // Phase 27 — AITA Player Rankings mirror
 export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRankingFacets : async () => [];
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];

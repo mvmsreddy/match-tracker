@@ -88,9 +88,10 @@ function DrawSheetUploader({ aitaTournamentId }) {
 // circuit scoping — unlike TournamentsTab, this needs to show even for a
 // player with no ranking history yet, since it's driven purely by their own
 // "I'm Playing" declarations (src/components/AitaTournamentFactsheet.jsx).
-// Renders nothing once a tournament's draw sheet is published — at that
-// point it's a real event with real draw_entries, so TournamentsTab already
-// covers it and showing it twice would be redundant.
+// Renders nothing once a tournament is "live on the platform" — either a
+// crowdsourced draw got published or an organizer claimed it (phase 46) —
+// at that point it's a real tournament_week with real draw_entries, so
+// TournamentsTab already covers it and showing it twice would be redundant.
 export default function MyAitaParticipationCard({ isOwnDashboard }) {
   const [rows, setRows] = useState(null);
 
@@ -98,7 +99,7 @@ export default function MyAitaParticipationCard({ isOwnDashboard }) {
     if (!isOwnDashboard) { setRows([]); return; }
     let cancelled = false;
     api.getMyAitaParticipation()
-      .then(data => { if (!cancelled) setRows(data.filter(r => !r.tournament?.linkedEventId)); })
+      .then(data => { if (!cancelled) setRows(data.filter(r => !r.tournament?.linkedTournamentWeekId)); })
       .catch(() => { if (!cancelled) setRows([]); });
     return () => { cancelled = true; };
   }, [isOwnDashboard]);

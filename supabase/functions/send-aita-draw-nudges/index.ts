@@ -42,11 +42,14 @@ Deno.serve(async (req) => {
   const todayIso = new Date().toISOString().slice(0, 10);
   const cooldownCutoff = new Date(Date.now() - NUDGE_COOLDOWN_HOURS * 3600 * 1000).toISOString();
 
-  // Tournaments that have started but have no published crowdsourced draw yet.
+  // Tournaments that have started but aren't live on the platform yet —
+  // linked_tournament_week_id covers both ways that can happen: a
+  // published crowdsourced draw (phase 45) or an approved organizer claim
+  // (phase 46). Either one means players no longer need to upload anything.
   const { data: tournaments, error: tErr } = await admin
     .from('aita_tournaments')
     .select('id, name')
-    .is('linked_event_id', null)
+    .is('linked_tournament_week_id', null)
     .lte('start_date', todayIso);
   if (tErr) return new Response(JSON.stringify({ error: tErr.message }), { status: 500, headers: corsHeaders });
   if (!tournaments || tournaments.length === 0) {

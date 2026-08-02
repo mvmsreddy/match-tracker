@@ -1816,6 +1816,71 @@ function BracketView({ matches, entries, totalRounds, isOwner, onScore, drawType
 }
 
 // ---------------------------------------------------------------------------
+// InterestedPlayersPanel (phase 46) — players who declared "I'm playing"
+// this AITA tournament before it was claimed by an organizer. Only rendered
+// for a claimed tournament's owner (week.source === 'aita_claimed'); resolves
+// each one into a real draw entry (Accept) or drops it (Decline) via
+// resolveAitaInterest, which reuses the same addDrawEntry organizer manual-
+// entry already goes through.
+// ---------------------------------------------------------------------------
+function InterestedPlayersPanel({ eventId, onAccepted }) {
+  const [rows, setRows] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getUnresolvedAitaInterestForEvent(eventId)
+      .then(data => { if (!cancelled) setRows(data); })
+      .catch(() => { if (!cancelled) setRows([]); });
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  async function handleResolve(row, accept) {
+    setBusyId(row.id);
+    setError('');
+    try {
+      await api.resolveAitaInterest(row, eventId, accept);
+      setRows(prev => prev.filter(r => r.id !== row.id));
+      if (accept) await onAccepted();
+    } catch (e) {
+      setError(e.message || 'Could not save — try again');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (!rows || rows.length === 0) return null;
+
+  return (
+    <div className="rounded-sm border border-border bg-card overflow-hidden">
+      <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/40">
+        {rows.length} player{rows.length === 1 ? '' : 's'} already said they're playing this tournament
+      </div>
+      <div className="divide-y divide-border">
+        {rows.map(row => (
+          <div key={row.id} className="flex flex-wrap items-center gap-3 p-3">
+            <div className="flex-1 min-w-40">
+              <div className="text-sm font-semibold">{row.displayName}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {[row.aitaReg, row.stateAbbr, row.ranking ? `Rank ${row.ranking}` : null].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+            <Button size="sm" disabled={busyId === row.id} onClick={() => handleResolve(row, true)}>
+              Accept
+            </Button>
+            <Button size="sm" variant="outline" disabled={busyId === row.id} onClick={() => handleResolve(row, false)}>
+              Decline
+            </Button>
+          </div>
+        ))}
+      </div>
+      {error && <div className="px-4 py-2 text-xs text-destructive">{error}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // EventDetailPage
 // ---------------------------------------------------------------------------
 export default function EventDetailPage() {
@@ -2489,6 +2554,16 @@ export default function EventDetailPage() {
           </div>
           )}
         </div>
+
+      {isOwner && week?.source === 'aita_claimed' && (
+        <InterestedPlayersPanel
+          eventId={eventId}
+          onAccepted={async () => {
+            const fresh = await api.getDrawEntries(eventId, drawType);
+            setEntries(fresh);
+          }}
+        />
+      )}
 
       {/* Draw-type tabs — always visible */}
       <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">

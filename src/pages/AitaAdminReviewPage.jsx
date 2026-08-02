@@ -13,6 +13,7 @@ import { Button } from '@/components/primitives/button';
 const TABS = [
   { id: 'draws', label: 'Draw Sheets' },
   { id: 'results', label: 'Results Sheets' },
+  { id: 'claims', label: 'Organizer Claims' },
 ];
 
 function timeAgo(iso) {
@@ -483,6 +484,98 @@ function ResultsSheetReviewQueue() {
   );
 }
 
+// --------------------------------------------------------------------------
+// Organizer Claims — an organizer asking to run an AITA-listed tournament
+// through the normal platform flow instead of it staying crowdsourced.
+// Approving creates the real tournament_weeks row (see
+// approveAitaOrganizerClaim in supabaseApi.js); rejecting just leaves the
+// tournament open for another claim or the crowdsourced path.
+// --------------------------------------------------------------------------
+function OrganizerClaimsQueue() {
+  const [claims, setClaims] = useState(null);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState(null);
+  const [approved, setApproved] = useState({}); // claimId -> { week }
+
+  function reload() {
+    api.getPendingAitaOrganizerClaims().then(setClaims).catch(e => setError(e.message || 'Could not load the queue'));
+  }
+
+  useEffect(() => { reload(); }, []);
+
+  async function handleApprove(claim) {
+    setBusyId(claim.id);
+    setError('');
+    try {
+      const result = await api.approveAitaOrganizerClaim(claim.id);
+      setApproved(prev => ({ ...prev, [claim.id]: result }));
+      setClaims(prev => prev.filter(c => c.id !== claim.id));
+    } catch (e) {
+      setError(e.message || 'Could not approve — try again');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleReject(claim) {
+    setBusyId(claim.id);
+    setError('');
+    try {
+      await api.rejectAitaOrganizerClaim(claim.id);
+      setClaims(prev => prev.filter(c => c.id !== claim.id));
+    } catch (e) {
+      setError(e.message || 'Could not reject — try again');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (error) return <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>;
+  if (claims === null) return <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading…</div>;
+  if (claims.length === 0 && Object.keys(approved).length === 0) {
+    return <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Nothing waiting for review.</div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {claims.map(c => {
+        const t = c.tournament;
+        return (
+          <div key={c.id} className="rounded-sm border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-bold">{t?.name || 'Tournament'}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {[t?.venue, t?.city].filter(Boolean).join(', ')}{t?.startDate && ` · ${t.startDate}`}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Claimed by <span className="font-semibold text-foreground">{c.claimant?.displayName || 'Unknown organizer'}</span>
+                {c.claimant?.clubName && ` · ${c.claimant.clubName}`}
+                {c.claimant?.isVerified && ' · Verified'}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={busyId === c.id} onClick={() => handleApprove(c)}>
+                Approve
+              </Button>
+              <Button size="sm" variant="outline" disabled={busyId === c.id} onClick={() => handleReject(c)}>
+                Reject
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+      {Object.entries(approved).map(([claimId, result]) => (
+        <div key={claimId} className="rounded-sm border border-border bg-card p-4 text-sm">
+          Approved —{' '}
+          <Link to={`/tournaments/${result.week.id}`} className="text-accent-ink underline underline-offset-2">
+            open {result.week.name} ↗
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AitaAdminReviewPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState('draws');
@@ -519,6 +612,7 @@ export default function AitaAdminReviewPage() {
 
       {tab === 'draws' && <DrawSheetReviewQueue />}
       {tab === 'results' && <ResultsSheetReviewQueue />}
+      {tab === 'claims' && <OrganizerClaimsQueue />}
     </div>
   );
 }
