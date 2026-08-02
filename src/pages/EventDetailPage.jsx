@@ -1984,7 +1984,8 @@ export default function EventDetailPage() {
   const [seeding,        setSeeding]        = useState(false);
 
   // Phase 5 — bracket + score state
-  const [matches,      setMatches]      = useState([]);
+  const [matches,       setMatches]      = useState([]);
+  const [matchesLoaded, setMatchesLoaded] = useState(false); // has the current draw's match fetch resolved at least once?
   const [generating,   setGenerating]   = useState(false);
   const [scoringMatch, setScoringMatch] = useState(null);
   const [fillingByes,    setFillingByes]    = useState(false);
@@ -2036,18 +2037,26 @@ export default function EventDetailPage() {
     return () => { cancelled = true; };
   }, [entries, event?.isDoubles]);
 
-  // Load matches whenever event status is past 'setup'
+  // Load matches for the current draw. `event.status` only tracks the MAIN
+  // draw's lifecycle (see publishDrawSheet/handleGenerateBracket) — gating
+  // this fetch on "status !== setup" used to mean a qualifying-only publish
+  // (or any publish that happens to land while status briefly reads 'setup'
+  // in a stale render) never loaded its matches here. getEventMatches is
+  // cheap and returns [] for a draw that truly has none yet, so just always
+  // ask — no need to guess from event status first.
   useEffect(() => {
-    if (!event || event.status === 'setup') return;
+    if (!event) return;
     let cancelled = false;
+    setMatchesLoaded(false);
     api.getEventMatches(eventId, drawType)
       .then(data => {
         if (!cancelled) {
           setMatches(data);
+          setMatchesLoaded(true);
           if (data.length > 0) setViewMode('bracket');
         }
       })
-      .catch(e => { if (!cancelled) setError(e.message); });
+      .catch(e => { if (!cancelled) { setError(e.message); setMatchesLoaded(true); } });
     return () => { cancelled = true; };
   }, [eventId, drawType, event]);
 
@@ -2400,6 +2409,7 @@ export default function EventDetailPage() {
     if (result.event) setEvent(result.event);
     if (targetDrawType === drawType) {
       setMatches(result.matches);
+      setMatchesLoaded(true);
       setViewMode('bracket');
     }
 
@@ -2804,12 +2814,12 @@ export default function EventDetailPage() {
           Entries{entriesSummaryRows.length > 0 ? ` (${entriesSummaryRows.length})` : ''}
         </button>
         <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'main' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
-          onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
+          onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
           Main Draw ({event?.drawSize ?? '?'})
         </button>
         {event?.hasQualifying && (
           <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'qualifying' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
-            onClick={() => { setActiveTab('qualifying'); setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); setMatches([]); }}>
+            onClick={() => { setActiveTab('qualifying'); setDrawType('qualifying'); setSwapMode(false); setSelectedEntry(null); }}>
             Qualifying ({event.qualifyingSize || '—'})
           </button>
         )}
@@ -3000,7 +3010,9 @@ export default function EventDetailPage() {
 
         ) : viewMode === 'bracket' ? (
           matches.length === 0 ? (
-            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Bracket not generated yet.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+              {matchesLoaded ? 'Bracket not generated yet.' : 'Loading bracket…'}
+            </div>
           ) : (
             <BracketView
               matches={matches}
