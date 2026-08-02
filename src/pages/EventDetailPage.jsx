@@ -1126,11 +1126,18 @@ const iconBtnCls = 'w-7 h-7 shrink-0 flex items-center justify-center rounded-sm
 const paidBadgeCls = 'inline-flex items-center rounded-sm bg-primary/15 text-accent-ink px-2 py-0.5 text-[0.62rem] font-bold';
 const unpaidBadgeCls = 'inline-flex items-center rounded-sm bg-destructive/15 text-destructive px-2 py-0.5 text-[0.62rem] font-bold';
 
+// Payment status is private — only the organiser and the entrant themselves
+// (or their doubles partner) may see whether a given entry has paid.
+function canViewPayment(entry, isOwner, currentUserId) {
+  return !!isOwner || (!!currentUserId && (entry.playerId === currentUserId || entry.partnerId === currentUserId));
+}
+
 // Phase 47 — entry-fee payment status. entry.paymentId means paid online via
 // Razorpay (unchanged, not revertible here). entry.paymentStatus covers the
 // offline path: 'pending' = self-entered a paid event without paying yet,
 // 'paid' = organiser confirmed cash/UPI at venue.
-function PaymentBadge({ entry, isOwner, onTogglePayment }) {
+function PaymentBadge({ entry, isOwner, canView, onTogglePayment }) {
+  if (!canView) return null;
   if (entry.paymentId) {
     return <span className={cn(paidBadgeCls, 'mt-0.5')} title="Entry fee paid via Razorpay">PAID</span>;
   }
@@ -1163,7 +1170,7 @@ function PaymentBadge({ entry, isOwner, onTogglePayment }) {
   return null;
 }
 
-function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, onTogglePayment, currentGroup, trackerRating }) {
+function EntryRow({ entry, isDoubles, isOwner, currentUserId, swapMode, selected, onSelect, onEdit, onDelete, onWithdraw, onMove, onTogglePayment, currentGroup, trackerRating }) {
   const isBye = entry.isBye;
   const isWithdrawn = entry.isWithdrawn;
   return (
@@ -1198,7 +1205,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
             {entry.isAlternate && (
               <span className="inline-flex items-center rounded-sm bg-chart-2/15 text-chart-2 px-2 py-0.5 text-[0.62rem] font-bold mt-0.5">ALT{entry.replacingName ? ` → ${entry.replacingName}` : ''}</span>
             )}
-            <PaymentBadge entry={entry} isOwner={isOwner} onTogglePayment={onTogglePayment} />
+            <PaymentBadge entry={entry} isOwner={isOwner} canView={canViewPayment(entry, isOwner, currentUserId)} onTogglePayment={onTogglePayment} />
           </>
         )}
       </TableCell>
@@ -1247,7 +1254,7 @@ function EntryRow({ entry, isDoubles, isOwner, swapMode, selected, onSelect, onE
 // ---------------------------------------------------------------------------
 // AlternateRow  (alternates list — positions beyond the draw size)
 // ---------------------------------------------------------------------------
-function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove, onTogglePayment }) {
+function AlternateRow({ entry, maxPos, isOwner, currentUserId, onDelete, onMove, onTogglePayment }) {
   return (
     <UITableRow>
       <TableCell className="font-mono">#{entry.position - maxPos}</TableCell>
@@ -1260,7 +1267,7 @@ function AlternateRow({ entry, maxPos, isOwner, onDelete, onMove, onTogglePaymen
               ONSITE
             </span>
           )}
-          <PaymentBadge entry={entry} isOwner={isOwner} onTogglePayment={onTogglePayment} />
+          <PaymentBadge entry={entry} isOwner={isOwner} canView={canViewPayment(entry, isOwner, currentUserId)} onTogglePayment={onTogglePayment} />
         </div>
       </TableCell>
       <TableCell>{entry.aitaReg || <Dash />}</TableCell>
@@ -1519,7 +1526,7 @@ function buildEntriesSummary({ allMainEntries, allQualEntries, withdrawnEntries,
   return rows.sort((a, b) => (a.entry.ranking ?? Infinity) - (b.entry.ranking ?? Infinity));
 }
 
-function EntriesSummaryTable({ isDoubles, isOwner, rows, onTogglePayment }) {
+function EntriesSummaryTable({ isDoubles, isOwner, currentUserId, rows, onTogglePayment }) {
   if (rows.length === 0) {
     return (
       <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
@@ -1562,6 +1569,7 @@ function EntriesSummaryTable({ isDoubles, isOwner, rows, onTogglePayment }) {
                 <PaymentBadge
                   entry={entry}
                   isOwner={isOwner}
+                  canView={canViewPayment(entry, isOwner, currentUserId)}
                   onTogglePayment={onTogglePayment ? (entryId, status) => onTogglePayment(entryId, status, sourceGroup) : undefined}
                 />
               </TableCell>
@@ -2859,6 +2867,7 @@ export default function EventDetailPage() {
         <EntriesSummaryTable
           isDoubles={event?.isDoubles}
           isOwner={isOwner}
+          currentUserId={user?.id}
           rows={entriesSummaryRows}
           onTogglePayment={isOwner ? handleEntriesTabTogglePayment : undefined}
         />
@@ -2892,7 +2901,7 @@ export default function EventDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {alternateEntries.map(entry => (
-                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} onTogglePayment={isOwner ? handleTogglePayment : undefined} />
+                    <AlternateRow key={entry.id} entry={entry} maxPos={maxPos} isOwner={isOwner} currentUserId={user?.id} onDelete={handleDeleteEntry} onMove={isOwner ? handleMoveEntry : undefined} onTogglePayment={isOwner ? handleTogglePayment : undefined} />
                   ))}
                 </TableBody>
               </Table>
@@ -3006,6 +3015,7 @@ export default function EventDetailPage() {
                       entry={entry}
                       isDoubles={event?.isDoubles}
                       isOwner={isOwner}
+                      currentUserId={user?.id}
                       swapMode={swapMode}
                       selected={swapMode && selectedEntry?.id === entry.id}
                       onSelect={handleSelectForSwap}
@@ -3052,6 +3062,7 @@ export default function EventDetailPage() {
                             entry={entry}
                             maxPos={maxPos}
                             isOwner={isOwner}
+                            currentUserId={user?.id}
                             onDelete={handleDeleteEntry}
                             onMove={isOwner ? handleMoveEntry : undefined}
                             onTogglePayment={isOwner ? handleTogglePayment : undefined}
