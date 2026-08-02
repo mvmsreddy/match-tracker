@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 const NATIVE_OAUTH_REDIRECT = 'com.matchtrackerpro.app://login-callback';
 import { computeCascadingPlacement } from '../utils/nominationSort';
 import { checkAgeEligibility } from '../utils/eligibility';
-import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender } from '../utils/aitaGradeRules';
+import { noShowPenaltyPoints, usesLateWithdrawalPenalty, LATE_WITHDRAWAL_PENALTY_POINTS, bracketSize, getEntryStage, ENTRY_STAGE, categoryGender, getAitaDrawDefaults } from '../utils/aitaGradeRules';
 import { buildCircuits } from '../lib/segments';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { computeStreak } from '../lib/streaks';
@@ -3479,7 +3479,33 @@ export async function approveAitaOrganizerClaim(claimId) {
     source: 'aita_claimed',
   });
 
-  await supabase.from('aita_tournaments').update({ linked_tournament_week_id: week.id }).eq('id', claimRow.aita_tournament_id);
+  // Auto-fill a starting event from the official AITA data we already have
+  // (age_group from the calendar, category from the "Category - ..." line
+  // on the detail page) rather than handing the organizer an empty
+  // tournament — they can edit or add more events afterward from the
+  // normal event UI. Skipped when the category isn't a recognizable
+  // singles/doubles line (some AITA pages combine "Boys & Girls Singles"
+  // into one category, which getAitaDrawDefaults can't resolve to a single
+  // draw size) — guessing wrong there makes more cleanup work than none.
+  let event = null;
+  if (t.category && /single|double/i.test(t.category)) {
+    const ageGroupMatch = (t.ageGroup || '').match(/^Under\s*(\d+)$/i);
+    const ageGroup = ageGroupMatch ? `U${ageGroupMatch[1]}` : 'Open';
+    const defaults = getAitaDrawDefaults(t.grade, t.category);
+    event = await createEvent(week.id, {
+      category: t.category,
+      ageGroup,
+      drawSize: defaults.drawSize,
+      numSeeds: defaults.numSeeds,
+      hasQualifying: defaults.hasQualifying,
+      qualifyingSize: defaults.qualifyingSize,
+      qualifyingSpots: defaults.qualifyingSpots,
+    });
+  }
+
+  await supabase.from('aita_tournaments')
+    .update({ linked_tournament_week_id: week.id, linked_event_id: event?.id || null })
+    .eq('id', claimRow.aita_tournament_id);
 
   await supabase.from('aita_organizer_claims')
     .update({ status: 'approved', reviewed_by: user.id, reviewed_at: new Date().toISOString(), tournament_week_id: week.id })
@@ -3497,14 +3523,16 @@ export async function approveAitaOrganizerClaim(claimId) {
     await createNotificationsForUsers([claimRow.claimed_by], {
       type: 'aita_claim_approved',
       title: `Claim approved: ${t.name}`,
-      body: `You're now the organizer for ${t.name}. Add your events to get started.`,
+      body: event
+        ? `You're now the organizer for ${t.name}. We've pre-filled ${event.category} ${event.ageGroup} — review and adjust it, then add any other events.`
+        : `You're now the organizer for ${t.name}. Add your events to get started.`,
       tournamentWeekId: week.id,
     });
   } catch {
     // best-effort
   }
 
-  return { week };
+  return { week, event };
 }
 
 export async function rejectAitaOrganizerClaim(claimId) {
