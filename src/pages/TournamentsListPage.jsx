@@ -577,6 +577,11 @@ export default function TournamentsListPage() {
                   {w.surface && <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.surface}</span>}
                   {w.tournamentCode && <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.tournamentCode}</span>}
                   {w.eventCount !== undefined && <span className="inline-flex items-center rounded-full bg-primary/10 text-accent-ink px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
+                  {w.source && w.source !== 'organiser' && (
+                    <span className="inline-flex items-center rounded-full bg-chart-2/15 text-chart-2 px-2.5 py-0.5 text-[0.7rem] font-semibold">
+                      {w.source === 'aita_claimed' ? 'Claimed from AITA Calendar' : 'From AITA Calendar'}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 flex-wrap">
                   {(w.city || w.stateAbbr) && (
