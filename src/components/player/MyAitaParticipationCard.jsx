@@ -109,7 +109,7 @@ export default function MyAitaParticipationCard({ isOwnDashboard }) {
   return (
     <div className="rounded-sm border border-border bg-card overflow-hidden">
       <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border bg-muted/40">
-        My AITA Tournaments
+        Tournaments I'm Playing
       </div>
       <div className="divide-y divide-border">
         {rows.map(r => {

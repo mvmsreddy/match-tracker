@@ -25,6 +25,7 @@ import DailyMissionCard from '@/components/motivation/DailyMissionCard';
 import AchievementsReel from '@/components/motivation/AchievementsReel';
 import NextMilestoneCard from '@/components/motivation/NextMilestoneCard';
 import H2HRivalryCard from '@/components/H2HRivalryCard';
+import MyAitaParticipationCard from '@/components/player/MyAitaParticipationCard';
 import { SegmentProvider, useSegment, useOptionalSegment } from '../context/SegmentContext';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
@@ -759,6 +760,11 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Player: AITA Calendar tournaments declared via "I'm Playing" — not
+          yet a real entry (no draw published/claimed), so it's separate
+          from "My Entries" above, which only lists real draw_entries. */}
+      {role === 'player' && <MyAitaParticipationCard isOwnDashboard />}
 
       {/* Player: tournament activity */}
       {role === 'player' && (
