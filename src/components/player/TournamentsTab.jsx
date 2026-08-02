@@ -217,7 +217,14 @@ export default function TournamentsTab({ circuit, playerId, isOwnDashboard = tru
 
       <Link to="/tournaments" className="inline-block text-sm font-semibold text-accent-ink hover:underline">Browse the full tournament calendar &rarr;</Link>
 
-      {modalMatch && <MatchDetailModal match={modalMatch} selfName={selfName} onClose={() => setModalMatch(null)} />}
+      {modalMatch && (
+        <MatchDetailModal
+          match={modalMatch}
+          selfName={selfName}
+          onClose={() => setModalMatch(null)}
+          canViewFullReport={isOwnDashboard}
+        />
+      )}
     </div>
   );
 }

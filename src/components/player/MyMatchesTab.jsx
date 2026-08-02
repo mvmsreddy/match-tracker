@@ -189,7 +189,14 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
         </Card>
       )}
 
-      {modalMatch && <MatchDetailModal match={modalMatch} selfName={modalMatch.selfName || 'You'} onClose={() => setModalMatch(null)} />}
+      {modalMatch && (
+        <MatchDetailModal
+          match={modalMatch}
+          selfName={modalMatch.selfName || 'You'}
+          onClose={() => setModalMatch(null)}
+          canViewFullReport={isOwnDashboard}
+        />
+      )}
     </div>
   );
 }

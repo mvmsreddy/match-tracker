@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
-import { replayMatchAnalytics } from '../lib/analytics';
+import { replayMatchAnalytics, computeBreakPointEvents, computeStrokeBreakdown } from '../lib/analytics';
+import { strokeWinRates } from '../lib/segmentAnalytics';
 import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { getSkillRatingsForMatch } from '../lib/localStore';
 import AppNav from '../components/AppNav';
@@ -12,7 +13,9 @@ import StatsPanel from '../components/StatsPanel';
 import PointLog from '../components/PointLog';
 import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import MatchSkillRating from '../components/MatchSkillRating';
+import MomentumGraph from '../components/MomentumGraph';
 import RetroactivePointEntryModal from '../components/RetroactivePointEntryModal';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/primitives/card';
 
 export default function MatchDetailPage() {
   const { matchId } = useParams();
@@ -48,6 +51,9 @@ export default function MatchDetailPage() {
   const cfgOpts = { sessionType: match.sessionType, formatPreset: match.formatPreset, pointTarget: match.pointTarget };
   const engine = computeEngineState(match.points, cfgOpts, match.points[0]?.server || 'self');
   const analytics = replayMatchAnalytics(match.points, cfgOpts);
+  const breaks = computeBreakPointEvents(match.points, cfgOpts, 'self');
+  const wings = strokeWinRates(computeStrokeBreakdown(match.points, 'self'), 3)
+    .filter(r => ['Forehand', 'Backhand', 'Serve'].includes(r.stroke) && r.winRate !== null);
   const header = {
     selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date, round: match.round,
     surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
@@ -108,7 +114,44 @@ export default function MatchDetailPage() {
         />
       )}
 
+      <MomentumGraph points={match.points} selfName={match.selfName} oppName={match.oppName} analytics={analytics} />
+
       <StatsPanel points={match.points} header={header} sessionType={match.sessionType} analytics={analytics} />
+
+      {wings.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Wing &amp; Serve Win Rates</CardTitle></CardHeader>
+          <CardContent className="space-y-3 pt-0">
+            {wings.map(w => (
+              <div key={w.stroke}>
+                <div className="flex items-baseline justify-between mb-1">
+                  <div className="text-sm font-semibold">{w.stroke}</div>
+                  <div className={`text-sm font-bold ${w.winRate >= 55 ? 'text-accent-ink' : 'text-blue-400'}`}>{w.winRate}%</div>
+                </div>
+                <div className="h-2 rounded-sm bg-muted">
+                  <div className={`h-full rounded-sm ${w.winRate >= 55 ? 'bg-primary' : 'bg-blue-400'}`} style={{ width: `${w.winRate}%` }} />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {breaks.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Break Points</CardTitle></CardHeader>
+          <CardContent className="space-y-1.5 pt-0">
+            {breaks.map((b, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.outcome === 'missed' ? 'bg-destructive' : 'bg-primary'}`} />
+                <span className="flex-1">{b.text}</span>
+                <span className="text-muted-foreground">{b.at}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <ShotLocationHeatmap points={match.points} selfName={match.selfName} oppName={match.oppName} />
 
       {user && (

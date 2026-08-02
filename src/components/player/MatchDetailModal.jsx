@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { computeServeStats, computeStrokeBreakdown, computeRallyBreakdown, computeBreakPointEvents } from '../../lib/analytics';
 import { strokeWinRates } from '../../lib/segmentAnalytics';
 import { Button } from '@/components/primitives/button';
@@ -17,7 +18,7 @@ function formatDate(iso) {
 // { opponentName, tournamentName, round, date, score, won, tracked, trackedMatch }.
 // When `tracked`/`trackedMatch` is present, every stat below is computed live from
 // that match's real points[] via src/lib/analytics.js — nothing here is fabricated.
-export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
+export default function MatchDetailModal({ match, selfName = 'You', onClose, canViewFullReport = true }) {
   const tm = match.trackedMatch;
   const points = tm?.points || [];
   const cfgOpts = { sessionType: tm?.sessionType, formatPreset: tm?.formatPreset };
@@ -162,7 +163,12 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose }) {
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="mt-6 flex items-center gap-2">
+          {canViewFullReport && tm?.id && (
+            <Button asChild className="flex-1">
+              <Link to={`/history/${tm.id}`}>View full match report &amp; PDF &rarr;</Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>Close</Button>
         </div>
       </div>
