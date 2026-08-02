@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
+  ResponsiveContainer, LineChart, Line, AreaChart, Area, BarChart, Bar,
   CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell,
 } from 'recharts';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
+import { usePlayerTournamentEntries } from '../../hooks/usePlayerTournamentEntries';
 import { todayLocalIso } from '../../lib/dates';
 import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
-import TodaysMatchHero from './TodaysMatchHero';
+import PlayerRatingCard from '@/components/PlayerRatingCard';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { TrendingUp, TrendingDown, Trophy, Calendar, Target, Activity } from 'lucide-react';
@@ -45,20 +46,11 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 // per-match analytics when tracked.
 export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You', onTabChange }) {
   const navigate = useNavigate();
-  const [entries, setEntries] = useState(null);
+  const { entries, error } = usePlayerTournamentEntries(playerId);
   const [segMatches, setSegMatches] = useState(null);
-  const [error, setError] = useState('');
   const [modalMatch, setModalMatch] = useState(null);
+  const [chartMode, setChartMode] = useState('rank'); // 'rank' | 'points'
   const schedule = useSegmentMatchSchedule(playerId, circuit);
-
-  useEffect(() => {
-    let cancelled = false;
-    setEntries(null);
-    api.getMyEntries(playerId)
-      .then(data => { if (!cancelled) setEntries(data); })
-      .catch(e => { if (!cancelled) { setError(e.message || 'Could not load tournament entries'); setEntries([]); } });
-    return () => { cancelled = true; };
-  }, [playerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,8 +121,8 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <TodaysMatchHero upcoming={schedule.upcoming} circuit={circuit} isOwnDashboard={isOwnDashboard} />
-
+      {/* Today's match hero now lives in TodayPanel, above the tab strip —
+          it's already visible before this tab even renders. */}
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -272,42 +264,96 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
         </div>
       )}
 
-      {/* Points-over-time lives on the Progress Tracker tab (with the goal
-          projection line) instead of being duplicated here. */}
+      <PlayerRatingCard playerId={playerId} />
+
+      {/* Points-over-time lives on the Progress Tracker tab too (with the
+          goal projection line) — this toggle just lets a player glance at
+          either view without leaving Overview. */}
       <Card className="p-4 sm:p-6 shadow-sm">
-        <div className="font-bold text-sm sm:text-base mb-1">Ranking Growth</div>
-        <div className="text-xs text-muted-foreground mb-4">Lower is better — axis is inverted</div>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="font-bold text-sm sm:text-base">Ranking Growth</div>
+          <div className="flex items-center gap-1 border border-border rounded-lg p-1 shrink-0">
+            <button
+              onClick={() => setChartMode('rank')}
+              className={`px-3 py-1 rounded text-[11px] font-bold transition-colors ${chartMode === 'rank' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Rank
+            </button>
+            <button
+              onClick={() => setChartMode('points')}
+              className={`px-3 py-1 rounded text-[11px] font-bold transition-colors ${chartMode === 'points' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Points
+            </button>
+          </div>
+        </div>
+        <div className="text-xs text-muted-foreground mb-4">
+          {chartMode === 'rank' ? 'Lower is better — axis is inverted' : 'Points across snapshots'}
+        </div>
         <ResponsiveContainer width="100%" height={220} debounce={200}>
-          <LineChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-            <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatDate} 
-              stroke="var(--color-border)" 
-              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
-              tickLine={false} 
-              minTickGap={40} 
-            />
-            <YAxis 
-              reversed 
-              stroke="var(--color-border)" 
-              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }} 
-              tickLine={false} 
-              axisLine={false} 
-              width={44} 
-              domain={['auto', 'auto']} 
-              allowDecimals={false} 
-            />
-            <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }} />
-            <Line 
-              type="monotone" 
-              dataKey="rank" 
-              stroke="var(--color-chart-3)" 
-              strokeWidth={2.5} 
-              dot={false} 
-              activeDot={{ r: 6, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-chart-3)' }} 
-            />
-          </LineChart>
+          {chartMode === 'rank' ? (
+            <LineChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatDate}
+                stroke="var(--color-border)"
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                tickLine={false}
+                minTickGap={40}
+              />
+              <YAxis
+                reversed
+                stroke="var(--color-border)"
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                width={44}
+                domain={['auto', 'auto']}
+                allowDecimals={false}
+              />
+              <Tooltip content={<ChartTooltip valueLabel="Rank" />} cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }} />
+              <Line
+                type="monotone"
+                dataKey="rank"
+                stroke="var(--color-chart-3)"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 6, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-chart-3)' }}
+              />
+            </LineChart>
+          ) : (
+            <AreaChart data={circuit.points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatDate}
+                stroke="var(--color-border)"
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                tickLine={false}
+                minTickGap={40}
+              />
+              <YAxis
+                stroke="var(--color-border)"
+                tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                width={44}
+                domain={['auto', 'auto']}
+              />
+              <Tooltip content={<ChartTooltip valueLabel="Points" />} cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }} />
+              <Area
+                type="monotone"
+                dataKey="totalPoints"
+                stroke="var(--color-primary)"
+                strokeWidth={2.5}
+                fill="var(--color-primary)"
+                fillOpacity={0.18}
+                dot={false}
+                activeDot={{ r: 6, stroke: 'var(--color-card)', strokeWidth: 2, fill: 'var(--color-primary)' }}
+              />
+            </AreaChart>
+          )}
         </ResponsiveContainer>
       </Card>
 

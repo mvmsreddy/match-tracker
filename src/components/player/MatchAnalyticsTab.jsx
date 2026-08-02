@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { 
+import { useNavigate } from 'react-router-dom';
+import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts';
 import * as api from '../../api';
 import { aggregateStrokeBreakdown, aggregateBreakPoints, aggregateServeStats, strokeWinRates } from '../../lib/segmentAnalytics';
+import { avgSkillRatings } from '../../lib/localStore';
+import SkillRadarCard from '@/components/SkillRadarCard';
 import { Card } from '@/components/primitives/card';
 import { TrendingUp, TrendingDown, Award, AlertTriangle, Target, Zap } from 'lucide-react';
 
@@ -63,8 +66,13 @@ function buildTrends(tracked) {
 // something meaningful — an empty/low-data segment shows the empty state
 // instead of a misleadingly confident-looking 0%/100% card.
 export default function MatchAnalyticsTab({ circuit, playerId }) {
+  const navigate = useNavigate();
   const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
+  // Self-rated skill sliders span every tracked match, not just this segment
+  // (they're saved per-match in localStorage, not per-circuit) — fetched
+  // separately from the segment-scoped analytics above.
+  const [allMatches, setAllMatches] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +82,20 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
       .catch(e => { if (!cancelled) { setError(e.message || 'Could not load match analytics'); setMatches([]); } });
     return () => { cancelled = true; };
   }, [playerId, circuit.category, circuit.subcategory]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listMatches(playerId)
+      .then(data => { if (!cancelled) setAllMatches(data); })
+      .catch(() => { if (!cancelled) setAllMatches([]); });
+    return () => { cancelled = true; };
+  }, [playerId]);
+
+  const selfRatedMatchesOnly = useMemo(() => (allMatches || []).filter(m => m.sessionType !== 'practice'), [allMatches]);
+  const selfRatedWinRate = selfRatedMatchesOnly.length > 0
+    ? Math.round((selfRatedMatchesOnly.filter(m => m.winner === 'self').length / selfRatedMatchesOnly.length) * 100)
+    : null;
+  const skillRatings = avgSkillRatings(playerId, 5);
 
   const tracked = useMemo(() => (matches || []).filter(m => m.points?.length > 0), [matches]);
 
@@ -300,6 +322,18 @@ export default function MatchAnalyticsTab({ circuit, playerId }) {
           </ResponsiveContainer>
         </Card>
       )}
+
+      {/* Self-rated radar — subjective sliders you fill in after a match,
+          separate from the objective stroke/serve data above. */}
+      <div>
+        <div className="text-xs text-muted-foreground mb-2">Self-rated · your own post-match ratings, not derived from tracked stats</div>
+        <SkillRadarCard
+          ratings={skillRatings}
+          stats={selfRatedWinRate !== null ? { winRate: selfRatedWinRate, matches: selfRatedMatchesOnly.length } : null}
+          onCta={selfRatedMatchesOnly.length > 0 ? () => navigate(`/history/${selfRatedMatchesOnly[0].id}`) : null}
+          ctaLabel={selfRatedMatchesOnly.length > 0 ? 'Rate your latest match' : 'Play a match first'}
+        />
+      </div>
 
       {insights.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

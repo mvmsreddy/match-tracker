@@ -5,30 +5,10 @@ import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
 import { computeStreak } from '../lib/streaks';
 import { autoProtectStreak, getTokenState } from '../lib/streakTokens';
-import { avgSkillRatings, listDrills } from '../lib/localStore';
-import { computeNutritionAchievements } from '../lib/nutritionCompliance';
-import { getNutritionLogs } from '../api/nutritionMock';
-import {
-  computeMomentum, computeWeeklyRings, computeAchievements,
-  computeNextMilestone, getDailyMission, getMissionStreak,
-} from '../lib/motivation';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
-import { StatCardSkeleton, ListItemSkeleton, Skeleton } from '@/components/primitives/skeleton';
-import { LogTodayReminder, QuickAddGrid, Recent5Strip, DigestPreviewCard } from '@/components/DashboardExtras';
-import SkillRadarCard from '@/components/SkillRadarCard';
-import PlayerRatingCard from '@/components/PlayerRatingCard';
-import PerformanceSummarySection from '@/components/PerformanceSummarySection';
-import MomentumMeter from '@/components/motivation/MomentumMeter';
-import WeeklyGoalRings from '@/components/motivation/WeeklyGoalRings';
-import DailyMissionCard from '@/components/motivation/DailyMissionCard';
-import AchievementsReel from '@/components/motivation/AchievementsReel';
-import NextMilestoneCard from '@/components/motivation/NextMilestoneCard';
-import H2HRivalryCard from '@/components/H2HRivalryCard';
-import { DrawSheetUploader } from '@/components/player/MyAitaParticipationCard';
-import { Badge } from '@/components/primitives/badge';
-import { SegmentProvider, useSegment, useOptionalSegment } from '../context/SegmentContext';
-import { entryStatusBadge, declaredTournamentStatus } from '../utils/tournamentStatus';
+import { StatCardSkeleton } from '@/components/primitives/skeleton';
+import { LogTodayReminder, QuickAddGrid } from '@/components/DashboardExtras';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -114,55 +94,9 @@ function CoachBanner({ user, links }) {
   );
 }
 
-function PlayerBanner({ user, links }) {
-  const coachCount = (links || []).filter(l => l.status === 'active').length;
-  const pendingCount = (links || []).filter(l => l.status === 'pending' && l.playerId === user.id).length;
-  return (
-    <RoleBanner
-      title="Player"
-      subtitle={
-        <>
-          {user.aitaReg && `AITA ${user.aitaReg} · `}
-          {user.ranking && `Rank ${user.ranking} · `}
-          {user.stateAbbr || ''}
-          {coachCount > 0 && ` · ${coachCount} coach${coachCount !== 1 ? 'es' : ''}`}
-          {pendingCount > 0 && (
-            <span className="text-accent-ink font-semibold"> · {pendingCount} coach request{pendingCount !== 1 ? 's' : ''}</span>
-          )}
-        </>
-      }
-      ctaLabel={pendingCount > 0 ? 'View Requests →' : null}
-      ctaHref="/my-coaches"
-      alert={pendingCount > 0}
-    />
-  );
-}
-
 // ---------------------------------------------------------------------------
-// On-court-today banner + recent-form sparkline
+// Streak card (coach's own personal match/practice tracking)
 // ---------------------------------------------------------------------------
-
-function PlayerLiveBanner({ todayMatches }) {
-  if (!todayMatches || todayMatches.length === 0) return null;
-  const next = todayMatches[0];
-  return (
-    <Card className="p-4 border-l-4 border-primary flex items-center justify-between gap-3 flex-wrap">
-      <div>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-ink">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          On court today
-        </div>
-        <div className="font-display font-extrabold text-lg tracking-tighter mt-1">vs {opponentName(next)}</div>
-        <div className="text-xs text-muted-foreground mt-0.5">
-          {next.eventAgeGroup} {next.eventCategory} · R{next.round}
-          {next.courtNumber != null && ` · Court ${next.courtNumber}`}
-          {next.matchOrder != null && ` · #${next.matchOrder}`}
-        </div>
-      </div>
-      <Link to="/track"><Button size="sm">Start tracking</Button></Link>
-    </Card>
-  );
-}
 
 function StreakCard({ streak, tokenState, protection }) {
   const tokens = tokenState?.tokens ?? 0;
@@ -232,44 +166,6 @@ function StreakCard({ streak, tokenState, protection }) {
   );
 }
 
-function FormBars({ matches }) {
-  const last10 = matches.slice(0, 10).reverse();
-  if (last10.length === 0) return null;
-  const wins = last10.filter(m => m.winner === 'self').length;
-  const winRate = Math.round((wins / last10.length) * 100);
-  
-  return (
-    <Card className="p-5 sm:p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Recent Form</div>
-          <div className="text-sm text-muted-foreground mt-0.5">Last {last10.length} matches</div>
-        </div>
-        <div className="text-right">
-          <div className="font-display font-extrabold text-2xl tracking-tighter">{winRate}%</div>
-          <div className="text-xs font-semibold text-muted-foreground">{wins}W - {last10.length - wins}L</div>
-        </div>
-      </div>
-      <div className="flex items-end gap-1.5 sm:gap-2 h-14 sm:h-16">
-        {last10.map((m, i) => {
-          const isWin = m.winner === 'self';
-          return (
-            <div
-              key={m.id || i}
-              className={`flex-1 rounded-t-md transition-all ${
-                isWin 
-                  ? 'bg-primary h-full hover:opacity-80' 
-                  : 'bg-muted h-[40%] hover:opacity-80'
-              }`}
-              title={`${m.selfName} vs ${m.oppName} · ${isWin ? 'Won' : 'Lost'}`}
-            />
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Tournament activity helpers
 // ---------------------------------------------------------------------------
@@ -298,113 +194,6 @@ function TodayMatchRow({ match, showOwner, ownerName }) {
   );
 }
 
-function ResultRow({ match, showOwner, ownerName }) {
-  const won = match.winnerEntryId && match.mineSide && match.winnerEntryId === match[match.mineSide + 'Id'];
-  return (
-    <div className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card">
-      <div className="min-w-0">
-        <div className="text-sm font-bold truncate">
-          {showOwner && ownerName ? `${ownerName} vs ` : 'vs '}{opponentName(match)}
-        </div>
-        <div className="text-xs text-muted-foreground truncate">
-          {match.eventAgeGroup} {match.eventCategory} · R{match.round} · {match.week?.name}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <ResultChip won={won} />
-        <span className="text-sm font-bold">{match.score || match.outcomeType?.toUpperCase()}</span>
-      </div>
-    </div>
-  );
-}
-
-function PlayerTournamentSections({ loading, error, tournaments, todayMatches, recentResults, declaredOnly = [] }) {
-  if (loading) return <EmptyState>Loading tournament activity…</EmptyState>;
-  if (error) return <EmptyState>{error}</EmptyState>;
-
-  const hasAny = tournaments.length > 0 || declaredOnly.length > 0;
-
-  return (
-    <div>
-      <SectionTitle>My Tournaments</SectionTitle>
-      {!hasAny ? (
-        <EmptyState>Not entered in any tournaments yet.</EmptyState>
-      ) : (
-        <div className="space-y-2">
-          {tournaments.map(({ week, events }) => (
-            <Card key={week.id} className="p-3">
-              <Link to={`/tournaments/${week.id}`} className="text-sm font-bold hover:text-accent-ink">{week.name}</Link>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {[week.location, week.city, week.startDate].filter(Boolean).join(' · ')}
-              </div>
-              <div className="mt-2 space-y-1">
-                {events.map(({ event, entry }) => {
-                  const status = entryStatusBadge(entry);
-                  return (
-                    <Link
-                      key={entry.id}
-                      to={`/tournaments/${week.id}/events/${event.id}`}
-                      className="flex items-center justify-between gap-2 text-xs py-1 hover:text-accent-ink"
-                    >
-                      <span>{event.ageGroup} {event.category}</span>
-                      <span className="flex items-center gap-2 text-muted-foreground">
-                        {entry.entryStatus === 'placed' && (
-                          <span>{entry.seed ? `Seed ${entry.seed} · ` : ''}Pos {entry.position}</span>
-                        )}
-                        <span className={`rounded-sm px-1.5 py-0.5 text-[0.68rem] font-semibold ${status.className}`}>{status.label}</span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </Card>
-          ))}
-
-          {declaredOnly.map(r => {
-            const t = r.tournament;
-            if (!t) return null;
-            const status = declaredTournamentStatus(t);
-            return (
-              <Card key={r.id} className="p-3 space-y-2">
-                <Link to={`/aita-calendar/${t.id}`} className="text-sm font-bold hover:text-accent-ink">{t.name}</Link>
-                <div className="text-xs text-muted-foreground -mt-1.5">
-                  {/* Prefer what the player explicitly confirmed (only asked
-                      when the tournament's own category was ambiguous —
-                      see ParticipationWidget) over the tournament's raw fields. */}
-                  {[r.selectedAgeGroup || t.ageGroup, r.selectedCategory || t.category, t.grade].filter(Boolean).join(' · ')}
-                  {(t.ageGroup || t.category || t.grade) && (t.venue || t.city || t.startDate) ? ' · ' : ''}
-                  {[t.venue, t.city, t.startDate].filter(Boolean).join(' · ')}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">{status.label}</Badge>
-                  <DrawSheetUploader aitaTournamentId={t.id} ctaLabel={status.ctaLabel} />
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      <SectionTitle>Today's Matches</SectionTitle>
-      {todayMatches.length === 0 ? (
-        <EmptyState>No matches scheduled for today.</EmptyState>
-      ) : (
-        <div className="space-y-2">
-          {todayMatches.map(m => <TodayMatchRow key={m.id} match={m} />)}
-        </div>
-      )}
-
-      <SectionTitle>Recent Results</SectionTitle>
-      {recentResults.length === 0 ? (
-        <EmptyState>No completed matches yet.</EmptyState>
-      ) : (
-        <div className="space-y-2">
-          {recentResults.slice(0, 5).map(m => <ResultRow key={m.id} match={m} />)}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function CoachTournamentSections({ loading, error, todayMatches, recentResults, activeLinks }) {
   if (loading) return <EmptyState>Loading tournament activity…</EmptyState>;
@@ -461,84 +250,6 @@ function CoachTournamentSections({ loading, error, todayMatches, recentResults, 
 // Main Dashboard
 // ---------------------------------------------------------------------------
 
-// Bundles the four motivation widgets (Momentum, Weekly Rings, Daily Mission,
-// Achievements) into a single reactive cluster. Kept co-located so all
-// derived motivation state comes from one recompute pass.
-function PlayerMotivationCluster({ user, matches, streak, upcomingMatches }) {
-  const [nutritionLogs, setNutritionLogs] = useState([]);
-  const [missionTick, setMissionTick] = useState(0); // force refresh after complete
-  // Pull rank history if we're inside a SegmentProvider — that's the case
-  // for players with an aitaReg. Falls back to null (rank-climber badge just
-  // stays locked) for players without one.
-  const seg = useOptionalSegment();
-  const rankHistory = seg?.rankingHistory || null;
-
-  useEffect(() => {
-    let cancelled = false;
-    getNutritionLogs(user.id)
-      .then(logs => { if (!cancelled) setNutritionLogs(logs || []); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [user.id]);
-
-  const ratings = avgSkillRatings(user.id, 5);
-  const drillCount = listDrills(user.id).length;
-  const momentum = computeMomentum({ matches, streak, ratings });
-  const rings = computeWeeklyRings({ matches, nutritionLogs });
-  const achievements = computeAchievements({ matches, streak, drillCount, ratings, rankHistory });
-  // Merge in nutrition-side achievements so both live in the same trophy cabinet.
-  const [nutritionLogsAll, setNutritionLogsAll] = useState([]);
-  useEffect(() => {
-    let cancelled = false;
-    getNutritionLogs(user.id)
-      .then(l => { if (!cancelled) setNutritionLogsAll(l || []); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [user.id]);
-  const nutritionAch = computeNutritionAchievements(nutritionLogsAll, user.id);
-  const mergedAchievements = {
-    unlocked: [...achievements.unlocked, ...nutritionAch.unlocked],
-    locked:   [...achievements.locked,   ...nutritionAch.locked],
-    unlockedCount: achievements.unlockedCount + nutritionAch.unlockedCount,
-    totalCount:    achievements.totalCount    + nutritionAch.totalCount,
-  };
-  const mission = getDailyMission(user.id);
-  const missionStreak = getMissionStreak(user.id);
-
-  return (
-    <>
-      <MomentumMeter momentum={momentum} />
-
-      <H2HRivalryCard upcomingMatches={upcomingMatches || []} history={matches} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <WeeklyGoalRings rings={rings} />
-        <DailyMissionCard
-          mission={mission}
-          missionStreak={missionStreak}
-          userId={user.id}
-          onComplete={() => setMissionTick(t => t + 1)}
-          key={missionTick}
-        />
-      </div>
-
-      <AchievementsReel achievements={mergedAchievements} playerName={user.displayName || user.name} />
-    </>
-  );
-}
-
-// Renders the Next Milestone card inside the SegmentProvider so it can pull
-// the player's active circuit + best rank. Selects the player's STRONGEST
-// circuit (lowest best-ever rank) as the primary so the milestone is
-// concretely close, not "383 ranks to top-10".
-function NextMilestoneAutowire({ user, matches, streak }) {
-  const { circuits } = useSegment();
-  const orderedCircuits = [...(circuits || [])].sort((a, b) => a.bestRank - b.bestRank);
-  const milestone = computeNextMilestone({ circuits: orderedCircuits, matches, streak });
-  if (!milestone) return null;
-  return <NextMilestoneCard milestone={milestone} />;
-}
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const role = user?.role || 'player';
@@ -546,12 +257,9 @@ export default function DashboardPage() {
   const [matches, setMatches]   = useState(null);
   const [links, setLinks]       = useState(null);
   const [error, setError]       = useState('');
-  const [myEntries, setMyEntries]         = useState(null);
-  const [declaredTournaments, setDeclaredTournaments] = useState([]);
-  const [pendingInvites, setPendingInvites] = useState([]);
   const [streakInputs, setStreakInputs] = useState(null); // { sessionDates, freezeDates }
 
-  // Load personal match history for players and coaches
+  // Load personal match history for coaches (organizers don't track matches)
   useEffect(() => {
     if (role === 'organizer') return;
     let cancelled = false;
@@ -561,7 +269,7 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [user.id, role]);
 
-  // Load coach/player links for coach + player banners
+  // Load coach links for the coach banner
   useEffect(() => {
     if (role === 'organizer') return;
     let cancelled = false;
@@ -570,20 +278,6 @@ export default function DashboardPage() {
       .catch(() => { /* non-critical */ });
     return () => { cancelled = true; };
   }, [user.id, role]);
-
-  // Load player's self-entered events + pending invitations + AITA Calendar
-  // tournaments declared via "I'm Playing" but not yet a real entry (phase
-  // 45/46) — merged into the same list as myEntries in PlayerTournamentSections.
-  useEffect(() => {
-    if (role !== 'player') return;
-    let cancelled = false;
-    api.getMyEntries().then(data => { if (!cancelled) setMyEntries(data); }).catch(() => {});
-    api.getMyPendingInvitations().then(data => { if (!cancelled) setPendingInvites(data); }).catch(() => {});
-    api.getMyAitaParticipation()
-      .then(data => { if (!cancelled) setDeclaredTournaments(data.filter(r => !r.tournament?.linkedTournamentWeekId)); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [role]);
 
   // Streak (Phase 34) — training-session dates + freeze dates; matches are
   // already loaded above and reused for the match-date half of the streak.
@@ -634,11 +328,12 @@ export default function DashboardPage() {
       : null
   ), [logDates, protection, streakInputs]);
 
-  // Tournament activity (player: self, coach: whole active roster)
+  // Tournament activity — coach's whole active roster. Players get their own
+  // tournament data from the Player Coaching Dashboard now (see HomeRoute).
   const activeLinks = (links || []).filter(l => l.status === 'active');
   const rosterAitaRegs = role === 'coach'
     ? activeLinks.map(l => l.player?.aitaReg).filter(Boolean)
-    : role === 'player' && user.aitaReg ? [user.aitaReg] : [];
+    : [];
   const activity = useTournamentActivity(rosterAitaRegs);
 
   return (
@@ -646,7 +341,6 @@ export default function DashboardPage() {
       {/* Role banner */}
       {role === 'organizer' && <OrganizerBanner user={user} />}
       {role === 'coach'     && <CoachBanner user={user} links={links} />}
-      {role === 'player'    && <PlayerBanner user={user} links={links} />}
 
       {/* Welcome */}
       <div>
@@ -654,69 +348,20 @@ export default function DashboardPage() {
           Welcome back, {(user.displayName || user.name || '').split(' ')[0]}
         </h1>
         <div className="text-sm text-muted-foreground mt-0.5">
-          {role === 'organizer' ? 'Tournament management overview'
-            : role === 'coach' ? 'Your coaching overview'
-            : 'Your performance overview'}
+          {role === 'organizer' ? 'Tournament management overview' : 'Your coaching overview'}
         </div>
       </div>
 
-      {/* Player: on-court-today banner + recent form */}
-      {role === 'player' && <PlayerLiveBanner todayMatches={activity.todayMatches} />}
-
-      {/* Log-today reminder (all roles, after 6PM if no session today) */}
+      {/* Log-today reminder (after 6PM if no session today) */}
       {matches && (
         <LogTodayReminder
           loggedToday={matches.some(m => m.date === new Date().toISOString().slice(0, 10))}
         />
       )}
 
-      {/* Quick-Add tiles (player/coach) */}
-      {(role === 'player' || role === 'coach') && <QuickAddGrid />}
+      <QuickAddGrid />
 
-      {role !== 'organizer' && streak && <StreakCard streak={streak} tokenState={tokenState} protection={protection} />}
-      {role === 'player' && matchesOnly.length > 0 && <FormBars matches={matchesOnly} />}
-
-      {/* ═════════ Player motivation cluster + performance snapshot ═════════ */}
-      {role === 'player' && matches && (
-        user.aitaReg ? (
-          <SegmentProvider>
-            <PlayerMotivationCluster
-              user={user}
-              matches={matches}
-              streak={streak?.current || 0}
-              upcomingMatches={activity.todayMatches}
-            />
-            <PerformanceSummarySection />
-            <NextMilestoneAutowire user={user} matches={matches || []} streak={streak?.current || 0} />
-          </SegmentProvider>
-        ) : (
-          <PlayerMotivationCluster
-            user={user}
-            matches={matches}
-            streak={streak?.current || 0}
-            upcomingMatches={activity.todayMatches}
-          />
-        )
-      )}
-
-      {/* Skill Radar + Tracker Rating + Digest Preview (player only) */}
-      {role === 'player' && matches && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <SkillRadarCard
-            ratings={avgSkillRatings(user.id, 5)}
-            stats={winRate !== null ? { winRate, matches: matchesOnly.length } : null}
-            onCta={matchesOnly.length > 0 ? () => window.location.assign(`/history/${matchesOnly[0].id}`) : null}
-            ctaLabel={matchesOnly.length > 0 ? 'Rate your latest match' : 'Play a match first'}
-          />
-          <PlayerRatingCard playerId={user.id} aitaReg={user.aitaReg} />
-          <DigestPreviewCard matches={matches} streak={streak} />
-        </div>
-      )}
-
-      {/* Recent 5 sessions (player only) */}
-      {role === 'player' && matches && matches.length > 0 && (
-        <Recent5Strip matches={matches} onSelect={(m) => window.location.assign(`/history/${m.id}`)} />
-      )}
+      {streak && <StreakCard streak={streak} tokenState={tokenState} protection={protection} />}
 
       {/* Organizer: quick actions only */}
       {role === 'organizer' && (
@@ -730,91 +375,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Player: pending doubles invitations */}
-      {role === 'player' && pendingInvites.length > 0 && (
-        <div>
-          <SectionTitle className="text-amber-500">Doubles Invitations ({pendingInvites.length})</SectionTitle>
-          <div className="space-y-2">
-            {pendingInvites.map(inv => (
-              <div key={inv.id} className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card flex-wrap">
-                <div>
-                  <div className="text-sm font-bold">
-                    Doubles invitation — {inv.event?.tournament_week?.name || 'tournament'}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {inv.event?.category} {inv.event?.age_group} · From AITA {inv.inviter_aita_reg}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await api.respondToInvitation(inv.id, true);
-                        setPendingInvites(prev => prev.filter(i => i.id !== inv.id));
-                      } catch (e) { alert(e.message); }
-                    }}
-                  >Accept</Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await api.respondToInvitation(inv.id, false);
-                        setPendingInvites(prev => prev.filter(i => i.id !== inv.id));
-                      } catch (e) { alert(e.message); }
-                    }}
-                  >Decline</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Player: My Entries */}
-      {role === 'player' && myEntries !== null && myEntries.length > 0 && (
-        <div>
-          <SectionTitle>My Entries</SectionTitle>
-          <div className="space-y-2">
-            {myEntries.filter(e => e.entryStatus !== 'withdrawn').map(entry => (
-              <div key={entry.id} className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card">
-                <div>
-                  <Link
-                    to={`/tournaments/${entry.event?.week?.id}/events/${entry.eventId}`}
-                    className="text-sm font-bold hover:text-accent-ink"
-                  >
-                    {entry.event?.category} {entry.event?.ageGroup}
-                  </Link>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {entry.event?.week?.name}{entry.event?.week?.startDate ? ` · ${entry.event.week.startDate}` : ''}
-                    {' · '}
-                    {entry.isAlternate ? 'Alternate' : entry.drawType === 'main' ? `Main Draw #${entry.position}` : `Qualifying #${entry.position}`}
-                  </div>
-                </div>
-                <span className={`text-xs font-bold rounded-sm px-1.5 py-0.5 ${entry.entryStatus === 'placed' ? 'bg-primary/10 text-accent-ink' : 'bg-muted text-muted-foreground'}`}>
-                  {entry.entryStatus === 'placed' ? 'Entered' : entry.entryStatus}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Player: tournament activity — real entries + AITA Calendar
-          tournaments declared via "I'm Playing" (not yet a real entry),
-          merged into one status-aware list (see PlayerTournamentSections). */}
-      {role === 'player' && (
-        <PlayerTournamentSections
-          loading={activity.loading}
-          error={activity.error}
-          tournaments={activity.tournaments}
-          todayMatches={activity.todayMatches}
-          recentResults={activity.recentResults}
-          declaredOnly={declaredTournaments}
-        />
-      )}
-
       {/* Coach: roster tournament activity */}
       {role === 'coach' && (
         <CoachTournamentSections
@@ -826,7 +386,7 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Player + Coach: personal tracker */}
+      {/* Coach: personal tracker */}
       {role !== 'organizer' && (
         <div>
           <SectionTitle>My Stats</SectionTitle>
@@ -906,7 +466,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                   {matches.length > 5 && (
-                    <Link to="/history" className="inline-block mt-2 text-sm font-semibold text-accent-ink hover:underline">
+                    <Link to="/compare" className="inline-block mt-2 text-sm font-semibold text-accent-ink hover:underline">
                       View all matches →
                     </Link>
                   )}

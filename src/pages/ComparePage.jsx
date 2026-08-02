@@ -1,54 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
-import { computeStats, computeServeStats, computeReturnStats, replayMatchAnalytics } from '../lib/analytics';
+import MyMatchesTab from '../components/player/MyMatchesTab';
 import { Button } from '@/components/primitives/button';
 import { Card } from '@/components/primitives/card';
 import { Input } from '@/components/primitives/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 
-function fmtRatio(r) { return r === Infinity ? '∞' : r.toFixed(2); }
-function fmtPct(p) { return p.toFixed(1) + '%'; }
-
 export default function ComparePage() {
   const { user } = useAuth();
   const isCoach = user.role === 'coach';
   const [mode, setMode] = useState('matches'); // 'matches' | 'players'
-  const [list, setList] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [details, setDetails] = useState({});
-  const [loadingDetails, setLoadingDetails] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    api.listMatches(user.id)
-      .then((l) => { if (!cancelled) setList(l); })
-      .catch((e) => { if (!cancelled) setError(e.message || 'Could not load match history'); });
-    return () => { cancelled = true; };
-  }, [user.id]);
-
-  function toggleSelect(id) {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }
-
-  async function loadComparison() {
-    setLoadingDetails(true);
-    setError('');
-    try {
-      const results = await Promise.all(selectedIds.map((id) => api.getMatch(user.id, id)));
-      const byId = {};
-      results.forEach((m) => { byId[m.id] = m; });
-      setDetails(byId);
-    } catch (e) {
-      setError(e.message || 'Could not load selected matches');
-    } finally {
-      setLoadingDetails(false);
-    }
-  }
-
-  const selectedMatches = selectedIds.map((id) => details[id]).filter(Boolean);
-  const rows = selectedMatches.length > 0 ? buildComparisonRows(selectedMatches) : [];
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
@@ -80,86 +42,7 @@ export default function ComparePage() {
 
       {mode === 'players' && isCoach && <PlayerCompareView coachId={user.id} />}
 
-      {mode === 'matches' && (
-        <>
-      {error && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
-      )}
-      {list === null && !error && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading match history...</div>
-      )}
-      {list && list.length === 0 && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
-          No saved matches yet. Generate a PDF report from the Tracker page to save one.
-        </div>
-      )}
-
-      {list && list.length > 0 && (
-        <>
-          <H2HInsight matches={list} />
-
-          <div className="space-y-2">
-            {list.map((m) => (
-              <label
-                key={m.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary cursor-pointer"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold truncate">{m.selfName} vs {m.oppName}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {(m.tournament ? m.tournament + ' | ' : '')}{m.date || ''} {m.sessionType === 'practice' ? '(Practice)' : ''}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-sm font-bold">{m.scoreSummary}</div>
-                  <input
-                    type="checkbox"
-                    className="accent-primary w-4 h-4"
-                    checked={selectedIds.includes(m.id)}
-                    onChange={() => toggleSelect(m.id)}
-                  />
-                </div>
-              </label>
-            ))}
-          </div>
-
-          <Button
-            type="button"
-            disabled={selectedIds.length < 2 || loadingDetails}
-            onClick={loadComparison}
-          >
-            {loadingDetails ? 'Loading...' : 'Compare selected (' + selectedIds.length + ')'}
-          </Button>
-        </>
-      )}
-
-      {selectedMatches.length > 0 && (
-        <div className="rounded-sm border border-border bg-card p-4 sm:p-6 overflow-x-auto">
-          <h2 className="font-display font-extrabold text-lg tracking-tighter mb-3">
-            Side-by-side ({selectedMatches[0].selfName}'s performance)
-          </h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Metric</TableHead>
-                {selectedMatches.map((m) => (
-                  <TableHead key={m.id}>{m.oppName} &middot; {m.date || '-'}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.label}>
-                  <TableCell className="font-semibold">{row.label}</TableCell>
-                  {row.values.map((v, i) => <TableCell key={i}>{v}</TableCell>)}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-        </>
-      )}
+      {mode === 'matches' && <MyMatchesTab playerId={user.id} isOwnDashboard />}
     </div>
   );
 }
@@ -358,100 +241,3 @@ function buildGapInsight(nameA, nameB, result) {
   return `${leader} leads on win rate by ${gap} points in this range. ${aceLeader} has hit more aces (${Math.max(a.aces, b.aces)} vs ${Math.min(a.aces, b.aces)}).`;
 }
 
-// Head-to-Head insight — groups matches by opponent, computes W-L per opponent
-function H2HInsight({ matches }) {
-  const matchOnly = (matches || []).filter(m => m.sessionType !== 'practice' && m.oppName);
-  const byOpp = matchOnly.reduce((acc, m) => {
-    const key = m.oppName.trim().toLowerCase();
-    if (!acc[key]) acc[key] = { name: m.oppName, matches: [], wins: 0, losses: 0 };
-    acc[key].matches.push(m);
-    if (m.winner === 'self') acc[key].wins++;
-    else if (m.winner === 'opp') acc[key].losses++;
-    return acc;
-  }, {});
-  const rivals = Object.values(byOpp)
-    .filter(r => r.matches.length >= 2)
-    .sort((a, b) => (b.matches.length - a.matches.length) || (b.wins - a.wins));
-
-  if (rivals.length === 0) return null;
-
-  return (
-    <Card className="p-4 sm:p-6 shadow-sm" data-testid="h2h-insight">
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Head-to-Head</div>
-          <div className="text-sm font-bold mt-0.5">Your rivalries · {rivals.length} opponent{rivals.length === 1 ? '' : 's'} played 2+ times</div>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {rivals.slice(0, 5).map(r => {
-          const total = r.wins + r.losses;
-          const winPct = total > 0 ? Math.round((r.wins / total) * 100) : 0;
-          const dominant = r.wins > r.losses;
-          const even = r.wins === r.losses;
-          return (
-            <div
-              key={r.name}
-              className="p-3 rounded-lg border border-border bg-card"
-              data-testid={`h2h-rival-${r.name.replace(/\s+/g, '-').toLowerCase()}`}
-            >
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold truncate">{r.name}</div>
-                  <div className="text-xs text-muted-foreground">{r.matches.length} match{r.matches.length === 1 ? '' : 'es'} played</div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-bold">
-                    <span className="text-accent-ink">{r.wins}</span>
-                    <span className="text-muted-foreground mx-1">-</span>
-                    <span className="text-destructive">{r.losses}</span>
-                  </div>
-                  <div className={`text-[12px] font-bold uppercase tracking-wider ${dominant ? 'text-accent-ink' : even ? 'text-muted-foreground' : 'text-destructive'}`}>
-                    {dominant ? 'Leading' : even ? 'Even' : 'Trailing'}
-                  </div>
-                </div>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden flex">
-                {r.wins > 0 && (
-                  <div className="bg-primary transition-all" style={{ width: `${(r.wins / total) * 100}%` }} />
-                )}
-                {r.losses > 0 && (
-                  <div className="bg-destructive transition-all" style={{ width: `${(r.losses / total) * 100}%` }} />
-                )}
-              </div>
-              <div className="text-[12px] text-muted-foreground mt-1.5">
-                Last: {r.matches[0].scoreSummary || '—'} ({r.matches[0].winner === 'self' ? 'W' : r.matches[0].winner === 'opp' ? 'L' : '—'}) · {r.matches[0].date || 'unknown date'}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function buildComparisonRows(matches) {
-  const perMatch = matches.map((m) => {
-    const cfgOpts = { sessionType: m.sessionType, formatPreset: m.formatPreset, pointTarget: m.pointTarget };
-    const stats = computeStats(m.points);
-    const serve = computeServeStats(m.points, 'self');
-    const ret = computeReturnStats(m.points, 'self');
-    const analytics = replayMatchAnalytics(m.points, cfgOpts);
-    return { m, stats, serve, ret, analytics };
-  });
-
-  return [
-    { label: 'Score', values: perMatch.map((x) => x.m.scoreSummary || '-') },
-    { label: 'Winner', values: perMatch.map((x) => (x.m.winner === 'self' ? x.m.selfName : (x.m.winner === 'opp' ? x.m.oppName : 'In progress'))) },
-    { label: 'Winners/Forced Errors', values: perMatch.map((x) => x.stats.self.wfe) },
-    { label: 'Unforced Errors', values: perMatch.map((x) => x.stats.self.ue) },
-    { label: 'W/FE : UE Ratio', values: perMatch.map((x) => fmtRatio(x.stats.self.ratio)) },
-    { label: 'Points Won', values: perMatch.map((x) => x.stats.self.pointCount) },
-    { label: 'Aces', values: perMatch.map((x) => x.serve.aces) },
-    { label: 'Double Faults', values: perMatch.map((x) => x.serve.dfs) },
-    { label: '1st Serve %', values: perMatch.map((x) => fmtPct(x.serve.firstPct)) },
-    { label: 'Break Points Saved', values: perMatch.map((x) => x.analytics.bp.self.savedServing + '/' + x.analytics.bp.self.facedServing) },
-    { label: 'Break Points Won', values: perMatch.map((x) => x.analytics.bp.self.wonReturning + '/' + x.analytics.bp.self.facedReturning) },
-    { label: 'Return Winners/Forced', values: perMatch.map((x) => x.ret.retWinnersForced) },
-  ];
-}

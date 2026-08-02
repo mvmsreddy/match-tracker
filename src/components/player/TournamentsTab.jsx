@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { todayLocalIso, toLocalIso } from '../../lib/dates';
+import { usePlayerTournamentEntries } from '../../hooks/usePlayerTournamentEntries';
 import TournamentMatches, { formatDate } from '../tournaments/TournamentMatches';
 import MatchDetailModal from './MatchDetailModal';
 import { Badge } from '@/components/primitives/badge';
@@ -74,24 +75,14 @@ function ResultsSheetUploader({ eventId }) {
 // (fetched on demand) rather than eagerly loading every entry's matches up
 // front.
 export default function TournamentsTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You' }) {
-  const [entries, setEntries] = useState(null);
+  const { entries, error } = usePlayerTournamentEntries(playerId);
   const [trackedMatches, setTrackedMatches] = useState(null);
-  const [error, setError] = useState('');
   const [openId, setOpenId] = useState(null);
   const [modalMatch, setModalMatch] = useState(null);
   // Historical filter — 'all' | 'this-year' | 'last-12m' | 'year:YYYY' | 'month:YYYY-MM' | 'range'
   const [filter, setFilter] = useState('all');
   const [rangeFrom, setRangeFrom] = useState('');
   const [rangeTo, setRangeTo] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    setEntries(null);
-    api.getMyEntries(playerId)
-      .then(data => { if (!cancelled) setEntries(data); })
-      .catch(e => { if (!cancelled) { setError(e.message || 'Could not load tournament entries'); setEntries([]); } });
-    return () => { cancelled = true; };
-  }, [playerId]);
 
   useEffect(() => {
     let cancelled = false;

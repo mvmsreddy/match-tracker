@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SegmentProvider } from './context/SegmentContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -10,7 +10,6 @@ import ParentDashboardPage from './pages/ParentDashboardPage';
 import NutritionistDashboardPage from './pages/NutritionistDashboardPage';
 import PlayerDashboardPage from './pages/PlayerDashboardPage';
 import TrackerPage from './pages/TrackerPage';
-import MatchHistoryPage from './pages/MatchHistoryPage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import ComparePage from './pages/ComparePage';
 import TournamentsListPage from './pages/TournamentsListPage';
@@ -42,6 +41,7 @@ function HomeRoute() {
   if (user?.role === 'parent') return <ParentDashboardPage />;
   if (user?.role === 'nutritionist') return <NutritionistDashboardPage />;
   if (user?.role === 'super_admin') return <AitaAdminReviewPage />;
+  if (user?.role === 'player') return <PlayerDashboardPage />;
   return <DashboardPage />;
 }
 
@@ -65,9 +65,9 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
                 <Route path="/" element={<HomeRoute />} />
-                <Route path="/history" element={<MatchHistoryPage />} />
+                <Route path="/history" element={<Navigate to="/compare" replace />} />
                 <Route path="/compare" element={<ComparePage />} />
-                <Route path="/player-dashboard" element={<PlayerDashboardPage />} />
+                <Route path="/player-dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-players" element={<CoachIntelligencePage />} />
                 <Route path="/my-coaches" element={<CoachPlayersPage />} />

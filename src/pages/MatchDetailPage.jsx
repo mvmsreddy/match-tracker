@@ -32,7 +32,7 @@ export default function MatchDetailPage() {
   if (error) {
     return (
       <AppNav>
-        <div className="history-empty">{error} — <Link to="/history" style={{ color: '#C6E23D' }}>back to history</Link></div>
+        <div className="history-empty">{error} — <Link to="/compare" style={{ color: '#C6E23D' }}>back to matches</Link></div>
       </AppNav>
     );
   }
@@ -97,7 +97,7 @@ export default function MatchDetailPage() {
         {' '}
         <button className="action-btn" onClick={() => setAddingPoints(true)}>Add point detail</button>
         {' '}
-        <Link to="/history"><button className="action-btn">Back to history</button></Link>
+        <Link to="/compare"><button className="action-btn">Back to matches</button></Link>
       </div>
 
       {addingPoints && (

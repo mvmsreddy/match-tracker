@@ -11,7 +11,7 @@ import TrainingLogTab from '../components/player/TrainingLogTab';
 import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
 import ProgressTab from '../components/player/ProgressTab';
-import MyAitaParticipationCard from '../components/player/MyAitaParticipationCard';
+import TodayPanel from '../components/player/TodayPanel';
 
 // Player Coaching Dashboard — multi-segment plan (all player-side tabs
 // implemented: Overview/Tournaments Phase 2, Goals/Training Phase 3,
@@ -24,8 +24,8 @@ import MyAitaParticipationCard from '../components/player/MyAitaParticipationCar
 // fully independent, never merged (see src/lib/segments.js) — no cascading
 // points logic anywhere in this feature, see the plan doc's Context section.
 // (The full-performance-browse capability that used to live here as a
-// separate tab was folded into the main Dashboard's inline
-// PerformanceSummarySection — segments are switchable there directly.)
+// separate tab was folded into the Overview tab below — segments are
+// switchable right there via the topbar's segment selector.)
 //
 // Also reused, read-mostly, by the Coach Intelligence System's Roster
 // "DASHBOARD →" link (route /coach/players/:playerId/dashboard) — the exact
@@ -68,7 +68,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
       viewPlayerName={viewPlayerName}
       viewerRole={viewerRole}
     >
-      {activeTab === 'overview' && <MyAitaParticipationCard isOwnDashboard={isOwnDashboard} />}
+      <TodayPanel playerId={viewPlayerId} circuit={selectedCircuit} isOwnDashboard={isOwnDashboard} />
 
       {isOwnDashboard && error && <div className="history-empty">{error}</div>}
       {loading && <div className="history-empty">Loading segments…</div>}

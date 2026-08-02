@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import * as api from '../../api';
-import { computeStats, computeServeStats, computeReturnStats, replayMatchAnalytics } from '../../lib/analytics';
+import { usePlayerMatches } from '../../hooks/usePlayerMatches';
 import MatchDetailModal from './MatchDetailModal';
+import H2HInsight from './H2HInsight';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
@@ -12,35 +13,6 @@ function formatDate(iso) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function fmtRatio(r) { return r === Infinity ? '∞' : r.toFixed(2); }
-function fmtPct(p) { return p.toFixed(1) + '%'; }
-
-function buildComparisonRows(matches) {
-  const perMatch = matches.map(m => {
-    const cfgOpts = { sessionType: m.sessionType, formatPreset: m.formatPreset, pointTarget: m.pointTarget };
-    const stats = computeStats(m.points);
-    const serve = computeServeStats(m.points, 'self');
-    const ret = computeReturnStats(m.points, 'self');
-    const analytics = replayMatchAnalytics(m.points, cfgOpts);
-    return { m, stats, serve, ret, analytics };
-  });
-
-  return [
-    { label: 'Score', values: perMatch.map(x => x.m.scoreSummary || '—') },
-    { label: 'Winner', values: perMatch.map(x => (x.m.winner === 'self' ? x.m.selfName : (x.m.winner === 'opp' ? x.m.oppName : 'In progress'))) },
-    { label: 'Winners/Forced Errors', values: perMatch.map(x => x.stats.self.wfe) },
-    { label: 'Unforced Errors', values: perMatch.map(x => x.stats.self.ue) },
-    { label: 'W/FE : UE Ratio', values: perMatch.map(x => fmtRatio(x.stats.self.ratio)) },
-    { label: 'Points Won', values: perMatch.map(x => x.stats.self.pointCount) },
-    { label: 'Aces', values: perMatch.map(x => x.serve.aces) },
-    { label: 'Double Faults', values: perMatch.map(x => x.serve.dfs) },
-    { label: '1st Serve %', values: perMatch.map(x => fmtPct(x.serve.firstPct)) },
-    { label: 'Break Points Saved', values: perMatch.map(x => `${x.analytics.bp.self.savedServing}/${x.analytics.bp.self.facedServing}`) },
-    { label: 'Break Points Won', values: perMatch.map(x => `${x.analytics.bp.self.wonReturning}/${x.analytics.bp.self.facedReturning}`) },
-    { label: 'Return Winners/Forced', values: perMatch.map(x => x.ret.retWinnersForced) },
-  ];
-}
-
 // Merges the old standalone /history (flat match+practice list) and /compare
 // (multi-match side-by-side diff) pages into one dashboard tab — neither is
 // segment-scoped by design (a player's tracked matches span every category
@@ -48,48 +20,24 @@ function buildComparisonRows(matches) {
 // (not the logged-in user directly) so this also works correctly when a
 // coach is viewing a linked player's dashboard.
 export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
-  const [matches, setMatches] = useState(null);
-  const [error, setError] = useState('');
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [compareDetails, setCompareDetails] = useState({});
-  const [comparing, setComparing] = useState(false);
+  const {
+    matches, error, setError,
+    selectedIds, toggleSelect,
+    deleteMatch,
+    comparing, loadComparison,
+    selectedMatches, comparisonRows,
+  } = usePlayerMatches(playerId);
   const [modalMatch, setModalMatch] = useState(null);
   const [openingId, setOpeningId] = useState(null);
+  const [filter, setFilter] = useState('all'); // all | matches | practice
 
-  useEffect(() => {
-    let cancelled = false;
-    setMatches(null);
-    api.listMatches(playerId)
-      .then(list => { if (!cancelled) setMatches(list); })
-      .catch(e => { if (!cancelled) { setError(e.message || 'Could not load match history'); setMatches([]); } });
-    return () => { cancelled = true; };
-  }, [playerId]);
-
-  function toggleSelect(id) {
-    setSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
-  }
-
-  async function handleDelete(matchId) {
-    if (!window.confirm('Delete this saved match? This cannot be undone.')) return;
-    await api.deleteMatch(playerId, matchId);
-    setMatches(prev => prev.filter(m => m.id !== matchId));
-    setSelectedIds(prev => prev.filter(id => id !== matchId));
-  }
-
-  async function loadComparison() {
-    setComparing(true);
-    setError('');
-    try {
-      const results = await Promise.all(selectedIds.map(id => api.getMatch(playerId, id)));
-      const byId = {};
-      results.forEach(m => { byId[m.id] = m; });
-      setCompareDetails(byId);
-    } catch (e) {
-      setError(e.message || 'Could not load selected matches');
-    } finally {
-      setComparing(false);
-    }
-  }
+  const matchCount = matches ? matches.filter(m => m.sessionType !== 'practice').length : 0;
+  const practiceCount = matches ? matches.filter(m => m.sessionType === 'practice').length : 0;
+  const filteredMatches = useMemo(() => (matches || []).filter(m => {
+    if (filter === 'matches') return m.sessionType !== 'practice';
+    if (filter === 'practice') return m.sessionType === 'practice';
+    return true;
+  }), [matches, filter]);
 
   async function openMatch(m) {
     setOpeningId(m.id);
@@ -113,9 +61,6 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
     }
   }
 
-  const selectedMatches = selectedIds.map(id => compareDetails[id]).filter(Boolean);
-  const comparisonRows = useMemo(() => (selectedMatches.length > 0 ? buildComparisonRows(selectedMatches) : []), [selectedMatches]);
-
   if (matches === null) return <div className="text-sm text-muted-foreground">Loading match history…</div>;
 
   return (
@@ -135,8 +80,36 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
 
       {matches.length > 0 && (
         <>
+          <H2HInsight matches={matches} />
+
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {[
+              { id: 'all', label: `All (${matches.length})` },
+              { id: 'matches', label: `Matches (${matchCount})` },
+              { id: 'practice', label: `Practice (${practiceCount})` },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                  filter === f.id
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredMatches.length === 0 && (
+            <div className="border border-dashed border-border rounded-lg p-6 text-center text-sm text-muted-foreground">
+              No {filter === 'matches' ? 'matches' : 'practice sessions'} found. Try a different filter.
+            </div>
+          )}
+
           <div className="space-y-2.5">
-            {matches.map(m => {
+            {filteredMatches.map(m => {
               const hasResult = m.winner === 'self' || m.winner === 'opp';
               const isWin = m.winner === 'self';
               const isLoss = m.winner === 'opp';
@@ -176,7 +149,7 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
                       size="icon"
                       variant="ghost"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 w-9 shrink-0"
-                      onClick={e => { e.stopPropagation(); handleDelete(m.id); }}
+                      onClick={e => { e.stopPropagation(); deleteMatch(m.id); }}
                       title="Delete"
                     >
                       ✕
