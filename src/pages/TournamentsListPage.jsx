@@ -88,13 +88,20 @@ export default function TournamentsListPage() {
   const [step, setStep] = useState(1);
   const [eventRows, setEventRows] = useState([]);
 
+  const isOrganizer = user?.role === 'organizer';
+
+  // Organizers only ever see tournaments they created or had an AITA claim
+  // approved for — never the whole system's tournaments. Other roles
+  // (coach/parent) still get the unscoped list for now; role-scoping them
+  // is a separate, later change.
   useEffect(() => {
     let cancelled = false;
-    api.listTournamentWeeks()
+    const load = isOrganizer ? api.listMyTournamentWeeks(user.id) : api.listTournamentWeeks();
+    load
       .then(list => { if (!cancelled) setWeeks(list); })
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournaments'); });
     return () => { cancelled = true; };
-  }, []);
+  }, [isOrganizer, user?.id]);
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -238,18 +245,12 @@ export default function TournamentsListPage() {
     }
   }
 
-  const isOrganizer = user?.role === 'organizer';
-  const isPlayer = user?.role === 'player';
-  const missingPlayerFields = isPlayer
-    ? [!user?.aitaReg && 'AITA Reg', !user?.dateOfBirth && 'Date of Birth', !user?.stateAbbr && 'State'].filter(Boolean)
-    : [];
-
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Live Events &amp; Draw Tracker</div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Tournaments</h1>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{isOrganizer ? 'My Tournaments' : 'Tournaments'}</h1>
           {parseError && <div className="text-sm text-destructive mt-1">{parseError}</div>}
         </div>
         {isOrganizer && (
@@ -262,6 +263,12 @@ export default function TournamentsListPage() {
           </div>
         )}
       </div>
+
+      {isOrganizer && (
+        <div className="text-sm text-muted-foreground">
+          Don't see your tournament here? <Link to="/aita-calendar" className="text-accent-ink font-semibold hover:underline">Claim it from the Tournament Calendar →</Link>
+        </div>
+      )}
 
       {/* Create Week Modal */}
       {showCreate && (
@@ -541,15 +548,6 @@ export default function TournamentsListPage() {
       )}
 
       {/* Content */}
-      {missingPlayerFields.length > 0 && (
-        <div className="rounded-sm border border-destructive/30 bg-destructive/10 text-destructive text-sm px-3 py-2.5 flex items-center gap-2.5">
-          <span className="text-lg">⚠</span>
-          <span>
-            Complete your profile to enter tournaments — missing: <strong>{missingPlayerFields.join(', ')}</strong>.{' '}
-            <Link to="/profile" className="underline">Update Profile →</Link>
-          </span>
-        </div>
-      )}
       {error && (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
       )}

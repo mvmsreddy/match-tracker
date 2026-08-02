@@ -74,6 +74,7 @@ const noSupabase = () => { throw new Error('Requires Supabase'); };
 
 // Tournament Weeks
 export const listTournamentWeeks = hasSupabaseConfig ? supabaseApi.listTournamentWeeks : async () => [];
+export const listMyTournamentWeeks = hasSupabaseConfig ? supabaseApi.listMyTournamentWeeks : async () => [];
 export const getTournamentWeek = hasSupabaseConfig ? supabaseApi.getTournamentWeek : async () => null;
 export const createTournamentWeek = hasSupabaseConfig ? supabaseApi.createTournamentWeek : noSupabase;
 export const updateTournamentWeek = hasSupabaseConfig ? supabaseApi.updateTournamentWeek : noSupabase;
@@ -170,6 +171,7 @@ export const autoScheduleWeek    = hasSupabaseConfig ? supabaseApi.autoScheduleW
 
 // Phase 25 — AITA Calendar mirror
 export const listAitaTournaments  = hasSupabaseConfig ? supabaseApi.listAitaTournaments  : async () => [];
+export const listBrowsableTournaments = hasSupabaseConfig ? supabaseApi.listBrowsableTournaments : async () => [];
 export const listAitaFilterFacets = hasSupabaseConfig ? supabaseApi.listAitaFilterFacets : async () => ({ cities: [], grades: [] });
 export const getAitaTournament    = hasSupabaseConfig ? supabaseApi.getAitaTournament    : async () => null;
 export const getLatestAitaSyncLog = hasSupabaseConfig ? supabaseApi.getLatestAitaSyncLog : async () => null;

@@ -28,6 +28,7 @@ import H2HRivalryCard from '@/components/H2HRivalryCard';
 import { DrawSheetUploader } from '@/components/player/MyAitaParticipationCard';
 import { Badge } from '@/components/primitives/badge';
 import { SegmentProvider, useSegment, useOptionalSegment } from '../context/SegmentContext';
+import { entryStatusBadge, declaredTournamentStatus } from '../utils/tournamentStatus';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -315,33 +316,6 @@ function ResultRow({ match, showOwner, ownerName }) {
       </div>
     </div>
   );
-}
-
-// Real entry -> status badge. 'pending' means the organiser has accepted
-// the entry but hasn't drawn/locked the bracket yet (still in the
-// acceptance list); 'placed' means a real draw position exists, so the
-// draw_type tells us qualifying vs main.
-function entryStatusBadge(entry) {
-  if (entry.entryStatus === 'withdrawn') return { label: 'Withdrawn', className: 'bg-muted text-muted-foreground' };
-  if (entry.entryStatus !== 'placed') return { label: 'Accepted List', className: 'bg-muted text-muted-foreground' };
-  return entry.drawType === 'qualifying'
-    ? { label: 'Qualifying Draw', className: 'bg-primary/10 text-accent-ink' }
-    : { label: 'Main Draw', className: 'bg-primary/10 text-accent-ink' };
-}
-
-// Declared-only (aita_participation_interest, no organiser/real entry yet)
-// -> a date-driven prompt using the AITA factsheet dates we already have
-// (aita_tournaments.qualifyingStartDate/startDate), instead of a flat
-// "waiting" message the whole time.
-function declaredTournamentStatus(t) {
-  const today = new Date().toISOString().slice(0, 10);
-  if (t.qualifyingStartDate && today >= t.qualifyingStartDate && (!t.startDate || today < t.startDate)) {
-    return { label: 'Qualifying draw should be out', ctaLabel: 'Upload qualifying draw' };
-  }
-  if (t.startDate && today >= t.startDate) {
-    return { label: 'Main draw should be out', ctaLabel: 'Upload main draw' };
-  }
-  return { label: 'Waiting for draw', ctaLabel: 'Upload draw sheet' };
 }
 
 function PlayerTournamentSections({ loading, error, tournaments, todayMatches, recentResults, declaredOnly = [] }) {

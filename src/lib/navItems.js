@@ -16,7 +16,7 @@ export function getNavItems(role) {
   const tournaments = { id: 'tournaments', label: 'Tournaments', to: '/tournaments', icon: Trophy };
   const compare = { id: 'compare', label: 'Compare', to: '/compare', icon: GitCompare };
   const profile = { id: 'profile', label: 'Profile', to: '/profile', icon: User };
-  const calendar = { id: 'calendar', label: 'AITA Calendar', to: '/aita-calendar', icon: Calendar };
+  const calendar = { id: 'calendar', label: 'Tournament Calendar', to: '/aita-calendar', icon: Calendar };
   const rankings = { id: 'rankings', label: 'AITA Rankings', to: '/aita-rankings', icon: Medal };
   const myPlayers = { id: 'my-players', label: 'My Players', to: '/my-players', icon: Users };
   const myCoaches = { id: 'my-coaches', label: 'My Coaches', to: '/my-coaches', icon: Users };

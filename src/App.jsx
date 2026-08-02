@@ -14,6 +14,7 @@ import MatchHistoryPage from './pages/MatchHistoryPage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import ComparePage from './pages/ComparePage';
 import TournamentsListPage from './pages/TournamentsListPage';
+import PlayerTournamentsPage from './pages/PlayerTournamentsPage';
 import TournamentDetailPage from './pages/TournamentDetailPage';
 import AitaCalendarPage from './pages/AitaCalendarPage';
 import AitaTournamentFactsheetPage from './pages/AitaTournamentFactsheetPage';
@@ -44,6 +45,16 @@ function HomeRoute() {
   return <DashboardPage />;
 }
 
+// /tournaments is scoped per role: an organizer only ever sees tournaments
+// they host (TournamentsListPage), a player gets their own "My Tournaments +
+// Browse & Enroll" screen (PlayerTournamentsPage). Coach/parent are
+// deliberately left on today's unscoped list for now — a separate change.
+function TournamentsRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'player') return <PlayerTournamentsPage />;
+  return <TournamentsListPage />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -71,7 +82,7 @@ export default function App() {
                 <Route path="/aita-calendar/:id" element={<AitaTournamentFactsheetPage />} />
                 <Route path="/aita-rankings" element={<AitaRankingsPage />} />
                 <Route path="/admin/aita-review" element={<AitaAdminReviewPage />} />
-                <Route path="/tournaments" element={<TournamentsListPage />} />
+                <Route path="/tournaments" element={<TournamentsRoute />} />
                 <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
                 <Route path="/tournaments/:id/events/:eventId" element={<EventDetailPage />} />
                 <Route path="/tournaments/:id/oop" element={<OrderOfPlayPage />} />

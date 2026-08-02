@@ -367,6 +367,21 @@ export async function listTournamentWeeks() {
   return data.map(rowToWeek);
 }
 
+// An organizer's own Tournament screen — only tournaments they created
+// directly, or that they had an AITA organizer claim approved for (approving
+// a claim creates the tournament_weeks row with created_by = the claiming
+// organizer, see approveAitaOrganizerClaim below), never the whole system's
+// tournaments like listTournamentWeeks above.
+export async function listMyTournamentWeeks(userId) {
+  const { data, error } = await supabase
+    .from('tournament_weeks')
+    .select('*, events(id)')
+    .eq('created_by', userId)
+    .order('start_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToWeek);
+}
+
 export async function getTournamentWeek(id) {
   const { data, error } = await supabase
     .from('tournament_weeks')
@@ -2849,6 +2864,44 @@ export async function listAitaTournaments({ ageGroup, city, grade, dateFrom, dat
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data.map(rowToAitaTournament);
+}
+
+// The unified discovery calendar — everything a player can browse and enroll
+// into, not just what's synced from aitatennis.com: AITA-listed tournaments
+// (as above) plus tournaments an organizer created directly in-app.
+// Deliberately excludes tournament_weeks with source 'aita_claimed' or
+// 'aita_crowdsourced' — those originated from an aita_tournaments row, which
+// is already represented on the AITA side, so including both would show the
+// same tournament twice. ageGroup isn't a tournament_weeks column (it lives
+// per-event), so it only filters the AITA half — organizer-created rows are
+// never excluded by an age group filter.
+export async function listBrowsableTournaments({ ageGroup, city, grade, dateFrom, dateTo, search } = {}) {
+  let weekQuery = supabase
+    .from('tournament_weeks')
+    .select('*')
+    .eq('source', 'organiser')
+    .order('start_date', { ascending: true });
+  if (city) weekQuery = weekQuery.ilike('city', `%${city}%`);
+  if (grade) weekQuery = weekQuery.eq('grade', grade);
+  if (dateFrom) weekQuery = weekQuery.gte('start_date', dateFrom);
+  if (dateTo) weekQuery = weekQuery.lte('start_date', dateTo);
+  if (search) weekQuery = weekQuery.ilike('name', `%${search}%`);
+
+  const [aitaList, weekResult] = await Promise.all([
+    listAitaTournaments({ ageGroup, city, grade, dateFrom, dateTo, search }),
+    weekQuery,
+  ]);
+  if (weekResult.error) throw new Error(weekResult.error.message);
+
+  const merged = [
+    ...aitaList.map(t => ({ ...t, kind: 'aita' })),
+    ...weekResult.data.map(row => {
+      const w = rowToWeek(row);
+      return { ...w, kind: 'week', venue: w.location };
+    }),
+  ];
+  merged.sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+  return merged;
 }
 
 // Distinct city/grade values across the whole calendar, for populating filter
