@@ -99,6 +99,9 @@ export const moveEntryToGroup = hasSupabaseConfig ? supabaseApi.moveEntryToGroup
 export const updateEntryPaymentStatus = hasSupabaseConfig ? supabaseApi.updateEntryPaymentStatus : noSupabase;
 export const bulkAddDrawEntries = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntries : async () => [];
 export const getPlayerWeekParticipation = hasSupabaseConfig ? supabaseApi.getPlayerWeekParticipation : async () => [];
+// Organiser cascading placement — Entries tab Add Player / Bulk Import
+export const addDrawEntryWithPlacement = hasSupabaseConfig ? supabaseApi.addDrawEntryWithPlacement : noSupabase;
+export const bulkAddDrawEntriesWithPlacement = hasSupabaseConfig ? supabaseApi.bulkAddDrawEntriesWithPlacement : async () => ({ placed: [], failed: null });
 
 // Event Matches
 export const getEventMatches = hasSupabaseConfig ? supabaseApi.getEventMatches : tournamentsMock.getEventMatches;

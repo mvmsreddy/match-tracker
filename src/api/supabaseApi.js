@@ -1116,6 +1116,109 @@ export async function selfEnterSingles(eventId, profile) {
 }
 
 // ---------------------------------------------------------------------------
+// Organiser cascading placement (Entries tab Add Player / Bulk Import)
+// ---------------------------------------------------------------------------
+// Reuses computeSelfEntryPlacement/computeCascadingPlacement unchanged — the
+// cascade math doesn't care who the caller is. What differs from self-entry
+// is authorization and the row shape: an organiser (event week creator)
+// already has unrestricted insert/update on draw_entries in their own event
+// (see "Event week creator can insert/update draw entries", phase2_schema.sql),
+// unlike a self-entering player who's restricted to their own row (phase15) —
+// so bumps and inserts here are plain client calls, no SECURITY DEFINER RPC
+// needed. The organiser row also carries the full field set (seed, partner
+// doubles fields, onsite sign-in, replacing name, ...) that the self-entry
+// RPC deliberately omits.
+
+function buildOrganiserEntryRow(eventId, placement, entry, userId) {
+  return {
+    event_id: eventId,
+    draw_type: placement.drawType,
+    position: placement.position,
+    is_alternate: placement.isAlternate || false,
+    seed: entry.seed ? Number(entry.seed) : null,
+    is_bye: false,
+    qualifier_slot: entry.qualifierSlot || null,
+    player_id: entry.playerId || null,
+    family_name: entry.familyName,
+    first_name: entry.firstName || null,
+    aita_reg: entry.aitaReg || null,
+    player_state: entry.playerState || null,
+    ranking: entry.ranking ? Number(entry.ranking) : null,
+    date_of_birth: entry.dateOfBirth || null,
+    status_code: entry.statusCode || null,
+    partner_id: entry.partnerId || null,
+    partner_family_name: entry.partnerFamilyName || null,
+    partner_first_name: entry.partnerFirstName || null,
+    partner_aita_reg: entry.partnerAitaReg || null,
+    partner_state: entry.partnerState || null,
+    partner_ranking: entry.partnerRanking ? Number(entry.partnerRanking) : null,
+    is_onsite_signin: entry.isOnsiteSignin || false,
+    replacing_name: entry.replacingName || null,
+    entry_source: 'organiser',
+    entry_status: 'placed',
+    entered_by: userId,
+  };
+}
+
+// Applies one computeSelfEntryPlacement() result as an organiser-sourced
+// write: bumps are applied sequentially, in the order nominationSort.js
+// hands back (already bottom-up — alternates vacated before qualifying,
+// qualifying before main), so each write only ever lands on a slot the
+// previous write in the chain just vacated. No temporary out-of-range
+// position (cf. swapEntryPositions) is needed here since a bump always
+// moves an entry to a different tier, never to another live row's slot.
+async function applyOrganiserCascadingPlacement(eventId, placement, entry) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  for (const bump of placement.bumps) {
+    const { error } = await supabase
+      .from('draw_entries')
+      .update({ draw_type: bump.drawType, position: bump.position, is_alternate: bump.isAlternate || false })
+      .eq('id', bump.id);
+    if (error) throw new Error(error.message);
+  }
+
+  const row = buildOrganiserEntryRow(eventId, placement, entry, user?.id || null);
+  const { data, error } = await supabase.from('draw_entries').insert(row).select().single();
+  if (error) throw new Error(error.message);
+  return rowToEntry(data);
+}
+
+// Organiser Add Player (Entries tab) — computes where this player belongs by
+// rank/cap, then applies it. No manual draw/position choice at creation time
+// by design; use moveEntryToGroup afterward for exceptions (wildcards, fixes).
+export async function addDrawEntryWithPlacement(eventId, entry) {
+  const placement = await computeSelfEntryPlacement(eventId, entry.ranking);
+  return applyOrganiserCascadingPlacement(eventId, placement, entry);
+}
+
+// Organiser Bulk Import (Entries tab) — places a batch of new entries by
+// rank, best first. Processing best-to-worst keeps the result intuitive and
+// minimizes bump chains, though it's not required for correctness: each
+// iteration re-reads current state via computeSelfEntryPlacement, so later
+// rows automatically account for earlier ones (including any bumps they
+// caused). This is inherently sequential — there's no RPC to batch it
+// atomically, since each row's target slot depends on the cascade result of
+// every prior row — so a large paste means one round-trip per row. Stops
+// (rather than skipping) on the first row that fails, so the caller can
+// report exactly how far the import got instead of silently dropping rows.
+export async function bulkAddDrawEntriesWithPlacement(eventId, entries, { onProgress } = {}) {
+  const sorted = [...entries].sort((a, b) => (a.ranking || Infinity) - (b.ranking || Infinity));
+  const placed = [];
+  for (let i = 0; i < sorted.length; i++) {
+    try {
+      const placement = await computeSelfEntryPlacement(eventId, sorted[i].ranking);
+      const result = await applyOrganiserCascadingPlacement(eventId, placement, sorted[i]);
+      placed.push(result);
+    } catch (error) {
+      return { placed, failed: { row: sorted[i], index: i, error } };
+    }
+    onProgress?.(i + 1, sorted.length);
+  }
+  return { placed, failed: null };
+}
+
+// ---------------------------------------------------------------------------
 // Phase 43 — Paid self-entry (Razorpay)
 // ---------------------------------------------------------------------------
 

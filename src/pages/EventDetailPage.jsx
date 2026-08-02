@@ -40,80 +40,19 @@ const STATES = ['AP','TS','MH','KA','TN','KL','DL','UP','WB','GJ','RJ','MP','PB'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function nextEmptyPos(entries, maxPos) {
-  const taken = new Set(entries.map(e => e.position));
-  for (let i = 1; i <= maxPos; i++) if (!taken.has(i)) return i;
-  return maxPos + 1;
-}
-
-// Alternates live at positions beyond the draw size — position order IS
-// priority order (lowest = called first).
-function nextAlternateSlot(entries, maxPos) {
-  const taken = new Set(entries.filter(e => e.isAlternate).map(e => e.position));
-  let p = maxPos + 1;
-  while (taken.has(p)) p++;
-  return p;
-}
-
-// Parse AITA acceptance list text.
-// Supports two formats per line:
-//   A) With explicit position:  Pos, FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode
-//   B) Auto-position (in order): FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode
-// Format A is auto-detected when the first column is a number.
-// Lines starting with # are treated as comments and skipped.
-// Blank lines and tab-separated data (copied from spreadsheets) are also handled.
-function parseBulk(text, existingPositions, maxPos) {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-  const entries = [];
-  const errors = [];
-  let autoPos = 1;
-  while (existingPositions.has(autoPos) && autoPos <= maxPos) autoPos++;
-
-  lines.forEach((line, idx) => {
-    // Support both comma-separated and tab-separated (copy-paste from Excel/Sheets)
-    const sep = line.includes('\t') ? '\t' : ',';
-    const p = line.split(sep).map(x => x.trim());
-
-    // Auto-detect format A: first token is a pure number (draw position)
-    const firstNum = Number(p[0]);
-    let pos, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode;
-
-    if (p[0] !== '' && !isNaN(firstNum) && String(firstNum) === p[0]) {
-      // Format A — explicit position
-      pos = firstNum;
-      [, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode] = p;
-    } else {
-      // Format B — auto-position
-      pos = autoPos;
-      [familyName, firstName, aitaReg, playerState, ranking, seed, statusCode] = p;
-      autoPos++;
-      while (existingPositions.has(autoPos) && autoPos <= maxPos) autoPos++;
-    }
-
-    familyName = (familyName || '').trim();
-    if (!familyName) { errors.push(`Line ${idx + 1}: family name is required`); return; }
-
-    entries.push({
-      position: pos,
-      familyName,
-      firstName: (firstName || '').trim(),
-      aitaReg: (aitaReg || '').trim(),
-      playerState: (playerState || '').trim(),
-      ranking: ranking ? Number(ranking) : null,
-      seed: seed ? Number(seed) : null,
-      statusCode: (statusCode || '').trim(),
-    });
-  });
-  return { entries, errors };
-}
-
-// parseBulkFull — handles a combined acceptance-list paste that contains rows for
-// MAIN DRAW, QUALIFYING DRAW, ALTERNATES and WITHDRAWAL LIST in a single block.
-// Detects and skips header row; auto-corrects State ↔ AitaReg column swap.
-function parseBulkFull(text) {
-  const empty = { main: [], qualifying: [], alternates: [], withdrawal: [] };
+// parseBulkPlacement — accepts a pasted acceptance list (with or without a
+// leading position column) and splits it into entries to place (via the
+// rank-based cascading engine — see addDrawEntryWithPlacement/
+// bulkAddDrawEntriesWithPlacement in supabaseApi.js) and entries to
+// withdraw. Detects and skips a header row; auto-corrects a State ↔ AitaReg
+// column swap. Any pre-existing section label in the StatusCode column
+// (e.g. MAIN DRAW / QUALIFYING DRAW / ALTERNATES) is deliberately ignored
+// for placement — the engine always decides Main/Qualifying/Alternate by
+// rank. WITHDRAWN/WD is the one exception, since withdrawal is an explicit
+// status rather than a rank-based placement.
+function parseBulkPlacement(text) {
   const rawLines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-  if (!rawLines.length) return { sections: empty, errors: [] };
+  if (!rawLines.length) return { entries: [], withdrawal: [], errors: [] };
 
   const sep = rawLines[0].includes('\t') ? '\t' : ',';
 
@@ -122,7 +61,8 @@ function parseBulkFull(text) {
   const hasHeader = isNaN(Number(firstTok)) || firstTok === '';
   const dataLines = hasHeader ? rawLines.slice(1) : rawLines;
 
-  const sections = { main: [], qualifying: [], alternates: [], withdrawal: [] };
+  const entries = [];
+  const withdrawal = [];
   const errors = [];
 
   dataLines.forEach((line, idx) => {
@@ -130,10 +70,12 @@ function parseBulkFull(text) {
     const p = line.split(lineSep).map(x => x.trim());
     if (p.length < 2) return;
 
-    // Detect explicit leading position (pure integer > 0)
+    // Strip an optional leading position column — display-only in the
+    // source sheet now, since the engine (not the pasted position) decides
+    // where each player lands; kept only so a leading column doesn't
+    // misalign the rest of the fields.
     const hasPos = /^\d+$/.test(p[0]) && Number(p[0]) > 0;
-    const explicitPos = hasPos ? Number(p[0]) : null;
-    const f = hasPos ? p.slice(1) : p; // fields after stripping optional pos
+    const f = hasPos ? p.slice(1) : p;
 
     const familyName = (f[0] || '').trim();
     if (!familyName) { errors.push(`Line ${idx + 1}: family name required`); return; }
@@ -157,29 +99,21 @@ function parseBulkFull(text) {
     const ranking = /^\d+$/.test(rawRanking) ? Number(rawRanking) : null;
     const seed    = /^\d+$/.test(rawSeed)    ? Number(rawSeed)    : null;
 
-    // Route by StatusCode
-    const sc = statusCode.toUpperCase();
-    let section;
-    if      (sc.includes('QUALIFYING'))                    section = 'qualifying';
-    else if (sc.includes('ALTERNATE'))                     section = 'alternates';
-    else if (sc.includes('WITHDRAW') || sc.includes('WD')) section = 'withdrawal';
-    else                                                    section = 'main';
+    const entry = { familyName, firstName, aitaReg, playerState, ranking, seed, statusCode };
 
-    const position = explicitPos ?? (sections[section].length + 1);
-    sections[section].push({ position, familyName, firstName, aitaReg, playerState, ranking, seed, statusCode });
+    const sc = statusCode.toUpperCase();
+    if (sc.includes('WITHDRAW') || sc.includes('WD')) withdrawal.push(entry);
+    else entries.push(entry);
   });
 
-  return { sections, errors };
+  return { entries, withdrawal, errors };
 }
 
 // ---------------------------------------------------------------------------
-// BulkImportModal  — 5 tabs: Full List | Main Draw | Qualifying | Alternates | Withdrawal
+// BulkImportModal — 2 tabs: Add Players (rank-engine placement) | Withdrawal
 // ---------------------------------------------------------------------------
 const BULK_TABS = [
-  { key: 'full',       label: 'Full List' },
-  { key: 'main',       label: 'Main Draw' },
-  { key: 'qualifying', label: 'Qualifying' },
-  { key: 'alternates', label: 'Alternates' },
+  { key: 'add',        label: 'Add Players' },
   { key: 'withdrawal', label: 'Withdrawal' },
 ];
 
@@ -188,115 +122,6 @@ const WD_TYPES = [
   { value: 'LW', label: 'LW — Late withdrawal' },
   { value: 'NS', label: 'NS — No show' },
 ];
-
-// Shared paste-and-preview panel used by Main Draw, Qualifying, Alternates tabs
-function ImportPane({ maxPos, startPos, existingPositions, isAlternate, onImport, saving, onClose }) {
-  const remaining = isAlternate ? 999 : maxPos - (existingPositions.size);
-  const [text, setText] = useState('');
-  const [preview, setPreview] = useState(null);
-  const [parseErrors, setParseErrors] = useState([]);
-  const [saveError, setSaveError] = useState('');
-
-  function handlePreview() {
-    // For alternates, override starting auto-position to startPos
-    const fakeExisting = isAlternate
-      ? new Set([...Array(startPos - 1)].map((_, i) => i + 1)) // pretend 1..startPos-1 are taken
-      : existingPositions;
-    const { entries, errors } = parseBulk(text, fakeExisting, isAlternate ? 9999 : maxPos);
-    const finalEntries = entries.map(e => ({ ...e, isAlternate: isAlternate || false }));
-    setPreview(finalEntries);
-    setParseErrors(errors);
-    setSaveError('');
-  }
-
-  async function handleImport() {
-    if (!preview || preview.length === 0) return;
-    try {
-      await onImport(preview);
-      onClose();
-    } catch (err) {
-      setSaveError(err.message || 'Import failed');
-    }
-  }
-
-  const placeholder = isAlternate
-    ? '# Alternates — positions auto-start after the draw size\n# Format: FamilyName, FirstName, AitaReg, State, Ranking\nKumari, Divya, 452301, RJ, 220\nPandey, Shreya, 448876, UP, 245'
-    : '# Paste AITA acceptance list — with or without leading position number\n# FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode\nBhosale, Priya, 442320, TS, 45, 1,\nSharma, Ananya, 438901, MH, 78, 2,\nReddy, Kavya, 451234, AP, 112,,\n# With explicit position:\n# 40, Mehta, Riya, 449012, GJ, 156,,Q';
-
-  return (
-    <>
-      <div className="text-sm text-muted-foreground mb-3">
-        <strong className="text-foreground">Two formats:</strong>{' '}
-        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">FamilyName, FirstName, AitaReg, State, Ranking, Seed, StatusCode</code> (auto-position)
-        {' '}or{' '}
-        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">Pos, FamilyName, ...</code> (explicit position).
-        Tab-separated (Excel/Sheets) also works.
-        {!isAlternate && <>{' '}<strong className="text-foreground">{remaining > 0 ? remaining : 0}</strong> slot{remaining !== 1 ? 's' : ''} available.</>}
-      </div>
-
-      {!preview && (
-        <>
-          <textarea
-            className="w-full min-h-[220px] rounded-sm border border-input bg-transparent px-3 py-2 font-mono text-xs resize-y leading-relaxed"
-            rows={11}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder={placeholder}
-            autoFocus
-          />
-          {parseErrors.length > 0 && (
-            <div className="text-sm text-destructive mt-2 space-y-0.5">
-              {parseErrors.map((e, i) => <div key={i}>{e}</div>)}
-            </div>
-          )}
-        </>
-      )}
-
-      {preview && (
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-2">{preview.length} player{preview.length !== 1 ? 's' : ''} to import{isAlternate ? ' as Alternates' : ''}</div>
-          <div className="rounded-sm border border-border overflow-x-auto max-h-80 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <UITableRow><TableHead>Pos</TableHead><TableHead>Seed</TableHead><TableHead>Name</TableHead><TableHead>AITA Reg</TableHead><TableHead>State</TableHead><TableHead>Rank</TableHead><TableHead>SC</TableHead></UITableRow>
-              </TableHeader>
-              <TableBody>
-                {preview.map((e, i) => (
-                  <UITableRow key={i}>
-                    <TableCell>{isAlternate ? `Alt ${e.position - (startPos - 1)}` : e.position}</TableCell>
-                    <TableCell>{e.seed || '—'}</TableCell>
-                    <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
-                    <TableCell>{e.aitaReg || '—'}</TableCell>
-                    <TableCell>{e.playerState || '—'}</TableCell>
-                    <TableCell>{e.ranking || '—'}</TableCell>
-                    <TableCell>{e.statusCode ? <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{e.statusCode}</span> : '—'}</TableCell>
-                  </UITableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      {saveError && <div className="text-sm text-destructive mt-2">{saveError}</div>}
-
-      <div className="flex gap-2 mt-4">
-        {!preview && (
-          <Button onClick={handlePreview} disabled={!text.trim()}>Preview</Button>
-        )}
-        {preview && (
-          <>
-            <Button disabled={saving || preview.length === 0} onClick={handleImport}>
-              {saving ? 'Importing…' : `Import ${preview.length} Player${preview.length !== 1 ? 's' : ''}`}
-            </Button>
-            <Button variant="outline" onClick={() => { setPreview(null); setSaveError(''); }}>Back</Button>
-          </>
-        )}
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-      </div>
-    </>
-  );
-}
 
 // Withdrawal tab — shows existing entries as a checklist
 function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
@@ -421,16 +246,22 @@ function WithdrawalPane({ eventId, onWithdraw, saving, onClose }) {
   );
 }
 
-// Full-list paste pane — accepts a combined acceptance-list CSV and auto-routes by StatusCode
-function FullListPane({ event, onImport, saving, onClose }) {
+// Paste-and-preview pane for the Entries tab's Bulk Import. Every row goes
+// through the same rank-based cascading engine as single Add Player — Main
+// Draw / Qualifying / Alternates placement is always decided by ranking and
+// draw capacity, never by a section label in the pasted text. The one
+// exception is withdrawal: rows already split out by parseBulkPlacement
+// (StatusCode contains WITHDRAW/WD) are shown and imported separately,
+// unranked.
+function PlacementImportPane({ onImport, saving, progress, onClose }) {
   const [text, setText]           = useState('');
-  const [preview, setPreview]     = useState(null); // { main, qualifying, alternates, withdrawal }
+  const [preview, setPreview]     = useState(null); // { entries, withdrawal }
   const [parseErrors, setErrors]  = useState([]);
   const [saveError, setSaveError] = useState('');
 
   function handlePreview() {
-    const { sections, errors } = parseBulkFull(text);
-    setPreview(sections);
+    const { entries, withdrawal, errors } = parseBulkPlacement(text);
+    setPreview({ entries, withdrawal });
     setErrors(errors);
     setSaveError('');
   }
@@ -439,51 +270,44 @@ function FullListPane({ event, onImport, saving, onClose }) {
     if (!preview) return;
     setSaveError('');
     try {
-      await onImport(preview);
+      await onImport(preview.entries, preview.withdrawal);
       onClose();
     } catch (err) {
       setSaveError(err.message || 'Import failed');
     }
   }
 
-  const totalToImport = preview
-    ? preview.main.length + preview.qualifying.length + preview.alternates.length
-    : 0;
+  const totalToImport = preview ? preview.entries.length + preview.withdrawal.length : 0;
 
-  const SectionTable = ({ label, arr }) => {
-    if (!arr || !arr.length) return null;
-    return (
-      <div className="mb-3">
-        <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">{label} — {arr.length} player{arr.length !== 1 ? 's' : ''}</div>
-        <div className="rounded-sm border border-border overflow-x-auto">
-          <Table>
-            <TableHeader><UITableRow><TableHead>Pos</TableHead><TableHead>Name</TableHead><TableHead>State</TableHead><TableHead>AITA Reg</TableHead><TableHead>Rank</TableHead><TableHead>Seed</TableHead></UITableRow></TableHeader>
-            <TableBody>
-              {arr.map((e, i) => (
-                <UITableRow key={i}>
-                  <TableCell>{e.position}</TableCell>
-                  <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
-                  <TableCell>{e.playerState || '—'}</TableCell>
-                  <TableCell>{e.aitaReg || '—'}</TableCell>
-                  <TableCell>{e.ranking || '—'}</TableCell>
-                  <TableCell>{e.seed || '—'}</TableCell>
-                </UITableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    );
-  };
+  const EntryTable = ({ rows }) => (
+    <div className="rounded-sm border border-border overflow-x-auto">
+      <Table>
+        <TableHeader><UITableRow><TableHead>Name</TableHead><TableHead>AITA Reg</TableHead><TableHead>State</TableHead><TableHead>Rank</TableHead><TableHead>Seed</TableHead><TableHead>SC</TableHead></UITableRow></TableHeader>
+        <TableBody>
+          {rows.map((e, i) => (
+            <UITableRow key={i}>
+              <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
+              <TableCell>{e.aitaReg || '—'}</TableCell>
+              <TableCell>{e.playerState || '—'}</TableCell>
+              <TableCell>{e.ranking || '—'}</TableCell>
+              <TableCell>{e.seed || '—'}</TableCell>
+              <TableCell>{e.statusCode || '—'}</TableCell>
+            </UITableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <>
       <div className="text-sm text-muted-foreground mb-3">
-        Paste the full AITA acceptance list in one go. Rows are auto-routed by the{' '}
-        <strong className="text-foreground">StatusCode</strong> column:{' '}
-        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">MAIN DRAW</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">QUALIFYING DRAW</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">ALTERNATES</code>, <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">WITHDRAWAL LIST</code>.
-        {' '}Comma or tab-separated. Header row and <em>State ↔ AitaReg</em> column order are auto-detected.
-        All four sections are imported — withdrawal list entries appear in the <strong className="text-foreground">Withdrawal</strong> tab.
+        Paste a player list — with or without a leading position column. Each player is placed into
+        Main Draw, Qualifying, or Alternates automatically, by ranking and draw capacity — any section
+        label in the pasted text (e.g. <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">MAIN DRAW</code>) is ignored. Rows marked{' '}
+        <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">WITHDRAW</code> / <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">WD</code>{' '}
+        in the StatusCode column go straight to Withdrawal instead. Comma or tab-separated; header row
+        and <em>State ↔ AitaReg</em> column order are auto-detected.
       </div>
 
       {!preview && (
@@ -493,7 +317,7 @@ function FullListPane({ event, onImport, saving, onClose }) {
             rows={11}
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder={'Pos,FamilyName,FirstName,State,AitaReg,Ranking,Seed,StatusCode\n1,Sharma,Ananya,Maharashtra,440372,10,,MAIN DRAW\n...\n1,Reddy,Kavya,Telangana,444849,56,,QUALIFYING DRAW\n...\n1,Kumari,Divya,Karnataka,446519,702,,ALTERNATES\n...\n1,Pandey,Sidhhi,Uttar Pradesh,441965,3,,WITHDRAWAL LIST'}
+            placeholder={'FamilyName,FirstName,AitaReg,State,Ranking,Seed,StatusCode\nSharma,Ananya,440372,MH,10,,\nReddy,Kavya,444849,TS,56,,\nKumari,Divya,446519,KA,702,,\nPandey,Sidhhi,441965,UP,3,,WD'}
             autoFocus
           />
           {parseErrors.length > 0 && (
@@ -505,29 +329,21 @@ function FullListPane({ event, onImport, saving, onClose }) {
       )}
 
       {preview && (
-        <div className="max-h-[340px] overflow-y-auto">
-          <SectionTable label="Main Draw"  arr={preview.main} />
-          <SectionTable label="Qualifying" arr={preview.qualifying} />
-          <SectionTable label="Alternates" arr={preview.alternates} />
-          {preview.withdrawal.length > 0 && (
-            <div className="mb-3">
-              <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">Withdrawal List — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}</div>
-              <div className="rounded-sm border border-border overflow-x-auto">
-                <Table>
-                  <TableHeader><UITableRow><TableHead>#</TableHead><TableHead>Name</TableHead><TableHead>State</TableHead><TableHead>AITA Reg</TableHead><TableHead>Rank</TableHead></UITableRow></TableHeader>
-                  <TableBody>
-                    {preview.withdrawal.map((e, i) => (
-                      <UITableRow key={i}>
-                        <TableCell>{i + 1}</TableCell>
-                        <TableCell>{e.familyName}{e.firstName ? ', ' + e.firstName : ''}</TableCell>
-                        <TableCell>{e.playerState || '—'}</TableCell>
-                        <TableCell>{e.aitaReg || '—'}</TableCell>
-                        <TableCell>{e.ranking || '—'}</TableCell>
-                      </UITableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        <div className="max-h-[340px] overflow-y-auto space-y-3">
+          {preview.entries.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">
+                To Place — {preview.entries.length} player{preview.entries.length !== 1 ? 's' : ''}
               </div>
+              <EntryTable rows={preview.entries} />
+            </div>
+          )}
+          {preview.withdrawal.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground mb-1">
+                Withdrawal — {preview.withdrawal.length} player{preview.withdrawal.length !== 1 ? 's' : ''}
+              </div>
+              <EntryTable rows={preview.withdrawal} />
             </div>
           )}
         </div>
@@ -542,7 +358,9 @@ function FullListPane({ event, onImport, saving, onClose }) {
         {preview && (
           <>
             <Button disabled={saving || totalToImport === 0} onClick={handleImport}>
-              {saving ? 'Importing…' : `Import ${totalToImport} Player${totalToImport !== 1 ? 's' : ''}`}
+              {saving
+                ? (progress ? `Importing ${progress.done}/${progress.total}…` : 'Importing…')
+                : `Import ${totalToImport} Player${totalToImport !== 1 ? 's' : ''}`}
             </Button>
             <Button variant="outline" onClick={() => { setPreview(null); setSaveError(''); }}>Back</Button>
           </>
@@ -553,65 +371,19 @@ function FullListPane({ event, onImport, saving, onClose }) {
   );
 }
 
-function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdraw, onClose }) {
-  // Always open on Full List tab — user can switch to per-section tabs if needed
-  const [activeTab, setActiveTab] = useState('full');
+function BulkImportModal({ event, onImport, onWithdraw, onClose }) {
+  const [activeTab, setActiveTab] = useState('add');
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(null); // { done, total } while placing a bulk batch
 
-  // Per-tab derived values
-  const mainMax  = bracketSize(event.drawSize || 32);
-  const qualMax  = bracketSize(event.qualifyingSize || 32);
-  const altStart = mainMax + 1; // alternates live after the main draw
-
-  const mainExisting = new Set(
-    existingEntries.filter(e => e.drawType === 'main' && !e.isAlternate && e.position <= mainMax).map(e => e.position)
-  );
-  const qualExisting = new Set(
-    existingEntries.filter(e => e.drawType === 'qualifying' && !e.isAlternate && e.position <= qualMax).map(e => e.position)
-  );
-
-  // Per-section import (used by Main Draw / Qualifying / Alternates tabs)
-  async function handlePaneImport(entries) {
+  async function handleAddImport(entries, withdrawalEntries) {
     setSaving(true);
+    setProgress(null);
     try {
-      if (activeTab === 'main')       await onImport(entries, 'main',       { isAlternate: false });
-      if (activeTab === 'qualifying') await onImport(entries, 'qualifying', { isAlternate: false });
-      if (activeTab === 'alternates') await onImport(entries, 'main',       { isAlternate: true });
+      await onImport(entries, withdrawalEntries, { onProgress: (done, total) => setProgress({ done, total }) });
     } finally {
       setSaving(false);
-    }
-  }
-
-  // Full-list import — routes each section to the right draw type
-  async function handleFullImport(sections) {
-    setSaving(true);
-    try {
-      const maxMainPos = sections.main.length > 0
-        ? Math.max(...sections.main.map(e => e.position))
-        : mainMax;
-      if (sections.main.length > 0) {
-        await onImport(sections.main, 'main', { isAlternate: false });
-      }
-      if (sections.qualifying.length > 0) {
-        await onImport(sections.qualifying, 'qualifying', { isAlternate: false });
-      }
-      if (sections.alternates.length > 0) {
-        const altCsvMin = Math.min(...sections.alternates.map(e => e.position));
-        const altOffset = maxMainPos + 1;
-        const alts = sections.alternates.map(e => ({
-          ...e,
-          position: e.position - altCsvMin + altOffset,
-          isAlternate: true,
-        }));
-        await onImport(alts, 'main', { isAlternate: true });
-      }
-      if (sections.withdrawal.length > 0) {
-        // Re-sequence from 1 so positions are compact and don't conflict with other draw types
-        const wdEntries = sections.withdrawal.map((e, i) => ({ ...e, position: i + 1 }));
-        await onImport(wdEntries, 'withdrawal', {});
-      }
-    } finally {
-      setSaving(false);
+      setProgress(null);
     }
   }
 
@@ -620,8 +392,6 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
     try { await onWithdraw(ids, type, date); }
     finally { setSaving(false); }
   }
-
-  const tabs = BULK_TABS.filter(t => t.key !== 'qualifying' || event.hasQualifying);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
@@ -633,7 +403,7 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
 
         {/* Tab bar */}
         <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card mb-4">
-          {tabs.map(t => (
+          {BULK_TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
@@ -644,44 +414,11 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
           ))}
         </div>
 
-        {activeTab === 'full' && (
-          <FullListPane
-            event={event}
-            onImport={handleFullImport}
+        {activeTab === 'add' && (
+          <PlacementImportPane
+            onImport={handleAddImport}
             saving={saving}
-            onClose={onClose}
-          />
-        )}
-        {activeTab === 'main' && (
-          <ImportPane
-            maxPos={mainMax}
-            startPos={1}
-            existingPositions={mainExisting}
-            isAlternate={false}
-            onImport={handlePaneImport}
-            saving={saving}
-            onClose={onClose}
-          />
-        )}
-        {activeTab === 'qualifying' && event.hasQualifying && (
-          <ImportPane
-            maxPos={qualMax}
-            startPos={1}
-            existingPositions={qualExisting}
-            isAlternate={false}
-            onImport={handlePaneImport}
-            saving={saving}
-            onClose={onClose}
-          />
-        )}
-        {activeTab === 'alternates' && (
-          <ImportPane
-            maxPos={9999}
-            startPos={altStart}
-            existingPositions={new Set([...Array(altStart - 1)].map((_, i) => i + 1))}
-            isAlternate={true}
-            onImport={handlePaneImport}
-            saving={saving}
+            progress={progress}
             onClose={onClose}
           />
         )}
@@ -701,8 +438,13 @@ function BulkImportModal({ event, drawType, existingEntries, onImport, onWithdra
 // ---------------------------------------------------------------------------
 // AddEntryModal
 // ---------------------------------------------------------------------------
+// New entries (no editingEntry) always go through rank-based cascading
+// placement — see addDrawEntryWithPlacement/bulkAddDrawEntriesWithPlacement
+// in supabaseApi.js — so there's no manual draw/position/alternate choice
+// at creation time; this modal only collects player details. Editing an
+// already-placed entry keeps the original manual position/alternate fields.
 function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, onSave, onClose }) {
-  const maxPos = bracketSize(drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32));
+  const maxPos = editingEntry ? bracketSize(drawType === 'main' ? event.drawSize : (event.qualifyingSize || 32)) : null;
 
   const [form, setForm] = useState(() => {
     if (editingEntry) {
@@ -728,7 +470,6 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
       };
     }
     return {
-      position: nextEmptyPos(existingEntries, maxPos),
       seed: '', statusCode: '',
       familyName: '', firstName: '', aitaReg: '', playerState: '',
       ranking: '', dateOfBirth: '',
@@ -744,15 +485,6 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [limitWarning, setLimitWarning] = useState('');
-
-  // Alternates occupy positions beyond the draw size — auto-assign/keep that
-  // slot instead of the normal 1..maxPos position field.
-  useEffect(() => {
-    if (form.isAlternate && !editingEntry) {
-      setForm(prev => ({ ...prev, position: nextAlternateSlot(existingEntries, maxPos) }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.isAlternate]);
 
   // Debounced platform search
   useEffect(() => {
@@ -804,19 +536,23 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
       setError('Partner family name is required for doubles.'); return;
     }
 
+    // New entries are placed by the rank engine (see onSave) — position is
+    // only a manual, editable field for an already-placed entry.
     let posNum;
-    if (form.isAlternate) {
-      posNum = editingEntry ? editingEntry.position : nextAlternateSlot(existingEntries, maxPos);
-    } else {
-      posNum = Number(form.position);
-      if (!posNum || posNum < 1 || posNum > maxPos) {
-        setError(`Position must be 1 – ${maxPos}.`); return;
-      }
-      const conflict = existingEntries.find(
-        en => en.position === posNum && (!editingEntry || en.id !== editingEntry.id)
-      );
-      if (conflict) {
-        setError(`Position ${posNum} is already taken by ${conflict.familyName}.`); return;
+    if (editingEntry) {
+      if (form.isAlternate) {
+        posNum = editingEntry.position;
+      } else {
+        posNum = Number(form.position);
+        if (!posNum || posNum < 1 || posNum > maxPos) {
+          setError(`Position must be 1 – ${maxPos}.`); return;
+        }
+        const conflict = existingEntries.find(
+          en => en.position === posNum && en.id !== editingEntry.id
+        );
+        if (conflict) {
+          setError(`Position ${posNum} is already taken by ${conflict.familyName}.`); return;
+        }
       }
     }
 
@@ -883,7 +619,7 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
 
     setSaving(true);
     try {
-      await onSave(editingEntry?.id || null, { ...form, position: posNum });
+      await onSave(editingEntry?.id || null, editingEntry ? { ...form, position: posNum } : form);
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to save');
@@ -900,19 +636,22 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
         </div>
 
         <form onSubmit={handleSave} className="space-y-3">
-          {/* Position / Seed / Status */}
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Draw Position">
-              <Input
-                type="number" min="1" max={maxPos}
-                value={form.position}
-                disabled={form.isAlternate}
-                onChange={e => set('position', e.target.value)}
-              />
-              {form.isAlternate && (
-                <div className="text-[0.68rem] text-muted-foreground">Alternate #{form.position - maxPos}</div>
-              )}
-            </Field>
+          {/* Position / Seed / Status — Draw Position is edit-only; new
+              entries are placed by the rank engine, not chosen manually. */}
+          <div className={cn('grid gap-3', editingEntry ? 'grid-cols-3' : 'grid-cols-2')}>
+            {editingEntry && (
+              <Field label="Draw Position">
+                <Input
+                  type="number" min="1" max={maxPos}
+                  value={form.position}
+                  disabled={form.isAlternate}
+                  onChange={e => set('position', e.target.value)}
+                />
+                {form.isAlternate && (
+                  <div className="text-[0.68rem] text-muted-foreground">Alternate #{form.position - maxPos}</div>
+                )}
+              </Field>
+            )}
             <Field label="Seed">
               <Input
                 type="number" min="1" max={event.numSeeds}
@@ -1060,36 +799,39 @@ function AddEntryModal({ event, week, drawType, editingEntry, existingEntries, o
             </>
           )}
 
-          {/* Alternate */}
-          <div className="pt-1 space-y-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-primary"
-                checked={form.isAlternate}
-                onChange={e => set('isAlternate', e.target.checked)}
-              />
-              Alternate / replacement entry
-            </label>
-            {form.isAlternate && (
-              <Input
-                value={form.replacingName}
-                onChange={e => set('replacingName', e.target.value)}
-                placeholder="Replacing (player name)"
-              />
-            )}
-            {form.isAlternate && (
+          {/* Alternate — edit-only; new entries are placed automatically by
+              the rank engine, so there's nothing to manually flag here. */}
+          {editingEntry && (
+            <div className="pt-1 space-y-2">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   className="accent-primary"
-                  checked={form.isOnsiteSignin}
-                  onChange={e => set('isOnsiteSignin', e.target.checked)}
+                  checked={form.isAlternate}
+                  onChange={e => set('isAlternate', e.target.checked)}
                 />
-                Onsite / walk-in sign-in (no prior ranked registration — called in only after ranked alternates are exhausted)
+                Alternate / replacement entry
               </label>
-            )}
-          </div>
+              {form.isAlternate && (
+                <Input
+                  value={form.replacingName}
+                  onChange={e => set('replacingName', e.target.value)}
+                  placeholder="Replacing (player name)"
+                />
+              )}
+              {form.isAlternate && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="accent-primary"
+                    checked={form.isOnsiteSignin}
+                    onChange={e => set('isOnsiteSignin', e.target.checked)}
+                  />
+                  Onsite / walk-in sign-in (no prior ranked registration — called in only after ranked alternates are exhausted)
+                </label>
+              )}
+            </div>
+          )}
 
           {limitWarning && (
             <div className="text-xs text-chart-2 font-semibold">{limitWarning}</div>
@@ -2223,13 +1965,27 @@ export default function EventDetailPage() {
   const entriesSummaryRows = buildEntriesSummary({ allMainEntries, allQualEntries, withdrawnEntries, luckyLosers, event });
 
   // ---- CRUD ----------------------------------------------------------------
+  // Reloads main + qualifying after a rank-engine write — needed (not just
+  // optional) because a cascading placement can silently bump an EXISTING
+  // entry to a different draw_type/position, which the old optimistic
+  // "append the new row" pattern wouldn't reflect.
+  async function reloadEntryBuckets() {
+    const [mainData, qualData] = await Promise.all([
+      api.getDrawEntries(eventId, 'main'),
+      event?.hasQualifying ? api.getDrawEntries(eventId, 'qualifying') : Promise.resolve([]),
+    ]);
+    setAllMainEntries(mainData);
+    setAllQualEntries(qualData);
+    setEntries(drawType === 'qualifying' ? qualData : mainData);
+  }
+
   async function handleSaveEntry(entryId, formData) {
     if (entryId) {
       const updated = await api.updateDrawEntry(entryId, formData);
       setEntries(prev => prev.map(e => e.id === entryId ? updated : e));
     } else {
-      const created = await api.addDrawEntry(eventId, drawType, formData);
-      setEntries(prev => [...prev, created].sort((a, b) => a.position - b.position));
+      await api.addDrawEntryWithPlacement(eventId, formData);
+      await reloadEntryBuckets();
     }
   }
 
@@ -2284,14 +2040,22 @@ export default function EventDetailPage() {
     } catch (err) { setError(err.message); }
   }
 
-  async function handleBulkImport(importedEntries, importDrawType, options = {}) {
-    const dt = importDrawType || drawType;
-    const mapped = importedEntries.map(e => ({ ...e, isAlternate: options.isAlternate || false }));
-    const created = await api.bulkAddDrawEntries(eventId, dt, mapped);
-    if (dt === 'withdrawal') {
+  // Entries-tab Bulk Import: withdrawal rows go straight into the withdrawal
+  // bucket (unranked, explicit status); everything else is placed by the
+  // rank-based cascading engine, same as a single Add Player.
+  async function handleBulkImportPlacement(entries, withdrawalEntries, { onProgress } = {}) {
+    if (withdrawalEntries?.length) {
+      const created = await api.bulkAddDrawEntries(eventId, 'withdrawal', withdrawalEntries);
       setWithdrawnEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
-    } else {
-      setEntries(prev => [...prev, ...created].sort((a, b) => a.position - b.position));
+    }
+    if (entries?.length) {
+      const result = await api.bulkAddDrawEntriesWithPlacement(eventId, entries, { onProgress });
+      await reloadEntryBuckets();
+      if (result.failed) {
+        throw new Error(
+          `Placed ${result.placed.length} of ${entries.length} — stopped at "${result.failed.row.familyName}": ${result.failed.error.message}`
+        );
+      }
     }
   }
 
@@ -2646,13 +2410,22 @@ export default function EventDetailPage() {
             </div>
           </div>
 
+          {/* Add Player / Bulk Import — Entries tab only. Every new entry
+              lands here first and is placed into Main/Qualifying/Alternates
+              by the rank engine; other tabs are placement outcomes, not
+              entry points, so they no longer carry these buttons. */}
+          {activeTab === 'entries' && isOwner && viewMode !== 'bracket' && (
+          <div className="flex flex-wrap items-start gap-2">
+            <Button onClick={() => { setEditingEntry(null); setShowAdd(true); }}>+ Add Player</Button>
+            <Button variant="outline" onClick={() => setShowBulk(true)}>Bulk Import</Button>
+          </div>
+          )}
+
           {/* Action buttons — context-aware; hidden on read-only summary tabs */}
           {!['lucky_losers', 'entries'].includes(activeTab) && (
           <div className="flex flex-wrap items-start gap-2">
             {isOwner && viewMode !== 'bracket' && (
               <>
-                <Button onClick={() => { setEditingEntry(null); setShowAdd(true); }}>+ Add Player</Button>
-                <Button variant="outline" onClick={() => setShowBulk(true)}>Bulk Import</Button>
                 {hasSeededPlayers && (
                   <Button variant="outline" onClick={handleAutoSeed} disabled={seeding}>
                     {seeding ? 'Seeding…' : '⚡ Auto-Seed'}
@@ -2885,7 +2658,7 @@ export default function EventDetailPage() {
       ) : activeTab === 'alternates' ? (
         <div>
           {alternateEntries.length === 0 ? (
-            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No alternates yet. Use + Add Player (alternate) or import via Bulk Import → Alternates tab.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No alternates yet — alternates fill automatically once Main{event?.hasQualifying ? '/Qualifying' : ''} is full. Add players from the Entries tab.</div>
           ) : (
             <div className="rounded-sm border border-border overflow-x-auto">
               <Table>
@@ -2911,7 +2684,7 @@ export default function EventDetailPage() {
       ) : activeTab === 'withdrawal' ? (
         <div>
           {withdrawnEntries.length === 0 ? (
-            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No withdrawal list entries. Use Bulk Import → Full List to import the full acceptance list including withdrawals.</div>
+            <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No withdrawal list entries. On the Entries tab, Bulk Import rows marked WD/Withdraw in the StatusCode column land here automatically.</div>
           ) : (
             <div className="rounded-sm border border-border overflow-x-auto">
               <Table>
@@ -2964,7 +2737,7 @@ export default function EventDetailPage() {
 
         ) : mainEntries.length === 0 ? (
           <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
-            {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import.' : 'No players entered yet.'}
+            {isOwner ? 'No players entered yet. Use + Add Player or Bulk Import on the Entries tab.' : 'No players entered yet.'}
           </div>
 
         ) : viewMode === 'bracket' ? (
@@ -3040,7 +2813,7 @@ export default function EventDetailPage() {
                 </div>
                 {alternateEntries.length === 0 ? (
                   <div className="border border-dashed border-border rounded-sm p-4 text-center text-sm text-muted-foreground">
-                    None yet — check "Alternate / replacement entry" in + Add Player.
+                    None yet — alternates fill automatically from the Entries tab once the draw is full.
                   </div>
                 ) : (
                   <div className="rounded-sm border border-border overflow-x-auto">
@@ -3090,8 +2863,8 @@ export default function EventDetailPage() {
       )}
       {showBulk && (
         <BulkImportModal
-          event={event} drawType={drawType} existingEntries={entries}
-          onImport={handleBulkImport}
+          event={event}
+          onImport={handleBulkImportPlacement}
           onWithdraw={handleBulkWithdraw}
           onClose={() => setShowBulk(false)}
         />
