@@ -2202,6 +2202,36 @@ export default function EventDetailPage() {
     }
   }
 
+  // ---- PROMOTE QUALIFIERS (Phase 6) ----------------------------------------
+  // Shared by the manual button and the auto-trigger fired when the
+  // qualifying Final completes (see handleScoreMatch). Safe to re-run —
+  // promoteQualifiers() just overwrites the same Q slots, so re-running after
+  // a score correction resyncs the main draw.
+  async function runQualifierPromotion({ switchToMainTab } = {}) {
+    setError('');
+    try {
+      const winners = await api.getQualifyingWinners(eventId);
+      if (!winners) { setError('Not all qualifying matches are complete.'); return; }
+      await api.promoteQualifiers(eventId, winners);
+      if (switchToMainTab) {
+        setDrawType('main');
+        setMatches([]);
+        setViewMode('list');
+        setSwapMode(false);
+        setSelectedEntry(null);
+      }
+
+      const playerIds = winners.filter(w => w.playerId).map(w => w.playerId);
+      notifyUsers(playerIds, {
+        type: 'qualifier_promoted',
+        title: `You qualified: ${event?.category} ${event?.ageGroup}`,
+        body: `Congratulations — you've been promoted from qualifying to the main draw of ${week?.name || 'your tournament'}.`,
+      });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   // ---- SCORE A MATCH -------------------------------------------------------
   async function handleScoreMatch(matchId, { score, winnerEntryId, outcomeType, status, umpire }) {
     const match = matches.find(m => m.id === matchId);
@@ -2224,35 +2254,25 @@ export default function EventDetailPage() {
     const fresh = await api.getEventMatches(eventId, drawType);
     setMatches(fresh);
     setScoringMatch(null);
+
+    // Auto-promote qualifiers the instant every match in the qualifying
+    // Final round is complete — no manual click needed.
+    if (drawType === 'qualifying' && qualDecidingRound > 0 && match.round === qualDecidingRound) {
+      const decidingMatches = fresh.filter(m => m.round === qualDecidingRound);
+      const decidingComplete = decidingMatches.length === event?.qualifyingSpots
+        && decidingMatches.every(m => m.status === 'complete');
+      if (decidingComplete) {
+        await runQualifierPromotion();
+      }
+    }
   }
 
-  // ---- PROMOTE QUALIFIERS (Phase 6) ----------------------------------------
   async function handlePromoteQualifiers() {
     if (!window.confirm(
       `Promote ${event.qualifyingSpots} qualifier(s) to the main draw?\n` +
       'This will overwrite Q placeholder entries in the main draw.'
     )) return;
-    setError('');
-    try {
-      const winners = await api.getQualifyingWinners(eventId);
-      if (!winners) { setError('Not all qualifying matches are complete.'); return; }
-      await api.promoteQualifiers(eventId, winners);
-      // Switch to main draw tab
-      setDrawType('main');
-      setMatches([]);
-      setViewMode('list');
-      setSwapMode(false);
-      setSelectedEntry(null);
-
-      const playerIds = winners.filter(w => w.playerId).map(w => w.playerId);
-      notifyUsers(playerIds, {
-        type: 'qualifier_promoted',
-        title: `You qualified: ${event?.category} ${event?.ageGroup}`,
-        body: `Congratulations — you've been promoted from qualifying to the main draw of ${week?.name || 'your tournament'}.`,
-      });
-    } catch (err) {
-      setError(err.message);
-    }
+    await runQualifierPromotion({ switchToMainTab: true });
   }
 
   // ---- SWAP ----------------------------------------------------------------
