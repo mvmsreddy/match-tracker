@@ -3520,23 +3520,30 @@ export async function approveAitaOrganizerClaim(claimId) {
 
   // Auto-fill every event this tournament likely has, from the official
   // AITA data we already have — rather than handing the organizer an empty
-  // tournament (or just one event) to build up by hand. A "Category" line
-  // like "U-14 & 16 Boys & Girls" tells us the full set: every detected age
-  // group x every detected gender's Singles/Doubles (+ Mixed Doubles when
-  // both halves of a pair are present) — see aitaGradeRules.js. Wrong or
-  // extra guesses are just an edit/delete away, per the call to keep this
-  // auto-fill aggressive rather than conservative. Falls back to a single
-  // event when the category is already one clean Singles/Doubles line (the
-  // common case), and creates nothing when there's no usable signal at all.
+  // tournament to build up by hand. A "Category" line like "U-14 & 16 Boys &
+  // Girls" tells us the full set: every detected age group x every detected
+  // gender's Singles/Doubles (+ Mixed Doubles when both halves of a pair are
+  // present) — see aitaGradeRules.js. Age groups and genders are detected
+  // independently, though, and a category string can carry one without the
+  // other (confirmed live: "U-12 & 14" with no gender words at all) — when
+  // genders come back empty, default to the standard 5-category AITA junior
+  // (or adult) spread for whatever age groups we did find, rather than
+  // creating nothing. Wrong or extra guesses are just an edit/delete away —
+  // this auto-fill is deliberately aggressive, not conservative.
   const detectedAgeGroups = extractAgeGroupsFromCategoryText(t.category);
   const ageGroups = detectedAgeGroups.length > 0
     ? detectedAgeGroups
     : [mapAitaAgeGroupToU(t.ageGroup) || 'Open'];
+  const isJunior = ageGroups.some(g => /^U\d+$/.test(g));
 
   const detectedCategories = categoriesForGenders(extractGendersFromCategoryText(t.category));
   const categories = detectedCategories.length > 0
     ? detectedCategories
-    : (t.category && /single|double/i.test(t.category) ? [t.category] : []);
+    : (t.category && /single|double/i.test(t.category)
+      ? [t.category]
+      : (isJunior
+        ? ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles']
+        : ['Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles', 'Mixed Doubles']));
 
   const createdEvents = [];
   for (const ageGroup of ageGroups) {
