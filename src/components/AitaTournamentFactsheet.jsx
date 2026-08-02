@@ -539,6 +539,16 @@ export default function AitaTournamentFactsheet({ t }) {
   const mainSinglesDraw = findDrawEvent(drawEvents, e => e.includes('main') && !e.includes('doubles'));
   const mainDoublesDraw = findDrawEvent(drawEvents, e => e.includes('doubles'));
 
+  // t.ageGroup is only ever ONE column from the AITA calendar grid — a
+  // listing spanning several age groups (like the dropdown above already
+  // detects from t.category) would otherwise show a single, incomplete
+  // "Age Group" row here that visibly disagrees with the dropdown right
+  // above it. Same extraction, so the two can never show different answers.
+  const detectedAgeGroupsForDisplay = extractAgeGroupsFromCategoryText(t.category);
+  const ageGroupDisplay = detectedAgeGroupsForDisplay.length > 1
+    ? `${detectedAgeGroupsForDisplay.join(' & ')} (multiple draws — see "Entering this tournament?" above)`
+    : t.ageGroup;
+
   const hasTourInfo = t.grade || t.ageGroup || t.entryDeadline || t.withdrawalDeadline || t.qualifyingStartDate
     || leaked?.week || leaked?.dateRange || qualifyingDraw || mainSinglesDraw || mainDoublesDraw;
   const hasVenue = venueName || venueAddress || t.city || venuePincode || venuePhone || venueEmail || t.surface || t.ballBrand || t.hasFloodlights || leaked?.mapUrl;
@@ -565,7 +575,7 @@ export default function AitaTournamentFactsheet({ t }) {
 
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
         <TableRow label="Tournament Category" value={t.grade} />
-        <TableRow label="Age Group" value={t.ageGroup} />
+        <TableRow label="Age Group" value={ageGroupDisplay} />
         <TableRow label="Tournament Week" value={leaked?.week} />
         <TableRow label="Tournament Dates" value={leaked?.dateRange} />
         <TableRow label="Entry Deadline" value={t.entryDeadline} danger />

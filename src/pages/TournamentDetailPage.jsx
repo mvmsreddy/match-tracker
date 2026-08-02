@@ -814,9 +814,11 @@ export default function TournamentDetailPage() {
       {/* Events list */}
       {events.length === 0 ? (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
-          {isOwner
-            ? 'No events yet. Click + Add Event to add the first category.'
-            : 'No events have been added to this tournament week yet.'}
+          {week?.source === 'aita_claimed' && isOwner
+            ? "We couldn't automatically detect this tournament's events from the AITA listing (its category info was missing or unclear) — click + Add Event to add them yourself."
+            : isOwner
+              ? 'No events yet. Click + Add Event to add the first category.'
+              : 'No events have been added to this tournament week yet.'}
         </div>
       ) : (
         <div className="space-y-2">
