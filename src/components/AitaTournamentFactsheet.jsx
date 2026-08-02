@@ -260,22 +260,43 @@ function OrganizerClaimWidget({ aitaTournamentId }) {
 // real draw entry (no draw exists in our system yet for an AITA-mirrored
 // tournament), so it's what the dashboard card and the admin nudge job key
 // off until someone uploads the actual draw sheet.
-function ParticipationWidget({ aitaTournamentId }) {
+//
+// sync-aita-calendar's calendar parser only keeps the FIRST age-group
+// column it finds for a given AITA tournament id — a listing that actually
+// spans several age groups/categories under one id only ever gets one of
+// them recorded on the aita_tournaments row. So t.category can't always be
+// trusted as "the" category the player is entering; when it isn't a clean
+// Singles/Doubles line, the player is asked to confirm which category and
+// age group instead of us guessing (same clarity check
+// approveAitaOrganizerClaim uses to decide whether to auto-fill an event).
+const CATEGORIES = ['Boys Singles', 'Girls Singles', 'Boys Doubles', 'Girls Doubles', 'Mixed Doubles', 'Men Singles', 'Women Singles', 'Men Doubles', 'Women Doubles'];
+const AGE_GROUPS = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
+
+function guessAgeGroup(rawAgeGroup) {
+  const m = (rawAgeGroup || '').match(/^Under\s*(\d+)$/i);
+  return m ? `U${m[1]}` : '';
+}
+
+function ParticipationWidget({ t }) {
   const { user } = useAuth();
   const [interest, setInterest] = useState(null); // undefined-until-loaded via null
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const categoryIsClear = t.category && /single|double/i.test(t.category);
+  const [pickCategory, setPickCategory] = useState('');
+  const [pickAgeGroup, setPickAgeGroup] = useState(guessAgeGroup(t.ageGroup));
+
   useEffect(() => {
     if (user?.role !== 'player') { setLoading(false); return; }
     let cancelled = false;
-    api.getMyAitaParticipationForTournament(aitaTournamentId)
+    api.getMyAitaParticipationForTournament(t.id)
       .then(row => { if (!cancelled) setInterest(row); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [aitaTournamentId, user?.role]);
+  }, [t.id, user?.role]);
 
   if (user?.role !== 'player' || loading) return null;
 
@@ -283,7 +304,8 @@ function ParticipationWidget({ aitaTournamentId }) {
     setBusy(true);
     setError('');
     try {
-      const row = await api.declareAitaParticipation(aitaTournamentId);
+      const selection = categoryIsClear ? undefined : { category: pickCategory, ageGroup: pickAgeGroup };
+      const row = await api.declareAitaParticipation(t.id, selection);
       setInterest(row);
     } catch (e) {
       setError(e.message || 'Could not save — try again');
@@ -296,7 +318,7 @@ function ParticipationWidget({ aitaTournamentId }) {
     setBusy(true);
     setError('');
     try {
-      await api.withdrawAitaParticipation(aitaTournamentId);
+      await api.withdrawAitaParticipation(t.id);
       setInterest(null);
     } catch (e) {
       setError(e.message || 'Could not save — try again');
@@ -305,23 +327,53 @@ function ParticipationWidget({ aitaTournamentId }) {
     }
   }
 
+  const needsSelection = !categoryIsClear && !interest;
+  const canDeclare = categoryIsClear || (pickCategory && pickAgeGroup);
+
   return (
-    <div className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center gap-3">
-      {interest ? (
-        <>
-          <span className="text-sm font-semibold text-accent-ink">✓ You're playing this</span>
-          <span className="text-xs text-muted-foreground">Track it from your dashboard — upload the draw sheet once it's out.</span>
-          <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground" onClick={handleWithdraw} disabled={busy}>
-            Not playing anymore
-          </Button>
-        </>
-      ) : (
-        <>
-          <span className="text-sm text-muted-foreground">Entering this tournament?</span>
-          <Button size="sm" className="ml-auto" onClick={handleDeclare} disabled={busy}>
-            I'm Playing This
-          </Button>
-        </>
+    <div className="rounded-sm border border-border bg-card p-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        {interest ? (
+          <>
+            <span className="text-sm font-semibold text-accent-ink">✓ You're playing this</span>
+            <span className="text-xs text-muted-foreground">
+              {(interest.selectedCategory || interest.selectedAgeGroup)
+                ? [interest.selectedAgeGroup, interest.selectedCategory].filter(Boolean).join(' · ')
+                : "Track it from your dashboard — upload the draw sheet once it's out."}
+            </span>
+            <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground" onClick={handleWithdraw} disabled={busy}>
+              Not playing anymore
+            </Button>
+          </>
+        ) : (
+          <>
+            <span className="text-sm text-muted-foreground">Entering this tournament?</span>
+            <Button size="sm" className="ml-auto" onClick={handleDeclare} disabled={busy || !canDeclare}>
+              I'm Playing This
+            </Button>
+          </>
+        )}
+      </div>
+      {needsSelection && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">This listing covers more than one draw — which one are you entering?</span>
+          <select
+            className="rounded-sm border border-input bg-transparent px-2 py-1 text-xs"
+            value={pickAgeGroup}
+            onChange={e => setPickAgeGroup(e.target.value)}
+          >
+            <option value="">Age group…</option>
+            {AGE_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+          <select
+            className="rounded-sm border border-input bg-transparent px-2 py-1 text-xs"
+            value={pickCategory}
+            onChange={e => setPickCategory(e.target.value)}
+          >
+            <option value="">Category…</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       )}
       {error && <div className="w-full text-xs text-destructive">{error}</div>}
     </div>
@@ -336,7 +388,7 @@ function AitaTournamentActionWidget({ t }) {
   if (t.linkedTournamentWeekId) return <LiveOnPlatformBanner t={t} />;
   return (
     <>
-      <ParticipationWidget aitaTournamentId={t.id} />
+      <ParticipationWidget t={t} />
       <OrganizerClaimWidget aitaTournamentId={t.id} />
     </>
   );

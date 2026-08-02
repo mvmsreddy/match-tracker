@@ -2916,19 +2916,32 @@ function rowToAitaParticipation(row) {
     status: row.status,
     createdAt: row.created_at,
     lastNudgedAt: row.last_nudged_at,
+    // Phase 49 — only set when the tournament's own category/age_group
+    // wasn't a reliable single answer and the player picked explicitly.
+    selectedCategory: row.selected_category,
+    selectedAgeGroup: row.selected_age_group,
     tournament: row.aita_tournaments ? rowToAitaTournament(row.aita_tournaments) : null,
   };
 }
 
 // Idempotent — re-declaring after a withdrawal flips status back to 'declared'
 // instead of erroring on the (aita_tournament_id, user_id) unique constraint.
-export async function declareAitaParticipation(aitaTournamentId) {
+// `selection` ({ category, ageGroup }) is only meaningful — and only ever
+// passed by the UI — when the tournament's own category isn't a clean
+// Singles/Doubles line (see ParticipationWidget in AitaTournamentFactsheet.jsx).
+export async function declareAitaParticipation(aitaTournamentId, selection) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   const { data, error } = await supabase
     .from('aita_participation_interest')
     .upsert(
-      { aita_tournament_id: aitaTournamentId, user_id: user.id, status: 'declared' },
+      {
+        aita_tournament_id: aitaTournamentId,
+        user_id: user.id,
+        status: 'declared',
+        selected_category: selection?.category || null,
+        selected_age_group: selection?.ageGroup || null,
+      },
       { onConflict: 'aita_tournament_id,user_id' },
     )
     .select()
@@ -3369,6 +3382,15 @@ export async function applyAitaResultsSheet({ uploadId, eventId, results }) {
 // the platform" signal the crowdsourced draw-publish path also sets.
 // ---------------------------------------------------------------------------
 
+// AITA calendar/factsheet age groups are spelled out ("Under 14"); the
+// tournament schema's events.age_group is 'U14'-style. Returns '' when it
+// doesn't match that pattern (e.g. 'Men'/'Women'/'Senior', which have no
+// junior-style U-code equivalent).
+function mapAitaAgeGroupToU(raw) {
+  const m = (raw || '').match(/^Under\s*(\d+)$/i);
+  return m ? `U${m[1]}` : '';
+}
+
 function rowToAitaOrganizerClaim(row) {
   return {
     id: row.id,
@@ -3489,8 +3511,7 @@ export async function approveAitaOrganizerClaim(claimId) {
   // draw size) — guessing wrong there makes more cleanup work than none.
   let event = null;
   if (t.category && /single|double/i.test(t.category)) {
-    const ageGroupMatch = (t.ageGroup || '').match(/^Under\s*(\d+)$/i);
-    const ageGroup = ageGroupMatch ? `U${ageGroupMatch[1]}` : 'Open';
+    const ageGroup = mapAitaAgeGroupToU(t.ageGroup) || 'Open';
     const defaults = getAitaDrawDefaults(t.grade, t.category);
     event = await createEvent(week.id, {
       category: t.category,
@@ -3564,13 +3585,20 @@ export async function rejectAitaOrganizerClaim(claimId) {
 // claimed, not yet resolved into (or out of) this specific event's entries.
 // Resolved via the event's tournament_week -> aita_tournaments reverse link
 // (linked_tournament_week_id), same lookup shape as uploadAitaResultsSheet.
+// Filters to interest rows whose confirmed (or, absent an explicit
+// selection, the tournament's own) category + age group actually matches
+// THIS event — a single AITA calendar listing can cover several draws (see
+// the phase49 migration comment), so without this a Girls U16 declaration
+// could show up under a Boys U14 event's accept/decline list. Rows with no
+// signal either way (nothing to compare) are still surfaced rather than
+// silently dropped, so the organizer at least gets a chance to look.
 export async function getUnresolvedAitaInterestForEvent(eventId) {
-  const { data: event, error: eErr } = await supabase.from('events').select('tournament_week_id').eq('id', eventId).single();
+  const { data: event, error: eErr } = await supabase.from('events').select('tournament_week_id, category, age_group').eq('id', eventId).single();
   if (eErr) throw new Error(eErr.message);
 
   const { data: t, error: tErr } = await supabase
     .from('aita_tournaments')
-    .select('id')
+    .select('id, category, age_group')
     .eq('linked_tournament_week_id', event.tournament_week_id)
     .maybeSingle();
   if (tErr) throw new Error(tErr.message);
@@ -3578,22 +3606,28 @@ export async function getUnresolvedAitaInterestForEvent(eventId) {
 
   const { data, error } = await supabase
     .from('aita_participation_interest')
-    .select('id, user_id, created_at, user:user_profiles(id, display_name, aita_reg, state_abbr, ranking, date_of_birth)')
+    .select('id, user_id, created_at, selected_category, selected_age_group, user:user_profiles(id, display_name, aita_reg, state_abbr, ranking, date_of_birth)')
     .eq('aita_tournament_id', t.id)
     .eq('status', 'declared')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
 
-  return (data || []).map(row => ({
-    id: row.id,
-    userId: row.user_id,
-    createdAt: row.created_at,
-    displayName: row.user?.display_name || 'Unknown player',
-    aitaReg: row.user?.aita_reg || null,
-    stateAbbr: row.user?.state_abbr || null,
-    ranking: row.user?.ranking || null,
-    dateOfBirth: row.user?.date_of_birth || null,
-  }));
+  const tournamentAgeGroup = mapAitaAgeGroupToU(t.age_group);
+
+  return (data || [])
+    .map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      createdAt: row.created_at,
+      category: row.selected_category || t.category || null,
+      ageGroup: row.selected_age_group || tournamentAgeGroup || null,
+      displayName: row.user?.display_name || 'Unknown player',
+      aitaReg: row.user?.aita_reg || null,
+      stateAbbr: row.user?.state_abbr || null,
+      ranking: row.user?.ranking || null,
+      dateOfBirth: row.user?.date_of_birth || null,
+    }))
+    .filter(r => (!r.category || r.category === event.category) && (!r.ageGroup || r.ageGroup === event.age_group));
 }
 
 // interestRow is exactly one entry from getUnresolvedAitaInterestForEvent's

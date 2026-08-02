@@ -394,7 +394,10 @@ function PlayerTournamentSections({ loading, error, tournaments, todayMatches, r
               <Card key={r.id} className="p-3 space-y-2">
                 <Link to={`/aita-calendar/${t.id}`} className="text-sm font-bold hover:text-accent-ink">{t.name}</Link>
                 <div className="text-xs text-muted-foreground -mt-1.5">
-                  {[t.ageGroup, t.category, t.grade].filter(Boolean).join(' · ')}
+                  {/* Prefer what the player explicitly confirmed (only asked
+                      when the tournament's own category was ambiguous —
+                      see ParticipationWidget) over the tournament's raw fields. */}
+                  {[r.selectedAgeGroup || t.ageGroup, r.selectedCategory || t.category, t.grade].filter(Boolean).join(' · ')}
                   {(t.ageGroup || t.category || t.grade) && (t.venue || t.city || t.startDate) ? ' · ' : ''}
                   {[t.venue, t.city, t.startDate].filter(Boolean).join(' · ')}
                 </div>
