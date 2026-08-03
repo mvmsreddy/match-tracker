@@ -1408,16 +1408,19 @@ export async function getMyEntries(playerId) {
   // created and linked to this account (organiser manual-link, or phase 45's
   // admin-published crowdsourced draws) — without the OR, a linked-but-not-
   // self-entered tournament would never show up here.
+  // draw_entries has no created_at column (see phase2_schema.sql — it was
+  // never added), so recency is sorted client-side by the joined
+  // tournament week's start_date instead of ordering the query on a
+  // column that doesn't exist (that previously threw on every call).
   const { data, error } = await supabase
     .from('draw_entries')
     .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade, source))')
-    .or(`entered_by.eq.${effectiveId},player_id.eq.${effectiveId}`)
-    .order('created_at', { ascending: false });
+    .or(`entered_by.eq.${effectiveId},player_id.eq.${effectiveId}`);
   if (error) throw new Error(error.message);
   return (data || []).map(row => ({
     ...rowToEntry(row),
     event: row.event ? { ...rowToEvent(row.event), week: row.event.tournament_week ? rowToWeek(row.event.tournament_week) : null } : null,
-  }));
+  })).sort((a, b) => (b.event?.week?.startDate || '').localeCompare(a.event?.week?.startDate || ''));
 }
 
 // "Navy" design system — Profile annual entry allowance. Counts distinct
