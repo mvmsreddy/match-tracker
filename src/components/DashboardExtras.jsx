@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
-import { Activity, Dumbbell, Apple, X, ArrowRight, Sparkles } from 'lucide-react';
+import { Activity, X, ArrowRight, Sparkles } from 'lucide-react';
 import { reminderDismissedToday, dismissReminderToday } from '@/lib/localStore';
 
 /**
@@ -57,17 +57,15 @@ export function LogTodayReminder({ loggedToday, reminderHour = 18 }) {
 }
 
 /**
- * QuickAddGrid — 3 shortcut tiles (Match / Drill / Meal)
+ * QuickAddGrid — shortcut tile (Match)
  */
 export function QuickAddGrid() {
   const navigate = useNavigate();
   const tiles = [
     { id: 'match', label: 'Log Match', desc: 'Track a match', icon: Activity, to: '/track', color: 'primary' },
-    { id: 'drill', label: 'Log Drill', desc: 'Add a training session', icon: Dumbbell, to: '/drills', color: 'chart-3' },
-    { id: 'meal', label: 'Log Meal', desc: 'Nutrition + water', icon: Apple, to: '/nutrition', color: 'chart-4' },
   ];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="quick-add-grid">
+    <div className="grid grid-cols-1 gap-3" data-testid="quick-add-grid">
       {tiles.map(t => {
         const Icon = t.icon;
         return (
