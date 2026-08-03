@@ -5,16 +5,16 @@ export function freshPending(server) {
     server,
     serveAttempt: '1st',       // '1st' | '2nd'
     serviceChoice: null,        // 'ace' | 'doubleFault' | 'returnWinner' | 'returnError' | 'ballIn'
-    returnErrorReason: null,    // 'ForcedError' | 'UnforcedError' (chosen after Return Error tap)
+    returnErrorReason: null,    // 'ForcedError' | 'UnforcedError' | 'Error' (basic) — chosen after Return Error tap
     ballInWho: null,            // 'self' | 'opp' — who ended the rally
-    ballInReason: null,         // 'Winner' | 'ForcedError' | 'UnforcedError'
+    ballInReason: null,         // 'Winner' | 'ForcedError' | 'UnforcedError' | 'Error' (basic)
     shotWing: null,             // 'Forehand' | 'Backhand' | 'Other'
     shotType: null,             // 'Ground' | 'Volley' | etc. | infraction sub-type
     stroke: null,               // combined: 'Ground Forehand', 'Net Touch', etc.
     rallyCount: null,           // null = not yet selected; must be chosen before ballInPlay
     infraction: null,           // null = not yet answered; 'none' = skipped; string = infraction type
-    firstFaultLocation: null,   // 'Long' | 'Wide' | 'Net' — location of the 1st serve fault
-    location: null,             // 'Long' | 'Wide' | 'Net' — where an unforced error landed
+    firstFaultLocation: null,   // 'Long' | 'Wide' | 'Net' | 'Out' (basic) — location of the 1st serve fault
+    location: null,             // 'Long' | 'Wide' | 'Net' | 'Out' (basic) — where an error landed
     shotHitFrom: null,          // court zone name — where the rally-ending shot was struck from
     shotDroppedAt: null,        // court zone name — where that shot landed
   };

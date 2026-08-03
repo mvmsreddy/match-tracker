@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { computeServeStats, computeStrokeBreakdown, computeRallyBreakdown, computeBreakPointEvents } from '../../lib/analytics';
+import { computeStats, computeServeStats, computeStrokeBreakdown, computeRallyBreakdown, computeBreakPointEvents } from '../../lib/analytics';
 import { strokeWinRates } from '../../lib/segmentAnalytics';
 import { Button } from '@/components/primitives/button';
 
@@ -27,7 +27,7 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose, can
     if (!tm) return null;
     const serve = computeServeStats(points, 'self');
     const winners = points.filter(pt => pt.endedBy === 'self' && pt.reason === 'Winner').length;
-    const unforced = points.filter(pt => pt.endedBy === 'self' && pt.reason === 'UnforcedError').length;
+    const unforced = computeStats(points).self.ue;
     return [
       { label: '1st serve in', value: `${Math.round(serve.firstPct)}%`, cls: 'text-foreground' },
       { label: 'Aces / DF', value: `${serve.aces} / ${serve.dfs}`, cls: 'text-accent-ink' },

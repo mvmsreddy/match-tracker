@@ -9,30 +9,32 @@ const SHOT_TYPES = ['Ground', 'Slice', 'Volley', 'Smash', 'Lob', 'Passing Shot',
 
 function getActiveStep(pending, trackingMode = 'expert') {
   // Tracking-detail tiers: which optional steps get shown, from fastest to most thorough.
-  const wantsShotDetail = trackingMode !== 'basic';      // shot wing/type + stroke capture
-  const wantsRallyCount = trackingMode !== 'basic';      // rally-length step
-  const wantsErrorLocation = trackingMode !== 'basic';   // Long/Wide/Net for unforced errors
-  const wantsCourtTap = trackingMode === 'expert';       // hit-from/dropped-at diagram
+  const wantsShotWing = true;                       // forehand/backhand capture — basic, advanced, expert
+  const wantsShotType = trackingMode !== 'basic';    // 7-type shot capture — advanced/expert only
+  const wantsRallyCount = true;                      // rally-length step — basic, advanced, expert
+  const wantsErrorLocation = true;                   // Net/Out (basic) or Long/Wide/Net (advanced/expert)
+  const wantsCourtTap = trackingMode === 'expert';   // hit-from/dropped-at diagram
 
   if (!pending.serviceChoice) return 'serviceScreen';
   if (pending.serviceChoice === 'faultPending') return 'faultLocation';
   if (pending.serviceChoice === 'returnError' && !pending.returnErrorReason) return 'returnErrorType';
-  if (pending.serviceChoice === 'returnError' && wantsShotDetail && !pending.shotWing) return 'shotWing';
+  if (pending.serviceChoice === 'returnError' && wantsShotWing && !pending.shotWing) return 'shotWing';
   if (pending.serviceChoice === 'returnError' && wantsCourtTap && !pending.shotDroppedAt) return 'shotLocation';
-  if (pending.serviceChoice === 'returnError' && pending.returnErrorReason === 'UnforcedError' && wantsErrorLocation && !pending.location) return 'errorLocation';
+  if (pending.serviceChoice === 'returnError' && (pending.returnErrorReason === 'UnforcedError' || pending.returnErrorReason === 'Error') && wantsErrorLocation && !pending.location) return 'errorLocation';
   if (pending.serviceChoice === 'ballIn' && wantsRallyCount && pending.rallyCount === null) return 'rallySelect';
   if (pending.serviceChoice === 'ballIn' && !pending.ballInReason) return 'ballInPlay';
-  const needsShot = wantsShotDetail && (pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn');
+  const needsShot = wantsShotWing && (pending.serviceChoice === 'returnWinner' || pending.serviceChoice === 'ballIn');
   if (needsShot && !pending.stroke) {
     if (!pending.shotWing) return 'shotWing';
     return 'shotType';
   }
-  // Shot-detail step is either answered, or skipped entirely for this tier.
-  const shotDetailDone = !wantsShotDetail || !!pending.stroke;
+  // Shot-detail step is either answered, or skipped entirely for this path (Basic commits
+  // stroke straight off the wing tap — see handleShotWing — so it never reaches shotType).
+  const shotDetailDone = !needsShot || !!pending.stroke;
   // Every rally-ending shot gets a court tap: where was it hit from, where did it drop?
   if (needsShot && shotDetailDone && wantsCourtTap && !pending.shotDroppedAt) return 'shotLocation';
-  // Unforced errors get one more tap: where did it land?
-  if (pending.serviceChoice === 'ballIn' && pending.ballInReason === 'UnforcedError' && shotDetailDone && wantsErrorLocation && !pending.location) {
+  // Errors get one more tap: where did it land?
+  if (pending.serviceChoice === 'ballIn' && (pending.ballInReason === 'UnforcedError' || pending.ballInReason === 'Error') && shotDetailDone && wantsErrorLocation && !pending.location) {
     return 'errorLocation';
   }
   return null;
@@ -146,7 +148,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   }
 
   function handleReturnError() {
-    setPendingStep((p) => ({ ...p, serviceChoice: 'returnError' }));
+    // Basic skips the Forced/Unforced judgment call entirely — pre-fill the reason so
+    // getActiveStep never routes through the returnErrorType screen for this tier.
+    setPendingStep((p) => ({
+      ...p,
+      serviceChoice: 'returnError',
+      returnErrorReason: trackingMode === 'basic' ? 'Error' : null,
+    }));
   }
 
   function handleBallIn() {
@@ -172,6 +180,11 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
       // Every return error still has the Shot Location court tap ahead — don't commit yet.
       const stroke = 'Return ' + wing;
       setPendingStep((p) => ({ ...p, shotWing: wing, stroke }));
+      return;
+    }
+    if (trackingMode === 'basic') {
+      // Basic skips Select Shot entirely — the wing alone is the stroke detail this tier records.
+      setPendingStep((p) => ({ ...p, shotWing: wing, stroke: wing }));
       return;
     }
     setPendingStep((p) => ({ ...p, shotWing: wing }));
@@ -226,6 +239,8 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   );
   const serveLabel = pending.serveAttempt === '1st' ? '1st Serve' : '2nd Serve';
   const receiver = pending.server === 'self' ? 'opp' : 'self';
+  // Basic can't reliably judge Long vs. Wide — collapse to Net/Out for that tier.
+  const locationOptions = trackingMode === 'basic' ? ['Net', 'Out'] : ['Long', 'Wide', 'Net'];
 
   const breadcrumbs = [];
   if (pending.serveAttempt === '2nd' && !pending.serviceChoice) {
@@ -275,9 +290,9 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
               {pending.serveAttempt === '2nd' ? 'Double Fault — Where?' : '1st Serve Fault — Where?'}
             </div>
             <div className="flex flex-wrap gap-2">
-              <ChipButton variant="warn" onClick={() => handleFaultLocation('Long')}>Long</ChipButton>
-              <ChipButton variant="warn" onClick={() => handleFaultLocation('Wide')}>Wide</ChipButton>
-              <ChipButton variant="warn" onClick={() => handleFaultLocation('Net')}>Net</ChipButton>
+              {locationOptions.map((loc) => (
+                <ChipButton key={loc} variant="warn" onClick={() => handleFaultLocation(loc)}>{loc}</ChipButton>
+              ))}
             </div>
           </>
         )}
@@ -371,12 +386,20 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
                   <ChipButton variant="self" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'Winner')}>
                     Winner
                   </ChipButton>
-                  <ChipButton variant="forced" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
-                    Forced Error
-                  </ChipButton>
-                  <ChipButton variant="warn" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
-                    Unforced Error
-                  </ChipButton>
+                  {trackingMode === 'basic' ? (
+                    <ChipButton variant="warn" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'Error')}>
+                      Error
+                    </ChipButton>
+                  ) : (
+                    <>
+                      <ChipButton variant="forced" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'ForcedError')}>
+                        Forced Error
+                      </ChipButton>
+                      <ChipButton variant="warn" className="min-h-[92px] flex-1" onClick={() => handleBallInOutcome(who, 'UnforcedError')}>
+                        Unforced Error
+                      </ChipButton>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -445,11 +468,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
 
         {activeStep === 'errorLocation' && (
           <>
-            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">Unforced Error — Where did it go?</div>
+            <div className="mb-2.5 flex-shrink-0 font-mono text-xs font-bold uppercase tracking-wider text-accent-ink">
+              {trackingMode === 'basic' ? 'Error — Where did it go?' : 'Unforced Error — Where did it go?'}
+            </div>
             <div className="flex flex-wrap gap-2">
-              <ChipButton variant="warn" onClick={() => handleErrorLocation('Long')}>Long</ChipButton>
-              <ChipButton variant="warn" onClick={() => handleErrorLocation('Wide')}>Wide</ChipButton>
-              <ChipButton variant="warn" onClick={() => handleErrorLocation('Net')}>Net</ChipButton>
+              {locationOptions.map((loc) => (
+                <ChipButton key={loc} variant="warn" onClick={() => handleErrorLocation(loc)}>{loc}</ChipButton>
+              ))}
             </div>
           </>
         )}

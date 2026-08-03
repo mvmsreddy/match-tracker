@@ -7,7 +7,7 @@ export function computeStats(points) {
     const winners = points.filter((pt) => pt.endedBy === p && pt.reason === 'Winner').length;
     const forcedByThem = points.filter((pt) => pt.endedBy === other(p) && pt.reason === 'ForcedError').length;
     const wfe = winners + forcedByThem;
-    const ue = points.filter((pt) => pt.endedBy === p && pt.reason === 'UnforcedError').length;
+    const ue = points.filter((pt) => pt.endedBy === p && (pt.reason === 'UnforcedError' || pt.reason === 'Error')).length;
     const pointsWon = points.filter((pt) => pt.pointWinner === p).length;
     s[p] = { wfe, ue, ratio: ue > 0 ? (wfe / ue) : (wfe > 0 ? Infinity : 0), pointCount: pointsWon };
   });
@@ -34,7 +34,7 @@ export function computeStrokeBreakdown(points, player) {
   return strokes.map((st) => {
     const winners = points.filter((pt) => pt.endedBy === player && pt.reason === 'Winner' && matches(pt, st)).length;
     const forced = points.filter((pt) => pt.endedBy === other(player) && pt.reason === 'ForcedError' && matches(pt, st)).length;
-    const ue = points.filter((pt) => pt.endedBy === player && pt.reason === 'UnforcedError' && matches(pt, st)).length;
+    const ue = points.filter((pt) => pt.endedBy === player && (pt.reason === 'UnforcedError' || pt.reason === 'Error') && matches(pt, st)).length;
     return { stroke: st, wfe: winners + forced, ue };
   });
 }
@@ -69,7 +69,7 @@ export function computeReturnStats(points, player) {
   const won2nd = returnPts2nd.filter((pt) => pt.pointWinner === player).length;
   const retWinnersForced = points.filter((pt) => pt.server === server && pt.isReturn && pt.endedBy === player && pt.reason === 'Winner').length +
     points.filter((pt) => pt.server === server && pt.isReturn && pt.endedBy === server && pt.reason === 'ForcedError').length;
-  const retUE = points.filter((pt) => pt.server === server && pt.isReturn && pt.endedBy === player && pt.reason === 'UnforcedError').length;
+  const retUE = points.filter((pt) => pt.server === server && pt.isReturn && pt.endedBy === player && (pt.reason === 'UnforcedError' || pt.reason === 'Error')).length;
   return {
     gamesPlayed: gamesSet.size, totalReturnPts: returnPts1st.length + returnPts2nd.length, won1st, total1st: returnPts1st.length, won2nd, total2nd: returnPts2nd.length,
     retWinnersForced, retUE, ratio: retUE > 0 ? (retWinnersForced / retUE) : (retWinnersForced > 0 ? Infinity : 0),
@@ -82,13 +82,13 @@ export function computeReturnStrokeBreakdown(points, player) {
   return strokes.map((st) => {
     const wfe = points.filter((pt) => pt.server === server && pt.isReturn && strokeSide(pt.stroke) === st &&
       ((pt.endedBy === player && pt.reason === 'Winner') || (pt.endedBy === server && pt.reason === 'ForcedError'))).length;
-    const ue = points.filter((pt) => pt.server === server && pt.isReturn && strokeSide(pt.stroke) === st && pt.endedBy === player && pt.reason === 'UnforcedError').length;
+    const ue = points.filter((pt) => pt.server === server && pt.isReturn && strokeSide(pt.stroke) === st && pt.endedBy === player && (pt.reason === 'UnforcedError' || pt.reason === 'Error')).length;
     return { stroke: st, wfe, ue };
   });
 }
 
 export function computeFirstServeFaults(points, player) {
-  const counts = { Net: 0, Wide: 0, Long: 0 };
+  const counts = { Net: 0, Wide: 0, Long: 0, Out: 0 };
   points.filter((pt) => pt.server === player && pt.firstFaultLocation).forEach((pt) => { counts[pt.firstFaultLocation]++; });
   return counts;
 }
@@ -96,8 +96,8 @@ export function computeFirstServeFaults(points, player) {
 export function computeErrorLocations(points, player) {
   const categories = ['2nd Serve', 'FH Return', 'BH Return', 'Forehand', 'Backhand', 'Volley', 'Smash'];
   const data = {};
-  categories.forEach((c) => { data[c] = { Net: 0, Wide: 0, Long: 0 }; });
-  points.filter((pt) => pt.endedBy === player && (pt.reason === 'UnforcedError' || pt.reason === 'DoubleFault')).forEach((pt) => {
+  categories.forEach((c) => { data[c] = { Net: 0, Wide: 0, Long: 0, Out: 0 }; });
+  points.filter((pt) => pt.endedBy === player && (pt.reason === 'UnforcedError' || pt.reason === 'Error' || pt.reason === 'DoubleFault')).forEach((pt) => {
     let cat = null;
     const side = strokeSide(pt.stroke);
     if (pt.reason === 'DoubleFault') cat = '2nd Serve';
@@ -109,7 +109,7 @@ export function computeErrorLocations(points, player) {
     else if (side === 'Backhand') cat = 'Backhand';
     if (cat && pt.location) data[cat][pt.location]++;
   });
-  return categories.map((c) => ({ category: c, Net: data[c].Net, Wide: data[c].Wide, Long: data[c].Long }));
+  return categories.map((c) => ({ category: c, Net: data[c].Net, Wide: data[c].Wide, Long: data[c].Long, Out: data[c].Out }));
 }
 
 export function computeRallyBreakdown(points, server) {
@@ -120,7 +120,7 @@ export function computeRallyBreakdown(points, server) {
     const idx = bucketIdx(pt.rally);
     const bucket = pt.endedBy === server ? serverEnded : receiverEnded;
     if (pt.reason === 'Winner' || pt.reason === 'ForcedError') bucket.green[idx]++;
-    else if (pt.reason === 'UnforcedError') bucket.red[idx]++;
+    else if (pt.reason === 'UnforcedError' || pt.reason === 'Error') bucket.red[idx]++;
   });
   return { cats: ['1', '2', '3', '4', '5', '6', '7+'], serverEnded, receiverEnded };
 }
@@ -235,6 +235,7 @@ function describeBreakPointReason(reason, endedBy, stroke, player) {
   if (reason === 'Winner') return endedBy === player ? `${s} winner`.trim() : `opponent ${s} winner`.trim();
   if (reason === 'ForcedError') return endedBy === player ? `${s} forced error`.trim() : 'opponent forced error';
   if (reason === 'UnforcedError') return endedBy === player ? `${s} unforced error`.trim() : 'opponent unforced error';
+  if (reason === 'Error') return endedBy === player ? `${s} error`.trim() : 'opponent error';
   return 'point ended';
 }
 

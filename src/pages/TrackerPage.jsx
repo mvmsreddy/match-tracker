@@ -111,10 +111,8 @@ function mapAitaGradeToCircuit(rawGrade) {
 }
 
 const TRACKING_MODES = [
-  { value: 'quick', label: 'Quick', hint: 'Two big buttons + tap-to-tag chips — fastest possible entry, courtside.' },
-  { value: 'basic', label: 'Basic', hint: 'Just the score — who won each point, fastest entry.' },
-  { value: 'advanced', label: 'Advanced', hint: 'Adds rally length, shot wing/type, and error location.' },
-  { value: 'expert', label: 'Expert', hint: 'Full detail — court-tap shot placement and infractions.' },
+  { value: 'basic', label: 'Basic', hint: 'Rally length, forehand/backhand, and simplified net/out location — no shot-type ID or forced/unforced judgment needed.' },
+  { value: 'advanced', label: 'Advanced', hint: 'Adds shot type, forced/unforced judgment, and finer (long/wide/net) error location.' },
 ];
 
 // Temporarily disabled — Anthropic API billing not yet set up. Flip to true to re-enable.
@@ -444,7 +442,9 @@ function MatchRunningView({ t, onGoTrack }) {
 // ── New match form (shown when no match is running) ───────────────────────────
 function SetupForm({ t, onStart }) {
   const selfName = t.header.selfName || '';
-  const canStart = selfName.trim().length > 0;
+  const hasName = selfName.trim().length > 0;
+  const hasTrackingMode = !!t.trackingMode;
+  const canStart = hasName && hasTrackingMode;
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef(null);
@@ -712,7 +712,9 @@ function SetupForm({ t, onStart }) {
             ))}
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {(TRACKING_MODES.find((m) => m.value === t.trackingMode) || TRACKING_MODES[2]).hint}
+            {t.trackingMode
+              ? TRACKING_MODES.find((m) => m.value === t.trackingMode)?.hint
+              : 'Choose how much detail to capture per point.'}
           </p>
         </section>
 
@@ -720,7 +722,15 @@ function SetupForm({ t, onStart }) {
         <Button className="w-full" size="lg" disabled={!canStart} onClick={onStart}>
           {t.sessionType === 'practice' ? '▶ Start Practice' : '▶ Start Match'}
         </Button>
-        {!canStart && <p className="text-xs text-muted-foreground">Enter your name to continue</p>}
+        {!canStart && (
+          <p className="text-xs text-muted-foreground">
+            {!hasName && !hasTrackingMode
+              ? 'Enter your name and select a tracking detail level to continue'
+              : !hasName
+              ? 'Enter your name to continue'
+              : 'Select a tracking detail level to continue'}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

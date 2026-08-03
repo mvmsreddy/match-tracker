@@ -37,7 +37,7 @@ function initialState() {
     formatPreset: 'bo3-full',
     formatCustom: '',
     pointTarget: 10,
-    trackingMode: 'expert', // 'basic' | 'advanced' | 'expert' — how much detail the wizard asks for per point
+    trackingMode: null, // null until explicitly chosen at setup — 'basic' | 'advanced' (legacy sessions may still carry 'quick'/'expert')
     points: [],
     serverChoice: 'self',
     serverExplicitlyChosen: false,
@@ -274,7 +274,7 @@ export function useMatchTracker() {
       formatPreset: 'bo3-full',
       formatCustom: '',
       pointTarget: 10,
-      trackingMode: 'expert',
+      trackingMode: null,
     }));
   }, [user]);
 

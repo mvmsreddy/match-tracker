@@ -7,7 +7,7 @@ export function reasonLabel(pt, selfName, oppName) {
   const infractionNote = pt.infraction ? ' [' + pt.infraction + ']' : '';
   if (pt.reason === 'DoubleFault') return name + ' double fault (2nd: ' + pt.location + ')' + firstFaultNote;
   if (pt.reason === 'Winner') return name + ' ' + stroke + (pt.stroke === 'Serve' ? ' (ace)' : '') + ' winner' + (pt.isReturn ? ' (return)' : '') + firstFaultNote + infractionNote;
-  const kind = pt.reason === 'ForcedError' ? 'forced error' : 'unforced error';
+  const kind = pt.reason === 'ForcedError' ? 'forced error' : pt.reason === 'Error' ? 'error' : 'unforced error';
   const locSuffix = pt.location ? ' - ' + pt.location : '';
   return name + ' ' + stroke + ' ' + kind + locSuffix + (pt.isReturn ? ' (return)' : '') + firstFaultNote + infractionNote;
 }

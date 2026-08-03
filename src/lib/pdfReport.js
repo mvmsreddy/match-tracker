@@ -25,7 +25,7 @@ function reasonLabel(pt, selfName, oppName) {
   const infractionNote = pt.infraction ? ' [' + pt.infraction + ']' : '';
   if (pt.reason === 'DoubleFault') return name + ' double fault (2nd: ' + pt.location + ')' + firstFaultNote;
   if (pt.reason === 'Winner') return name + ' ' + stroke + (pt.stroke === 'Serve' ? ' (ace)' : '') + ' winner' + (pt.isReturn ? ' (return)' : '') + firstFaultNote + infractionNote;
-  const kind = pt.reason === 'ForcedError' ? 'forced error' : 'unforced error';
+  const kind = pt.reason === 'ForcedError' ? 'forced error' : pt.reason === 'Error' ? 'error' : 'unforced error';
   const locSuffix = pt.location ? ' - ' + pt.location : '';
   return name + ' ' + stroke + ' ' + kind + locSuffix + (pt.isReturn ? ' (return)' : '') + firstFaultNote + infractionNote;
 }
@@ -314,6 +314,7 @@ export function buildMatchPdf(ctx) {
   tableRow(['1st Serve Faults - Net', fsfSelf.Net, fsfOpp.Net], [marginX, 300, 440]);
   tableRow(['1st Serve Faults - Wide', fsfSelf.Wide, fsfOpp.Wide], [marginX, 300, 440]);
   tableRow(['1st Serve Faults - Long', fsfSelf.Long, fsfOpp.Long], [marginX, 300, 440]);
+  tableRow(['1st Serve Faults - Out', fsfSelf.Out, fsfOpp.Out], [marginX, 300, 440]);
   y += 10;
   ensureSpace(150);
   const serveChartRowY = y;
@@ -415,29 +416,34 @@ export function buildMatchPdf(ctx) {
     legendLabels: ['Winners/Forced', 'Unforced Errors'], title: "Points ending on returner's shot",
   });
 
+  // Basic tier records simplified Net/Out errors (no Long/Wide judgment) — a match can
+  // legitimately mix tiers since trackingMode is session-level, not stored per point.
+  const hasBasicErrors = points.some((pt) => pt.reason === 'Error');
+  const errLocHeading = 'Error Locations - ';
+
   doc.addPage(); y = 50;
-  sectionHeading('Unforced Error Locations - ' + selfName);
+  sectionHeading((hasBasicErrors ? errLocHeading : 'Unforced Error Locations - ') + selfName);
   ensureSpace(160);
   const errLoc = computeErrorLocations(points, 'self');
   y = pdfBarChart(doc, {
     x: marginX, y, width: 515, height: 90,
     categories: errLoc.map((r) => r.category),
-    series: [errLoc.map((r) => r.Net), errLoc.map((r) => r.Wide), errLoc.map((r) => r.Long)],
-    colors: [[127, 191, 63], [225, 72, 75], [30, 30, 30]],
-    legendLabels: ['Net', 'Wide', 'Long'],
+    series: [errLoc.map((r) => r.Net), errLoc.map((r) => r.Wide), errLoc.map((r) => r.Long), errLoc.map((r) => r.Out)],
+    colors: [[127, 191, 63], [225, 72, 75], [30, 30, 30], [184, 146, 42]],
+    legendLabels: ['Net', 'Wide', 'Long', 'Out'],
     title: 'Errors by shot and miss direction',
   });
   y += 16;
 
-  sectionHeading('Unforced Error Locations - ' + oppName);
+  sectionHeading((hasBasicErrors ? errLocHeading : 'Unforced Error Locations - ') + oppName);
   ensureSpace(160);
   const errLocOpp = computeErrorLocations(points, 'opp');
   y = pdfBarChart(doc, {
     x: marginX, y, width: 515, height: 90,
     categories: errLocOpp.map((r) => r.category),
-    series: [errLocOpp.map((r) => r.Net), errLocOpp.map((r) => r.Wide), errLocOpp.map((r) => r.Long)],
-    colors: [[127, 191, 63], [225, 72, 75], [30, 30, 30]],
-    legendLabels: ['Net', 'Wide', 'Long'],
+    series: [errLocOpp.map((r) => r.Net), errLocOpp.map((r) => r.Wide), errLocOpp.map((r) => r.Long), errLocOpp.map((r) => r.Out)],
+    colors: [[127, 191, 63], [225, 72, 75], [30, 30, 30], [184, 146, 42]],
+    legendLabels: ['Net', 'Wide', 'Long', 'Out'],
     title: 'Errors by shot and miss direction',
   });
   y += 12;
@@ -468,7 +474,7 @@ export function buildMatchPdf(ctx) {
   doc.addPage(); y = 50;
   sectionHeading('Focus Areas for Next Session');
   const buckets = {};
-  points.filter((pt) => pt.endedBy === 'self' && (pt.reason === 'UnforcedError' || pt.reason === 'DoubleFault')).forEach((pt) => {
+  points.filter((pt) => pt.endedBy === 'self' && (pt.reason === 'UnforcedError' || pt.reason === 'Error' || pt.reason === 'DoubleFault')).forEach((pt) => {
     const key = pt.reason === 'DoubleFault' ? 'Second Serve|' + pt.location : pt.stroke + '|' + pt.location;
     buckets[key] = (buckets[key] || 0) + 1;
   });
