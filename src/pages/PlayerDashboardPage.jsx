@@ -9,6 +9,7 @@ import TournamentsTab from '../components/player/TournamentsTab';
 import MyMatchesTab from '../components/player/MyMatchesTab';
 import TrainingLogTab from '../components/player/TrainingLogTab';
 import MatchAnalyticsTab from '../components/player/MatchAnalyticsTab';
+import SeasonAnalyticsTab from '../components/player/SeasonAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
 import ProgressTab from '../components/player/ProgressTab';
 import TodayPanel from '../components/player/TodayPanel';
@@ -44,7 +45,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circuits, selectedKey]);
 
-  const VALID_TABS = new Set(['overview', 'tournaments', 'matches', 'training', 'analytics', 'recommendations', 'progress']);
+  const VALID_TABS = new Set(['overview', 'tournaments', 'matches', 'training', 'analytics', 'season', 'recommendations', 'progress']);
   const rawTab = searchParams.get('tab') || 'overview';
   const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'overview';
   function setActiveTab(tabId) {
@@ -88,6 +89,7 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
           {activeTab === 'matches' && <MyMatchesTab playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'training' && <TrainingLogTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'analytics' && <MatchAnalyticsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
+          {activeTab === 'season' && <SeasonAnalyticsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'recommendations' && <RecommendationsTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
           {activeTab === 'progress' && <ProgressTab circuit={selectedCircuit} playerId={viewPlayerId} isOwnDashboard={isOwnDashboard} />}
         </>

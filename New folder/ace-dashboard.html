@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MatchTrackers · Season Analytics</title>
+<style>
+  :root{
+    --bg:#080D1A; --card1:#12203A; --card2:#0C1526; --border:#1E2E4A; --border-soft:#18263F;
+    --cyan:#22D3EE; --cyan-bright:#38BDF8; --cyan-deep:#0EA5E9; --teal:#2DD4BF; --aqua:#67E8F9;
+    --blue:#2E6FE0; --orange:#F97316; --green:#34D399; --red:#F87171; --amber:#FBBF24;
+    --white:#F8FAFC; --text:#CBD5E1; --muted:#93A4C0; --dim:#5B6B87;
+    --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:var(--font);
+    background:radial-gradient(1200px 520px at 85% -6%, rgba(34,211,238,.10), transparent 60%), var(--bg);
+    color:var(--text); min-height:100vh; padding:28px 20px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  /* header */
+  header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+  .id{display:flex;align-items:center;gap:16px}
+  .avatar{width:58px;height:58px;border-radius:50%;border:2px solid var(--cyan);background:var(--card2);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px -6px var(--cyan)}
+  h1{font-size:24px;font-weight:800;color:var(--white);letter-spacing:-.01em}
+  h1 .rank{color:var(--cyan)}
+  .controls{display:flex;gap:10px;flex-wrap:wrap}
+  .drop{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card2);
+    border-radius:12px;padding:11px 14px;cursor:pointer;user-select:none}
+  .drop .k{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .drop .v{font-size:12px;font-weight:700;color:var(--white)}
+
+  /* grid + panels */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--border);border-radius:18px;padding:20px;
+    background:linear-gradient(158deg,var(--card1) 0%,var(--card2) 78%);
+    box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 14px 34px -20px rgba(0,0,0,.9)}
+  .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .ptitle{display:flex;align-items:center;gap:8px}
+  .ptitle h3{font-size:13px;font-weight:800;color:var(--white);text-transform:uppercase;letter-spacing:.11em}
+  svg.ico{width:15px;height:15px;stroke-width:2.2}
+
+  /* legend */
+  .legend{display:flex;align-items:center;gap:16px}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--muted)}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  /* funnel row */
+  .funnel-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .funnel-svg{flex:1 1 300px;min-width:280px}
+  .surface{border:1px solid var(--border);border-radius:12px;padding:14px;background:rgba(8,13,26,.5);width:186px}
+  .surface .cap{text-align:center;font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px}
+  .sbars{display:flex;align-items:flex-end;justify-content:center;gap:16px;height:130px}
+  .sbar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .sbar .val{font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:5px}
+  .sbar .col{width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--aqua),var(--cyan-deep));
+    box-shadow:0 0 14px -4px var(--cyan)}
+  .sbar .name{font-size:11px;font-weight:600;color:var(--muted);margin-top:8px}
+
+  /* bar chart */
+  .chart{display:flex}
+  .yaxis{position:relative;width:30px;flex:none}
+  .yaxis span{position:absolute;right:4px;font-size:10px;color:var(--dim);transform:translateY(50%)}
+  .plot{position:relative;flex:1}
+  .gline{position:absolute;left:0;right:0;border-top:1px solid var(--border-soft)}
+  .bars{display:flex;align-items:flex-end;justify-content:space-between;position:relative}
+  .group{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+  .pair{display:flex;align-items:flex-end;gap:3px}
+  .bcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+  .bcol .v{font-size:9.5px;font-weight:700;margin-bottom:4px}
+  .bar{width:13px;border-radius:3px 3px 0 0}
+  .bar.won,.bar.win{background:linear-gradient(180deg,var(--cyan),rgba(34,211,238,.4));box-shadow:0 0 10px -3px var(--cyan)}
+  .bar.lost{background:linear-gradient(180deg,var(--orange),rgba(249,115,22,.4));box-shadow:0 0 10px -3px var(--orange)}
+  .bar.ue{background:linear-gradient(180deg,var(--blue),rgba(46,111,224,.4));box-shadow:0 0 10px -3px var(--blue)}
+  .glabel{font-size:10px;font-weight:600;color:var(--muted);margin-top:8px;white-space:nowrap}
+  .axis-cap{text-align:center;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:8px}
+
+  /* precision */
+  .prec{display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+  .gauge-wrap{display:flex;align-items:center;gap:12px}
+  .gauge{position:relative;width:112px;height:112px}
+  .gauge .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:24px;font-weight:800;color:var(--white)}
+  .gcap .t{font-size:12px;font-weight:700;color:var(--white)}
+  .gcap .s{font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px}
+  .gcap .s b{color:var(--text)}
+  .gcap .s .amber{color:var(--amber);font-weight:700}
+
+  /* insights */
+  .ins{display:flex;gap:12px;border:1px solid var(--border-soft);border-radius:12px;padding:12px;
+    background:rgba(8,13,26,.45);margin-bottom:12px}
+  .ins:last-child{margin-bottom:0}
+  .ins svg{width:16px;height:16px;flex:none;margin-top:2px;stroke-width:2.2}
+  .ins p{font-size:12.5px;line-height:1.55;color:var(--text)}
+  .ins .tag{font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+
+  footer{text-align:center;margin-top:20px;font-size:11px;font-style:italic;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="id">
+      <div class="avatar">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h1>ALEX 'THE ACE' RIVERA <span class="rank">| ATP RANK #42</span></h1>
+    </div>
+    <div class="controls">
+      <div class="drop" onclick="cycle(this,'Season',['2026','2025','2024'])">
+        <span class="k">Season:</span><span class="v">2026</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#93A4C0" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="drop" onclick="cycle(this,'Surface',['ALL','Hard','Clay','Grass'])">
+        <span class="k">Surface:</span><span class="v">ALL</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#93A4C0" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- TILE 1: FUNNEL -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#22D3EE"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>
+          <h3>Tournament Progression Funnel</h3>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/>
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </svg>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-svg">
+          <svg width="100%" viewBox="0 0 640 340" style="max-height:340px">
+            <defs>
+              <linearGradient id="fg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#0EA5E9"/><stop offset="55%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#2DD4BF"/>
+              </linearGradient>
+            </defs>
+            <!-- rows: widths 330,306,262,210,160,116,(84) -->
+            <g font-family="Inter, sans-serif">
+              <!-- 0 Total Entries -->
+              <polygon points="250,6 580,6 568,46 262,46" fill="url(#fg)" opacity=".92"/>
+              <text x="192" y="26" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Total Entries</text>
+              <text x="415" y="26" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">16</text>
+              <path d="M409 49 L415 55 L421 49" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 1 R1 -->
+              <polygon points="262,60 568,60 546,100 284,100" fill="url(#fg)" opacity=".87"/>
+              <text x="192" y="80" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Round 1 Wins</text>
+              <text x="415" y="80" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">14 / 16 · 87.5%</text>
+              <path d="M409 103 L415 109 L421 103" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 2 R2 -->
+              <polygon points="284,114 546,114 520,154 310,154" fill="url(#fg)" opacity=".82"/>
+              <text x="192" y="134" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Round 2 Wins</text>
+              <text x="415" y="134" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">12 / 14 · 83.3%</text>
+              <path d="M409 157 L415 163 L421 157" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 3 QF -->
+              <polygon points="310,168 520,168 495,208 335,208" fill="url(#fg)" opacity=".77"/>
+              <text x="192" y="188" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Quarterfinal Wins</text>
+              <text x="415" y="188" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">8 / 12</text>
+              <path d="M409 211 L415 217 L421 211" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 4 SF -->
+              <polygon points="335,222 495,222 473,262 357,262" fill="url(#fg)" opacity=".72"/>
+              <text x="192" y="242" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Semifinal Wins</text>
+              <text x="415" y="242" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">5 / 8</text>
+              <path d="M409 265 L415 271 L421 265" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- 5 Finals Won -->
+              <polygon points="357,276 473,276 457,316 373,316" fill="url(#fg)" opacity=".67"/>
+              <text x="192" y="296" text-anchor="end" fill="#93A4C0" font-size="13.5" font-weight="600">Finals Won</text>
+              <text x="415" y="296" text-anchor="middle" fill="#06263A" font-size="13" font-weight="800">3 / 5</text>
+            </g>
+          </svg>
+        </div>
+        <div class="surface">
+          <div class="cap">Surface Win %</div>
+          <div class="sbars">
+            <div class="sbar"><span class="val">78%</span><div class="col" style="height:75px"></div><span class="name">Hard</span></div>
+            <div class="sbar"><span class="val">65%</span><div class="col" style="height:62px"></div><span class="name">Clay</span></div>
+            <div class="sbar"><span class="val">72%</span><div class="col" style="height:69px"></div><span class="name">Grass</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TILE 2: RALLY LENGTH CONVERSION MATRIX -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h3>Rally Length Conversion Matrix</h3>
+        </div>
+        <div class="legend">
+          <span><i class="dot" style="background:#22D3EE"></i>Won</span>
+          <span><i class="dot" style="background:#F97316"></i>Lost</span>
+        </div>
+      </div>
+      <div class="chart">
+        <div class="yaxis" style="height:200px">
+          <span style="bottom:180px">80</span><span style="bottom:135px">60</span>
+          <span style="bottom:90px">40</span><span style="bottom:45px">20</span><span style="bottom:0px">0</span>
+        </div>
+        <div class="plot" style="height:200px">
+          <div class="gline" style="bottom:180px"></div><div class="gline" style="bottom:135px"></div>
+          <div class="gline" style="bottom:90px"></div><div class="gline" style="bottom:45px"></div><div class="gline" style="bottom:0"></div>
+          <div class="bars" style="height:200px">
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">43</span><div class="bar won" style="height:96px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">17</span><div class="bar lost" style="height:38px"></div></div>
+            </div><span class="glabel">1 SHOT</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">51</span><div class="bar won" style="height:114px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">38</span><div class="bar lost" style="height:85px"></div></div>
+            </div><span class="glabel">2 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">78</span><div class="bar won" style="height:175px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">45</span><div class="bar lost" style="height:101px"></div></div>
+            </div><span class="glabel">3 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">60</span><div class="bar won" style="height:134px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">47</span><div class="bar lost" style="height:105px"></div></div>
+            </div><span class="glabel">4 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">44</span><div class="bar won" style="height:99px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">33</span><div class="bar lost" style="height:74px"></div></div>
+            </div><span class="glabel">5 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">23</span><div class="bar won" style="height:52px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">17</span><div class="bar lost" style="height:38px"></div></div>
+            </div><span class="glabel">6 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">14</span><div class="bar won" style="height:31px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">9</span><div class="bar lost" style="height:20px"></div></div>
+            </div><span class="glabel">7 SHOTS</span></div>
+            <div class="group"><div class="pair">
+              <div class="bcol"><span class="v" style="color:#22D3EE">22</span><div class="bar won" style="height:49px"></div></div>
+              <div class="bcol"><span class="v" style="color:#F97316">55</span><div class="bar lost" style="height:123px"></div></div>
+            </div><span class="glabel">7+ SHOTS</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="axis-cap">Rally length (shots)</div>
+    </div>
+
+    <!-- TILE 3: SERVE & RETURN PRECISION -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <h3>Serve &amp; Return Precision Matrix</h3>
+        </div>
+      </div>
+      <div class="prec">
+        <div class="gauge-wrap">
+          <div class="gauge">
+            <svg width="112" height="112" viewBox="0 0 112 112" style="transform:rotate(-90deg)">
+              <defs><linearGradient id="ga" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0EA5E9"/><stop offset="100%" stop-color="#2DD4BF"/></linearGradient></defs>
+              <circle cx="56" cy="56" r="44" fill="none" stroke="#18263F" stroke-width="11"/>
+              <circle cx="56" cy="56" r="44" fill="none" stroke="url(#ga)" stroke-width="11" stroke-linecap="round"
+                stroke-dasharray="276.46" stroke-dashoffset="88.5"/>
+            </svg>
+            <div class="pct">68%</div>
+          </div>
+          <div class="gcap">
+            <div class="t">1st Serve In %</div>
+            <div class="s">1st Aces: <b>112</b></div>
+          </div>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge">
+            <svg width="112" height="112" viewBox="0 0 112 112" style="transform:rotate(-90deg)">
+              <circle cx="56" cy="56" r="44" fill="none" stroke="#18263F" stroke-width="11"/>
+              <circle cx="56" cy="56" r="44" fill="none" stroke="url(#ga)" stroke-width="11" stroke-linecap="round"
+                stroke-dasharray="276.46" stroke-dashoffset="129.9"/>
+            </svg>
+            <div class="pct">53%</div>
+          </div>
+          <div class="gcap">
+            <div class="t">2nd Serve Pts Won %</div>
+            <div class="s">DF: <span class="amber">41</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <div class="legend" style="margin-bottom:8px">
+            <span><i class="dot" style="background:#22D3EE"></i>Winners</span>
+            <span><i class="dot" style="background:#2E6FE0"></i>Unforced</span>
+          </div>
+          <div class="chart">
+            <div class="yaxis" style="height:150px">
+              <span style="bottom:135px">415</span><span style="bottom:90px">300</span>
+              <span style="bottom:45px">150</span><span style="bottom:0">0</span>
+            </div>
+            <div class="plot" style="height:150px">
+              <div class="gline" style="bottom:135px"></div><div class="gline" style="bottom:90px"></div>
+              <div class="gline" style="bottom:45px"></div><div class="gline" style="bottom:0"></div>
+              <div class="bars" style="height:150px">
+                <div class="group"><div class="pair">
+                  <div class="bcol"><span class="v" style="color:#22D3EE">415</span><div class="bar win" style="height:140px"></div></div>
+                  <div class="bcol"><span class="v" style="color:#2E6FE0">290</span><div class="bar ue" style="height:98px"></div></div>
+                </div><span class="glabel">Forehand</span></div>
+                <div class="group"><div class="pair">
+                  <div class="bcol"><span class="v" style="color:#22D3EE">290</span><div class="bar win" style="height:98px"></div></div>
+                  <div class="bcol"><span class="v" style="color:#2E6FE0">210</span><div class="bar ue" style="height:71px"></div></div>
+                </div><span class="glabel">Backhand</span></div>
+                <div class="group"><div class="pair">
+                  <div class="bcol"><span class="v" style="color:#22D3EE">240</span><div class="bar win" style="height:81px"></div></div>
+                  <div class="bcol"><span class="v" style="color:#2E6FE0">160</span><div class="bar ue" style="height:54px"></div></div>
+                </div><span class="glabel">Volley</span></div>
+                <div class="group"><div class="pair">
+                  <div class="bcol"><span class="v" style="color:#22D3EE">290</span><div class="bar win" style="height:98px"></div></div>
+                  <div class="bcol"><span class="v" style="color:#2E6FE0">205</span><div class="bar ue" style="height:69px"></div></div>
+                </div><span class="glabel">Overhead</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TILE 4: AI COACH INSIGHTS -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+          <h3>AI Coach: Insights &amp; Alerts</h3>
+        </div>
+      </div>
+      <div class="ins" style="border-left:3px solid #F87171">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <p><span class="tag" style="color:#F87171">Critical Alert:</span> 2nd-serve vulnerability in QF / SF rounds — opponent return-attack rate rises 22%.</p>
+      </div>
+      <div class="ins" style="border-left:3px solid #34D399">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>
+        <p><span class="tag" style="color:#34D399">Opportunity:</span> Backhand unforced errors climb sharply on rallies longer than 8 shots.</p>
+      </div>
+      <div class="ins" style="border-left:3px solid #2DD4BF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        <p><span class="tag" style="color:#2DD4BF">Strength:</span> Dominant first-strike conversion in 0–4 shot rallies: 66%.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Source: Complete Point-by-Point Data</footer>
+</div>
+
+<script>
+  function cycle(el, key, opts){
+    var v = el.querySelector('.v');
+    var i = opts.indexOf(v.textContent);
+    v.textContent = opts[(i + 1) % opts.length];
+  }
+</script>
+</body>
+</html>

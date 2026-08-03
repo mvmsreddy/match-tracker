@@ -125,6 +125,21 @@ export function computeRallyBreakdown(points, server) {
   return { cats: ['1', '2', '3', '4', '5', '6', '7+'], serverEnded, receiverEnded };
 }
 
+// Points won vs. lost by rally length, independent of who served — unlike
+// computeRallyBreakdown above (which splits by server/receiver shot-ending
+// role), this answers the simpler "do I win long rallies?" question.
+export function computeRallyWinLoss(points) {
+  const bucketIdx = (r) => (r <= 0 ? 0 : r >= 7 ? 6 : r - 1);
+  const won = new Array(7).fill(0);
+  const lost = new Array(7).fill(0);
+  points.filter((pt) => pt.reason !== 'DoubleFault').forEach((pt) => {
+    const idx = bucketIdx(pt.rally);
+    if (pt.pointWinner === 'self') won[idx]++;
+    else if (pt.pointWinner === 'opp') lost[idx]++;
+  });
+  return { cats: ['1', '2', '3', '4', '5', '6', '7+'], won, lost };
+}
+
 export function computeMomentumSeries(points) {
   let cum = 0;
   const series = [0];

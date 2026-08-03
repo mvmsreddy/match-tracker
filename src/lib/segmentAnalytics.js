@@ -6,7 +6,7 @@
 // wrong when match sample sizes differ). Matches with no points[] (untracked,
 // official-score-only entries) are simply skipped — they contribute rank/
 // points data elsewhere (aita_rankings) but no stroke-level analytics.
-import { computeStrokeBreakdown, computeServeStats, computeReturnStats, computeRallyBreakdown, replayMatchAnalytics } from './analytics';
+import { computeStrokeBreakdown, computeServeStats, computeReturnStats, computeRallyBreakdown, computeRallyWinLoss, replayMatchAnalytics } from './analytics';
 
 const STROKES = ['Forehand', 'Backhand', 'Serve', 'Volley', 'Smash'];
 
@@ -73,6 +73,20 @@ export function aggregateRallyBreakdown(matches) {
     }
   }
   return { cats: ['1', '2', '3', '4', '5', '6', '7+'], serverEnded, receiverEnded };
+}
+
+export function aggregateRallyWinLoss(matches) {
+  const won = new Array(7).fill(0);
+  const lost = new Array(7).fill(0);
+  for (const m of matches) {
+    if (!m.points?.length) continue;
+    const r = computeRallyWinLoss(m.points);
+    for (let i = 0; i < 7; i++) {
+      won[i] += r.won[i];
+      lost[i] += r.lost[i];
+    }
+  }
+  return { cats: ['1', '2', '3', '4', '5', '6', '7+'], won, lost };
 }
 
 export function aggregateBreakPoints(matches) {

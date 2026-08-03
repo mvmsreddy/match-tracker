@@ -13,6 +13,7 @@ const TABS = [
   { id: 'matches', label: 'My Matches' },
   { id: 'training', label: 'Training' },
   { id: 'analytics', label: 'Match Analytics' },
+  { id: 'season', label: 'Season Analytics' },
   { id: 'recommendations', label: 'Recommendations' },
   { id: 'progress', label: 'Progress Tracker' },
 ];
