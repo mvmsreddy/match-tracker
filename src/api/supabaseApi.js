@@ -1406,8 +1406,20 @@ export async function getMyEntries(playerId) {
   }
   // entered_by covers self-entries; player_id covers entries someone else
   // created and linked to this account (organiser manual-link, or phase 45's
-  // admin-published crowdsourced draws) — without the OR, a linked-but-not-
-  // self-entered tournament would never show up here.
+  // admin-published crowdsourced draws). Neither catches an entry synced
+  // from an official AITA draw that matched this player by aita_reg but was
+  // never account-linked — that's the normal state for AITA-sourced draws,
+  // and it's exactly what getDrawEntriesForPlayers/useTournamentActivity
+  // (the standalone Tournaments page's data source) already matches on. So
+  // this also has to OR in aita_reg/partner_aita_reg, or a real entry that
+  // page shows correctly silently disappears from the player's own
+  // dashboard (My Tournaments tab, Overview's upcoming/recent, and the
+  // tournament funnel all read through this one function).
+  const profile = await getProfile(effectiveId).catch(() => null);
+  const aitaReg = profile?.aitaReg || null;
+  const orParts = [`entered_by.eq.${effectiveId}`, `player_id.eq.${effectiveId}`];
+  if (aitaReg) orParts.push(`aita_reg.eq.${aitaReg}`, `partner_aita_reg.eq.${aitaReg}`);
+
   // draw_entries has no created_at column (see phase2_schema.sql — it was
   // never added), so recency is sorted client-side by the joined
   // tournament week's start_date instead of ordering the query on a
@@ -1415,7 +1427,7 @@ export async function getMyEntries(playerId) {
   const { data, error } = await supabase
     .from('draw_entries')
     .select('*, event:events(*, tournament_week:tournament_weeks(id, name, start_date, end_date, city, state_abbr, grade, source))')
-    .or(`entered_by.eq.${effectiveId},player_id.eq.${effectiveId}`);
+    .or(orParts.join(','));
   if (error) throw new Error(error.message);
   return (data || []).map(row => ({
     ...rowToEntry(row),
