@@ -9,9 +9,9 @@ import {
 // independently-curated one (that's what left .mt-rail/.mt-tabbar showing a
 // different, stale link set before this migration).
 export function getNavItems(role) {
-  const dashboard = { id: 'dashboard', label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true };
+  const dashboard = { id: 'dashboard', label: 'Home', to: '/', icon: LayoutDashboard, end: true };
   const track = { id: 'track', label: 'Track', to: '/track', icon: Activity };
-  const tournaments = { id: 'tournaments', label: 'Tournaments', to: '/tournaments', icon: Trophy };
+  const tournaments = { id: 'tournaments', label: 'Events', to: '/tournaments', icon: Trophy };
   const profile = { id: 'profile', label: 'Profile', to: '/profile', icon: User };
   const calendar = { id: 'calendar', label: 'Tournament Calendar', to: '/aita-calendar', icon: Calendar };
   const rankings = { id: 'rankings', label: 'AITA Rankings', to: '/aita-rankings', icon: Medal };

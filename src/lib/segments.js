@@ -7,6 +7,7 @@
 // Extracted out of PerformanceTab.jsx so SegmentContext and any other
 // segment-scoped tab can reuse it without depending on that component.
 import { circuitKey } from './governingBodies';
+import { nativeCircuitKeyFromProfile } from './activityGoals';
 
 export function buildCircuits(history) {
   const map = new Map();
@@ -88,6 +89,14 @@ export function computeGoalPace(circuit, goal) {
   }
 
   return null;
+}
+
+/** Prefer the player's native age-group circuit; fall back to most-recent sync. */
+export function resolveDefaultCircuitKey(circuits, { dateOfBirth, gender } = {}) {
+  if (!circuits?.length) return null;
+  const native = nativeCircuitKeyFromProfile(dateOfBirth, gender);
+  if (native && circuits.some((c) => c.key === native)) return native;
+  return circuits[0].key;
 }
 
 // PLACEHOLDER: any future *verified* cross-category point relationship would

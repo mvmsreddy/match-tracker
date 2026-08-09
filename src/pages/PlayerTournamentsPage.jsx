@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSegment } from '../context/SegmentContext';
 import * as api from '../api';
 import { useMyTournaments } from '../hooks/useMyTournaments';
 import { usePlayerProfileReadiness } from '../hooks/usePlayerProfileReadiness';
+import { segmentKeysForTournamentItem } from '../lib/segmentOverview';
 import { normalizeEventSegment } from '../lib/governingBodies';
 import PlayerParticipationCard from '../components/player/PlayerParticipationCard';
 import TournamentCalendarBrowser from '../components/tournaments/TournamentCalendarBrowser';
@@ -24,13 +26,20 @@ function EmptyState({ children }) {
 // "Browse" (shared calendar). One status model via useMyTournaments.
 export default function PlayerTournamentsPage() {
   const { user } = useAuth();
+  const { circuits } = useSegment();
   const profile = usePlayerProfileReadiness(user);
   const myTournaments = useMyTournaments(user?.id, { aitaReg: user?.aitaReg });
 
   const [tab, setTab] = useState('mine');
+  const [segmentFilter, setSegmentFilter] = useState('all');
   const [openKey, setOpenKey] = useState(null);
   const [trackedByEventMatch, setTrackedByEventMatch] = useState(new Map());
   const [modalMatch, setModalMatch] = useState(null);
+
+  const filteredItems = useMemo(() => {
+    if (segmentFilter === 'all') return myTournaments.items;
+    return myTournaments.items.filter(item => segmentKeysForTournamentItem(item).has(segmentFilter));
+  }, [myTournaments.items, segmentFilter]);
 
   useEffect(() => {
     if (!user?.id || myTournaments.tournaments.length === 0) {
@@ -64,7 +73,7 @@ export default function PlayerTournamentsPage() {
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
       <div>
         <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Live Events &amp; Draw Tracker</div>
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Tournaments</h1>
+        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Events</h1>
       </div>
 
       {!hasSupabaseConfig && (
@@ -92,7 +101,7 @@ export default function PlayerTournamentsPage() {
             tab === 'mine' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
           )}
         >
-          My Tournaments
+          My Events
         </button>
         <button
           type="button"
@@ -105,6 +114,38 @@ export default function PlayerTournamentsPage() {
           Browse Calendar
         </button>
       </div>
+
+      {tab === 'mine' && circuits.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSegmentFilter('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+              segmentFilter === 'all'
+                ? 'bg-foreground text-background border-foreground'
+                : 'border-border text-muted-foreground hover:text-foreground',
+            )}
+          >
+            All segments
+          </button>
+          {circuits.map(c => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setSegmentFilter(c.key)}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                segmentFilter === c.key
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {c.subcategory}
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === 'mine' && (
         <section className="space-y-3">
@@ -120,9 +161,13 @@ export default function PlayerTournamentsPage() {
             </EmptyState>
           )}
 
-          {!myTournaments.loading && !myTournaments.error && myTournaments.hasAny && (
+          {!myTournaments.loading && !myTournaments.error && myTournaments.hasAny && filteredItems.length === 0 && (
+            <EmptyState>No events in this segment yet — try another filter or browse the calendar.</EmptyState>
+          )}
+
+          {!myTournaments.loading && !myTournaments.error && filteredItems.length > 0 && (
             <div className="space-y-2.5">
-              {myTournaments.items.map(item => (
+              {filteredItems.map(item => (
                 <PlayerParticipationCard
                   key={item.key}
                   item={item}

@@ -4543,6 +4543,63 @@ export async function deleteRankingGoal(goalId) {
   if (error) throw new Error(error.message);
 }
 
+function rowToActivityGoal(row) {
+  return {
+    playerId: row.player_id,
+    monthlyTarget: row.monthly_target,
+    minimumMatches: row.minimum_matches,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getActivityGoal(playerId) {
+  const { data, error } = await supabase
+    .from('player_activity_goals')
+    .select('*')
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return rowToActivityGoal(data);
+}
+
+export async function upsertActivityGoal(playerId, { monthlyTarget, minimumMatches }) {
+  const { data, error } = await supabase
+    .from('player_activity_goals')
+    .upsert({
+      player_id: playerId,
+      monthly_target: monthlyTarget,
+      minimum_matches: minimumMatches,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'player_id' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToActivityGoal(data);
+}
+
+/** Players ranked within ±range of the given rank on one snapshot date. */
+export async function getCloseInRankPeers(category, subcategory, rankingDate, playerRank, playerRegNo, range = 5) {
+  if (!category || !subcategory || !rankingDate || !playerRank) return [];
+  const lo = Math.max(1, playerRank - range);
+  const hi = playerRank + range;
+  const { data, error } = await supabase
+    .from('aita_rankings')
+    .select('rank, total_points, reg_no')
+    .eq('category', category)
+    .eq('subcategory', subcategory)
+    .eq('ranking_date', rankingDate)
+    .gte('rank', lo)
+    .lte('rank', hi)
+    .order('rank', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map((row) => ({
+    rank: row.rank,
+    totalPoints: row.total_points,
+    isPlayer: !!(playerRegNo && row.reg_no === playerRegNo),
+  }));
+}
+
 function circuitKeyFor(category, subcategory) {
   return `${category}|${subcategory}`;
 }

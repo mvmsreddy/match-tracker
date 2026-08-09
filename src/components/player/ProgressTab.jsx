@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ResponsiveContainer, ComposedChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar,
+  CartesianGrid, XAxis, YAxis, Tooltip,
 } from 'recharts';
 import * as api from '../../api';
 import { computeGoalPace } from '../../lib/segments';
+import { monthlyMatchVolumeSeries } from '../../lib/activityGoals';
 import { Card } from '@/components/primitives/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 import { AlertTriangle, TrendingUp, Activity, Award } from 'lucide-react';
@@ -27,6 +29,7 @@ function monthKey(iso) {
 export default function ProgressTab({ circuit, playerId }) {
   const [goals, setGoals] = useState(null);
   const [sessions, setSessions] = useState(null);
+  const [allMatches, setAllMatches] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -34,8 +37,9 @@ export default function ProgressTab({ circuit, playerId }) {
     Promise.all([
       api.getRankingGoals(playerId, circuit.category, circuit.subcategory),
       api.getTrainingSessions(playerId, circuit.category, circuit.subcategory),
-    ]).then(([g, s]) => { if (!cancelled) { setGoals(g); setSessions(s); } })
-      .catch(e => { if (!cancelled) { setError(e.message || 'Could not load progress'); setGoals([]); setSessions([]); } });
+      api.listMatches(playerId),
+    ]).then(([g, s, m]) => { if (!cancelled) { setGoals(g); setSessions(s); setAllMatches(m); } })
+      .catch(e => { if (!cancelled) { setError(e.message || 'Could not load progress'); setGoals([]); setSessions([]); setAllMatches([]); } });
     return () => { cancelled = true; };
   }, [playerId, circuit.category, circuit.subcategory]);
 
@@ -70,7 +74,12 @@ export default function ProgressTab({ circuit, playerId }) {
     return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month)).slice(0, 12);
   }, [circuit, sessions]);
 
-  if (goals === null) return <div className="text-sm text-muted-foreground">Loading progress…</div>;
+  const volumeSeries = useMemo(
+    () => monthlyMatchVolumeSeries(allMatches || [], 6),
+    [allMatches],
+  );
+
+  if (goals === null || allMatches === null) return <div className="text-sm text-muted-foreground">Loading progress…</div>;
   if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
   // Shared with the topbar/GoalsPanel verdict (src/lib/segments.js) so this
@@ -167,6 +176,43 @@ export default function ProgressTab({ circuit, playerId }) {
               />
             )}
           </ComposedChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Card className="p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <div className="font-bold text-sm sm:text-base mb-1">Match volume</div>
+            <div className="text-xs text-muted-foreground">Tracked matches per month (all segments)</div>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={220} debounce={200}>
+          <BarChart data={volumeSeries} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke="var(--color-border)" vertical={false} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="label"
+              stroke="var(--color-border)"
+              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+              tickLine={false}
+            />
+            <YAxis
+              stroke="var(--color-border)"
+              tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              width={32}
+              allowDecimals={false}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--color-popover)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 6,
+              }}
+              formatter={(value) => [value, 'Matches']}
+            />
+            <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+          </BarChart>
         </ResponsiveContainer>
       </Card>
 

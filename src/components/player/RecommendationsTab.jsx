@@ -3,6 +3,7 @@ import * as api from '../../api';
 import { aggregateStrokeBreakdown, strokeWinRates } from '../../lib/segmentAnalytics';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { seedCountForDraw, roundDepth, ROUND_ORDER, estimateExpectedPoints } from '../../utils/aitaGradeRules';
+import { computeActivityPace, countMatchesInMonth, matchMonthKey } from '../../lib/activityGoals';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
 import { Card } from '@/components/primitives/card';
 import { Badge } from '@/components/primitives/badge';
@@ -47,6 +48,8 @@ export default function RecommendationsTab({ circuit, playerId }) {
   const [entries, setEntries] = useState(null);
   const [calendar, setCalendar] = useState(null);
   const [coachLink, setCoachLink] = useState(null);
+  const [activityGoal, setActivityGoal] = useState(null);
+  const [allMatches, setAllMatches] = useState(null);
   const [error, setError] = useState('');
   const schedule = useSegmentMatchSchedule(playerId, circuit);
 
@@ -59,11 +62,15 @@ export default function RecommendationsTab({ circuit, playerId }) {
       api.getMyEntries(playerId),
       api.listAitaTournaments({ ageGroup: circuit.subcategory.replace('-', ''), dateFrom: today }),
       api.getCoachLinks(playerId),
-    ]).then(([g, m, e, cal, links]) => {
+      api.getActivityGoal(playerId),
+      api.listMatches(playerId),
+    ]).then(([g, m, e, cal, links, goal, allM]) => {
       if (cancelled) return;
       setGoals(g); setMatches(m); setEntries(e); setCalendar(cal);
       setCoachLink((links || []).find(l => l.status === 'active' && l.playerId === playerId) || null);
-    }).catch(err => { if (!cancelled) { setError(err.message || 'Could not load recommendations'); setGoals([]); setMatches([]); setEntries([]); setCalendar([]); } });
+      setActivityGoal(goal);
+      setAllMatches(allM);
+    }).catch(err => { if (!cancelled) { setError(err.message || 'Could not load recommendations'); setGoals([]); setMatches([]); setEntries([]); setCalendar([]); setAllMatches([]); } });
     return () => { cancelled = true; };
   }, [playerId, circuit.category, circuit.subcategory]);
 
@@ -93,6 +100,15 @@ export default function RecommendationsTab({ circuit, playerId }) {
     return segmentEntries.filter(e => (e.event.week?.startDate || '') >= cutoffIso).length;
   }, [segmentEntries]);
 
+  const activityPace = useMemo(() => {
+    if (allMatches === null) return null;
+    const monthKey = matchMonthKey();
+    const actual = countMatchesInMonth(allMatches, monthKey);
+    const monthlyTarget = activityGoal?.monthlyTarget ?? 10;
+    const minimumMatches = activityGoal?.minimumMatches ?? 5;
+    return { ...computeActivityPace(actual, monthlyTarget, minimumMatches, monthKey), monthKey };
+  }, [allMatches, activityGoal]);
+
   const suggestedEntries = useMemo(() => {
     if (!calendar) return [];
     const myRank = circuit.latest.rank;
@@ -117,13 +133,23 @@ export default function RecommendationsTab({ circuit, playerId }) {
       });
   }, [calendar, circuit, segmentEntries, schedule.recent]);
 
-  if (goals === null) return <div className="text-sm text-muted-foreground">Loading recommendations…</div>;
+  if (goals === null || allMatches === null) return <div className="text-sm text-muted-foreground">Loading recommendations…</div>;
   if (error) return <div className="text-sm text-muted-foreground">{error}</div>;
 
   const rankGap = activeGoal?.targetRank ? circuit.latest.rank - activeGoal.targetRank : null;
 
   return (
     <div className="space-y-4">
+      {activityPace?.behindPace && (
+        <Card className="p-4 border-l-4 border-amber-500">
+          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Match activity</div>
+          <div className="text-sm mt-1">
+            You&apos;ve logged <span className="font-bold">{activityPace.actual}</span> match{activityPace.actual === 1 ? '' : 'es'} this month
+            — behind your {activityPace.monthlyTarget}/month target. Schedule a practice match or enter an event to stay on pace.
+          </div>
+        </Card>
+      )}
+
       {!activeGoal && (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
           Set a ranking goal in the Overview tab to get gap-to-goal recommendations for {circuit.category} {circuit.subcategory}.

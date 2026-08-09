@@ -8,16 +8,21 @@ import { getInitials as initials } from '../../lib/initials';
 import { Badge } from '@/components/primitives/badge';
 import { Button } from '@/components/primitives/button';
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'tournaments', label: 'My Tournaments' },
-  { id: 'matches', label: 'My Matches' },
+const PRIMARY_TABS = [
+  { id: 'overview', label: 'Home' },
+  { id: 'matches', label: 'Matches' },
   { id: 'training', label: 'Training' },
+  { id: 'tournaments', label: 'History' },
+];
+
+const MORE_TABS = [
   { id: 'analytics', label: 'Match Analytics' },
   { id: 'season', label: 'Season Analytics' },
   { id: 'recommendations', label: 'Recommendations' },
-  { id: 'progress', label: 'Progress Tracker' },
+  { id: 'progress', label: 'Progress' },
 ];
+
+const TABS = [...PRIMARY_TABS, ...MORE_TABS];
 
 function syncedAgo(iso) {
   if (!iso) return null;
@@ -35,6 +40,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
   const navigate = useNavigate();
   const [activeGoal, setActiveGoal] = useState(null);
   const [coachLink, setCoachLink] = useState(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (!viewPlayerId || !circuit) return;
@@ -107,7 +113,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
         <div className="flex items-center gap-3 flex-wrap">
           {circuits?.length > 0 && (
             <div className="text-xs flex-1 min-w-32">
-              <div className="text-muted-foreground uppercase tracking-wider font-bold mb-1">Viewing Segment</div>
+              <div className="text-muted-foreground uppercase tracking-wider font-bold mb-1">Detail segment</div>
               {circuits.length > 1 ? (
                 <select
                   className="rounded-md border border-input bg-card px-3 py-1.5 text-sm w-full font-semibold"
@@ -196,21 +202,51 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
         </div>
       </div>
 
-      <div className="inline-flex flex-nowrap overflow-x-auto border border-border rounded-lg p-1 bg-card gap-1 max-w-full scrollbar-hide">
-        {TABS.map(t => (
+      <div className="inline-flex flex-nowrap overflow-x-auto border border-border rounded-lg p-1 bg-card gap-1 max-w-full scrollbar-hide items-center">
+        {PRIMARY_TABS.map(t => (
           <button
             key={t.id}
             className={`px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
-              activeTab === t.id 
-                ? 'bg-foreground text-background shadow-sm' 
+              activeTab === t.id
+                ? 'bg-foreground text-background shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
-            onClick={() => onTabChange(t.id)}
+            onClick={() => { onTabChange(t.id); setMoreOpen(false); }}
             data-testid={`player-tab-${t.id}`}
           >
             {t.label}
           </button>
         ))}
+        <div className="relative flex-shrink-0">
+          <button
+            type="button"
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+              MORE_TABS.some(t => t.id === activeTab)
+                ? 'bg-foreground text-background shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+            onClick={() => setMoreOpen(v => !v)}
+            data-testid="player-tab-more"
+          >
+            More ▾
+          </button>
+          {moreOpen && (
+            <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] rounded-md border border-border bg-popover shadow-lg py-1">
+              {MORE_TABS.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`block w-full text-left px-3 py-2 text-xs font-semibold hover:bg-muted ${
+                    activeTab === t.id ? 'text-accent-ink' : 'text-foreground'
+                  }`}
+                  onClick={() => { onTabChange(t.id); setMoreOpen(false); }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {children}

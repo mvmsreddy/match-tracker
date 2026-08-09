@@ -3,7 +3,13 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { SegmentProvider, useSegment } from '../context/SegmentContext';
 import * as api from '../api';
+import { computeGoalPace, resolveDefaultCircuitKey } from '../lib/segments';
+import { useMyTournaments } from '../hooks/useMyTournaments';
+import { useNativeCircuitKey } from '../hooks/usePlayerActivity';
+import { usePlayerProfileReadiness } from '../hooks/usePlayerProfileReadiness';
 import PlayerDashboardShell from '../components/player/PlayerDashboardShell';
+import SegmentOverviewPanel from '../components/player/SegmentOverviewPanel';
+import ActivityGoalPanel from '../components/player/ActivityGoalPanel';
 import OverviewTab from '../components/player/OverviewTab';
 import TournamentsTab from '../components/player/TournamentsTab';
 import MyMatchesTab from '../components/player/MyMatchesTab';
@@ -32,18 +38,54 @@ import TodayPanel from '../components/player/TodayPanel';
 // "DASHBOARD →" link (route /coach/players/:playerId/dashboard) — the exact
 // same tabs/data a player sees for themselves, scoped to a linked player
 // instead. `playerId` is only present on that route.
-function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, viewerRole }) {
+function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, viewerRole, viewPlayerProfile }) {
   const { user } = useAuth();
   const { circuits, loading, error, selectedKey, setSelectedKey, selectedCircuit } = useSegment();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [allMatches, setAllMatches] = useState(null);
+  const myTournaments = useMyTournaments(viewPlayerId);
+  const profileReadiness = usePlayerProfileReadiness(isOwnDashboard ? user : viewPlayerProfile);
+  const nativeCircuitKey = useNativeCircuitKey(
+    isOwnDashboard ? user?.dateOfBirth : viewPlayerProfile?.dateOfBirth,
+    isOwnDashboard ? user?.gender : viewPlayerProfile?.gender,
+  );
   const selfName = isOwnDashboard ? (user?.displayName || 'You') : (viewPlayerName || 'Player');
 
-  // Land on the most recently active segment by default instead of an empty
-  // state — circuits is already sorted most-recent-first (see segments.js).
   useEffect(() => {
-    if (!selectedKey && circuits.length > 0) setSelectedKey(circuits[0].key);
+    if (!viewPlayerId) return;
+    let cancelled = false;
+    api.listMatches(viewPlayerId)
+      .then((rows) => { if (!cancelled) setAllMatches(rows); })
+      .catch(() => { if (!cancelled) setAllMatches([]); });
+    return () => { cancelled = true; };
+  }, [viewPlayerId]);
+
+  useEffect(() => {
+    if (!selectedKey && circuits.length > 0) {
+      setSelectedKey(resolveDefaultCircuitKey(circuits, {
+        dateOfBirth: isOwnDashboard ? user?.dateOfBirth : viewPlayerProfile?.dateOfBirth,
+        gender: isOwnDashboard ? user?.gender : viewPlayerProfile?.gender,
+      }));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [circuits, selectedKey]);
+  }, [circuits, selectedKey, user?.dateOfBirth, user?.gender, viewPlayerProfile?.dateOfBirth, viewPlayerProfile?.gender]);
+
+  const [rankGoalPace, setRankGoalPace] = useState(null);
+  useEffect(() => {
+    if (!viewPlayerId || !selectedCircuit) {
+      setRankGoalPace(null);
+      return;
+    }
+    let cancelled = false;
+    api.getRankingGoals(viewPlayerId, selectedCircuit.category, selectedCircuit.subcategory)
+      .then((goals) => {
+        if (cancelled) return;
+        const active = (goals || []).find((g) => g.status === 'active');
+        setRankGoalPace(active ? computeGoalPace(selectedCircuit, active) : null);
+      })
+      .catch(() => { if (!cancelled) setRankGoalPace(null); });
+    return () => { cancelled = true; };
+  }, [viewPlayerId, selectedCircuit?.key]);
 
   const VALID_TABS = new Set(['overview', 'tournaments', 'matches', 'training', 'analytics', 'season', 'recommendations', 'progress']);
   const rawTab = searchParams.get('tab') || 'overview';
@@ -70,6 +112,28 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
       viewerRole={viewerRole}
     >
       <TodayPanel playerId={viewPlayerId} circuit={selectedCircuit} isOwnDashboard={isOwnDashboard} />
+
+      {!loading && circuits.length > 0 && (
+        <>
+          <SegmentOverviewPanel
+            circuits={circuits}
+            selectedKey={selectedKey}
+            onSelectKey={setSelectedKey}
+            playerId={viewPlayerId}
+            nativeCircuitKey={nativeCircuitKey}
+            myTournamentItems={myTournaments.items}
+            allMatches={allMatches || []}
+            aitaReg={isOwnDashboard ? user?.aitaReg : viewPlayerProfile?.aitaReg}
+            isOwnDashboard={isOwnDashboard}
+          />
+          <ActivityGoalPanel
+            playerId={viewPlayerId}
+            isOwnDashboard={isOwnDashboard}
+            rankBehindPace={rankGoalPace?.behindPace ?? false}
+            profileComplete={profileReadiness.isReady}
+          />
+        </>
+      )}
 
       {isOwnDashboard && error && <div className="history-empty">{error}</div>}
       {loading && <div className="history-empty">Loading segments…</div>}
@@ -147,7 +211,13 @@ function LinkedPlayerDashboard({ viewerId, viewerRole, playerId }) {
 
   return (
     <SegmentProvider overrideAitaReg={state.player.aitaReg}>
-      <PlayerDashboardInner viewPlayerId={playerId} isOwnDashboard={false} viewPlayerName={state.player.displayName} viewerRole={viewerRole} />
+      <PlayerDashboardInner
+        viewPlayerId={playerId}
+        isOwnDashboard={false}
+        viewPlayerName={state.player.displayName}
+        viewerRole={viewerRole}
+        viewPlayerProfile={state.player}
+      />
     </SegmentProvider>
   );
 }

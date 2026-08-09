@@ -15,7 +15,7 @@ import MatchDetailModal from './MatchDetailModal';
 import PlayerRatingCard from '@/components/PlayerRatingCard';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
-import { TrendingUp, TrendingDown, Trophy, Calendar, Target, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Target, Activity } from 'lucide-react';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -137,20 +137,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           it's already visible before this tab even renders. */}
       <GoalsPanel circuit={circuit} playerId={playerId} isOwnDashboard={isOwnDashboard} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between mb-2">
-            <Calendar className="w-5 h-5 text-muted-foreground" />
-            {monthStats?.matchesThisMonth > 0 && (
-              <span className="text-xs font-bold text-accent-ink">+{monthStats.matchesThisMonth}</span>
-            )}
-          </div>
-          <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">
-            {monthStats ? monthStats.matchesThisMonth : '—'}
-          </div>
-          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Matches this month</div>
-        </Card>
-        
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between mb-2">
             <Activity className="w-5 h-5 text-muted-foreground" />
@@ -171,7 +158,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
           )}
         </Card>
         
-        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary sm:col-span-2 lg:col-span-1">
+        <Card className="p-4 sm:p-5 hover:shadow-md transition-shadow bg-primary/10 border-l-4 border-l-primary">
           <div className="flex items-center justify-between mb-2">
             <Trophy className="w-5 h-5 text-accent-ink" />
             {monthStats?.winRate > 50 && (

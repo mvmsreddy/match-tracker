@@ -248,6 +248,18 @@ export const getMyTournamentEntryCountThisYear = hasSupabaseConfig ? supabaseApi
 
 // Phase 29 — multi-segment dashboard: ranking goals + training sessions
 export const getRankingGoals      = hasSupabaseConfig ? supabaseApi.getRankingGoals      : async () => [];
+export const getActivityGoal      = hasSupabaseConfig ? supabaseApi.getActivityGoal      : async (playerId) => {
+  try {
+    const raw = localStorage.getItem(`mtp_activity_goal_${playerId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+export const upsertActivityGoal   = hasSupabaseConfig ? supabaseApi.upsertActivityGoal   : async (playerId, patch) => {
+  const row = { playerId, monthlyTarget: patch.monthlyTarget, minimumMatches: patch.minimumMatches, updatedAt: new Date().toISOString() };
+  localStorage.setItem(`mtp_activity_goal_${playerId}`, JSON.stringify(row));
+  return row;
+};
+export const getCloseInRankPeers  = hasSupabaseConfig ? supabaseApi.getCloseInRankPeers  : async () => [];
 export const createRankingGoal    = hasSupabaseConfig ? supabaseApi.createRankingGoal    : noSupabase;
 export const updateRankingGoal    = hasSupabaseConfig ? supabaseApi.updateRankingGoal    : noSupabase;
 export const deleteRankingGoal    = hasSupabaseConfig ? supabaseApi.deleteRankingGoal    : noSupabase;
