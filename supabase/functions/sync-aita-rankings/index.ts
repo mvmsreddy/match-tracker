@@ -18,7 +18,7 @@
 // Two allowed callers (same pattern as sync-aita-calendar):
 //   - pg_cron, via header x-sync-secret: <SYNC_SECRET>.
 //   - a "Sync Now" button, via a normal user JWT — caller's
-//     user_profiles.role must be 'organizer'.
+//     user_profiles.role must be 'super_admin' (or legacy 'organizer').
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // unpdf ships a serverless PDF.js build with no DOM dependency (pdfjs-dist
@@ -232,7 +232,8 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('id', userData.user.id)
       .maybeSingle();
-    if (profile?.role !== 'super_admin') {
+    const role = profile?.role;
+    if (role !== 'super_admin' && role !== 'organizer') {
       return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: corsHeaders });
     }
     triggeredBy = `manual:${userData.user.id}`;
