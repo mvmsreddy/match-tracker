@@ -1,17 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { reasonLabel } from '../lib/format';
+import { cn } from '../lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 
 // Pixel budget per point — fixed regardless of match length so long matches
 // scroll horizontally instead of squeezing labels until they're unreadable.
-const PX_PER_POINT = 16;
+const PX_PER_POINT = 20;
 const MIN_WIDTH = 560;
-const H = 130;
+const CHART_H = 130;
+const LABEL_ROW_H = 28;
+const H = CHART_H + LABEL_ROW_H;
 const PAD_X = 12;
 const PAD_Y = 20;
 
 export default function MomentumGraph({ points, selfName, oppName, analytics }) {
   const scrollRef = useRef(null);
+  const pointStripRef = useRef(null);
+  const clipAboveId = useId();
+  const clipBelowId = useId();
   // Which point's detail is shown below the chart — defaults to the latest
   // point (tap/hover any earlier point to inspect it instead).
   const [activeIdx, setActiveIdx] = useState(points.length);
@@ -24,6 +30,16 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
     if (el) el.scrollLeft = el.scrollWidth;
     setActiveIdx(points.length);
   }, [points.length]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    const strip = pointStripRef.current;
+    if (activeIdx <= 0) return;
+    const chartTarget = el?.querySelector(`[data-chart-idx="${activeIdx}"]`);
+    chartTarget?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    const chip = strip?.querySelector(`[data-point-idx="${activeIdx}"]`);
+    chip?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [activeIdx, points.length]);
 
   if (points.length < 3) {
     return (
@@ -43,7 +59,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
   }
 
   const W = Math.max(MIN_WIDTH, (data.length - 1) * PX_PER_POINT + PAD_X * 2);
-  const midY = H / 2;
+  const midY = CHART_H / 2;
   const maxAbs = Math.max(1, ...data.map(Math.abs));
 
   const gx = (i) => PAD_X + (i / (data.length - 1)) * (W - PAD_X * 2);
@@ -93,10 +109,10 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
         <div ref={scrollRef} className="overflow-x-auto">
           <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
             <defs>
-              <clipPath id="clip-above">
+              <clipPath id={clipAboveId}>
                 <rect x="0" y="0" width={W} height={midY} />
               </clipPath>
-              <clipPath id="clip-below">
+              <clipPath id={clipBelowId}>
                 <rect x="0" y={midY} width={W} height={midY} />
               </clipPath>
             </defs>
@@ -109,7 +125,7 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
               const px = gx(Math.min(gb.index, data.length - 1)).toFixed(1);
               return (
                 <g key={gb.index}>
-                  <line x1={px} y1={PAD_Y} x2={px} y2={H - PAD_Y} stroke="var(--color-border)" strokeWidth="0.75" opacity="0.6" />
+                  <line x1={px} y1={PAD_Y} x2={px} y2={CHART_H - PAD_Y} stroke="var(--color-border)" strokeWidth="0.75" opacity="0.6" />
                   <text x={px} y={PAD_Y - 6} fill="var(--color-muted-foreground)" fontSize="9" fontFamily="monospace" textAnchor="middle">
                     {gb.label}
                   </text>
@@ -118,9 +134,9 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
             })}
 
             {/* Brand fill: self is ahead */}
-            <polygon points={areaPts} fill="var(--color-primary)" opacity="0.18" clipPath="url(#clip-above)" />
+            <polygon points={areaPts} fill="var(--color-primary)" opacity="0.18" clipPath={`url(#${clipAboveId})`} />
             {/* Opp fill: opp is ahead */}
-            <polygon points={areaPts} fill="var(--color-destructive)" opacity="0.18" clipPath="url(#clip-below)" />
+            <polygon points={areaPts} fill="var(--color-destructive)" opacity="0.18" clipPath={`url(#${clipBelowId})`} />
 
             {/* Momentum line */}
             <polyline
@@ -136,28 +152,99 @@ export default function MomentumGraph({ points, selfName, oppName, analytics }) 
                 keeps the chart itself uncluttered while still exposing every
                 point that was captured. */}
             {data.map((v, i) => {
-              const cx = gx(i).toFixed(1);
-              const cy = gy(v).toFixed(1);
+              const cx = gx(i);
+              const cy = gy(v);
+              const cxStr = cx.toFixed(1);
+              const cyStr = cy.toFixed(1);
               const isActive = i === safeActiveIdx;
+              const pt = i > 0 ? points[i - 1] : null;
+              const wonSelf = pt?.pointWinner === 'self';
               const label = i === 0
                 ? 'Match start'
-                : `#${i} — ${points[i - 1].scoreAfter} — ${reasonLabel(points[i - 1], selfName, oppName)}`;
+                : `#${i} — ${pt.scoreAfter} — ${reasonLabel(pt, selfName, oppName)}`;
+              const scoreLabel = pt?.scoreAfter ? String(pt.scoreAfter) : null;
+              const labelY = cy - 10;
               return (
                 <g
                   key={i}
+                  data-chart-idx={i}
                   className="cursor-pointer"
                   onMouseEnter={() => setActiveIdx(i)}
                   onClick={() => setActiveIdx(i)}
                 >
                   <title>{label}</title>
                   {/* Generous invisible hit target, small visible dot */}
-                  <circle cx={cx} cy={cy} r="7" fill="transparent" />
-                  {isActive && <circle cx={cx} cy={cy} r="6" fill="none" stroke={lineColor} strokeWidth="1.5" opacity="0.9" />}
-                  <circle cx={cx} cy={cy} r={isActive ? 3 : 1.6} fill={lineColor} opacity={isActive ? 1 : 0.9} />
+                  <circle cx={cxStr} cy={cyStr} r="8" fill="transparent" />
+                  {isActive && <circle cx={cxStr} cy={cyStr} r="6" fill="none" stroke={lineColor} strokeWidth="1.5" opacity="0.9" />}
+                  <circle
+                    cx={cxStr}
+                    cy={cyStr}
+                    r={isActive ? 3.2 : 2}
+                    fill={pt ? (wonSelf ? 'var(--color-primary)' : 'var(--color-destructive)') : lineColor}
+                    opacity={isActive ? 1 : 0.9}
+                  />
+                  {/* Score-after label at every point — matches PDF report behaviour */}
+                  {scoreLabel && (
+                    <text
+                      x={cxStr}
+                      y={labelY.toFixed(1)}
+                      fill={isActive ? 'var(--color-foreground)' : 'var(--color-muted-foreground)'}
+                      fontSize={isActive ? 8 : 7}
+                      fontFamily="monospace"
+                      fontWeight={isActive ? '700' : '400'}
+                      textAnchor="middle"
+                      transform={`rotate(-65, ${cxStr}, ${labelY.toFixed(1)})`}
+                    >
+                      {scoreLabel}
+                    </text>
+                  )}
+                  {/* Point number on x-axis */}
+                  <text
+                    x={cxStr}
+                    y={H - 6}
+                    fill={isActive ? 'var(--color-foreground)' : 'var(--color-muted-foreground)'}
+                    fontSize="8"
+                    fontFamily="monospace"
+                    fontWeight={isActive ? '700' : '400'}
+                    textAnchor="middle"
+                  >
+                    {i === 0 ? '0' : i}
+                  </text>
                 </g>
               );
             })}
           </svg>
+        </div>
+
+        {/* Scrollable point-by-point strip — tap any point on mobile/desktop */}
+        <div
+          ref={pointStripRef}
+          className="mt-2 flex gap-1 overflow-x-auto pb-1"
+          data-testid="momentum-point-strip"
+        >
+          {points.map((pt, i) => {
+            const idx = i + 1;
+            const isActive = idx === safeActiveIdx;
+            const wonSelf = pt.pointWinner === 'self';
+            return (
+              <button
+                key={idx}
+                type="button"
+                data-point-idx={idx}
+                onClick={() => setActiveIdx(idx)}
+                className={cn(
+                  'shrink-0 rounded border px-2 py-1 font-mono text-[10px] tabular-nums transition-colors',
+                  isActive
+                    ? 'border-primary bg-primary/15 text-accent-ink font-bold'
+                    : 'border-border bg-secondary/60 text-muted-foreground hover:border-foreground/30',
+                )}
+              >
+                <span className={wonSelf ? 'text-accent-ink' : 'text-destructive'}>#{idx}</span>
+                <span className="mx-1 text-muted-foreground">·</span>
+                <span>{pt.scoreAfter}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Active point detail — defaults to the latest point */}
