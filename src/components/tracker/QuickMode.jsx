@@ -31,7 +31,7 @@ const chipCls = (active) =>
     active ? 'border-primary bg-primary/15 text-accent-ink' : 'border-border bg-secondary text-foreground'
   }`;
 
-export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onEndMatch, onPointEntryStart }) {
+export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onStopMatch, onPointEntryStart }) {
   const [pendingTag, setPendingTag] = useState(null);
 
   function commitAce() {
@@ -63,8 +63,10 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
     setPendingTag(null);
   }
 
-  function handleEndMatch() {
-    if (window.confirm('End this match now?')) onEndMatch();
+  function handleStopMatch() {
+    if (window.confirm(
+      'Stop tracking this match?\n\nYou will go to the Close tab — tap "Save partial match to history" so you can view stats and PDF later (rain, injury, or early stop).',
+    )) onStopMatch?.();
   }
 
   return (
@@ -108,10 +110,10 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
         </button>
         <button
           data-testid="quick-end-match-btn"
-          onClick={handleEndMatch}
+          onClick={handleStopMatch}
           className="flex-1 cursor-pointer border border-destructive bg-destructive/10 text-destructive font-display font-semibold text-sm p-3 rounded-lg min-h-[46px]"
         >
-          End match
+          Stop &amp; save
         </button>
       </div>
     </div>

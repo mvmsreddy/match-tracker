@@ -215,10 +215,28 @@ export default function TrackerPage() {
     setLiveSessionId(null);
     endLiveTrackingSessionQuiet(endingId).finally(() => t.resetMatch());
   }
+
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
   const [distractionFree, setDistractionFree] = useState(false);
   const [advisorHistory, setAdvisorHistory] = useState([]); // tips shown during this match, for the post-match Highlight Reel
+
+  function handleStopMatch() {
+    setActiveTab('close');
+    t.showStatus('Tap "Save partial match to history" below to keep stats for later', 6000);
+  }
+
+  const hasUnsavedSession = t.matchStarted && t.points.length > 0;
+
+  useEffect(() => {
+    if (!hasUnsavedSession) return;
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasUnsavedSession]);
 
   // Reset advisor history whenever a fresh match starts / resets
   useEffect(() => {
@@ -272,6 +290,19 @@ export default function TrackerPage() {
         </div>
       )}
       {t.matchStarted && <LiveTrackingShareBanner sessionId={liveSessionId} />}
+      {hasUnsavedSession && !t.engine?.matchOver && activeTab !== 'close' && (
+        <div className="mx-auto w-full max-w-3xl px-4 pt-2">
+          <button
+            type="button"
+            onClick={handleStopMatch}
+            className="w-full rounded-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-amber-500/15 transition-colors"
+          >
+            Match stopped early (rain, injury, etc.)?{' '}
+            <span className="font-semibold text-foreground">Close tab → Save partial match</span>{' '}
+            to view stats later.
+          </button>
+        </div>
+      )}
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
         <Scorebar
@@ -405,7 +436,7 @@ export default function TrackerPage() {
                       nextServer={t.nextServer}
                       onCommit={handleCommitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
                       selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
-                      onEndMatch={t.resetMatch}
+                      onStopMatch={handleStopMatch}
                       onPointEntryStart={timing.onPointEntryStart}
                     />
                   ) : (

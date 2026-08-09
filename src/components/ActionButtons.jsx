@@ -103,6 +103,8 @@ export default function ActionButtons({
     }
   }
 
+  const hasUnsavedPoints = points.length > 0;
+
   function handleResetClick() {
     if (confirmingReset) {
       resetMatch();
@@ -110,12 +112,25 @@ export default function ActionButtons({
       clearTimeout(resetTimer.current);
     } else {
       setConfirmingReset(true);
-      resetTimer.current = setTimeout(() => setConfirmingReset(false), 3000);
+      resetTimer.current = setTimeout(() => setConfirmingReset(false), 5000);
     }
   }
 
   return (
     <>
+      {!engine.matchOver && hasUnsavedPoints && (
+        <div className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm space-y-1">
+          <div className="font-semibold text-foreground">Match stopped early?</div>
+          <p className="text-muted-foreground">
+            Rain, injury, walkover, or any reason — save now to keep every point you logged.
+            Open <span className="font-semibold text-foreground">My Matches</span> anytime for stats; PDF on demand from there.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Tip: add why it stopped in Match Notes below (e.g. &quot;Stopped: rain after set 2&quot;).
+          </p>
+        </div>
+      )}
+
       <Card>
         <CardHeader><CardTitle>Match Notes</CardTitle></CardHeader>
         <CardContent className="pt-0">
@@ -144,7 +159,9 @@ export default function ActionButtons({
           className="ml-auto"
           onClick={handleResetClick}
         >
-          {confirmingReset ? 'Tap again to confirm reset' : 'Reset match'}
+          {confirmingReset
+            ? (hasUnsavedPoints ? 'Tap again — discard unsaved points' : 'Tap again to confirm reset')
+            : 'Reset match'}
         </Button>
       </div>
     </>
