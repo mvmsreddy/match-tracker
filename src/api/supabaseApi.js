@@ -84,6 +84,83 @@ async function invokeAdminEdgeFunction(functionName, body = {}) {
   return data;
 }
 
+function isAdminSyncRpcMissing(err) {
+  const msg = (err?.message || '').toLowerCase();
+  const code = err?.code || '';
+  return code === '42883'
+    || msg.includes('admin_trigger_aita_sync')
+    || msg.includes('could not find the function')
+    || msg.includes('schema cache');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForAitaSyncLog(previousStartedAt, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    await sleep(intervalMs);
+    const log = await getLatestAitaSyncLog();
+    if (!log?.startedAt) continue;
+    if (previousStartedAt && log.startedAt === previousStartedAt) continue;
+    if (log.finishedAt || log.error) return log;
+  }
+  const latest = await getLatestAitaSyncLog();
+  if (latest?.error) throw new Error(latest.error);
+  if (latest && latest.startedAt !== previousStartedAt) return latest;
+  throw new Error(
+    'Sync timed out. Deploy sync-aita-calendar or run supabase/phase60_admin_sync_rpc.sql in SQL Editor.',
+  );
+}
+
+async function waitForRankingsSyncUpdate(previousChecked, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    await sleep(intervalMs);
+    const overview = await getAitaRankingsSyncOverview();
+    if (overview.lastChecked && overview.lastChecked !== previousChecked) return overview;
+  }
+  throw new Error(
+    'Rankings sync timed out. Deploy sync-aita-rankings or run supabase/phase60_admin_sync_rpc.sql in SQL Editor.',
+  );
+}
+
+async function triggerAitaSyncViaRpc() {
+  const before = await getLatestAitaSyncLog().catch(() => null);
+  const { data, error } = await supabase.rpc('admin_trigger_aita_sync', { p_target: 'calendar' });
+  if (error) throw error;
+  if (!data?.ok) throw new Error('Calendar sync RPC failed');
+  const log = await waitForAitaSyncLog(before?.startedAt);
+  if (log.error) throw new Error(log.error);
+  return {
+    upserted: log.tournamentsUpserted,
+    changed: log.tournamentsChanged,
+    tournaments_upserted: log.tournamentsUpserted,
+    tournaments_changed: log.tournamentsChanged,
+  };
+}
+
+async function triggerAitaRankingsSyncViaRpc() {
+  const before = await getAitaRankingsSyncOverview().catch(() => ({ lastChecked: null }));
+  const { data, error } = await supabase.rpc('admin_trigger_aita_sync', { p_target: 'rankings' });
+  if (error) throw error;
+  if (!data?.ok) throw new Error('Rankings sync RPC failed');
+  await waitForRankingsSyncUpdate(before.lastChecked);
+  return { ok: true };
+}
+
+function wrapEdgeSyncError(edgeErr) {
+  const msg = edgeErr?.message || '';
+  if (msg.includes('forbidden') || msg.includes('super_admin')) {
+    return new Error(
+      'Sync blocked by outdated Edge Function auth. Run supabase/phase60_admin_sync_rpc.sql in Supabase SQL Editor '
+      + '(replace the 3 placeholders), or redeploy: npx supabase functions deploy sync-aita-calendar sync-aita-rankings',
+    );
+  }
+  return edgeErr;
+}
+
 function publicUser(supabaseUser) {
   const meta = supabaseUser.user_metadata || {};
   return {
@@ -3441,7 +3518,16 @@ export async function getLatestAitaSyncLog() {
 }
 
 export async function triggerAitaSync() {
-  return invokeAdminEdgeFunction('sync-aita-calendar');
+  try {
+    return await triggerAitaSyncViaRpc();
+  } catch (rpcErr) {
+    if (!isAdminSyncRpcMissing(rpcErr)) throw rpcErr;
+  }
+  try {
+    return await invokeAdminEdgeFunction('sync-aita-calendar');
+  } catch (edgeErr) {
+    throw wrapEdgeSyncError(edgeErr);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -4382,7 +4468,16 @@ export async function resolveAitaInterest(interestRow, eventId, accept) {
 // ---------------------------------------------------------------------------
 
 export async function triggerAitaRankingsSync() {
-  return invokeAdminEdgeFunction('sync-aita-rankings');
+  try {
+    return await triggerAitaRankingsSyncViaRpc();
+  } catch (rpcErr) {
+    if (!isAdminSyncRpcMissing(rpcErr)) throw rpcErr;
+  }
+  try {
+    return await invokeAdminEdgeFunction('sync-aita-rankings');
+  } catch (edgeErr) {
+    throw wrapEdgeSyncError(edgeErr);
+  }
 }
 
 /** On-demand full refresh — calendar first, then rankings. */
