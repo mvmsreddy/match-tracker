@@ -359,6 +359,18 @@ function rowToWeek(row) {
 }
 
 export async function listTournamentWeeks() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.role === 'organizer') {
+      return listMyTournamentWeeks(user.id);
+    }
+  }
+
   const { data, error } = await supabase
     .from('tournament_weeks')
     .select('*, events(id)')

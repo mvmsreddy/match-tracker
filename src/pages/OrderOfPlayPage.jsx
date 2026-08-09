@@ -6,6 +6,8 @@ import { generateOOPPdf } from '../utils/oopPdf';
 import { Button } from '@/components/primitives/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/primitives/table';
 import { cn } from '../lib/utils';
+import { organizerBlockedFromWeek } from '../lib/tournamentAccess';
+import OrganizerAccessDenied from '../components/organizer/OrganizerAccessDenied';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -310,6 +312,10 @@ export default function OrderOfPlayPage() {
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
       </div>
     );
+  }
+
+  if (organizerBlockedFromWeek(week, user)) {
+    return <OrganizerAccessDenied />;
   }
 
   return (

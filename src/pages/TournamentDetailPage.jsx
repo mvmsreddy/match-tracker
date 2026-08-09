@@ -5,8 +5,10 @@ import * as api from '../api';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
 import { openRazorpayCheckout } from '../lib/razorpay';
 import { pickEventForAction } from '../utils/organizerTournamentStage';
+import { organizerBlockedFromWeek } from '../lib/tournamentAccess';
 import OrganizerProgressStepper from '../components/organizer/OrganizerProgressStepper';
 import OrganizerOnboardingChecklist, { shouldShowOnboardingChecklist } from '../components/organizer/OrganizerOnboardingChecklist';
+import OrganizerAccessDenied from '../components/organizer/OrganizerAccessDenied';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { cn } from '../lib/utils';
@@ -593,6 +595,10 @@ export default function TournamentDetailPage() {
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading…</div>
       </div>
     );
+  }
+
+  if (organizerBlockedFromWeek(week, user)) {
+    return <OrganizerAccessDenied />;
   }
 
   return (

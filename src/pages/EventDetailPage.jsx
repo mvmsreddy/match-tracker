@@ -12,6 +12,8 @@ import { Input } from '@/components/primitives/input';
 import { Table, TableHeader, TableBody, TableRow as UITableRow, TableHead, TableCell } from '@/components/primitives/table';
 import { cn } from '../lib/utils';
 import { toDisplayRating } from '../lib/glicko2';
+import { organizerBlockedFromWeek } from '../lib/tournamentAccess';
+import OrganizerAccessDenied from '../components/organizer/OrganizerAccessDenied';
 
 const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
 
@@ -2647,6 +2649,10 @@ export default function EventDetailPage() {
     </div>
   );
 
+  if (organizerBlockedFromWeek(week, user)) {
+    return <OrganizerAccessDenied />;
+  }
+
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
@@ -2807,12 +2813,14 @@ export default function EventDetailPage() {
         />
       )}
 
-      {/* Draw-type tabs — always visible */}
+      {/* Draw-type tabs — management tabs are owner-only */}
       <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
-        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'entries' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
-          onClick={() => { setActiveTab('entries'); setSwapMode(false); setSelectedEntry(null); }}>
-          Entries{entriesSummaryRows.length > 0 ? ` (${entriesSummaryRows.length})` : ''}
-        </button>
+        {isOwner && (
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'entries' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+            onClick={() => { setActiveTab('entries'); setSwapMode(false); setSelectedEntry(null); }}>
+            Entries{entriesSummaryRows.length > 0 ? ` (${entriesSummaryRows.length})` : ''}
+          </button>
+        )}
         <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'main' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => { setActiveTab('main'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
           Main Draw ({event?.drawSize ?? '?'})
@@ -2823,15 +2831,19 @@ export default function EventDetailPage() {
             Qualifying ({event.qualifyingSize || '—'})
           </button>
         )}
-        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'alternates' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
-          onClick={() => { setActiveTab('alternates'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
-          Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
-        </button>
-        <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'withdrawal' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
-          onClick={() => { setActiveTab('withdrawal'); setSwapMode(false); setSelectedEntry(null); }}>
-          Withdrawal{withdrawnEntries.length > 0 ? ` (${withdrawnEntries.length})` : ''}
-        </button>
-        {event?.hasQualifying && (
+        {isOwner && (
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'alternates' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+            onClick={() => { setActiveTab('alternates'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
+            Alternates{alternateEntries.length > 0 ? ` (${alternateEntries.length})` : ''}
+          </button>
+        )}
+        {isOwner && (
+          <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'withdrawal' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+            onClick={() => { setActiveTab('withdrawal'); setSwapMode(false); setSelectedEntry(null); }}>
+            Withdrawal{withdrawnEntries.length > 0 ? ` (${withdrawnEntries.length})` : ''}
+          </button>
+        )}
+        {isOwner && event?.hasQualifying && (
           <button className={cn('px-3 py-1.5 rounded-sm text-xs font-semibold', activeTab === 'lucky_losers' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
             onClick={() => { setActiveTab('lucky_losers'); setDrawType('main'); setSwapMode(false); setSelectedEntry(null); }}>
             Lucky Losers
