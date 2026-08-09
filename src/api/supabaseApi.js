@@ -56,12 +56,15 @@ async function invokeAdminEdgeFunction(functionName, body = {}) {
   if (error) {
     const bodyMsg = await readFunctionErrorBody(error);
     const status = error.context?.status;
+    if (status === 403 || bodyMsg === 'forbidden') {
+      throw new Error(
+        'Sync forbidden — your login works, but user_profiles.role is not super_admin. '
+        + 'Run the SQL fix below in Supabase, then sign out and sign in again.',
+      );
+    }
     if (bodyMsg) throw new Error(`${functionName}: ${bodyMsg}`);
     if (status === 401) {
       throw new Error('Sync unauthorized — sign out/in and confirm super_admin role.');
-    }
-    if (status === 403) {
-      throw new Error('Sync forbidden — user_profiles.role must be super_admin.');
     }
     if (status === 404 || (error.message || '').includes('Failed to send a request')) {
       throw new Error(
@@ -71,6 +74,12 @@ async function invokeAdminEdgeFunction(functionName, body = {}) {
     throw new Error(error.message || `Edge Function "${functionName}" failed`);
   }
 
+  if (data?.error === 'forbidden') {
+    throw new Error(
+      'Sync forbidden — your login works, but user_profiles.role is not super_admin. '
+      + 'Run the SQL fix in Supabase SQL Editor, then sign out and sign in again.',
+    );
+  }
   if (data?.error) throw new Error(String(data.error));
   return data;
 }
