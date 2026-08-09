@@ -160,6 +160,8 @@ function rowToMatch(row) {
     eventMatchId: row.event_match_id,
     normalizedCategory: row.normalized_category,
     normalizedSubcategory: row.normalized_subcategory,
+    trackedBy: row.tracked_by,
+    trackingMode: row.tracking_mode,
   };
 }
 
@@ -174,8 +176,13 @@ export async function listMatches(userId) {
 }
 
 export async function saveMatch(userId, record) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const trackedBy = record.trackedBy ?? (userId !== user?.id ? user?.id : null);
+
   const row = {
     user_id: userId,
+    tracked_by: trackedBy || null,
+    tracking_mode: record.trackingMode || null,
     self_name: record.selfName,
     opp_name: record.oppName,
     tournament: record.tournament || null,
@@ -280,6 +287,31 @@ export async function deleteStreakFreeze(freezeId) {
   const { error } = await supabase.from('streak_freezes').delete().eq('id', freezeId);
   if (error) throw new Error(error.message);
   return { ok: true };
+}
+
+// Coach/parent proxy tracking — verify an active link before launching /track
+// on behalf of a player.
+export async function canTrackForPlayer(playerId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !playerId) return false;
+  if (user.id === playerId) return true;
+
+  const [{ data: coachLink }, { data: parentLink }] = await Promise.all([
+    supabase.from('coach_player_links')
+      .select('id')
+      .eq('coach_id', user.id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .maybeSingle(),
+    supabase.from('parent_player_links')
+      .select('id')
+      .eq('parent_id', user.id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .maybeSingle(),
+  ]);
+
+  return !!(coachLink || parentLink);
 }
 
 // Multi-segment dashboard, Phase 4 — tracker sessions for one segment, keyed

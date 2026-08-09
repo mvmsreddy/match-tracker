@@ -6,12 +6,13 @@ import { useNavigate } from 'react-router-dom';
 // location.state rather than query params so the payload can carry an
 // object without URL-encoding concerns. TrackerPage consumes
 // location.state.trackerPrefill once on mount (see src/pages/TrackerPage.jsx).
-export default function LogMatchButton({ match, opponentName, tournamentName, date, round, category, subcategory, className }) {
+export default function LogMatchButton({ match, opponentName, tournamentName, date, round, category, subcategory, trackForPlayerId, trackForPlayerName, className }) {
   const navigate = useNavigate();
 
   function handleClick() {
     navigate('/track', {
       state: {
+        ...(trackForPlayerId ? { trackForPlayerId, trackForPlayerName } : {}),
         trackerPrefill: {
           oppName: opponentName || '',
           tournament: tournamentName || '',

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMatchTracker } from '../hooks/useMatchTracker';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { useAuth } from '../context/AuthContext';
 import { getWeatherString } from '../lib/weather';
+import { parseTrackForState } from '../lib/proxyTracking';
 import * as api from '../api';
 import AppNav from '../components/AppNav';
 import Scorebar from '../components/Scorebar';
@@ -119,9 +121,50 @@ const TRACKING_MODES = [
 const AI_REVIEW_ENABLED = false;
 
 export default function TrackerPage() {
-  const t = useMatchTracker();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [trackFor, setTrackFor] = useState(null);
+  const [trackForError, setTrackForError] = useState('');
+
+  useEffect(() => {
+    const fromState = parseTrackForState(location.state);
+    const fromQuery = searchParams.get('for');
+    const playerId = fromState?.playerId || fromQuery;
+    if (!playerId) {
+      setTrackFor(null);
+      setTrackForError('');
+      return;
+    }
+    let cancelled = false;
+    api.canTrackForPlayer(playerId)
+      .then(ok => {
+        if (cancelled) return;
+        if (!ok) {
+          setTrackFor(null);
+          setTrackForError('You are not linked to this player — tracking saves to your own account only.');
+          return;
+        }
+        setTrackForError('');
+        setTrackFor({
+          playerId,
+          playerName: fromState?.playerName || 'Player',
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTrackFor(null);
+          setTrackForError('Could not verify tracking permission for this player.');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [location.state, searchParams]);
+
+  const t = useMatchTracker({
+    subjectPlayerId: trackFor?.playerId || null,
+    subjectPlayerName: trackFor?.playerName || '',
+  });
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
   const [distractionFree, setDistractionFree] = useState(false);
@@ -164,6 +207,20 @@ export default function TrackerPage() {
   return (
     <AppNav>
     <div className="tracker-shell flex h-full flex-col overflow-hidden bg-background text-foreground font-body">
+      {trackFor && (
+        <div className="mx-auto w-full max-w-3xl px-4 pt-3">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            Tracking for <strong>{trackFor.playerName}</strong> — points save to their match history.
+          </div>
+        </div>
+      )}
+      {trackForError && (
+        <div className="mx-auto w-full max-w-3xl px-4 pt-3">
+          <div className="rounded-sm border border-destructive/30 bg-destructive/10 text-destructive text-sm px-3 py-2">
+            {trackForError}
+          </div>
+        </div>
+      )}
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
         <Scorebar
@@ -342,6 +399,7 @@ export default function TrackerPage() {
             pointTarget={t.pointTarget} trackingMode={t.trackingMode} points={t.points} engine={t.engine} analytics={t.analytics}
             matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
             showStatus={t.showStatus} resetMatch={t.resetMatch}
+            subjectPlayerId={t.trackingForPlayerId}
           />
         </div>
       )}

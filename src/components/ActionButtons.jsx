@@ -25,7 +25,7 @@ async function saveAndSharePdfNative(doc, filename) {
 export default function ActionButtons({
   header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
   points, engine, analytics, matchStartTime, matchDurationMs, showStatus,
-  resetMatch,
+  resetMatch, subjectPlayerId = null,
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -50,9 +50,11 @@ export default function ActionButtons({
     if (points.length === 0) { showStatus('Log at least one point first'); return; }
     setSaving(true);
     try {
-      await api.saveMatch(user.id, {
+      const ownerId = subjectPlayerId || user.id;
+      await api.saveMatch(ownerId, {
         selfName, oppName, tournament: header.tournament, date: header.date, round: header.round,
         sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
+        trackedBy: subjectPlayerId ? user.id : null,
         surface: header.surface, indoorOutdoor: header.indoorOutdoor,
         oppHandedness: header.oppHandedness, weather: header.weather, notes: header.notes,
         governingBody: header.governingBody, circuit: header.circuit,
@@ -67,7 +69,7 @@ export default function ActionButtons({
         points,
         sets: engine.sets,
       });
-      showStatus('Match saved to history');
+      showStatus(subjectPlayerId ? `Match saved to ${selfName}'s history` : 'Match saved to history');
       resetMatch();
     } catch (err) {
       showStatus('Could not save match: ' + err.message, 4000);

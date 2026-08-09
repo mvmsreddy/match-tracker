@@ -166,7 +166,21 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
               </svg>
               {behindPace && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />}
             </button>
-            {isOwnDashboard && <Button size="sm" onClick={() => navigate('/track')}>Launch tracker</Button>}
+            {isOwnDashboard
+              ? <Button size="sm" onClick={() => navigate('/track')}>Launch tracker</Button>
+              : viewPlayerId && (
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/track', {
+                    state: {
+                      trackForPlayerId: viewPlayerId,
+                      trackForPlayerName: viewPlayerName || 'Player',
+                    },
+                  })}
+                >
+                  Track for {viewPlayerName?.split(' ')[0] || 'player'}
+                </Button>
+              )}
           </div>
         </div>
       </div>

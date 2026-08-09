@@ -1,30 +1,33 @@
 const STORAGE_PREFIX = 'matchTrackerPro_session_v1_';
 
-export function storageKeyFor(userId) {
-  return STORAGE_PREFIX + (userId || 'anon');
+export function storageKeyFor(userId, subjectPlayerId = null) {
+  const key = subjectPlayerId && subjectPlayerId !== userId
+    ? `${userId}_for_${subjectPlayerId}`
+    : userId;
+  return STORAGE_PREFIX + (key || 'anon');
 }
 
-export function saveSession(userId, state) {
+export function saveSession(userId, state, subjectPlayerId = null) {
   try {
-    localStorage.setItem(storageKeyFor(userId), JSON.stringify(state));
+    localStorage.setItem(storageKeyFor(userId, subjectPlayerId), JSON.stringify(state));
     return true;
   } catch (e) {
     return false;
   }
 }
 
-export function loadSession(userId) {
+export function loadSession(userId, subjectPlayerId = null) {
   try {
-    const raw = localStorage.getItem(storageKeyFor(userId));
+    const raw = localStorage.getItem(storageKeyFor(userId, subjectPlayerId));
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
     return null;
   }
 }
 
-export function clearSession(userId) {
+export function clearSession(userId, subjectPlayerId = null) {
   try {
-    localStorage.removeItem(storageKeyFor(userId));
+    localStorage.removeItem(storageKeyFor(userId, subjectPlayerId));
   } catch (e) {
     /* ignore */
   }

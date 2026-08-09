@@ -28,6 +28,7 @@ export const listMatches = impl.listMatches;
 export const saveMatch = impl.saveMatch;
 export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
+export const canTrackForPlayer = hasSupabaseConfig ? supabaseApi.canTrackForPlayer : async () => true;
 
 // Phase 35 — retroactive point-by-point entry
 export const updateMatchPoints = hasSupabaseConfig ? supabaseApi.updateMatchPoints : async () => {};

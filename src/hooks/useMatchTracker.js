@@ -48,7 +48,7 @@ function initialState() {
   };
 }
 
-export function useMatchTracker() {
+export function useMatchTracker({ subjectPlayerId = null, subjectPlayerName = '' } = {}) {
   const { user } = useAuth();
   const [state, setState] = useState(initialState);
   const [status, setStatus] = useState('');
@@ -57,15 +57,15 @@ export function useMatchTracker() {
   const restoredRef = useRef(false);
   const sessionClearedRef = useRef(false);
   const [clockTick, setClockTick] = useState(0);
+  const trackingForPlayerId = subjectPlayerId && subjectPlayerId !== user?.id ? subjectPlayerId : null;
 
   // ---- Load saved session on mount (per logged-in user) ----
   useEffect(() => {
     if (!user) return;
-    // Prefer the user's real profile name over the empty default. If they
-    // manually change it in the setup form (or a saved session already
-    // exists), we respect that below.
-    const profileName = user.displayName || user.fullName || user.name || user.email?.split('@')[0] || '';
-    const saved = loadSession(user.id);
+    const profileName = trackingForPlayerId
+      ? (subjectPlayerName || 'Player')
+      : (user.displayName || user.fullName || user.name || user.email?.split('@')[0] || '');
+    const saved = loadSession(user.id, trackingForPlayerId);
     if (saved) {
       setState((prev) => ({
         ...prev,
@@ -85,15 +85,15 @@ export function useMatchTracker() {
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, trackingForPlayerId, subjectPlayerName]);
 
   // ---- Autosave ----
   useEffect(() => {
     if (!user) return;
     if (sessionClearedRef.current) { sessionClearedRef.current = false; return; }
-    const t = setTimeout(() => saveSession(user.id, state), 150);
+    const t = setTimeout(() => saveSession(user.id, state, trackingForPlayerId), 150);
     return () => clearTimeout(t);
-  }, [user, state]);
+  }, [user, state, trackingForPlayerId]);
 
   // ---- Live clock tick while a match is running ----
   useEffect(() => {
@@ -249,7 +249,7 @@ export function useMatchTracker() {
   }, []);
 
   const resetMatch = useCallback(() => {
-    if (user) { sessionClearedRef.current = true; clearSession(user.id); }
+    if (user) { sessionClearedRef.current = true; clearSession(user.id, trackingForPlayerId); }
     setGameTransition(null);
     setState((prev) => ({
       ...initialState(),
@@ -259,14 +259,14 @@ export function useMatchTracker() {
       pointTarget: prev.pointTarget,
       trackingMode: prev.trackingMode,
     }));
-  }, [user]);
+  }, [user, trackingForPlayerId]);
 
   // Clears the setup form itself (header + session/format/tracking choices)
   // back to defaults — for starting a fresh match from scratch, as opposed to
   // resetMatch() which deliberately keeps the header so a coach can log
   // another match against the same opponent/tournament without retyping it.
   const resetSetupForm = useCallback(() => {
-    if (user) { sessionClearedRef.current = true; clearSession(user.id); }
+    if (user) { sessionClearedRef.current = true; clearSession(user.id, trackingForPlayerId); }
     setState((prev) => ({
       ...prev,
       header: { ...DEFAULT_HEADER },
@@ -276,7 +276,7 @@ export function useMatchTracker() {
       pointTarget: 10,
       trackingMode: null,
     }));
-  }, [user]);
+  }, [user, trackingForPlayerId]);
 
   const formatLabel = state.formatPreset === 'custom'
     ? (state.formatCustom || 'Custom format')
@@ -300,5 +300,6 @@ export function useMatchTracker() {
     status, showStatus,
     FORMAT_PRESETS,
     gameTransition, clearTransition,
+    trackingForPlayerId,
   };
 }
