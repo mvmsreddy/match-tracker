@@ -45,6 +45,10 @@ async function readFunctionErrorBody(error) {
   return null;
 }
 
+const ADMIN_SYNC_SETUP_HINT =
+  'Supabase SQL Editor → run supabase/phase60_admin_sync_rpc.sql (step 1), '
+  + 'then run the INSERT at the bottom with your Project URL, service_role key, and SYNC_SECRET.';
+
 /** Super-admin manual triggers — refresh JWT and surface deploy/auth hints. */
 async function invokeAdminEdgeFunction(functionName, body = {}) {
   const token = await ensureFreshAccessToken();
@@ -57,10 +61,7 @@ async function invokeAdminEdgeFunction(functionName, body = {}) {
     const bodyMsg = await readFunctionErrorBody(error);
     const status = error.context?.status;
     if (status === 403 || bodyMsg === 'forbidden') {
-      throw new Error(
-        'Sync forbidden — your login works, but user_profiles.role is not super_admin. '
-        + 'Run the SQL fix below in Supabase, then sign out and sign in again.',
-      );
+      throw new Error(`Sync blocked by outdated Edge Function. ${ADMIN_SYNC_SETUP_HINT}`);
     }
     if (bodyMsg) throw new Error(`${functionName}: ${bodyMsg}`);
     if (status === 401) {
@@ -75,10 +76,7 @@ async function invokeAdminEdgeFunction(functionName, body = {}) {
   }
 
   if (data?.error === 'forbidden') {
-    throw new Error(
-      'Sync forbidden — your login works, but user_profiles.role is not super_admin. '
-      + 'Run the SQL fix in Supabase SQL Editor, then sign out and sign in again.',
-    );
+    throw new Error(`Sync blocked by outdated Edge Function. ${ADMIN_SYNC_SETUP_HINT}`);
   }
   if (data?.error) throw new Error(String(data.error));
   return data;
@@ -150,15 +148,18 @@ async function triggerAitaRankingsSyncViaRpc() {
   return { ok: true };
 }
 
-function wrapEdgeSyncError(edgeErr) {
-  const msg = edgeErr?.message || '';
-  if (msg.includes('forbidden') || msg.includes('super_admin')) {
-    return new Error(
-      'Sync blocked by outdated Edge Function auth. Run supabase/phase60_admin_sync_rpc.sql in Supabase SQL Editor '
-      + '(replace the 3 placeholders), or redeploy: npx supabase functions deploy sync-aita-calendar sync-aita-rankings',
-    );
+function formatAdminSyncRpcError(rpcErr) {
+  const msg = rpcErr?.message || '';
+  if (isAdminSyncRpcMissing(rpcErr)) {
+    return new Error(`Admin sync not set up yet. ${ADMIN_SYNC_SETUP_HINT}`);
   }
-  return edgeErr;
+  if (msg.includes('Sync not configured')) {
+    return new Error(`${msg} ${ADMIN_SYNC_SETUP_HINT}`);
+  }
+  if (msg.includes('forbidden')) {
+    return new Error('Sync forbidden — confirm user_profiles.role = super_admin for your account.');
+  }
+  return rpcErr;
 }
 
 function publicUser(supabaseUser) {
@@ -3521,12 +3522,7 @@ export async function triggerAitaSync() {
   try {
     return await triggerAitaSyncViaRpc();
   } catch (rpcErr) {
-    if (!isAdminSyncRpcMissing(rpcErr)) throw rpcErr;
-  }
-  try {
-    return await invokeAdminEdgeFunction('sync-aita-calendar');
-  } catch (edgeErr) {
-    throw wrapEdgeSyncError(edgeErr);
+    throw formatAdminSyncRpcError(rpcErr);
   }
 }
 
@@ -4471,12 +4467,7 @@ export async function triggerAitaRankingsSync() {
   try {
     return await triggerAitaRankingsSyncViaRpc();
   } catch (rpcErr) {
-    if (!isAdminSyncRpcMissing(rpcErr)) throw rpcErr;
-  }
-  try {
-    return await invokeAdminEdgeFunction('sync-aita-rankings');
-  } catch (edgeErr) {
-    throw wrapEdgeSyncError(edgeErr);
+    throw formatAdminSyncRpcError(rpcErr);
   }
 }
 
