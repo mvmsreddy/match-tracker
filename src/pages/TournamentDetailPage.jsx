@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
 import { openRazorpayCheckout } from '../lib/razorpay';
+import { pickEventForAction } from '../utils/organizerTournamentStage';
+import OrganizerProgressStepper from '../components/organizer/OrganizerProgressStepper';
+import OrganizerOnboardingChecklist, { shouldShowOnboardingChecklist } from '../components/organizer/OrganizerOnboardingChecklist';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { cn } from '../lib/utils';
@@ -301,6 +304,8 @@ export default function TournamentDetailPage() {
   const [partnerResults, setPartnerResults] = useState([]);
   const [inviteError, setInviteError] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Load week + events
   useEffect(() => {
@@ -335,6 +340,24 @@ export default function TournamentDetailPage() {
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournament'); });
     return () => { cancelled = true; };
   }, [weekId, user?.role]);
+
+  useEffect(() => {
+    if (!week || !user || week.createdBy !== user.id || week.source !== 'aita_claimed' || events.length === 0) {
+      setInterestedCount(0);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(events.map(ev => api.getUnresolvedAitaInterestForEvent(ev.id).catch(() => [])))
+      .then(results => {
+        if (cancelled) return;
+        setInterestedCount(results.reduce((n, rows) => n + rows.length, 0));
+      });
+    return () => { cancelled = true; };
+  }, [week, user, events]);
+
+  useEffect(() => {
+    if (week && shouldShowOnboardingChecklist(week)) setShowOnboarding(true);
+  }, [week]);
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -397,6 +420,20 @@ export default function TournamentDetailPage() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function handleStepperAction(action) {
+    if (action === 'add_event') {
+      setShowAddEvent(true);
+      setSaveError('');
+      return;
+    }
+    if (action === 'open_all_entries') {
+      handleCascadeEntriesOpen(true);
+      return;
+    }
+    const ev = pickEventForAction(events, action);
+    if (ev) navigate(`/tournaments/${weekId}/events/${ev.id}`);
   }
 
   const isOwner = week && user && week.createdBy === user.id;
@@ -580,6 +617,24 @@ export default function TournamentDetailPage() {
           )}
         </div>
       </div>
+
+      {isOwner && showOnboarding && (
+        <OrganizerOnboardingChecklist
+          week={week}
+          events={events}
+          interestedCount={interestedCount}
+          onDismiss={() => setShowOnboarding(false)}
+        />
+      )}
+
+      {isOwner && (
+        <OrganizerProgressStepper
+          week={week}
+          events={events}
+          interestedCount={interestedCount}
+          onAction={handleStepperAction}
+        />
+      )}
 
       {/* Tournament-level Entries Open/Close — cascades to every event below;
           each event's own Open/Close Entries button (on EventDetailPage) still

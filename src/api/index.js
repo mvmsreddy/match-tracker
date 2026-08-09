@@ -208,6 +208,8 @@ export const applyAitaResultsSheet = hasSupabaseConfig ? supabaseApi.applyAitaRe
 // Phase 46 — organizer claims on AITA Calendar tournaments
 export const claimAitaTournamentAsOrganizer = hasSupabaseConfig ? supabaseApi.claimAitaTournamentAsOrganizer : noSupabase;
 export const getMyAitaClaimForTournament = hasSupabaseConfig ? supabaseApi.getMyAitaClaimForTournament : async () => null;
+export const listMyAitaClaims = hasSupabaseConfig ? supabaseApi.listMyAitaClaims : async () => [];
+export const findSimilarAitaTournaments = hasSupabaseConfig ? supabaseApi.findSimilarAitaTournaments : async () => [];
 export const getPendingAitaOrganizerClaims = hasSupabaseConfig ? supabaseApi.getPendingAitaOrganizerClaims : async () => [];
 export const approveAitaOrganizerClaim = hasSupabaseConfig ? supabaseApi.approveAitaOrganizerClaim : noSupabase;
 export const rejectAitaOrganizerClaim = hasSupabaseConfig ? supabaseApi.rejectAitaOrganizerClaim : noSupabase;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { useTournamentActivity } from '../hooks/useTournamentActivity';
@@ -9,6 +9,7 @@ import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { StatCardSkeleton } from '@/components/primitives/skeleton';
 import { LogTodayReminder, QuickAddGrid } from '@/components/DashboardExtras';
+import OrganizerHome from '@/components/organizer/OrganizerHome';
 import { Trophy, TrendingUp, TrendingDown, Calendar, Target, Flame } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,7 @@ function OrganizerBanner({ user }) {
       title="Tournament Organizer"
       subtitle={
         <>
-          {user.clubName || 'Create and manage AITA tournament events'}
+          {user.clubName || 'Host and manage your events'}
           {user.isVerified && <span className="ml-2 text-accent-ink font-bold">Verified</span>}
         </>
       }
@@ -252,6 +253,7 @@ function CoachTournamentSections({ loading, error, todayMatches, recentResults, 
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const role = user?.role || 'player';
 
   const [matches, setMatches]   = useState(null);
@@ -348,7 +350,7 @@ export default function DashboardPage() {
           Welcome back, {(user.displayName || user.name || '').split(' ')[0]}
         </h1>
         <div className="text-sm text-muted-foreground mt-0.5">
-          {role === 'organizer' ? 'Tournament management overview' : 'Your coaching overview'}
+          {role === 'organizer' ? 'Host and manage your events' : 'Your coaching overview'}
         </div>
       </div>
 
@@ -363,16 +365,12 @@ export default function DashboardPage() {
 
       {streak && <StreakCard streak={streak} tokenState={tokenState} protection={protection} />}
 
-      {/* Organizer: quick actions only */}
+      {/* Organizer: command centre */}
       {role === 'organizer' && (
-        <div>
-          <Link to="/tournaments"><Button>View My Tournaments</Button></Link>
-          <div className="mt-4">
-            <EmptyState>
-              Use the <strong>Tournaments</strong> section to create events, manage draws, and enter scores.
-            </EmptyState>
-          </div>
-        </div>
+        <OrganizerHome
+          user={user}
+          onHostTournament={() => navigate('/tournaments?create=standalone')}
+        />
       )}
 
       {/* Coach: roster tournament activity */}

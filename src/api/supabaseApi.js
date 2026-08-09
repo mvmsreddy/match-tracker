@@ -375,11 +375,18 @@ export async function listTournamentWeeks() {
 export async function listMyTournamentWeeks(userId) {
   const { data, error } = await supabase
     .from('tournament_weeks')
-    .select('*, events(id)')
+    .select('*, events(id, status, entries_open)')
     .eq('created_by', userId)
     .order('start_date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(rowToWeek);
+  return data.map(row => ({
+    ...rowToWeek(row),
+    events: (row.events || []).map(e => ({
+      id: e.id,
+      status: e.status,
+      entriesOpen: e.entries_open,
+    })),
+  }));
 }
 
 export async function getTournamentWeek(id) {
@@ -3767,6 +3774,63 @@ export async function getMyAitaClaimForTournament(aitaTournamentId) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? rowToAitaOrganizerClaim(data) : null;
+}
+
+// Every claim this organizer has submitted — drives the pending-claims panel
+// on My Events and the organizer dashboard.
+export async function listMyAitaClaims(userId) {
+  const { data, error } = await supabase
+    .from('aita_organizer_claims')
+    .select('*, aita_tournaments(*)')
+    .eq('claimed_by', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(rowToAitaOrganizerClaim);
+}
+
+// Before creating a standalone tournament, check whether an unclaimed AITA
+// mirror already exists for the same real-world event.
+export async function findSimilarAitaTournaments({ name, city, startDate }) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return [];
+
+  let query = supabase
+    .from('aita_tournaments')
+    .select('*')
+    .is('linked_tournament_week_id', null);
+
+  if (city?.trim()) {
+    query = query.ilike('city', `%${city.trim()}%`);
+  }
+
+  if (startDate) {
+    const anchor = new Date(`${startDate}T12:00:00`);
+    const from = new Date(anchor);
+    from.setDate(from.getDate() - 10);
+    const to = new Date(anchor);
+    to.setDate(to.getDate() + 10);
+    query = query
+      .gte('start_date', from.toISOString().slice(0, 10))
+      .lte('start_date', to.toISOString().slice(0, 10));
+  }
+
+  const { data, error } = await query.order('start_date', { ascending: true }).limit(30);
+  if (error) throw new Error(error.message);
+
+  const needle = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const needleTokens = needle.split(/\s+/).filter(t => t.length > 2);
+
+  return data
+    .map(rowToAitaTournament)
+    .map(t => {
+      const hay = (t.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      const overlap = needleTokens.filter(tok => hay.includes(tok)).length;
+      return { tournament: t, score: overlap };
+    })
+    .filter(({ score }) => score >= 2 || (needleTokens.length <= 2 && score >= 1))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map(({ tournament }) => tournament);
 }
 
 export async function getPendingAitaOrganizerClaims() {

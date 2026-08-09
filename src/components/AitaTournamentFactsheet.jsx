@@ -401,8 +401,9 @@ function ParticipationWidget({ t }) {
 // live on the platform (either path), everyone just sees a link to it;
 // otherwise players get the "I'm Playing" declaration and organizers get
 // the claim button. Neither renders for other roles (coach, parent, etc).
-function AitaTournamentActionWidget({ t }) {
+function AitaTournamentActionWidget({ t, claimMode = false }) {
   if (t.linkedTournamentWeekId) return <LiveOnPlatformBanner t={t} />;
+  if (claimMode) return <OrganizerClaimWidget aitaTournamentId={t.id} />;
   return (
     <>
       <ParticipationWidget t={t} />
@@ -519,7 +520,7 @@ function GridTable({ columns, headers, rows }) {
 // / Daily Allowance), filled from the sync's normal columns and topped up
 // with whatever parseLeakedDetails() can recover when one of those columns
 // turns out to hold a mis-parsed dump instead of its real value.
-export default function AitaTournamentFactsheet({ t }) {
+export default function AitaTournamentFactsheet({ t, claimMode = false }) {
   const leakedBlob = findLeakedBlob(t);
   const leaked = parseLeakedDetails(leakedBlob);
 
@@ -571,7 +572,7 @@ export default function AitaTournamentFactsheet({ t }) {
         {t.startDate && <span className="text-sm text-muted-foreground">{t.startDate}</span>}
       </div>
 
-      <AitaTournamentActionWidget t={t} />
+      <AitaTournamentActionWidget t={t} claimMode={claimMode} />
 
       <TableSection title="Tour Info" hasContent={hasTourInfo}>
         <TableRow label="Tournament Category" value={t.grade} />

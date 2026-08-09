@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
 import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
+import HostTournamentModal, { DuplicateAitaWarning } from '../components/organizer/HostTournamentModal';
+import OrganizerTournamentCard from '../components/organizer/OrganizerTournamentCard';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
@@ -73,8 +75,12 @@ function formatDateRange(start, end) {
 
 export default function TournamentsListPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [weeks, setWeeks] = useState(null);
+  const [claims, setClaims] = useState([]);
   const [error, setError] = useState('');
+  const [showHostModal, setShowHostModal] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -83,6 +89,8 @@ export default function TournamentsListPage() {
   const [parsedFromPdf, setParsedFromPdf] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState('');
+  const [duplicateMatches, setDuplicateMatches] = useState([]);
+  const [duplicateDismissed, setDuplicateDismissed] = useState(false);
   const pdfInputRef = useRef(null);
   // Step 2: event rows
   const [step, setStep] = useState(1);
@@ -90,15 +98,16 @@ export default function TournamentsListPage() {
 
   const isOrganizer = user?.role === 'organizer';
 
-  // Organizers only ever see tournaments they created or had an AITA claim
-  // approved for — never the whole system's tournaments. Other roles
-  // (coach/parent) still get the unscoped list for now; role-scoping them
-  // is a separate, later change.
   useEffect(() => {
     let cancelled = false;
-    const load = isOrganizer ? api.listMyTournamentWeeks(user.id) : api.listTournamentWeeks();
-    load
-      .then(list => { if (!cancelled) setWeeks(list); })
+    const loadWeeks = isOrganizer ? api.listMyTournamentWeeks(user.id) : api.listTournamentWeeks();
+    const loadClaims = isOrganizer ? api.listMyAitaClaims(user.id) : Promise.resolve([]);
+    Promise.all([loadWeeks, loadClaims])
+      .then(([list, claimList]) => {
+        if (cancelled) return;
+        setWeeks(list);
+        setClaims(claimList);
+      })
       .catch(e => { if (!cancelled) setError(e.message || 'Could not load tournaments'); });
     return () => { cancelled = true; };
   }, [isOrganizer, user?.id]);
@@ -113,14 +122,37 @@ export default function TournamentsListPage() {
     setStep(1);
     setEventRows([]);
     setSaveError('');
+    setDuplicateMatches([]);
+    setDuplicateDismissed(false);
     setForm(EMPTY_FORM);
   }
 
-  // Step 1 → 2: validate name, advance
-  function handleStep1(e) {
+  async function checkDuplicates(nextForm = form) {
+    if (!isOrganizer || duplicateDismissed) return [];
+    try {
+      const matches = await api.findSimilarAitaTournaments({
+        name: nextForm.name,
+        city: nextForm.city,
+        startDate: nextForm.startDate,
+      });
+      setDuplicateMatches(matches);
+      return matches;
+    } catch {
+      setDuplicateMatches([]);
+      return [];
+    }
+  }
+
+  // Step 1 → 2: validate name, check AITA duplicates, advance
+  async function handleStep1(e) {
     e.preventDefault();
     if (!form.name.trim()) { setSaveError('Tournament name is required.'); return; }
     setSaveError('');
+    const matches = await checkDuplicates(form);
+    if (matches.length > 0 && !duplicateDismissed) {
+      setSaveError('This event may already exist on the AITA calendar — claim it instead of creating a duplicate.');
+      return;
+    }
     setStep(2);
   }
 
@@ -208,23 +240,25 @@ export default function TournamentsListPage() {
     if (!file) return;
     setParsing(true);
     setParseError('');
+    setDuplicateDismissed(false);
     try {
       const parsed = await parseFactsheetPdf(file);
       setForm(prev => ({ ...prev, ...parsed }));
       setParsedFromPdf(true);
-      setShowMore(true); // expand details so user can review everything
+      setShowMore(true);
       setStep(1);
       setEventRows([]);
       setShowCreate(true);
+      await checkDuplicates({ ...form, ...parsed });
     } catch (err) {
       setParseError('Could not read PDF: ' + (err.message || 'unknown error'));
     } finally {
       setParsing(false);
-      e.target.value = ''; // reset so same file can be re-uploaded
+      e.target.value = '';
     }
   }
 
-  function openCreateManual() {
+  function openCreateStandalone() {
     setForm(EMPTY_FORM);
     setParsedFromPdf(false);
     setParseError('');
@@ -232,8 +266,22 @@ export default function TournamentsListPage() {
     setShowMore(false);
     setStep(1);
     setEventRows([]);
+    setDuplicateMatches([]);
+    setDuplicateDismissed(false);
     setShowCreate(true);
   }
+
+  function openCreateManual() {
+    openCreateStandalone();
+  }
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'standalone') {
+      openCreateStandalone();
+      setSearchParams({}, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function handleDelete(id) {
     if (!window.confirm('Delete this tournament week and ALL events, draws, and matches inside it? This cannot be undone.')) return;
@@ -245,30 +293,34 @@ export default function TournamentsListPage() {
     }
   }
 
+  const pendingClaims = claims.filter(c => c.status === 'pending' || c.status === 'rejected');
+
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Live Events &amp; Draw Tracker</div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{isOrganizer ? 'My Tournaments' : 'Tournaments'}</h1>
+          <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Event hosting</div>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">{isOrganizer ? 'My Events' : 'Tournaments'}</h1>
           {parseError && <div className="text-sm text-destructive mt-1">{parseError}</div>}
         </div>
         {isOrganizer && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => { pdfInputRef.current?.click(); setParseError(''); }} disabled={parsing} title="Upload AITA Factsheet PDF to auto-fill the form">
-              {parsing ? 'Reading PDF…' : '⬆ Upload Factsheet PDF'}
-            </Button>
-            <Button variant="outline" onClick={openCreateManual}>+ Create Manually</Button>
+            <Button onClick={() => setShowHostModal(true)}>+ Host a Tournament</Button>
+            <Button variant="outline" onClick={() => navigate('/aita-calendar?mode=claim')}>Claim AITA Event</Button>
             <input ref={pdfInputRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handlePdfUpload} />
           </div>
         )}
       </div>
 
-      {isOrganizer && (
-        <div className="text-sm text-muted-foreground">
-          Don't see your tournament here? <Link to="/aita-calendar" className="text-accent-ink font-semibold hover:underline">Claim it from the Tournament Calendar →</Link>
-        </div>
-      )}
+      <HostTournamentModal
+        open={showHostModal}
+        onClose={() => setShowHostModal(false)}
+        onClaimAita={() => navigate('/aita-calendar?mode=claim')}
+        onCreateStandalone={() => {
+          setShowHostModal(false);
+          openCreateStandalone();
+        }}
+      />
 
       {/* Create Week Modal */}
       {showCreate && (
@@ -291,6 +343,16 @@ export default function TournamentsListPage() {
                 <span>✓ Auto-filled from Factsheet PDF — review and edit before submitting</span>
                 <button type="button" className="ml-auto bg-transparent text-accent-ink" onClick={() => setParsedFromPdf(false)} title="Dismiss">✕</button>
               </div>
+            )}
+
+            {step === 1 && duplicateMatches.length > 0 && !duplicateDismissed && (
+              <DuplicateAitaWarning
+                matches={duplicateMatches}
+                onContinueAnyway={() => {
+                  setDuplicateDismissed(true);
+                  setSaveError('');
+                }}
+              />
             )}
 
             {step === 1 && (
@@ -445,8 +507,11 @@ export default function TournamentsListPage() {
 
                 {saveError && <div className="text-sm text-destructive">{saveError}</div>}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Button type="submit">Next: Add Events →</Button>
+                  <Button type="button" variant="outline" disabled={parsing} onClick={() => pdfInputRef.current?.click()}>
+                    {parsing ? 'Reading PDF…' : 'Upload factsheet PDF'}
+                  </Button>
                   <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
                 </div>
               </form>
@@ -547,6 +612,28 @@ export default function TournamentsListPage() {
         </div>
       )}
 
+      {/* Pending claims */}
+      {isOrganizer && pendingClaims.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Pending claims</h2>
+          <div className="space-y-2">
+            {pendingClaims.map(claim => (
+              <div key={claim.id} className="rounded-sm border border-border bg-card p-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">{claim.tournament?.name || 'AITA tournament'}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {claim.status === 'pending' ? 'Waiting for admin approval' : 'Not approved — you can resubmit from the AITA listing'}
+                  </div>
+                </div>
+                <Link to={claim.tournament ? `/aita-calendar/${claim.tournament.id}` : '/aita-calendar?mode=claim'}>
+                  <Button size="sm" variant="outline">View</Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Content */}
       {error && (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">{error}</div>
@@ -559,7 +646,7 @@ export default function TournamentsListPage() {
       {weeks && weeks.length === 0 && (
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
           {isOrganizer
-            ? 'No tournament weeks yet. Click + New Tournament Week to create one.'
+            ? 'No events yet. Claim an AITA tournament or create a standalone event to get started.'
             : 'No tournaments are currently scheduled.'}
         </div>
       )}
@@ -567,43 +654,22 @@ export default function TournamentsListPage() {
       {weeks && weeks.length > 0 && (
         <div className="space-y-2.5">
           {weeks.map(w => (
-            <div key={w.id} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:border-primary hover:shadow-md transition-all">
-              <Link to={`/tournaments/${w.id}`} className="flex-1 min-w-0">
-                <div className="text-sm sm:text-base font-bold truncate">{w.name}</div>
-                {w.subtitle && <div className="text-xs text-muted-foreground truncate mt-0.5">{w.subtitle}</div>}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {w.surface && <span className="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.surface}</span>}
-                  {w.tournamentCode && <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.tournamentCode}</span>}
-                  {w.eventCount !== undefined && <span className="inline-flex items-center rounded-full bg-primary/10 text-accent-ink px-2.5 py-0.5 text-[0.7rem] font-semibold">{w.eventCount} event{w.eventCount !== 1 ? 's' : ''}</span>}
-                  {w.source && w.source !== 'organiser' && (
-                    <span className="inline-flex items-center rounded-full bg-chart-2/15 text-chart-2 px-2.5 py-0.5 text-[0.7rem] font-semibold">
-                      {w.source === 'aita_claimed' ? 'Claimed from AITA Calendar' : 'From AITA Calendar'}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 flex-wrap">
-                  {(w.city || w.stateAbbr) && (
-                    <span className="inline-flex items-center gap-1">
-                      📍 {[w.city, w.stateAbbr].filter(Boolean).join(', ')}
-                    </span>
-                  )}
-                  {w.location && <span>· {w.location}</span>}
-                </div>
-                {(w.startDate || w.endDate) && (
-                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    📅 {formatDateRange(w.startDate, w.endDate)}
-                  </div>
-                )}
-                {w.numCourts && (
-                  <div className="text-xs text-muted-foreground mt-1">🎾 {w.numCourts} court{w.numCourts !== 1 ? 's' : ''}</div>
-                )}
-              </Link>
-              {w.createdBy === user?.id && (
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDelete(w.id)} title="Delete tournament week">
-                  ✕
-                </Button>
-              )}
-            </div>
+            isOrganizer ? (
+              <OrganizerTournamentCard
+                key={w.id}
+                week={{ ...w, eventCount: w.events?.length ?? w.eventCount }}
+                events={w.events || []}
+                showDelete={w.createdBy === user?.id}
+                onDelete={handleDelete}
+              />
+            ) : (
+              <div key={w.id} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:border-primary hover:shadow-md transition-all">
+                <Link to={`/tournaments/${w.id}`} className="flex-1 min-w-0">
+                  <div className="text-sm sm:text-base font-bold truncate">{w.name}</div>
+                  {w.subtitle && <div className="text-xs text-muted-foreground truncate mt-0.5">{w.subtitle}</div>}
+                </Link>
+              </div>
+            )
           ))}
         </div>
       )}

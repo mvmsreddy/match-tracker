@@ -52,7 +52,7 @@ const selectCls = 'rounded-sm border border-input bg-transparent px-2.5 py-1.5 t
 // routing only live in one place. `refreshToken` lets a parent (e.g. the
 // super_admin "Sync Now" button on AitaCalendarPage) force a reload without
 // this component needing to know why.
-export default function TournamentCalendarBrowser({ refreshToken }) {
+export default function TournamentCalendarBrowser({ refreshToken, claimMode = false, highlightId = '' }) {
   const navigate = useNavigate();
 
   const [tournaments, setTournaments] = useState(null);
@@ -111,8 +111,17 @@ export default function TournamentCalendarBrowser({ refreshToken }) {
     setSearchInput('');
   }
 
+  const displayed = claimMode
+    ? (tournaments || []).filter(t => t.kind === 'aita' && !t.linkedTournamentWeekId)
+    : tournaments;
+
   return (
     <div className="space-y-4">
+      {claimMode && (
+        <div className="rounded-sm border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
+          Showing unclaimed AITA events only. Already-live events are managed under <strong>My Events</strong>.
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <select className={selectCls} value={ageGroup} onChange={e => setAgeGroup(e.target.value)}>
           <option value="">All age groups</option>
@@ -166,23 +175,30 @@ export default function TournamentCalendarBrowser({ refreshToken }) {
         <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">Loading tournament calendar…</div>
       )}
 
-      {tournaments && tournaments.length === 0 && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No tournaments found for this filter.</div>
+      {displayed && displayed.length === 0 && tournaments && (
+        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">
+          {claimMode ? 'No unclaimed AITA tournaments match this filter.' : 'No tournaments found for this filter.'}
+        </div>
       )}
 
-      {tournaments && tournaments.length > 0 && (
+      {displayed && displayed.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tournaments.map(t => {
+          {displayed.map(t => {
             const urgency = entryUrgency(t.entryDeadline);
+            const highlighted = highlightId && String(t.id) === String(highlightId);
             return (
               <button
                 key={`${t.kind}-${t.id}`}
                 onClick={() => (t.kind === 'week' ? navigate(`/tournaments/${t.id}`) : setSelected(t))}
-                className="text-left flex flex-col gap-2 rounded-sm border border-border bg-card hover:border-primary p-4"
+                className={cn(
+                  'text-left flex flex-col gap-2 rounded-sm border bg-card hover:border-primary p-4',
+                  highlighted ? 'border-primary ring-2 ring-primary/30' : 'border-border',
+                )}
               >
                 <div className="text-sm font-bold">{t.name}</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {t.kind === 'week' && <span className={cn(badgeCls, 'bg-chart-2/15 text-chart-2')}>Organizer-hosted</span>}
+                  {claimMode && <span className={cn(badgeCls, 'bg-primary/10 text-accent-ink')}>Unclaimed</span>}
+                  {t.kind === 'week' && !claimMode && <span className={cn(badgeCls, 'bg-chart-2/15 text-chart-2')}>Organizer-hosted</span>}
                   {t.ageGroup && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.ageGroup}</span>}
                   {t.grade && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.grade}</span>}
                   {urgency && <span className={cn(badgeCls, urgency.className)}>{urgency.label}</span>}
@@ -212,7 +228,7 @@ export default function TournamentCalendarBrowser({ refreshToken }) {
                 ✕
               </button>
             </div>
-            <AitaTournamentFactsheet t={selected} />
+            <AitaTournamentFactsheet t={selected} claimMode={claimMode} />
             <div className="pt-3">
               <Link to={`/aita-calendar/${selected.id}`} className="text-sm text-accent-ink hover:underline">
                 Open as full page ↗

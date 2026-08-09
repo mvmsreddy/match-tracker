@@ -23,7 +23,7 @@ export function getNavItems(role) {
     return [adminReview, calendar, rankings, profile];
   }
   if (role === 'organizer') {
-    return [dashboard, tournaments, calendar, rankings, profile];
+    return [dashboard, { ...tournaments, label: 'My Events' }, profile];
   }
   if (role === 'coach') {
     return [dashboard, track, myPlayers, tournaments, calendar, rankings, profile];

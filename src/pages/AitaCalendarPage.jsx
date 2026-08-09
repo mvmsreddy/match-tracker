@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
 import TournamentCalendarBrowser from '../components/tournaments/TournamentCalendarBrowser';
@@ -18,6 +19,9 @@ function timeAgo(iso) {
 
 export default function AitaCalendarPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const claimMode = searchParams.get('mode') === 'claim' && user?.role === 'organizer';
+  const highlightId = searchParams.get('highlight') || '';
   const isSuperAdmin = user?.role === 'super_admin';
 
   const [syncLog, setSyncLog] = useState(null);
@@ -50,28 +54,42 @@ export default function AitaCalendarPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">
-            AITA calendar + organizer-hosted tournaments
-            {syncLog?.startedAt && (
+            {claimMode ? 'Claim an AITA-listed event' : 'AITA calendar + organizer-hosted tournaments'}
+            {!claimMode && syncLog?.startedAt && (
               <span className="normal-case font-normal">
                 {' '}· Last synced: {timeAgo(syncLog.finishedAt || syncLog.startedAt)}
                 {syncLog.error ? ' (last run failed)' : ''}
               </span>
             )}
           </div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Tournament Calendar</h1>
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">
+            {claimMode ? 'Find Your AITA Tournament' : 'Tournament Calendar'}
+          </h1>
+          {claimMode && (
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              Official AITA events sync here automatically. Find the one you run and claim it — this links player interest and avoids duplicate listings.
+            </p>
+          )}
         </div>
-        {isSuperAdmin && (
-          <Button onClick={handleSyncNow} disabled={syncing}>
-            {syncing ? 'Syncing…' : '⟳ Sync Now'}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {claimMode && (
+            <Link to="/tournaments">
+              <Button variant="outline">← My Events</Button>
+            </Link>
+          )}
+          {isSuperAdmin && (
+            <Button onClick={handleSyncNow} disabled={syncing}>
+              {syncing ? 'Syncing…' : '⟳ Sync Now'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {syncMessage && (
         <div className="border border-border bg-muted/40 rounded-sm p-3 text-sm text-muted-foreground">{syncMessage}</div>
       )}
 
-      <TournamentCalendarBrowser refreshToken={refreshToken} />
+      <TournamentCalendarBrowser refreshToken={refreshToken} claimMode={claimMode} highlightId={highlightId} />
     </div>
   );
 }
