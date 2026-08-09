@@ -19,6 +19,7 @@ import TournamentDetailPage from './pages/TournamentDetailPage';
 import AitaCalendarPage from './pages/AitaCalendarPage';
 import AitaTournamentFactsheetPage from './pages/AitaTournamentFactsheetPage';
 import AitaRankingsPage from './pages/AitaRankingsPage';
+import AitaAdminReviewPage from './pages/AitaAdminReviewPage';
 import ProfilePage from './pages/ProfilePage';
 import CoachPlayersPage from './pages/CoachPlayersPage';
 import ParentPlayersPage from './pages/ParentPlayersPage';
