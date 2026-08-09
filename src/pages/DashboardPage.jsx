@@ -336,7 +336,7 @@ export default function DashboardPage() {
   const rosterAitaRegs = role === 'coach'
     ? activeLinks.map(l => l.player?.aitaReg).filter(Boolean)
     : [];
-  const activity = useTournamentActivity(rosterAitaRegs);
+  const activity = useTournamentActivity({ aitaRegs: rosterAitaRegs });
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-4">

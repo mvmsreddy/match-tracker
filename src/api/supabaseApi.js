@@ -1021,57 +1021,28 @@ async function assertEntryStage(eventId, allowedStages, actionLabel, checkEntrie
 // order, before the new entrant's own row — see applyCascadingPlacement.
 export async function computeSelfEntryPlacement(eventId, rankingRank) {
   const event = await getEvent(eventId);
-  const maxMain = event.maxMainDirect ?? (event.drawSize - 9);
-  const maxQual = event.maxQualDirect ?? ((event.qualifyingSize || 32) - 4);
-  const rank = rankingRank ? Number(rankingRank) : null;
 
-  const [mainRes, qualRes, altRes] = await Promise.all([
-    supabase.from('draw_entries').select('id, position, ranking')
-      .eq('event_id', eventId).eq('draw_type', 'main')
-      .eq('is_alternate', false).neq('entry_status', 'withdrawn').eq('is_bye', false),
-    supabase.from('draw_entries').select('id, position, ranking')
-      .eq('event_id', eventId).eq('draw_type', 'qualifying')
-      .eq('is_alternate', false).neq('entry_status', 'withdrawn').eq('is_bye', false),
-    supabase.from('draw_entries').select('id, position, ranking')
-      .eq('event_id', eventId).eq('draw_type', 'main')
-      .eq('is_alternate', true).neq('entry_status', 'withdrawn').eq('is_bye', false),
-  ]);
-  if (mainRes.error) throw new Error(mainRes.error.message);
-  if (qualRes.error) throw new Error(qualRes.error.message);
-  if (altRes.error) throw new Error(altRes.error.message);
+  const { data, error } = await supabase.rpc('compute_self_entry_placement', {
+    p_event_id: eventId,
+    p_ranking_rank: rankingRank ? Number(rankingRank) : null,
+  });
+  if (error) throw new Error(error.message);
 
-  const newEntrant = { ranking: rank };
+  const result = typeof data === 'string' ? JSON.parse(data) : data;
+  const bumps = (result.bumps || []).map(b => ({
+    id: b.id,
+    drawType: b.draw_type || b.drawType,
+    position: b.position,
+    isAlternate: b.is_alternate ?? b.isAlternate ?? false,
+  }));
 
-  if (!event.hasQualifying) {
-    // No qualifying draw — full field is Main + Alternates only.
-    if (mainRes.data.length < event.drawSize) {
-      const taken = new Set(mainRes.data.map(e => e.position));
-      let pos = 1;
-      while (taken.has(pos) && pos <= event.drawSize) pos++;
-      return { drawType: 'main', position: pos, isAlternate: false, bumps: [], event };
-    }
-    const worstMain = mainRes.data.reduce(
-      (w, e) => ((e.ranking ?? Infinity) > (w.ranking ?? Infinity) ? e : w), mainRes.data[0]);
-    if (worstMain && rank != null && rank < (worstMain.ranking ?? Infinity)) {
-      const altTaken = new Set(altRes.data.map(e => e.position));
-      let altPos = Math.max(event.drawSize, ...altRes.data.map(e => e.position)) + 1;
-      while (altTaken.has(altPos)) altPos++;
-      return {
-        drawType: 'main', position: worstMain.position, isAlternate: false, event,
-        bumps: [{ id: worstMain.id, drawType: 'main', position: altPos, isAlternate: true }],
-      };
-    }
-    const altTaken = new Set(altRes.data.map(e => e.position));
-    let altPos = Math.max(event.drawSize, ...altRes.data.map(e => e.position)) + 1;
-    while (altTaken.has(altPos)) altPos++;
-    return { drawType: 'main', position: altPos, isAlternate: true, bumps: [], event };
-  }
-
-  const { placement, bumps } = computeCascadingPlacement(
-    mainRes.data, qualRes.data, altRes.data, newEntrant,
-    maxMain, maxQual, event.drawSize, event.qualifyingSize || 32,
-  );
-  return { ...placement, bumps, event };
+  return {
+    drawType: result.draw_type || result.drawType,
+    position: result.position,
+    isAlternate: result.is_alternate ?? result.isAlternate ?? false,
+    bumps,
+    event,
+  };
 }
 
 // Writes a cascading-placement plan (see computeSelfEntryPlacement above) via
@@ -3138,12 +3109,12 @@ export async function listAitaTournaments({ ageGroup, city, grade, dateFrom, dat
 // 'aita_crowdsourced' — those originated from an aita_tournaments row, which
 // is already represented on the AITA side, so including both would show the
 // same tournament twice. ageGroup isn't a tournament_weeks column (it lives
-// per-event), so it only filters the AITA half — organizer-created rows are
-// never excluded by an age group filter.
+// per-event), so organizer-created weeks are included when ANY of their events
+// match the requested age group.
 export async function listBrowsableTournaments({ ageGroup, city, grade, dateFrom, dateTo, search } = {}) {
   let weekQuery = supabase
     .from('tournament_weeks')
-    .select('*')
+    .select('*, events(age_group)')
     .eq('source', 'organiser')
     .order('start_date', { ascending: true });
   if (city) weekQuery = weekQuery.ilike('city', `%${city}%`);
@@ -3158,9 +3129,16 @@ export async function listBrowsableTournaments({ ageGroup, city, grade, dateFrom
   ]);
   if (weekResult.error) throw new Error(weekResult.error.message);
 
+  let organizerWeeks = weekResult.data || [];
+  if (ageGroup) {
+    organizerWeeks = organizerWeeks.filter(row =>
+      (row.events || []).some(ev => ev.age_group === ageGroup)
+    );
+  }
+
   const merged = [
     ...aitaList.map(t => ({ ...t, kind: 'aita' })),
-    ...weekResult.data.map(row => {
+    ...organizerWeeks.map(row => {
       const w = rowToWeek(row);
       return { ...w, kind: 'week', venue: w.location };
     }),
@@ -3530,6 +3508,26 @@ export async function publishAitaDrawSheet({ uploadId, aitaTournamentId, drawTyp
     } catch {
       // best-effort, same as the organiser draw-publish notification path
     }
+  }
+
+  try {
+    const { data: interestRows } = await supabase
+      .from('aita_participation_interest')
+      .select('user_id')
+      .eq('aita_tournament_id', aitaTournamentId)
+      .eq('status', 'declared');
+    const notifyIds = [...new Set((interestRows || []).map(r => r.user_id).filter(id => id && !matchedPlayerIds.includes(id)))];
+    if (notifyIds.length > 0) {
+      await createNotificationsForUsers(notifyIds, {
+        type: 'tournament_live',
+        title: `${t.name} draw is on the platform`,
+        body: 'The draw has been published — check My Tournaments to see if you are listed, or enter if entries are open.',
+        tournamentWeekId: week.id,
+        eventId: event.id,
+      });
+    }
+  } catch {
+    // best-effort
   }
 
   return { week, event };
@@ -3975,6 +3973,21 @@ export async function approveAitaOrganizerClaim(claimId) {
       body,
       tournamentWeekId: week.id,
     });
+
+    const { data: interestRows } = await supabase
+      .from('aita_participation_interest')
+      .select('user_id')
+      .eq('aita_tournament_id', claimRow.aita_tournament_id)
+      .eq('status', 'declared');
+    const interestUserIds = [...new Set((interestRows || []).map(r => r.user_id).filter(Boolean))];
+    if (interestUserIds.length > 0) {
+      await createNotificationsForUsers(interestUserIds, {
+        type: 'tournament_live',
+        title: `${t.name} is now on the platform`,
+        body: 'An organizer is running this tournament — head to the tournament page to enter your event.',
+        tournamentWeekId: week.id,
+      });
+    }
   } catch {
     // best-effort
   }
@@ -4094,6 +4107,22 @@ export async function resolveAitaInterest(interestRow, eventId, accept) {
     .update({ status: accept ? 'accepted' : 'declined', resolved_event_id: eventId, resolved_entry_id: entryId })
     .eq('id', interestRow.id);
   if (error) throw new Error(error.message);
+
+  if (accept && interestRow.userId) {
+    try {
+      const event = await getEvent(eventId);
+      const week = event?.tournamentWeekId ? await getTournamentWeek(event.tournamentWeekId).catch(() => null) : null;
+      await createNotificationsForUsers([interestRow.userId], {
+        type: 'entry_accepted',
+        title: `Entry accepted: ${week?.name || 'Tournament'}`,
+        body: `You've been added to ${event?.ageGroup || ''} ${event?.category || 'the event'} — check My Tournaments for your draw status.`,
+        tournamentWeekId: week?.id || event?.tournamentWeekId || null,
+        eventId,
+      });
+    } catch {
+      // best-effort
+    }
+  }
 
   return { entryId };
 }

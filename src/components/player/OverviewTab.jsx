@@ -8,6 +8,7 @@ import * as api from '../../api';
 import { normalizeEventSegment } from '../../lib/governingBodies';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
 import { usePlayerTournamentEntries } from '../../hooks/usePlayerTournamentEntries';
+import { useMyTournaments } from '../../hooks/useMyTournaments';
 import { todayLocalIso } from '../../lib/dates';
 import GoalsPanel from './GoalsPanel';
 import MatchDetailModal from './MatchDetailModal';
@@ -47,6 +48,7 @@ function ChartTooltip({ active, payload, label, valueLabel }) {
 export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, selfName = 'You', onTabChange }) {
   const navigate = useNavigate();
   const { entries, error } = usePlayerTournamentEntries(playerId);
+  const myTournaments = useMyTournaments(playerId);
   const [segMatches, setSegMatches] = useState(null);
   const [modalMatch, setModalMatch] = useState(null);
   const [chartMode, setChartMode] = useState('rank'); // 'rank' | 'points'
@@ -74,6 +76,16 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
       })
       .sort((a, b) => (a.event.week.startDate || '').localeCompare(b.event.week.startDate || ''));
   }, [entries, circuit]);
+
+  const upcomingCount = useMemo(() => {
+    const today = todayLocalIso();
+    const fromInterest = myTournaments.items.filter(item => {
+      if (item.entries.length > 0) return false;
+      const end = item.startDate;
+      return !end || end >= today;
+    }).length;
+    return upcomingEntries.length + fromInterest;
+  }, [upcomingEntries, myTournaments.items]);
 
   const monthStats = useMemo(() => {
     if (!segMatches) return null;
@@ -167,7 +179,7 @@ export default function OverviewTab({ circuit, playerId, isOwnDashboard = true, 
             )}
           </div>
           <div className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter text-accent-ink">
-            {entries === null ? '—' : upcomingEntries.length}
+            {entries === null && myTournaments.loading ? '—' : upcomingCount}
           </div>
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mt-1.5">Upcoming tournaments</div>
           {upcomingEntries.length > 0 && (

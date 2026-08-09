@@ -296,6 +296,8 @@ function ParticipationWidget({ t }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const isLiveOnPlatform = !!(t.linkedTournamentWeekId);
+
   const categoryIsClear = t.category && /single|double/i.test(t.category);
   const detectedAgeGroups = extractAgeGroupsFromCategoryText(t.category);
   const availableAgeGroups = detectedAgeGroups.length > 0
@@ -315,7 +317,8 @@ function ParticipationWidget({ t }) {
     return () => { cancelled = true; };
   }, [t.id, user?.role]);
 
-  if (user?.role !== 'player' || loading) return null;
+  const needsSelection = !categoryIsClear && !interest;
+  const canDeclare = categoryIsClear || (pickCategory && pickAgeGroup);
 
   async function handleDeclare() {
     setBusy(true);
@@ -344,8 +347,36 @@ function ParticipationWidget({ t }) {
     }
   }
 
-  const needsSelection = !categoryIsClear && !interest;
-  const canDeclare = categoryIsClear || (pickCategory && pickAgeGroup);
+  if (user?.role !== 'player' || loading) return null;
+
+  if (isLiveOnPlatform) {
+    return (
+      <div className="rounded-sm border border-border bg-card p-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-semibold text-accent-ink">Live on Match Tracker</span>
+          <span className="text-xs text-muted-foreground">
+            {interest
+              ? "You're tracking this — enter your event on the platform when entries open."
+              : 'An organizer is running this tournament — enter through the platform.'}
+          </span>
+          <Button asChild size="sm" className="ml-auto">
+            <Link to={`/tournaments/${t.linkedTournamentWeekId}`}>
+              {interest ? 'Enter event →' : 'View tournament →'}
+            </Link>
+          </Button>
+        </div>
+        {!interest && (
+          <div className="text-xs text-muted-foreground">
+            Still want personal tracking before you enter?{' '}
+            <button type="button" className="text-accent-ink font-semibold hover:underline" onClick={handleDeclare} disabled={busy || !canDeclare}>
+              Track participation
+            </button>
+          </div>
+        )}
+        {error && <div className="text-xs text-destructive">{error}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-sm border border-border bg-card p-3 space-y-2">

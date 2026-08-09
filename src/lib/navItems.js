@@ -26,10 +26,10 @@ export function getNavItems(role) {
     return [dashboard, { ...tournaments, label: 'My Events' }, profile];
   }
   if (role === 'coach') {
-    return [dashboard, track, myPlayers, tournaments, calendar, rankings, profile];
+    return [dashboard, track, myPlayers, tournaments, profile];
   }
   if (role === 'parent') {
-    return [dashboard, myParentPlayers, tournaments, calendar, profile];
+    return [dashboard, myParentPlayers, tournaments, profile];
   }
-  return [dashboard, track, tournaments, calendar, profile];
+  return [dashboard, track, tournaments, profile];
 }

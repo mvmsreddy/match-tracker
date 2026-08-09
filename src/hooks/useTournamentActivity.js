@@ -18,11 +18,12 @@ function isToday(date) {
     && date.getDate() === now.getDate();
 }
 
-// Cross-tournament activity for a player (pass [user.aitaReg]) or a coach's
-// whole roster (pass each linked player's aitaReg). Reuses getWeekMatches
-// (Phase 7) for schedule/results instead of a bespoke match query.
-export function useTournamentActivity(aitaRegs) {
-  const key = [...new Set((aitaRegs || []).filter(Boolean))].sort().join(',');
+// Cross-tournament match activity for a player. Prefers getMyEntries (player_id
+// + aita_reg) so players without relying solely on aitaReg still see activity.
+// Coaches can still pass a roster of aitaRegs — merged with getDrawEntriesForPlayers.
+export function useTournamentActivity({ playerId, aitaRegs } = {}) {
+  const regKey = [...new Set((aitaRegs || []).filter(Boolean))].sort().join(',');
+  const key = `${playerId || ''}|${regKey}`;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,8 +32,7 @@ export function useTournamentActivity(aitaRegs) {
   const [recentResults, setRecentResults] = useState([]);
 
   useEffect(() => {
-    const regs = key ? key.split(',') : [];
-    if (regs.length === 0) {
+    if (!playerId && !regKey) {
       setLoading(false);
       setTournaments([]);
       setTodayMatches([]);
@@ -46,14 +46,25 @@ export function useTournamentActivity(aitaRegs) {
 
     async function run() {
       try {
-        const myEntries = await api.getDrawEntriesForPlayers(regs);
+        const regs = regKey ? regKey.split(',') : [];
+        const [byAccount, byReg] = await Promise.all([
+          playerId ? api.getMyEntries(playerId).catch(() => []) : Promise.resolve([]),
+          regs.length > 0 ? api.getDrawEntriesForPlayers(regs).catch(() => []) : Promise.resolve([]),
+        ]);
         if (cancelled) return;
+
+        const seen = new Set();
+        const myEntries = [];
+        for (const entry of [...byAccount, ...byReg]) {
+          if (seen.has(entry.id)) continue;
+          seen.add(entry.id);
+          myEntries.push(entry);
+        }
 
         const entryIds = new Set(myEntries.map(e => e.id));
         const entryById = new Map(myEntries.map(e => [e.id, e]));
 
-        // Group entries by tournament week
-        const weekMap = new Map(); // weekId -> { week, events: [{ event, entry }] }
+        const weekMap = new Map();
         for (const entry of myEntries) {
           const week = entry.event?.week;
           if (!week) continue;
@@ -64,7 +75,6 @@ export function useTournamentActivity(aitaRegs) {
           (a, b) => (b.week.startDate || '').localeCompare(a.week.startDate || '')
         );
 
-        // Reuse the existing per-week match query (Phase 7) — no new endpoint.
         const weekMatchesArr = await Promise.all(
           weekList.map(w => api.getWeekMatches(w.week.id).catch(() => []))
         );
@@ -78,8 +88,6 @@ export function useTournamentActivity(aitaRegs) {
             if (!e1Mine && !e2Mine) continue;
             const mineSide = e1Mine ? 'entry1' : 'entry2';
             const ownerEntry = entryById.get(e1Mine ? m.entry1Id : m.entry2Id);
-            // Which input aitaReg this entry matched on (entrant or partner) —
-            // used by the coach roster view to attribute a match to a player.
             const ownerAitaReg = regs.find(r => r === ownerEntry?.aitaReg || r === ownerEntry?.partnerAitaReg);
             allMine.push({ ...m, week: w.week, mineSide, ownerAitaReg });
           }
@@ -115,7 +123,7 @@ export function useTournamentActivity(aitaRegs) {
 
     run();
     return () => { cancelled = true; };
-  }, [key]);
+  }, [key, playerId, regKey]);
 
   return { loading, error, tournaments, todayMatches, recentResults };
 }

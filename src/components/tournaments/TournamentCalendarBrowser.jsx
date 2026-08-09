@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as api from '../../api';
 import AitaTournamentFactsheet from '../AitaTournamentFactsheet';
@@ -13,6 +13,12 @@ const DATE_PRESETS = [
   { key: 'week', label: 'This week' },
   { key: 'month', label: 'This month' },
   { key: '3months', label: 'Next 3 months' },
+];
+
+const SORT_OPTIONS = [
+  { key: 'date_asc', label: 'Date ↑' },
+  { key: 'date_desc', label: 'Date ↓' },
+  { key: 'name_asc', label: 'Name A–Z' },
 ];
 
 function toIsoDate(date) {
@@ -62,6 +68,7 @@ export default function TournamentCalendarBrowser({ refreshToken, claimMode = fa
   const [city, setCity] = useState('');
   const [grade, setGrade] = useState('');
   const [datePreset, setDatePreset] = useState('');
+  const [sortBy, setSortBy] = useState('date_asc');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
 
@@ -111,9 +118,28 @@ export default function TournamentCalendarBrowser({ refreshToken, claimMode = fa
     setSearchInput('');
   }
 
-  const displayed = claimMode
-    ? (tournaments || []).filter(t => t.kind === 'aita' && !t.linkedTournamentWeekId)
-    : tournaments;
+  function openTournament(t) {
+    if (t.kind === 'week' || t.linkedTournamentWeekId) {
+      navigate(`/tournaments/${t.kind === 'week' ? t.id : t.linkedTournamentWeekId}`);
+      return;
+    }
+    setSelected(t);
+  }
+
+  const displayed = useMemo(() => {
+    let list = claimMode
+      ? (tournaments || []).filter(t => t.kind === 'aita' && !t.linkedTournamentWeekId)
+      : (tournaments || []);
+
+    if (sortBy === 'date_desc') {
+      list = [...list].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+    } else if (sortBy === 'name_asc') {
+      list = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else {
+      list = [...list].sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+    }
+    return list;
+  }, [tournaments, claimMode, sortBy]);
 
   return (
     <div className="space-y-4">
@@ -165,6 +191,9 @@ export default function TournamentCalendarBrowser({ refreshToken, claimMode = fa
             Clear filters
           </Button>
         )}
+        <select className={selectCls} value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort tournaments">
+          {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
       </div>
 
       {error && (
@@ -189,7 +218,7 @@ export default function TournamentCalendarBrowser({ refreshToken, claimMode = fa
             return (
               <button
                 key={`${t.kind}-${t.id}`}
-                onClick={() => (t.kind === 'week' ? navigate(`/tournaments/${t.id}`) : setSelected(t))}
+                onClick={() => openTournament(t)}
                 className={cn(
                   'text-left flex flex-col gap-2 rounded-sm border bg-card hover:border-primary p-4',
                   highlighted ? 'border-primary ring-2 ring-primary/30' : 'border-border',
@@ -199,6 +228,9 @@ export default function TournamentCalendarBrowser({ refreshToken, claimMode = fa
                 <div className="flex flex-wrap gap-1.5">
                   {claimMode && <span className={cn(badgeCls, 'bg-primary/10 text-accent-ink')}>Unclaimed</span>}
                   {t.kind === 'week' && !claimMode && <span className={cn(badgeCls, 'bg-chart-2/15 text-chart-2')}>Organizer-hosted</span>}
+                  {t.linkedTournamentWeekId && t.kind === 'aita' && !claimMode && (
+                    <span className={cn(badgeCls, 'bg-primary/10 text-accent-ink')}>On platform</span>
+                  )}
                   {t.ageGroup && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.ageGroup}</span>}
                   {t.grade && <span className={cn(badgeCls, 'bg-secondary text-secondary-foreground')}>{t.grade}</span>}
                   {urgency && <span className={cn(badgeCls, urgency.className)}>{urgency.label}</span>}
