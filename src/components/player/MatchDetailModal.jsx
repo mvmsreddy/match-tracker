@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { computeStats, computeServeStats, computeStrokeBreakdown, computeRallyBreakdown, computeBreakPointEvents } from '../../lib/analytics';
 import { strokeWinRates } from '../../lib/segmentAnalytics';
+import { downloadMatchPdfFromRecord } from '../../lib/matchPdfFromRecord';
 import { Button } from '@/components/primitives/button';
 
 const RALLY_COLORS = ['bg-primary', 'bg-primary', 'bg-blue-400', 'bg-muted-foreground', 'bg-muted-foreground', 'bg-muted-foreground', 'bg-muted-foreground'];
@@ -19,6 +20,7 @@ function formatDate(iso) {
 // When `tracked`/`trackedMatch` is present, every stat below is computed live from
 // that match's real points[] via src/lib/analytics.js — nothing here is fabricated.
 export default function MatchDetailModal({ match, selfName = 'You', onClose, canViewFullReport = true }) {
+  const [pdfError, setPdfError] = useState('');
   const tm = match.trackedMatch;
   const points = tm?.points || [];
   const cfgOpts = { sessionType: tm?.sessionType, formatPreset: tm?.formatPreset };
@@ -68,6 +70,13 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose, can
   }, [tm, points, cfgOpts.sessionType, cfgOpts.formatPreset]);
 
   const metaParts = [match.tournamentName, match.round, match.grade].filter(Boolean);
+  const isPartial = match.won == null;
+  const outcomeLabel = isPartial ? 'Partial match' : match.won ? 'Won' : 'Lost';
+  const headline = isPartial
+    ? `${selfName} vs ${match.opponentName}`
+    : match.won
+      ? `${selfName} d. ${match.opponentName}`
+      : `${match.opponentName} d. ${selfName}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
@@ -77,16 +86,16 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose, can
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-48">
-            <div className={`text-xs font-bold uppercase tracking-wider ${match.won ? 'text-accent-ink' : 'text-destructive'}`}>
-              {match.won ? 'Won' : 'Lost'}
+            <div className={`text-xs font-bold uppercase tracking-wider ${isPartial ? 'text-amber-600 dark:text-amber-400' : match.won ? 'text-accent-ink' : 'text-destructive'}`}>
+              {outcomeLabel}
             </div>
             <div className="font-display font-extrabold text-lg tracking-tighter mt-1">
-              {match.won ? `${selfName} d. ${match.opponentName}` : `${match.opponentName} d. ${selfName}`}
+              {headline}
             </div>
             <div className="text-xs text-muted-foreground mt-1">{metaParts.join(' · ')}{match.date ? ` · ${formatDate(match.date)}` : ''}</div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <div className={`font-display font-extrabold text-base ${match.won ? 'text-accent-ink' : 'text-destructive'}`}>{match.score || '—'}</div>
+            <div className={`font-display font-extrabold text-base ${isPartial ? 'text-foreground' : match.won ? 'text-accent-ink' : 'text-destructive'}`}>{match.score || '—'}</div>
             <button className="w-7 h-7 rounded-sm hover:bg-secondary flex items-center justify-center" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
@@ -163,14 +172,31 @@ export default function MatchDetailModal({ match, selfName = 'You', onClose, can
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-2">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           {canViewFullReport && tm?.id && (
-            <Button asChild className="flex-1">
-              <Link to={`/history/${tm.id}`}>View full match report &amp; PDF &rarr;</Link>
+            <Button asChild className="flex-1 min-w-[140px]">
+              <Link to={`/history/${tm.id}`}>Full match report &rarr;</Link>
+            </Button>
+          )}
+          {tm?.points?.length > 0 && (
+            <Button
+              variant="outline"
+              className="flex-1 min-w-[140px]"
+              onClick={() => {
+                setPdfError('');
+                try {
+                  downloadMatchPdfFromRecord(tm);
+                } catch (e) {
+                  setPdfError(e.message || 'Could not generate PDF');
+                }
+              }}
+            >
+              Download PDF
             </Button>
           )}
           <Button variant="outline" onClick={onClose}>Close</Button>
         </div>
+        {pdfError && <div className="mt-2 text-xs text-destructive">{pdfError}</div>}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import * as api from '../api';
 import { computeEngineState } from '../lib/engine';
 import { replayMatchAnalytics, computeBreakPointEvents, computeStrokeBreakdown } from '../lib/analytics';
 import { strokeWinRates } from '../lib/segmentAnalytics';
-import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
+import { downloadMatchPdfFromRecord } from '../lib/matchPdfFromRecord';
 import { getSkillRatingsForMatch } from '../lib/localStore';
 import AppNav from '../components/AppNav';
 import Scorebar from '../components/Scorebar';
@@ -64,20 +64,7 @@ export default function MatchDetailPage() {
   };
 
   function handleDownloadPdf() {
-    const doc = buildMatchPdf({
-      points: match.points, sets: engine.sets, matchOver: engine.matchOver, matchWinner: engine.matchWinner,
-      matchTiebreakActive: engine.matchTiebreakActive, matchTiebreakPts: engine.matchTiebreakPts,
-      setGames: engine.setGames, gamePts: engine.gamePts, sessionType: match.sessionType,
-      pointTarget: match.pointTarget, formatPreset: match.formatPreset, formatLabel: match.formatLabel,
-      selfName: match.selfName, oppName: match.oppName, tournament: match.tournament, date: match.date, round: match.round,
-      surface: match.surface, indoorOutdoor: match.indoorOutdoor, oppHandedness: match.oppHandedness,
-      governingBody: match.governingBody, circuit: match.circuit,
-      city: match.city, ageGroup: match.ageGroup,
-      playingStyle: match.playingStyle, rankSeed: match.rankSeed,
-      weather: match.weather, notes: match.notes,
-      matchStartTime: match.matchDurationMs ? 1 : null, matchDurationMs: match.matchDurationMs,
-    });
-    doc.save(pdfFilename(match.selfName, match.oppName, match.sessionType));
+    downloadMatchPdfFromRecord(match);
   }
 
   return (

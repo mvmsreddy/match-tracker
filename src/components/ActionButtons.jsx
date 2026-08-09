@@ -1,26 +1,11 @@
 import { useState, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
-import { buildMatchPdf, pdfFilename } from '../lib/pdfReport';
 import { computeStats } from '../lib/analytics';
 import { formatDuration } from '../lib/storage';
 import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 import { Textarea } from './primitives/textarea';
 import { Button } from './primitives/button';
-
-async function saveAndSharePdfNative(doc, filename) {
-  const dataUri = doc.output('datauristring');
-  const base64 = dataUri.slice(dataUri.indexOf(',') + 1);
-  const { uri } = await Filesystem.writeFile({
-    path: filename,
-    data: base64,
-    directory: Directory.Cache,
-  });
-  await Share.share({ title: filename, url: uri });
-}
 
 export default function ActionButtons({
   header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
@@ -29,7 +14,6 @@ export default function ActionButtons({
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef(null);
 
@@ -46,7 +30,7 @@ export default function ActionButtons({
     return engine.sets.map((st) => (st.isMatchTiebreak ? '[' + st.tb.self + '-' + st.tb.opp + ']' : st.self + '-' + st.opp)).join(', ');
   }
 
-  async function handleCompleteAndSave() {
+  async function handleSaveMatch() {
     if (points.length === 0) { showStatus('Log at least one point first'); return; }
     setSaving(true);
     try {
@@ -73,42 +57,19 @@ export default function ActionButtons({
         await api.endLiveTrackingSession(liveSessionId).catch(() => {});
         onLiveSessionEnded?.();
       }
-      showStatus(subjectPlayerId ? `Match saved to ${selfName}'s history` : 'Match saved to history');
+      const partial = !engine.matchOver;
+      showStatus(
+        subjectPlayerId
+          ? `Match saved to ${selfName}'s history`
+          : partial
+            ? 'Partial match saved — open My Matches for stats; PDF anytime from there'
+            : 'Match saved — open My Matches for stats; PDF anytime from there',
+      );
       resetMatch();
     } catch (err) {
       showStatus('Could not save match: ' + err.message, 4000);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleGeneratePdf() {
-    if (points.length === 0) { showStatus('Log at least one point first'); return; }
-    setGenerating(true);
-    try {
-      const doc = buildMatchPdf({
-        points, sets: engine.sets, matchOver: engine.matchOver, matchWinner: engine.matchWinner,
-        matchTiebreakActive: engine.matchTiebreakActive, matchTiebreakPts: engine.matchTiebreakPts,
-        setGames: engine.setGames, gamePts: engine.gamePts, sessionType, pointTarget, formatPreset, formatLabel,
-        selfName, oppName, tournament: header.tournament, date: header.date, round: header.round, surface: header.surface,
-        indoorOutdoor: header.indoorOutdoor, oppHandedness: header.oppHandedness, weather: header.weather,
-        governingBody: header.governingBody, circuit: header.circuit,
-        city: header.city, ageGroup: header.ageGroup,
-        playingStyle: header.playingStyle, rankSeed: header.rankSeed,
-        notes: header.notes, matchStartTime, matchDurationMs,
-      });
-      const filename = pdfFilename(selfName, oppName, sessionType);
-      if (Capacitor.isNativePlatform()) {
-        await saveAndSharePdfNative(doc, filename);
-        showStatus('PDF ready to save or share');
-      } else {
-        doc.save(filename);
-        showStatus('PDF downloaded');
-      }
-    } catch (err) {
-      showStatus('Could not generate PDF: ' + err.message, 4000);
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -166,20 +127,16 @@ export default function ActionButtons({
         </CardContent>
       </Card>
 
+      <p className="text-xs text-muted-foreground -mt-2">
+        Save records every point and stat to My Matches. Generate a PDF later from match history — no need to export now.
+      </p>
+
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={saving || points.length === 0}
-          onClick={handleCompleteAndSave}
+          onClick={handleSaveMatch}
         >
-          {saving ? 'Saving...' : 'Complete & Save Match'}
-        </Button>
-        <Button
-          variant="outline"
-          disabled={generating || points.length === 0}
-          onClick={handleGeneratePdf}
-          title={points.length === 0 ? 'Log at least one point first' : ''}
-        >
-          {generating ? 'Generating...' : 'Generate PDF'}
+          {saving ? 'Saving...' : engine.matchOver ? 'Save match to history' : 'Save partial match to history'}
         </Button>
         <Button variant="outline" onClick={handleCopySummary}>Copy summary</Button>
         <Button

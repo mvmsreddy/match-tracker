@@ -50,7 +50,7 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
         round: full.round,
         date: m.date,
         score: m.scoreSummary,
-        won: m.winner === 'self',
+        won: m.winner === 'self' ? true : m.winner === 'opp' ? false : null,
         tracked: true,
         trackedMatch: full,
       });
@@ -73,7 +73,9 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
         <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
           <div className="text-3xl mb-3">🎾</div>
           <div className="text-sm text-muted-foreground">
-            No matches saved yet. Generate a PDF report from the Tracker page to save a match here.
+            No matches saved yet. On the Tracker <span className="font-semibold text-foreground">Close</span> tab, tap{' '}
+            <span className="font-semibold text-foreground">Save match to history</span> (works for partial matches too).
+            PDF can be generated anytime later from saved match stats.
           </div>
         </div>
       )}
@@ -110,18 +112,19 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
 
           <div className="space-y-2.5">
             {filteredMatches.map(m => {
-              const hasResult = m.winner === 'self' || m.winner === 'opp';
               const isWin = m.winner === 'self';
               const isLoss = m.winner === 'opp';
+              const isPartial = m.winner !== 'self' && m.winner !== 'opp';
+              const canOpen = (m.pointCount ?? 0) > 0 || !!m.scoreSummary;
               return (
                 <div
                   key={m.id}
                   className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border bg-card transition-all ${
-                    hasResult ? 'cursor-pointer hover:border-primary hover:shadow-md' : ''
+                    canOpen ? 'cursor-pointer hover:border-primary hover:shadow-md' : ''
                   } ${
-                    isWin ? 'border-l-4 border-l-primary' : isLoss ? 'border-l-4 border-l-destructive' : 'border-l-4 border-l-muted'
+                    isWin ? 'border-l-4 border-l-primary' : isLoss ? 'border-l-4 border-l-destructive' : 'border-l-4 border-l-amber-500/60'
                   }`}
-                  onClick={() => hasResult && openMatch(m)}
+                  onClick={() => canOpen && openMatch(m)}
                 >
                   <input
                     type="checkbox"
@@ -135,12 +138,12 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
                     isLoss ? 'bg-destructive/10 text-destructive' : 
                     'bg-muted text-muted-foreground'
                   }`}>
-                    {isWin ? 'W' : isLoss ? 'L' : (m.sessionType === 'practice' ? 'PR' : '–')}
+                    {isWin ? 'W' : isLoss ? 'L' : (m.sessionType === 'practice' ? 'PR' : 'P')}
                   </div>
                   <div className="flex-1 min-w-32">
                     <div className="text-sm font-bold truncate">{m.selfName} vs {m.oppName}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {m.tournament ? `${m.tournament} · ` : ''}{formatDate(m.date)}{m.sessionType === 'practice' ? ' · Practice' : ''}
+                      {m.tournament ? `${m.tournament} · ` : ''}{formatDate(m.date)}{m.sessionType === 'practice' ? ' · Practice' : isPartial ? ' · Partial' : ''}
                     </div>
                   </div>
                   <div className={`text-sm font-bold shrink-0 ${isWin ? 'text-accent-ink' : isLoss ? 'text-destructive' : ''}`}>{m.scoreSummary || '—'}</div>
@@ -155,7 +158,7 @@ export default function MyMatchesTab({ playerId, isOwnDashboard = true }) {
                       ✕
                     </Button>
                   )}
-                  {hasResult && <div className="text-muted-foreground shrink-0">{openingId === m.id ? '…' : '→'}</div>}
+                  {canOpen && <div className="text-muted-foreground shrink-0">{openingId === m.id ? '…' : '→'}</div>}
                 </div>
               );
             })}
