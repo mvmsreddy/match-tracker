@@ -10,6 +10,7 @@ import ParentDashboardPage from './pages/ParentDashboardPage';
 import NutritionistDashboardPage from './pages/NutritionistDashboardPage';
 import PlayerDashboardPage from './pages/PlayerDashboardPage';
 import TrackerPage from './pages/TrackerPage';
+import LiveTrackingPage from './pages/LiveTrackingPage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import ComparePage from './pages/ComparePage';
 import TournamentsListPage from './pages/TournamentsListPage';
@@ -88,6 +89,7 @@ export default function App() {
                 <Route path="/tournaments/:id/oop" element={<OrderOfPlayPage />} />
               </Route>
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
+              <Route path="/track/live/:sessionId" element={<ProtectedRoute><LiveTrackingPage /></ProtectedRoute>} />
               <Route path="/history/:matchId" element={<ProtectedRoute><MatchDetailPage /></ProtectedRoute>} />
               <Route path="/video-analysis-test" element={<ProtectedRoute><VideoAnalysisTestPage /></ProtectedRoute>} />
             </Routes>

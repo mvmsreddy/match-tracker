@@ -30,6 +30,13 @@ export const getMatch = impl.getMatch;
 export const deleteMatch = impl.deleteMatch;
 export const canTrackForPlayer = hasSupabaseConfig ? supabaseApi.canTrackForPlayer : async () => true;
 
+// Phase 54 — live shared tracking
+export const createLiveTrackingSession = hasSupabaseConfig ? supabaseApi.createLiveTrackingSession : noSupabase;
+export const updateLiveTrackingSession = hasSupabaseConfig ? supabaseApi.updateLiveTrackingSession : noSupabase;
+export const endLiveTrackingSession = hasSupabaseConfig ? supabaseApi.endLiveTrackingSession : noSupabase;
+export const getLiveTrackingSession = hasSupabaseConfig ? supabaseApi.getLiveTrackingSession : async () => null;
+export const getActiveLiveTrackingSession = hasSupabaseConfig ? supabaseApi.getActiveLiveTrackingSession : async () => null;
+
 // Phase 35 — retroactive point-by-point entry
 export const updateMatchPoints = hasSupabaseConfig ? supabaseApi.updateMatchPoints : async () => {};
 

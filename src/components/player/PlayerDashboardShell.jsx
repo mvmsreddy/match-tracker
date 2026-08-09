@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { useActiveLiveSession } from '../../hooks/useLiveTrackingSpectator';
 import { computeGoalPace, computeRankProgress } from '../../lib/segments';
 import { getInitials as initials } from '../../lib/initials';
 import { Badge } from '@/components/primitives/badge';
@@ -65,6 +66,7 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
     : null;
   const goalPace = circuit && activeGoal ? computeGoalPace(circuit, activeGoal) : null;
   const behindPace = goalPace?.behindPace ?? false;
+  const activeLiveSession = useActiveLiveSession(!isOwnDashboard ? viewPlayerId : null);
 
   return (
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-4">
@@ -168,18 +170,27 @@ export default function PlayerDashboardShell({ activeTab, onTabChange, circuit, 
             </button>
             {isOwnDashboard
               ? <Button size="sm" onClick={() => navigate('/track')}>Launch tracker</Button>
-              : viewPlayerId && (
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/track', {
-                    state: {
-                      trackForPlayerId: viewPlayerId,
-                      trackForPlayerName: viewPlayerName || 'Player',
-                    },
-                  })}
-                >
-                  Track for {viewPlayerName?.split(' ')[0] || 'player'}
-                </Button>
+              : (
+                <>
+                  {activeLiveSession?.id && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/track/live/${activeLiveSession.id}`}>Watch live</Link>
+                    </Button>
+                  )}
+                  {viewPlayerId && (
+                    <Button
+                      size="sm"
+                      onClick={() => navigate('/track', {
+                        state: {
+                          trackForPlayerId: viewPlayerId,
+                          trackForPlayerName: viewPlayerName || 'Player',
+                        },
+                      })}
+                    >
+                      Track for {viewPlayerName?.split(' ')[0] || 'player'}
+                    </Button>
+                  )}
+                </>
               )}
           </div>
         </div>

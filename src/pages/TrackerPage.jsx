@@ -5,6 +5,8 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import { useAuth } from '../context/AuthContext';
 import { getWeatherString } from '../lib/weather';
 import { parseTrackForState } from '../lib/proxyTracking';
+import { useLiveTrackingSync, endLiveTrackingSessionQuiet } from '../hooks/useLiveTrackingSync';
+import LiveTrackingShareBanner from '../components/tracker/LiveTrackingShareBanner';
 import * as api from '../api';
 import AppNav from '../components/AppNav';
 import Scorebar from '../components/Scorebar';
@@ -119,6 +121,7 @@ const TRACKING_MODES = [
 
 // Temporarily disabled — Anthropic API billing not yet set up. Flip to true to re-enable.
 const AI_REVIEW_ENABLED = false;
+const hasSupabaseConfig = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 export default function TrackerPage() {
   const { user } = useAuth();
@@ -165,6 +168,35 @@ export default function TrackerPage() {
     subjectPlayerId: trackFor?.playerId || null,
     subjectPlayerName: trackFor?.playerName || '',
   });
+  const [liveSessionId, setLiveSessionId] = useState(null);
+
+  useLiveTrackingSync({
+    enabled: hasSupabaseConfig,
+    sessionId: liveSessionId,
+    setSessionId: setLiveSessionId,
+    state: {
+      header: t.header,
+      sessionType: t.sessionType,
+      formatPreset: t.formatPreset,
+      formatCustom: t.formatCustom,
+      pointTarget: t.pointTarget,
+      trackingMode: t.trackingMode,
+      serverChoice: t.serverChoice,
+      points: t.points,
+      matchStarted: t.matchStarted,
+      matchStartTime: t.matchStartTime,
+      matchEndTime: t.matchEndTime,
+      matchSaved: t.matchSaved,
+    },
+    playerId: trackFor?.playerId || user?.id,
+    trackedById: user?.id,
+  });
+
+  function handleResetMatch() {
+    const endingId = liveSessionId;
+    setLiveSessionId(null);
+    endLiveTrackingSessionQuiet(endingId).finally(() => t.resetMatch());
+  }
   const [activeTab, setActiveTab] = useState('match');
   const [aiReview, setAiReview] = useState(null); // { scope: 'game'|'set'|'match' } | null
   const [distractionFree, setDistractionFree] = useState(false);
@@ -221,6 +253,7 @@ export default function TrackerPage() {
           </div>
         </div>
       )}
+      {t.matchStarted && <LiveTrackingShareBanner sessionId={liveSessionId} />}
       {/* Scorebar only while a match is running */}
       {t.matchStarted && (
         <Scorebar
@@ -398,8 +431,10 @@ export default function TrackerPage() {
             sessionType={t.sessionType} formatPreset={t.formatPreset} formatLabel={t.formatLabel}
             pointTarget={t.pointTarget} trackingMode={t.trackingMode} points={t.points} engine={t.engine} analytics={t.analytics}
             matchStartTime={t.matchStartTime} matchDurationMs={t.matchDurationMs}
-            showStatus={t.showStatus} resetMatch={t.resetMatch}
+            showStatus={t.showStatus} resetMatch={handleResetMatch}
             subjectPlayerId={t.trackingForPlayerId}
+            liveSessionId={liveSessionId}
+            onLiveSessionEnded={() => setLiveSessionId(null)}
           />
         </div>
       )}

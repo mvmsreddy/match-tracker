@@ -25,7 +25,7 @@ async function saveAndSharePdfNative(doc, filename) {
 export default function ActionButtons({
   header, updateHeader, sessionType, formatPreset, formatLabel, pointTarget, trackingMode,
   points, engine, analytics, matchStartTime, matchDurationMs, showStatus,
-  resetMatch, subjectPlayerId = null,
+  resetMatch, subjectPlayerId = null, liveSessionId = null, onLiveSessionEnded,
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -69,6 +69,10 @@ export default function ActionButtons({
         points,
         sets: engine.sets,
       });
+      if (liveSessionId) {
+        await api.endLiveTrackingSession(liveSessionId).catch(() => {});
+        onLiveSessionEnded?.();
+      }
       showStatus(subjectPlayerId ? `Match saved to ${selfName}'s history` : 'Match saved to history');
       resetMatch();
     } catch (err) {

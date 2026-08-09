@@ -314,6 +314,118 @@ export async function canTrackForPlayer(playerId) {
   return !!(coachLink || parentLink);
 }
 
+// ---------------------------------------------------------------------------
+// Phase 54 — Live shared tracking sessions
+// ---------------------------------------------------------------------------
+
+function rowToLiveTrackingSession(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    trackedBy: row.tracked_by,
+    status: row.status,
+    header: row.header || {},
+    sessionType: row.session_type,
+    formatPreset: row.format_preset,
+    formatCustom: row.format_custom,
+    pointTarget: row.point_target,
+    trackingMode: row.tracking_mode,
+    serverChoice: row.server_choice,
+    points: row.points || [],
+    matchStarted: row.match_started,
+    matchStartTime: row.match_start_time,
+    matchEndTime: row.match_end_time,
+    updatedAt: row.updated_at,
+    createdAt: row.created_at,
+  };
+}
+
+function buildLiveTrackingRow(snapshot, { playerId, trackedById } = {}) {
+  return {
+    ...(playerId ? { player_id: playerId } : {}),
+    ...(trackedById ? { tracked_by: trackedById } : {}),
+    status: snapshot.status || 'live',
+    header: snapshot.header || {},
+    session_type: snapshot.sessionType || 'match',
+    format_preset: snapshot.formatPreset || null,
+    format_custom: snapshot.formatCustom || null,
+    point_target: snapshot.pointTarget ?? null,
+    tracking_mode: snapshot.trackingMode || null,
+    server_choice: snapshot.serverChoice || 'self',
+    points: snapshot.points || [],
+    match_started: !!snapshot.matchStarted,
+    match_start_time: snapshot.matchStartTime ?? null,
+    match_end_time: snapshot.matchEndTime ?? null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function createLiveTrackingSession({ playerId, trackedById, snapshot }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const effectivePlayerId = playerId || user.id;
+  const effectiveTrackedBy = trackedById || user.id;
+
+  const { data, error } = await supabase
+    .from('live_tracking_sessions')
+    .insert(buildLiveTrackingRow(snapshot, {
+      playerId: effectivePlayerId,
+      trackedById: effectiveTrackedBy,
+    }))
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLiveTrackingSession(data);
+}
+
+export async function updateLiveTrackingSession(sessionId, snapshot) {
+  const { data, error } = await supabase
+    .from('live_tracking_sessions')
+    .update(buildLiveTrackingRow(snapshot))
+    .eq('id', sessionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLiveTrackingSession(data);
+}
+
+export async function endLiveTrackingSession(sessionId) {
+  const { data, error } = await supabase
+    .from('live_tracking_sessions')
+    .update({ status: 'ended', updated_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLiveTrackingSession(data);
+}
+
+export async function getLiveTrackingSession(sessionId) {
+  const { data, error } = await supabase
+    .from('live_tracking_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToLiveTrackingSession(data);
+}
+
+export async function getActiveLiveTrackingSession(playerId) {
+  if (!playerId) return null;
+  const { data, error } = await supabase
+    .from('live_tracking_sessions')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('status', 'live')
+    .eq('match_started', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return rowToLiveTrackingSession(data);
+}
+
 // Multi-segment dashboard, Phase 4 — tracker sessions for one segment, keyed
 // off both normalized_category + normalized_subcategory (see
 // governingBodies.js's normalize* helpers + supabase/phase30_matches_event_link.sql).
