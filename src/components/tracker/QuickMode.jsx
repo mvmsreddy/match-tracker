@@ -31,10 +31,11 @@ const chipCls = (active) =>
     active ? 'border-primary bg-primary/15 text-accent-ink' : 'border-border bg-secondary text-foreground'
   }`;
 
-export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onEndMatch }) {
+export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, onEndMatch, onPointEntryStart }) {
   const [pendingTag, setPendingTag] = useState(null);
 
   function commitAce() {
+    onPointEntryStart?.();
     onCommit(baseEntry(nextServer, {
       endedBy: nextServer, reason: 'Winner', stroke: 'Serve', rally: 0, pointWinner: nextServer,
     }));
@@ -42,6 +43,7 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
   }
 
   function commitDoubleFault() {
+    onPointEntryStart?.();
     const receiver = other(nextServer);
     onCommit(baseEntry(nextServer, {
       serveResult: 'DF', endedBy: nextServer, reason: 'DoubleFault', stroke: 'Serve', rally: 0, pointWinner: receiver,
@@ -50,6 +52,7 @@ export default function QuickMode({ nextServer, onCommit, onUndo, canUndo, selfN
   }
 
   function wonThePoint(winner) {
+    onPointEntryStart?.();
     const loser = other(winner);
     let reason = 'Winner', stroke = 'Point', endedBy = winner;
     if (pendingTag === 'Winner') { reason = 'Winner'; stroke = 'Winner'; endedBy = winner; }

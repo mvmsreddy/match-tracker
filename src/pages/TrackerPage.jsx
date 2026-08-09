@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMatchTracker } from '../hooks/useMatchTracker';
+import { useMatchTiming } from '../hooks/useMatchTiming';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { useAuth } from '../context/AuthContext';
 import { getWeatherString } from '../lib/weather';
@@ -20,6 +21,7 @@ import ShotLocationHeatmap from '../components/ShotLocationHeatmap';
 import AiReviewModal from '../components/AiReviewModal';
 import LiveMatchAdvisor from '../components/LiveMatchAdvisor';
 import LiveMatchCommandCenter from '../components/tracker/LiveMatchCommandCenter';
+import MatchTimingBanners from '../components/tracker/MatchTimingBanners';
 import HighlightReelCard from '../components/tracker/HighlightReelCard';
 import { computeStats, computeServeStats } from '../lib/analytics';
 import { cn } from '../lib/utils';
@@ -168,6 +170,22 @@ export default function TrackerPage() {
     subjectPlayerId: trackFor?.playerId || null,
     subjectPlayerName: trackFor?.playerName || '',
   });
+  const timing = useMatchTiming({
+    pointsLength: t.points.length,
+    lastCommittedAt: t.points[t.points.length - 1]?.committedAt ?? null,
+    gamesSelf: t.engine?.setGames?.self ?? 0,
+    gamesOpp: t.engine?.setGames?.opp ?? 0,
+    setsSelf: t.engine?.setsWon?.self ?? 0,
+    setsOpp: t.engine?.setsWon?.opp ?? 0,
+  });
+
+  const handleCommitPoint = useCallback((entry) => {
+    t.commitPoint({
+      ...entry,
+      ...timing.consumePendingTiming(),
+      committedAt: Date.now(),
+    });
+  }, [t, timing]);
   const [liveSessionId, setLiveSessionId] = useState(null);
 
   useLiveTrackingSync({
@@ -331,6 +349,10 @@ export default function TrackerPage() {
               onUndo={() => { t.undoLast(); }}
               canUndo={t.points.length > 0}
               onReview={AI_REVIEW_ENABLED ? () => setAiReview({ scope: t.gameTransition.type }) : null}
+              pointRestSecsLeft={timing.pointRestSecsLeft}
+              changeoverActive={timing.changeoverActive}
+              changeoverSecsLeft={timing.changeoverSecsLeft}
+              onDismissChangeover={timing.dismissChangeover}
             />
           ) : t.engine.matchOver ? (
             <MatchOverBlock
@@ -373,20 +395,26 @@ export default function TrackerPage() {
                   onAdvisorTip={handleAdvisorTip}
                   distractionFree={distractionFree}
                   onToggleDistractionFree={() => setDistractionFree(v => !v)}
+                  pointRestSecsLeft={timing.pointRestSecsLeft}
+                  changeoverActive={timing.changeoverActive}
+                  changeoverSecsLeft={timing.changeoverSecsLeft}
+                  onDismissChangeover={timing.dismissChangeover}
                 >
                   {t.trackingMode === 'quick' ? (
                     <QuickMode
                       nextServer={t.nextServer}
-                      onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                      onCommit={handleCommitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
                       selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
                       onEndMatch={t.resetMatch}
+                      onPointEntryStart={timing.onPointEntryStart}
                     />
                   ) : (
                     <Wizard
                       nextServer={t.nextServer}
-                      onCommit={t.commitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
+                      onCommit={handleCommitPoint} onUndo={t.undoLast} canUndo={t.points.length > 0}
                       selfName={t.header.selfName || 'You'} oppName={t.header.oppName || 'Opponent'}
                       trackingMode={t.trackingMode}
+                      onPointEntryStart={timing.onPointEntryStart}
                     />
                   )}
                 </LiveMatchCommandCenter>
@@ -1032,7 +1060,10 @@ function MatchOverBlock({ sessionType, selfName, oppName, winner, header, points
 }
 
 // ── Game / Set / Match transition card with per-game stats ───────────────────
-function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo, canUndo, onReview }) {
+function GameTransitionCard({
+  transition, selfName, oppName, onContinue, onUndo, canUndo, onReview,
+  pointRestSecsLeft, changeoverActive, changeoverSecsLeft, onDismissChangeover,
+}) {
   const { type, winner, gamePoints, sets, setGames, nextServer } = transition;
   const winnerName = winner === 'self' ? selfName : oppName;
 
@@ -1065,6 +1096,12 @@ function GameTransitionCard({ transition, selfName, oppName, onContinue, onUndo,
   return (
     <Card className="mx-auto my-4 max-w-lg">
       <CardContent className="space-y-4 pt-6">
+        <MatchTimingBanners
+          pointRestSecsLeft={pointRestSecsLeft}
+          changeoverActive={changeoverActive}
+          changeoverSecsLeft={changeoverSecsLeft}
+          onDismissChangeover={onDismissChangeover}
+        />
         <div className="text-center">
           <div className={cn('font-display text-xl font-bold uppercase tracking-tight', winner === 'self' ? 'text-accent-ink' : 'text-destructive')}>
             {headline}

@@ -46,12 +46,19 @@ function shotLabel(type) {
   return type;
 }
 
-export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, trackingMode }) {
+export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName, oppName, trackingMode, onPointEntryStart }) {
   const [pending, setPending] = useState(() => freshPending(nextServer));
   const [history, setHistory] = useState([]);
   const stepCardRef = useRef(null);
   const prevActiveStep = useRef(null);
   const touchStartRef = useRef(null);
+  const entryStartedRef = useRef(false);
+
+  function markPointEntryStarted() {
+    if (entryStartedRef.current) return;
+    entryStartedRef.current = true;
+    onPointEntryStart?.();
+  }
 
   useEffect(() => {
     setPending((p) => (p.server === nextServer ? p : freshPending(nextServer)));
@@ -61,6 +68,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
   // Records the pre-change pending snapshot before applying an in-point
   // (non-committing) step, so goBack() can restore it.
   function setPendingStep(updater) {
+    if (history.length === 0) markPointEntryStarted();
     setHistory((h) => [...h, pending]);
     setPending(updater);
   }
@@ -73,6 +81,7 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
       setHistory((h) => h.slice(0, -1));
     } else if (canUndo) {
       onUndo();
+      entryStartedRef.current = false;
     }
   }
 
@@ -121,11 +130,13 @@ export default function Wizard({ nextServer, onCommit, onUndo, canUndo, selfName
     onCommit(entry);
     setPending(freshPending(pending.server));
     setHistory([]);
+    entryStartedRef.current = false;
   }
 
   // ── Service screen ───────────────────────────────────────────────────────
 
   function handleAce() {
+    markPointEntryStarted();
     commitAndReset({ serviceChoice: 'ace' });
   }
 

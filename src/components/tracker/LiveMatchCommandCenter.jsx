@@ -4,8 +4,9 @@ import { useOrientation } from '../../hooks/useOrientation';
 import LandscapeScoreView from './LandscapeScoreView';
 import {
   Undo2, Sparkles, Eye, EyeOff, Zap, Flame,
-  TrendingDown, Coffee, X, Loader2, RefreshCw,
+  TrendingDown, X, Loader2, RefreshCw,
 } from 'lucide-react';
+import MatchTimingBanners from './MatchTimingBanners';
 
 /**
  * LiveMatchCommandCenter — the persistent context bar that sits above the
@@ -27,6 +28,7 @@ export default function LiveMatchCommandCenter({
   matchStartTime, nextServer,
   onUndo, onOpenAdvisor, onAdvisorTip,
   distractionFree, onToggleDistractionFree,
+  pointRestSecsLeft, changeoverActive, changeoverSecsLeft, onDismissChangeover,
   children,
 }) {
   // ─── Point commit flash + Floating undo ─────────────────────────────────
@@ -68,38 +70,6 @@ export default function LiveMatchCommandCenter({
   // ─── Momentum ───────────────────────────────────────────────────────────
   const last8 = points.slice(-8);
   const streakInfo = computeStreak(points);
-
-  // Reset changeover memory whenever we're back to zero points (new match)
-  useEffect(() => {
-    if (points.length === 0) sessionStorage.setItem('mtp_last_changeover_total', '-1');
-  }, [points.length === 0]);
-
-  // ─── Changeover detection ───────────────────────────────────────────────
-  // Persists across GameTransitionCard re-mounts by keeping the last-seen
-  // total-games count in sessionStorage. Fires whenever we detect a new
-  // odd-game boundary (1, 3, 5, ...) — the natural tennis changeover.
-  const [changeoverActive, setChangeoverActive] = useState(false);
-  const [changeoverSecs, setChangeoverSecs] = useState(90);
-  useEffect(() => {
-    const total = gamesSelf + gamesOpp + setsSelf * 6 + setsOpp * 6; // rough total across sets
-    const key = 'mtp_last_changeover_total';
-    const stored = Number(sessionStorage.getItem(key) || '-1');
-    if (total > stored && total > 0 && total % 2 === 1) {
-      setChangeoverActive(true);
-      setChangeoverSecs(90);
-    }
-    sessionStorage.setItem(key, String(total));
-  }, [gamesSelf, gamesOpp, setsSelf, setsOpp]);
-  useEffect(() => {
-    if (!changeoverActive) return;
-    const t = setInterval(() => {
-      setChangeoverSecs(s => {
-        if (s <= 1) { setChangeoverActive(false); return 90; }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [changeoverActive]);
 
   // ─── AI Advisor inline panel ────────────────────────────────────────────
   const [advisorOpen, setAdvisorOpen] = useState(false);
@@ -221,6 +191,12 @@ export default function LiveMatchCommandCenter({
         >
           <EyeOff className="w-3.5 h-3.5" />Exit focus
         </button>
+        <MatchTimingBanners
+          pointRestSecsLeft={pointRestSecsLeft}
+          changeoverActive={changeoverActive}
+          changeoverSecsLeft={changeoverSecsLeft}
+          onDismissChangeover={onDismissChangeover}
+        />
         {children}
       </div>
     );
@@ -268,22 +244,12 @@ export default function LiveMatchCommandCenter({
         </div>
       )}
 
-      {/* Changeover countdown */}
-      {changeoverActive && (
-        <div className="rounded-xl bg-amber-500/10 border border-amber-500/40 p-3 flex items-center gap-3" data-testid="changeover-timer">
-          <Coffee className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[12px] uppercase tracking-widest font-bold text-amber-500">Changeover</div>
-            <div className="text-xs text-muted-foreground">Breathe. Hydrate. Reset.</div>
-          </div>
-          <div className="font-display font-black text-2xl tracking-tighter tabular-nums">
-            {String(Math.floor(changeoverSecs / 60)).padStart(1, '0')}:{String(changeoverSecs % 60).padStart(2, '0')}
-          </div>
-          <button onClick={() => setChangeoverActive(false)} className="text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      <MatchTimingBanners
+        pointRestSecsLeft={pointRestSecsLeft}
+        changeoverActive={changeoverActive}
+        changeoverSecsLeft={changeoverSecsLeft}
+        onDismissChangeover={onDismissChangeover}
+      />
 
       {/* AI Advisor inline card */}
       {advisorOpen && (

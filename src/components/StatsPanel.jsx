@@ -1,6 +1,7 @@
 import {
   computeStats, computeGroundstrokes, computeServeStats, computeReturnStats,
 } from '../lib/analytics';
+import { computeRestPaceStats, computeChangeoverStats } from '../lib/matchTiming';
 import { Card, CardHeader, CardTitle, CardContent } from './primitives/card';
 import { Table, TableBody, TableRow, TableHead, TableCell } from './primitives/table';
 
@@ -20,6 +21,8 @@ export default function StatsPanel({ points, header, sessionType, analytics, sec
   const so = computeServeStats(points, 'opp');
   const rs = computeReturnStats(points, 'self');
   const ro = computeReturnStats(points, 'opp');
+  const restPace = computeRestPaceStats(points, 'self');
+  const changeovers = computeChangeoverStats(points);
 
   if (section === 'shots') {
     return (
@@ -123,6 +126,45 @@ export default function StatsPanel({ points, header, sessionType, analytics, sec
           </Table>
         </CardContent>
       </Card>
+
+      {(restPace.length > 0 || changeovers) && (
+        <Card>
+          <CardHeader><CardTitle>Pace & Breaks</CardTitle></CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            {restPace.length > 0 && (
+              <Table>
+                <TableBody>
+                  <TableRow>
+                    <TableHead>Rest before point</TableHead>
+                    <TableHead>Points</TableHead>
+                    <TableHead className="text-accent-ink">Won</TableHead>
+                    <TableHead className="text-accent-ink">Win %</TableHead>
+                  </TableRow>
+                  {restPace.map((row) => (
+                    <TableRow key={row.bucket}>
+                      <TableCell>{row.label}</TableCell>
+                      <TableCell>{row.count}</TableCell>
+                      <TableCell className="text-accent-ink">{row.won}</TableCell>
+                      <TableCell className="text-accent-ink">{fmtPct(row.winPct)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {changeovers && (
+              <Table>
+                <TableBody>
+                  <TableRow><TableHead>Changeovers</TableHead><TableHead>Value</TableHead></TableRow>
+                  <TableRow><TableCell>Breaks taken</TableCell><TableCell>{changeovers.count}</TableCell></TableRow>
+                  <TableRow><TableCell>Avg break used</TableCell><TableCell>{changeovers.avgSec}s ({changeovers.avgUsedPct}% of 90s)</TableCell></TableRow>
+                  <TableRow><TableCell>Returned early (&lt;45s)</TableCell><TableCell>{changeovers.earlyCount}</TableCell></TableRow>
+                  <TableRow><TableCell>Used full 90s+</TableCell><TableCell>{changeovers.fullCount}</TableCell></TableRow>
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }
