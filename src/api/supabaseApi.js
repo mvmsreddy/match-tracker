@@ -18,6 +18,63 @@ import { computeStreak } from '../lib/streaks';
 // of api.* for why that matters: nothing above this file needed to change.
 // ---------------------------------------------------------------------------
 
+async function ensureFreshAccessToken() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('Not signed in. Sign out, sign in again, then retry sync.');
+  }
+  const expiresAtMs = (session.expires_at ?? 0) * 1000;
+  if (expiresAtMs && expiresAtMs - Date.now() < 120_000) {
+    const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+    if (refreshErr) throw new Error(refreshErr.message);
+    if (refreshed.session?.access_token) return refreshed.session.access_token;
+  }
+  return session.access_token;
+}
+
+async function readFunctionErrorBody(error) {
+  try {
+    if (error?.context && typeof error.context.json === 'function') {
+      const body = await error.context.json();
+      if (typeof body?.error === 'string') return body.error;
+      if (typeof body?.message === 'string') return body.message;
+    }
+  } catch {
+    // ignore malformed error bodies
+  }
+  return null;
+}
+
+/** Super-admin manual triggers — refresh JWT and surface deploy/auth hints. */
+async function invokeAdminEdgeFunction(functionName, body = {}) {
+  const token = await ensureFreshAccessToken();
+  const { data, error } = await supabase.functions.invoke(functionName, {
+    body,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (error) {
+    const bodyMsg = await readFunctionErrorBody(error);
+    const status = error.context?.status;
+    if (bodyMsg) throw new Error(`${functionName}: ${bodyMsg}`);
+    if (status === 401) {
+      throw new Error('Sync unauthorized — sign out/in and confirm super_admin role.');
+    }
+    if (status === 403) {
+      throw new Error('Sync forbidden — user_profiles.role must be super_admin.');
+    }
+    if (status === 404 || (error.message || '').includes('Failed to send a request')) {
+      throw new Error(
+        `Could not reach "${functionName}". Deploy it: supabase functions deploy ${functionName}`,
+      );
+    }
+    throw new Error(error.message || `Edge Function "${functionName}" failed`);
+  }
+
+  if (data?.error) throw new Error(String(data.error));
+  return data;
+}
+
 function publicUser(supabaseUser) {
   const meta = supabaseUser.user_metadata || {};
   return {
@@ -3375,9 +3432,7 @@ export async function getLatestAitaSyncLog() {
 }
 
 export async function triggerAitaSync() {
-  const { data, error } = await supabase.functions.invoke('sync-aita-calendar', { body: {} });
-  if (error) throw new Error(error.message);
-  return data;
+  return invokeAdminEdgeFunction('sync-aita-calendar');
 }
 
 // ---------------------------------------------------------------------------
@@ -4318,9 +4373,7 @@ export async function resolveAitaInterest(interestRow, eventId, accept) {
 // ---------------------------------------------------------------------------
 
 export async function triggerAitaRankingsSync() {
-  const { data, error } = await supabase.functions.invoke('sync-aita-rankings', { body: {} });
-  if (error) throw new Error(error.message);
-  return data;
+  return invokeAdminEdgeFunction('sync-aita-rankings');
 }
 
 /** On-demand full refresh — calendar first, then rankings. */
@@ -4517,9 +4570,7 @@ export async function getPlayerRatingsBatch({ playerIds = [], aitaRegs = [] }, f
 }
 
 export async function triggerComputeRatings() {
-  const { data, error } = await supabase.functions.invoke('compute-ratings', { body: {} });
-  if (error) throw new Error(error.message);
-  return data;
+  return invokeAdminEdgeFunction('compute-ratings');
 }
 
 function rowToAitaRanking(row) {
