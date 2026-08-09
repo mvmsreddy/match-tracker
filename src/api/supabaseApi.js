@@ -1952,6 +1952,12 @@ function rowToProfile(row) {
     reminderTime: row.reminder_time,
     reminderTimezone: row.reminder_timezone,
     weeklyDigest: row.weekly_digest || false,
+
+    profileSlug: row.profile_slug || null,
+    profileShareToken: row.profile_share_token || null,
+    profileVisibility: row.profile_visibility || 'private',
+    publicBio: row.public_bio || null,
+    privacySettings: row.privacy_settings || {},
   };
 }
 
@@ -2009,6 +2015,11 @@ export async function upsertProfile(userId, profile) {
     bag_name: profile.bagName || null,
     grip_brand: profile.gripBrand ?? existing?.gripBrand ?? null,
     grip_name: profile.gripName ?? existing?.gripName ?? null,
+
+    profile_slug: profile.profileSlug !== undefined ? (profile.profileSlug || null) : (existing?.profileSlug || null),
+    profile_visibility: profile.profileVisibility ?? existing?.profileVisibility ?? 'private',
+    public_bio: profile.publicBio !== undefined ? (profile.publicBio || null) : (existing?.publicBio || null),
+    privacy_settings: profile.privacySettings ?? existing?.privacySettings ?? {},
   };
 
   if (allowRoleSet) {
@@ -5333,5 +5344,205 @@ export async function generateFormatPlayoffs(eventId) {
 
   await supabase.from('event_stages').update({ status: 'in_progress' }).eq('id', playoffStage.id);
   return { matchCount: rows.length, standings: standings.slice(0, 4) };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 59 — Public profiles & play discovery
+// Requires supabase/phase59_public_profiles.sql
+// ---------------------------------------------------------------------------
+
+function normalizePublicProfilePayload(data) {
+  if (!data) return null;
+  return {
+    id: data.id,
+    displayName: data.displayName,
+    profileSlug: data.profileSlug,
+    visibility: data.visibility,
+    city: data.city,
+    stateAbbr: data.stateAbbr,
+    clubName: data.clubName,
+    publicBio: data.publicBio,
+    ranking: data.ranking,
+    plays: data.plays,
+    trackerRating: data.trackerRating,
+    stats: data.stats || {},
+    highlights: data.highlights || [],
+    availability: data.availability || null,
+  };
+}
+
+export async function getPublicProfileBySlug(slug) {
+  const { data, error } = await supabase.rpc('get_public_profile_by_slug', { p_slug: slug });
+  if (error) throw new Error(error.message);
+  return normalizePublicProfilePayload(data);
+}
+
+export async function getPublicProfileByToken(token) {
+  const { data, error } = await supabase.rpc('get_public_profile_by_token', { p_token: token });
+  if (error) throw new Error(error.message);
+  return normalizePublicProfilePayload(data);
+}
+
+export async function checkProfileSlugAvailable(slug, userId) {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('profile_slug', slug.toLowerCase())
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return true;
+  return data.id === userId;
+}
+
+export async function updateProfileSharing(userId, payload) {
+  const row = {};
+  if (payload.profileSlug !== undefined) row.profile_slug = payload.profileSlug || null;
+  if (payload.profileVisibility !== undefined) row.profile_visibility = payload.profileVisibility;
+  if (payload.publicBio !== undefined) row.public_bio = payload.publicBio || null;
+  if (payload.privacySettings !== undefined) row.privacy_settings = payload.privacySettings;
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .update(row)
+    .eq('id', userId)
+    .select()
+    .single();
+  if (error) {
+    if (/duplicate key|unique constraint/i.test(error.message)) {
+      throw new Error('That profile handle is already taken — try another.');
+    }
+    throw new Error(error.message);
+  }
+  return rowToProfile(data);
+}
+
+function rowToAvailabilityPost(row) {
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    status: row.status,
+    area: row.area,
+    city: row.city,
+    surface: row.surface,
+    format: row.format,
+    timeWindow: row.time_window,
+    notes: row.notes,
+  };
+}
+
+export async function getMyActiveAvailabilityPost(playerId) {
+  const { data, error } = await supabase
+    .from('play_availability_posts')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? rowToAvailabilityPost(data) : null;
+}
+
+export async function createPlayAvailabilityPost(playerId, post) {
+  await supabase
+    .from('play_availability_posts')
+    .update({ status: 'cancelled' })
+    .eq('player_id', playerId)
+    .eq('status', 'active');
+
+  const expires = new Date();
+  expires.setDate(expires.getDate() + (post.daysValid || 7));
+
+  const { data, error } = await supabase
+    .from('play_availability_posts')
+    .insert({
+      player_id: playerId,
+      area: post.area || null,
+      city: post.city || null,
+      surface: post.surface || null,
+      format: post.format || null,
+      time_window: post.timeWindow || null,
+      notes: post.notes || null,
+      expires_at: expires.toISOString(),
+      status: 'active',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToAvailabilityPost(data);
+}
+
+export async function cancelPlayAvailabilityPost(playerId, postId) {
+  const { error } = await supabase
+    .from('play_availability_posts')
+    .update({ status: 'cancelled' })
+    .eq('id', postId)
+    .eq('player_id', playerId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+export async function sendPlayConnectRequest(fromUserId, toUserId, message) {
+  if (fromUserId === toUserId) throw new Error('You cannot connect with yourself.');
+  const { data, error } = await supabase
+    .from('play_connect_requests')
+    .insert({
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
+      message: message || null,
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    fromUserId: data.from_user_id,
+    toUserId: data.to_user_id,
+    message: data.message,
+    status: data.status,
+    createdAt: data.created_at,
+  };
+}
+
+export async function listIncomingConnectRequests(userId) {
+  const { data, error } = await supabase
+    .from('play_connect_requests')
+    .select('*')
+    .eq('to_user_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  const rows = data || [];
+  if (!rows.length) return [];
+  const fromIds = [...new Set(rows.map((r) => r.from_user_id))];
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, profile_slug')
+    .in('id', fromIds);
+  const byId = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+  return rows.map((row) => ({
+    id: row.id,
+    fromUserId: row.from_user_id,
+    message: row.message,
+    createdAt: row.created_at,
+    fromDisplayName: byId[row.from_user_id]?.display_name,
+    fromProfileSlug: byId[row.from_user_id]?.profile_slug,
+  }));
+}
+
+export async function respondPlayConnectRequest(requestId, userId, status) {
+  const { data, error } = await supabase
+    .from('play_connect_requests')
+    .update({ status, responded_at: new Date().toISOString() })
+    .eq('id', requestId)
+    .eq('to_user_id', userId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: data.id, status: data.status };
 }
 

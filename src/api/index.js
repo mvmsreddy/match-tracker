@@ -105,6 +105,18 @@ export const updateFormatMatchResult = hasSupabaseConfig ? supabaseApi.updateFor
 export const computeFormatStandings = hasSupabaseConfig ? supabaseApi.computeFormatStandings : async () => [];
 export const generateFormatPlayoffs = hasSupabaseConfig ? supabaseApi.generateFormatPlayoffs : noSupabase;
 
+// Phase 59 — Public profiles & play discovery
+export const getPublicProfileBySlug = hasSupabaseConfig ? supabaseApi.getPublicProfileBySlug : async () => null;
+export const getPublicProfileByToken = hasSupabaseConfig ? supabaseApi.getPublicProfileByToken : async () => null;
+export const checkProfileSlugAvailable = hasSupabaseConfig ? supabaseApi.checkProfileSlugAvailable : async () => true;
+export const updateProfileSharing = hasSupabaseConfig ? supabaseApi.updateProfileSharing : noSupabase;
+export const getMyActiveAvailabilityPost = hasSupabaseConfig ? supabaseApi.getMyActiveAvailabilityPost : async () => null;
+export const createPlayAvailabilityPost = hasSupabaseConfig ? supabaseApi.createPlayAvailabilityPost : noSupabase;
+export const cancelPlayAvailabilityPost = hasSupabaseConfig ? supabaseApi.cancelPlayAvailabilityPost : async () => ({ ok: true });
+export const sendPlayConnectRequest = hasSupabaseConfig ? supabaseApi.sendPlayConnectRequest : noSupabase;
+export const listIncomingConnectRequests = hasSupabaseConfig ? supabaseApi.listIncomingConnectRequests : async () => [];
+export const respondPlayConnectRequest = hasSupabaseConfig ? supabaseApi.respondPlayConnectRequest : noSupabase;
+
 // Draw Entries
 export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : tournamentsMock.getDrawEntries;
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];

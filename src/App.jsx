@@ -29,7 +29,7 @@ import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 import NutritionPage from './pages/NutritionPage';
 import DrillsPage from './pages/DrillsPage';
-import AitaAdminReviewPage from './pages/AitaAdminReviewPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 // Parent's home experience (linked-player list) is different enough from
 // DashboardPage's player/coach/organizer branches that it's routed here
@@ -65,6 +65,8 @@ export default function App() {
           <SegmentProvider>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/p/:slug" element={<PublicProfilePage mode="slug" />} />
+              <Route path="/p/t/:token" element={<PublicProfilePage mode="token" />} />
               <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
                 <Route path="/" element={<HomeRoute />} />
                 <Route path="/history" element={<Navigate to="/compare" replace />} />

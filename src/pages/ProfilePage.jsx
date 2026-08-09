@@ -10,6 +10,9 @@ import { Input } from '@/components/primitives/input';
 import { Textarea } from '@/components/primitives/textarea';
 import { Badge } from '@/components/primitives/badge';
 import WeeklyDigestCard from '../components/WeeklyDigestCard';
+import ProfilePrivacyCard from '../components/profile/ProfilePrivacyCard';
+import PlayAvailabilityCard from '../components/profile/PlayAvailabilityCard';
+import ConnectRequestsCard from '../components/profile/ConnectRequestsCard';
 
 // AITA Rules KB — Annual Tournament Limits (junior circuit only; count is
 // combined across all age groups a player enters, per §2). Adult ("Open")
@@ -466,6 +469,9 @@ export default function ProfilePage() {
       {!editing && !isOrganizer && <ReminderPrefsCard user={user} refreshProfile={refreshProfile} />}
       {!editing && !isOrganizer && <StreakFreezeCard userId={user.id} />}
       {!editing && !isOrganizer && <WeeklyDigestCard user={user} />}
+      {!editing && isPlayer && <ProfilePrivacyCard user={user} refreshProfile={refreshProfile} />}
+      {!editing && isPlayer && <PlayAvailabilityCard user={user} />}
+      {!editing && isPlayer && <ConnectRequestsCard userId={user.id} />}
 
       {!editing && (
         <div className="inline-flex border border-border rounded-sm p-1 bg-card gap-1">
