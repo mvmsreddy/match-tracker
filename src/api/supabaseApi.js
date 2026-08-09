@@ -708,6 +708,8 @@ function rowToEvent(row) {
     signinTime: row.signin_time,
     firstDayOfPlay: row.first_day_of_play,
     lastDayOfPlay: row.last_day_of_play,
+    format: row.format || 'single_elimination',
+    formatConfig: row.format_config || {},
   };
 }
 
@@ -751,6 +753,8 @@ export async function createEvent(weekId, event) {
     signin_time: event.signinTime || null,
     first_day_of_play: event.firstDayOfPlay || null,
     last_day_of_play: event.lastDayOfPlay || null,
+    format: event.format || 'single_elimination',
+    format_config: event.formatConfig || {},
   };
   const { data, error } = await supabase.from('events').insert(row).select().single();
   if (error) throw new Error(error.message);
@@ -775,6 +779,8 @@ export async function updateEvent(eventId, updates) {
   if (updates.signinTime !== undefined) row.signin_time = updates.signinTime;
   if (updates.firstDayOfPlay !== undefined) row.first_day_of_play = updates.firstDayOfPlay;
   if (updates.lastDayOfPlay !== undefined) row.last_day_of_play = updates.lastDayOfPlay;
+  if (updates.format !== undefined) row.format = updates.format;
+  if (updates.formatConfig !== undefined) row.format_config = updates.formatConfig;
 
   const { data, error } = await supabase
     .from('events')
@@ -1805,6 +1811,14 @@ function rowToEventMatch(row) {
     dayNumber: row.day_number,
     courtNumber: row.court_number,
     matchOrder: row.match_order,
+    stageId: row.stage_id,
+    groupId: row.group_id,
+    team1Id: row.team1_id,
+    team2Id: row.team2_id,
+    tieScore: row.tie_score,
+    courts: row.courts || [],
+    scheduledStart: row.scheduled_start,
+    label: row.label,
   };
 }
 
@@ -5072,5 +5086,252 @@ export async function deleteSavedCompare(id) {
   const { error } = await supabase.from('saved_compares').delete().eq('id', id);
   if (error) throw new Error(error.message);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 58 — Multi-format tournaments (RR, pools, team ties, etc.)
+// Requires supabase/phase58_multi_format.sql
+// ---------------------------------------------------------------------------
+
+function rowToEventTeam(row) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    name: row.name,
+    sortOrder: row.sort_order,
+    roster: row.roster || [],
+  };
+}
+
+function rowToEventStage(row) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    stageKey: row.stage_key,
+    stageType: row.stage_type,
+    stageOrder: row.stage_order,
+    label: row.label,
+    config: row.config || {},
+    status: row.status,
+  };
+}
+
+export async function listEventTeams(eventId) {
+  const { data, error } = await supabase
+    .from('event_teams')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('sort_order', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToEventTeam);
+}
+
+export async function saveEventTeams(eventId, teams) {
+  await supabase.from('event_teams').delete().eq('event_id', eventId);
+  if (!teams.length) return [];
+  const rows = teams.map((t, i) => ({
+    event_id: eventId,
+    name: t.name.trim(),
+    sort_order: i,
+    roster: t.roster || [],
+  }));
+  const { data, error } = await supabase.from('event_teams').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToEventTeam);
+}
+
+export async function listEventStages(eventId) {
+  const { data, error } = await supabase
+    .from('event_stages')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('stage_order', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToEventStage);
+}
+
+export async function listFormatEventMatches(eventId) {
+  const { data, error } = await supabase
+    .from('event_matches')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('round', { ascending: true })
+    .order('match_slot', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToEventMatch);
+}
+
+export async function generateFormatDraw(eventId, weekNumCourts = 4) {
+  const { generateFormatStructure, suggestCourtAssignments, participantCountFromConfig } = await import('../utils/formats/formatEngine');
+  const { getFormat } = await import('../utils/formats/formatRegistry');
+
+  const event = await getEvent(eventId);
+  const formatDef = getFormat(event.format);
+  const config = { ...event.formatConfig };
+  let teams = await listEventTeams(eventId);
+
+  if (formatDef.usesTeams && teams.length === 0) {
+    const n = participantCountFromConfig(event.format, config);
+    teams = Array.from({ length: n }, (_, i) => ({ name: `Team ${i + 1}` }));
+    teams = await saveEventTeams(eventId, teams);
+  }
+
+  const participants = teams.map((t) => ({ id: t.id, name: t.name }));
+  const participantType = formatDef.usesTeams ? 'team' : 'entry';
+  const { stages, matches } = generateFormatStructure(event.format, config, participants, participantType);
+
+  const withCourts = event.format.includes('team_tie') || event.format === 'rr_playoffs'
+    ? suggestCourtAssignments(matches, weekNumCourts)
+    : matches;
+
+  await supabase.from('event_standings').delete().eq('event_id', eventId);
+  await supabase.from('event_matches').delete().eq('event_id', eventId);
+  await supabase.from('event_stages').delete().eq('event_id', eventId);
+
+  const stageRows = stages.map((s) => ({
+    event_id: eventId,
+    stage_key: s.stageKey,
+    stage_type: s.stageType,
+    stage_order: s.stageOrder,
+    label: s.label,
+    config: s.config,
+    status: 'pending',
+  }));
+  const { data: insertedStages, error: stageErr } = await supabase
+    .from('event_stages')
+    .insert(stageRows)
+    .select();
+  if (stageErr) throw new Error(stageErr.message);
+
+  const stageIdByKey = Object.fromEntries((insertedStages || []).map((s) => [s.stage_key, s.id]));
+
+  const matchRows = withCourts.map((m) => ({
+    event_id: eventId,
+    draw_type: m.drawType || 'round_robin',
+    round: m.round,
+    match_slot: m.matchSlot,
+    stage_id: stageIdByKey[m.stageKey] || null,
+    group_id: m.groupId || null,
+    team1_id: m.team1Id || null,
+    team2_id: m.team2Id || null,
+    entry1_id: m.entry1Id || null,
+    entry2_id: m.entry2Id || null,
+    courts: m.courts || [],
+    court_number: m.courtNumber || m.courts?.[0] || null,
+    label: m.label || null,
+    status: m.tbd ? 'pending' : 'pending',
+  }));
+
+  if (matchRows.length) {
+    const { error: matchErr } = await supabase.from('event_matches').insert(matchRows);
+    if (matchErr) throw new Error(matchErr.message);
+  }
+
+  await updateEvent(eventId, { status: 'draw_ready' });
+  return { stages: insertedStages, matchCount: matchRows.length };
+}
+
+export async function updateFormatMatchResult(matchId, { tieScore, score, outcomeType, winnerTeamId }) {
+  const updates = { status: 'complete' };
+  if (tieScore !== undefined) updates.tie_score = tieScore;
+  if (score !== undefined) updates.score = score;
+  if (outcomeType !== undefined) updates.outcome_type = outcomeType || 'score';
+
+  const { data, error } = await supabase
+    .from('event_matches')
+    .update(updates)
+    .eq('id', matchId)
+    .select('*, team1_id, team2_id')
+    .single();
+  if (error) throw new Error(error.message);
+
+  const row = rowToEventMatch(data);
+  row.winnerTeamId = winnerTeamId || inferWinnerFromTie(row);
+  return row;
+}
+
+export async function computeFormatStandings(eventId, stageKey = 'league') {
+  const { computeStandings } = await import('../utils/formats/standings');
+  const stages = await listEventStages(eventId);
+  const stage = stages.find((s) => s.stageKey === stageKey) || stages[0];
+  if (!stage) return [];
+
+  const teams = await listEventTeams(eventId);
+  const matches = await listFormatEventMatches(eventId);
+  const stageMatches = matches.filter((m) => m.stageId === stage.id);
+
+  const participants = teams.map((t) => ({ id: t.id, name: t.name }));
+  const event = await getEvent(eventId);
+  const cfg = event.formatConfig || {};
+
+  return computeStandings(participants, stageMatches.map((m) => ({
+    team1Id: m.team1Id,
+    team2Id: m.team2Id,
+    winnerTeamId: m.winnerTeamId || (m.status === 'complete' ? inferWinnerFromTie(m) : null),
+    tieScore: m.tieScore,
+    score: m.score,
+    outcomeType: m.outcomeType,
+    status: m.status,
+  })), { pointsWin: cfg.pointsWin ?? 1, useTieScore: true });
+}
+
+function inferWinnerFromTie(m) {
+  if (!m.tieScore) return null;
+  const ts = m.tieScore.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (!ts) return null;
+  const a = parseInt(ts[1], 10), b = parseInt(ts[2], 10);
+  if (a > b) return m.team1Id;
+  if (b > a) return m.team2Id;
+  return null;
+}
+
+export async function generateFormatPlayoffs(eventId) {
+  const { generatePlayoffMatches } = await import('../utils/formats/formatEngine');
+  const event = await getEvent(eventId);
+  const standings = await computeFormatStandings(eventId, 'league');
+  const teams = await listEventTeams(eventId);
+  const participants = teams.map((t) => ({ id: t.id, name: t.name }));
+
+  const playoffFixtures = generatePlayoffMatches(event.format, event.formatConfig || {}, standings.map((s) => ({
+    id: s.id, name: s.name, rank: s.rank,
+  })));
+
+  const stages = await listEventStages(eventId);
+  let playoffStage = stages.find((s) => s.stageKey === 'playoffs');
+  if (!playoffStage) {
+    const { data, error } = await supabase.from('event_stages').insert({
+      event_id: eventId,
+      stage_key: 'playoffs',
+      stage_type: 'knockout',
+      stage_order: 99,
+      label: 'Playoffs',
+      config: event.formatConfig || {},
+      status: 'pending',
+    }).select().single();
+    if (error) throw new Error(error.message);
+    playoffStage = rowToEventStage(data);
+  }
+
+  await supabase.from('event_matches').delete().eq('event_id', eventId).eq('draw_type', 'playoffs');
+
+  const rows = playoffFixtures.map((m) => ({
+    event_id: eventId,
+    draw_type: 'playoffs',
+    round: m.round,
+    match_slot: m.matchSlot,
+    stage_id: playoffStage.id,
+    team1_id: m.team1Id,
+    team2_id: m.team2Id,
+    label: m.label,
+    status: m.tbd ? 'pending' : 'pending',
+  }));
+
+  if (rows.length) {
+    const { error } = await supabase.from('event_matches').insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  await supabase.from('event_stages').update({ status: 'in_progress' }).eq('id', playoffStage.id);
+  return { matchCount: rows.length, standings: standings.slice(0, 4) };
 }
 

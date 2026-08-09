@@ -5,10 +5,11 @@ import * as api from '../api';
 import { getEntryStage, ENTRY_STAGE } from '../utils/aitaGradeRules';
 import { openRazorpayCheckout } from '../lib/razorpay';
 import { pickEventForAction } from '../utils/organizerTournamentStage';
+import { formatLabel, isLegacyKnockoutPage } from '../utils/formats/formatRegistry';
 import { organizerBlockedFromWeek } from '../lib/tournamentAccess';
 import OrganizerProgressStepper from '../components/organizer/OrganizerProgressStepper';
 import OrganizerOnboardingChecklist, { shouldShowOnboardingChecklist } from '../components/organizer/OrganizerOnboardingChecklist';
-import OrganizerAccessDenied from '../components/organizer/OrganizerAccessDenied';
+import FormatSelector, { defaultConfigForFormat } from '../components/organizer/FormatSelector';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
 import { cn } from '../lib/utils';
@@ -129,6 +130,8 @@ const EMPTY_EVENT_FORM = {
   signinTime: '',
   firstDayOfPlay: '',
   lastDayOfPlay: '',
+  format: 'single_elimination',
+  formatConfig: defaultConfigForFormat('single_elimination'),
 };
 
 const selectCls = 'rounded-sm border border-input bg-transparent px-3 py-1.5 text-sm h-9 w-full';
@@ -202,16 +205,26 @@ function EventCard({ event, weekId, isOwner, onDelete, myEntry, onEnter, onWithd
   const canEnterSingles = !event.isDoubles && !myEntry && entryOpen;
   const canInviteDoubles = event.isDoubles && !myEntry && entryOpen;
   const isEntered = !!myEntry && myEntry.entryStatus !== 'withdrawn';
+  const eventPath = isLegacyKnockoutPage(event.format)
+    ? `/tournaments/${weekId}/events/${event.id}`
+    : `/tournaments/${weekId}/events/${event.id}/format`;
   return (
     <div className="flex items-center justify-between gap-3 p-3 rounded-sm border border-border bg-card hover:border-primary">
-      <Link to={`/tournaments/${weekId}/events/${event.id}`} className="flex-1 min-w-0">
+      <Link to={eventPath} className="flex-1 min-w-0">
         <div className="text-sm font-bold">
           {event.category} <span className="text-muted-foreground font-normal">{event.ageGroup}</span>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           <StatusBadge status={event.status} />
-          <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">Draw {event.drawSize}</span>
-          <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{event.numSeeds} seeds</span>
+          <span className="inline-flex items-center rounded-sm bg-primary/10 text-accent-ink px-2 py-0.5 text-[0.68rem] font-semibold">
+            {formatLabel(event.format || 'single_elimination')}
+          </span>
+          {isLegacyKnockoutPage(event.format) && (
+            <>
+              <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">Draw {event.drawSize}</span>
+              <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">{event.numSeeds} seeds</span>
+            </>
+          )}
           {event.hasQualifying && (
             <span className="inline-flex items-center rounded-sm bg-secondary text-secondary-foreground px-2 py-0.5 text-[0.68rem] font-semibold">Qualifying {event.qualifyingSize}</span>
           )}
@@ -788,6 +801,17 @@ export default function TournamentDetailPage() {
                   </select>
                 </Field>
               </div>
+
+              <FormatSelector
+                format={form.format || 'single_elimination'}
+                formatConfig={form.formatConfig || {}}
+                compact
+                onFormatChange={(f, cfg) => setForm((prev) => ({ ...prev, format: f, formatConfig: cfg }))}
+                onConfigChange={(cfg) => setForm((prev) => ({ ...prev, formatConfig: cfg }))}
+              />
+
+              {isLegacyKnockoutPage(form.format || 'single_elimination') && (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Main Draw Size">
                   <select className={selectCls} value={form.drawSize} onChange={e => set('drawSize', Number(e.target.value))}>
@@ -815,6 +839,8 @@ export default function TournamentDetailPage() {
                     <Input type="number" min="1" max="16" value={form.qualifyingSpots} onChange={e => set('qualifyingSpots', Number(e.target.value))} />
                   </Field>
                 </div>
+              )}
+              </>
               )}
 
               {/* Phase 19 — per-category sign-in window & play dates */}

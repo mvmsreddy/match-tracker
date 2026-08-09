@@ -24,6 +24,7 @@ import CoachPlayersPage from './pages/CoachPlayersPage';
 import ParentPlayersPage from './pages/ParentPlayersPage';
 import CoachIntelligencePage from './pages/CoachIntelligencePage';
 import EventDetailPage from './pages/EventDetailPage';
+import FormatEventPage from './pages/FormatEventPage';
 import OrderOfPlayPage from './pages/OrderOfPlayPage';
 import VideoAnalysisTestPage from './pages/VideoAnalysisTestPage';
 import NutritionPage from './pages/NutritionPage';
@@ -86,6 +87,7 @@ export default function App() {
                 <Route path="/tournaments" element={<TournamentsRoute />} />
                 <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
                 <Route path="/tournaments/:id/events/:eventId" element={<EventDetailPage />} />
+                <Route path="/tournaments/:id/events/:eventId/format" element={<FormatEventPage />} />
                 <Route path="/tournaments/:id/oop" element={<OrderOfPlayPage />} />
               </Route>
               <Route path="/track" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />

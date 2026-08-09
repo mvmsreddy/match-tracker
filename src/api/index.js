@@ -95,6 +95,16 @@ export const createEvent = hasSupabaseConfig ? supabaseApi.createEvent : noSupab
 export const updateEvent = hasSupabaseConfig ? supabaseApi.updateEvent : noSupabase;
 export const deleteEvent = hasSupabaseConfig ? supabaseApi.deleteEvent : async () => {};
 
+// Phase 58 — Multi-format tournaments
+export const listEventTeams = hasSupabaseConfig ? supabaseApi.listEventTeams : async () => [];
+export const saveEventTeams = hasSupabaseConfig ? supabaseApi.saveEventTeams : noSupabase;
+export const listEventStages = hasSupabaseConfig ? supabaseApi.listEventStages : async () => [];
+export const listFormatEventMatches = hasSupabaseConfig ? supabaseApi.listFormatEventMatches : async () => [];
+export const generateFormatDraw = hasSupabaseConfig ? supabaseApi.generateFormatDraw : noSupabase;
+export const updateFormatMatchResult = hasSupabaseConfig ? supabaseApi.updateFormatMatchResult : noSupabase;
+export const computeFormatStandings = hasSupabaseConfig ? supabaseApi.computeFormatStandings : async () => [];
+export const generateFormatPlayoffs = hasSupabaseConfig ? supabaseApi.generateFormatPlayoffs : noSupabase;
+
 // Draw Entries
 export const getDrawEntries = hasSupabaseConfig ? supabaseApi.getDrawEntries : tournamentsMock.getDrawEntries;
 export const saveDrawEntries = hasSupabaseConfig ? supabaseApi.saveDrawEntries : async () => [];

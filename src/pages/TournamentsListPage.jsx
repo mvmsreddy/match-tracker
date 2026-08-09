@@ -5,6 +5,8 @@ import * as api from '../api';
 import { parseFactsheetPdf } from '../utils/parseFactsheet';
 import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
 import HostTournamentModal, { DuplicateAitaWarning } from '../components/organizer/HostTournamentModal';
+import FormatSelector, { defaultConfigForFormat } from '../components/organizer/FormatSelector';
+import { FORMATS } from '../utils/formats/formatRegistry';
 import OrganizerTournamentCard from '../components/organizer/OrganizerTournamentCard';
 import TournamentCalendarBrowser from '../components/tournaments/TournamentCalendarBrowser';
 import { Card } from '@/components/primitives/card';
@@ -209,7 +211,11 @@ export default function TournamentsListPage() {
 
   function addEventRow() {
     const defaults = getDrawDefaults(form.grade, 'Boys Singles');
-    setEventRows(prev => [...prev, { category: 'Boys Singles', ageGroup: 'U14', ...defaults }]);
+    setEventRows(prev => [...prev, {
+      category: 'Boys Singles', ageGroup: 'U14', ...defaults,
+      format: 'single_elimination',
+      formatConfig: defaultConfigForFormat('single_elimination'),
+    }]);
   }
 
   function removeEventRow(idx) {
@@ -232,6 +238,9 @@ export default function TournamentsListPage() {
       if (field === 'qualifyingSize') {
         const comp = qualifyingDrawComposition(Number(value));
         updated.maxQualDirect = comp ? comp.directAcceptance : null;
+      }
+      if (field === 'format') {
+        return { ...updated, formatConfig: defaultConfigForFormat(value) };
       }
       return updated;
     }));
@@ -578,6 +587,7 @@ export default function TournamentsListPage() {
                         <TableRow>
                           <TableHead>Category</TableHead>
                           <TableHead>Age</TableHead>
+                          <TableHead>Format</TableHead>
                           <TableHead className="text-center">Draw</TableHead>
                           <TableHead className="text-center">Seeds</TableHead>
                           <TableHead className="text-center">Qual?</TableHead>
@@ -598,10 +608,23 @@ export default function TournamentsListPage() {
                                 {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
                               </select>
                             </TableCell>
+                            <TableCell>
+                              <select
+                                className={selectCls}
+                                value={row.format || 'single_elimination'}
+                                onChange={e => updateEventRow(idx, 'format', e.target.value)}
+                              >
+                                {Object.values(FORMATS).map(f => (
+                                  <option key={f.id} value={f.id}>{f.label}</option>
+                                ))}
+                              </select>
+                            </TableCell>
                             <TableCell className="text-center">
+                              {(row.format || 'single_elimination') === 'single_elimination' ? (
                               <select className={selectCls} value={row.drawSize} onChange={e => updateEventRow(idx, 'drawSize', Number(e.target.value))}>
                                 {DRAW_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
+                              ) : '—'}
                             </TableCell>
                             <TableCell className="text-center">
                               <select className={selectCls} value={row.numSeeds} onChange={e => updateEventRow(idx, 'numSeeds', Number(e.target.value))}>
