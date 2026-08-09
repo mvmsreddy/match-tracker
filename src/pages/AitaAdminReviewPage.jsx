@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../api';
+import SignupApprovalsQueue from '../components/admin/SignupApprovalsQueue';
+import SuperAdminOpsPanel from '../components/admin/SuperAdminOpsPanel';
 import { Button } from '@/components/primitives/button';
 
 // super_admin-only review queue for crowdsourced AITA uploads (draw sheets +
@@ -11,6 +13,8 @@ import { Button } from '@/components/primitives/button';
 // ImportPane, see parseDrawText()); results follow the event's existing
 // round/match_slot bracket (see parseResultsText()).
 const TABS = [
+  { id: 'signups', label: 'Signup Approvals' },
+  { id: 'ops', label: 'System Ops' },
   { id: 'draws', label: 'Draw Sheets' },
   { id: 'results', label: 'Results Sheets' },
   { id: 'claims', label: 'Organizer Claims' },
@@ -594,7 +598,7 @@ function OrganizerClaimsQueue() {
 
 export default function AitaAdminReviewPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('draws');
+  const [tab, setTab] = useState('signups');
 
   if (user?.role !== 'super_admin') {
     return (
@@ -610,7 +614,7 @@ export default function AitaAdminReviewPage() {
     <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-7xl mx-auto space-y-6">
       <div>
         <div className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Admin</div>
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">AITA Upload Review</h1>
+        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tighter">Platform Admin</h1>
       </div>
 
       <div className="inline-flex flex-wrap gap-1 border border-border rounded-sm p-1 bg-card">
@@ -626,6 +630,8 @@ export default function AitaAdminReviewPage() {
         ))}
       </div>
 
+      {tab === 'signups' && <SignupApprovalsQueue />}
+      {tab === 'ops' && <SuperAdminOpsPanel />}
       {tab === 'draws' && <DrawSheetReviewQueue />}
       {tab === 'results' && <ResultsSheetReviewQueue />}
       {tab === 'claims' && <OrganizerClaimsQueue />}

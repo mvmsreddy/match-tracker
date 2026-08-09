@@ -1891,6 +1891,10 @@ function rowToProfile(row) {
     id: row.id,
     role: row.role || 'player',
     roleConfirmed: row.role_confirmed || false,
+    accountStatus: row.account_status || 'active',
+    aitaMatchVerified: row.aita_match_verified || false,
+    rejectionReason: row.rejection_reason || null,
+    approvedAt: row.approved_at || null,
     displayName: row.display_name,
     aitaReg: row.aita_reg,
     stateAbbr: row.state_abbr,
@@ -1951,11 +1955,15 @@ export async function getProfile(userId) {
 }
 
 export async function upsertProfile(userId, profile) {
+  const existing = await getProfile(userId).catch(() => null);
+  const allowRoleSet = profile.allowRoleSet === true;
+  const role = allowRoleSet ? (profile.role || existing?.role || 'player') : (existing?.role || profile.role || 'player');
+
   const row = {
     id: userId,
-    role: profile.role,
-    role_confirmed: true,          // always true when saved explicitly by the user
-    display_name: profile.displayName || null,
+    role,
+    role_confirmed: true,
+    display_name: profile.displayName ?? existing?.displayName ?? null,
     aita_reg: profile.aitaReg || null,
     state_abbr: profile.stateAbbr || null,
     date_of_birth: profile.dateOfBirth || null,
@@ -1985,9 +1993,14 @@ export async function upsertProfile(userId, profile) {
     shoe_name: profile.shoeName || null,
     bag_brand: profile.bagBrand || null,
     bag_name: profile.bagName || null,
-    grip_brand: profile.gripBrand || null,
-    grip_name: profile.gripName || null,
+    grip_brand: profile.gripBrand ?? existing?.gripBrand ?? null,
+    grip_name: profile.gripName ?? existing?.gripName ?? null,
   };
+
+  if (allowRoleSet) {
+    row.account_status = (role === 'player' || role === 'organizer') ? 'pending' : 'active';
+  }
+
   const { data, error } = await supabase
     .from('user_profiles')
     .upsert(row, { onConflict: 'id' })
@@ -4283,6 +4296,102 @@ export async function triggerAitaRankingsSync() {
   const { data, error } = await supabase.functions.invoke('sync-aita-rankings', { body: {} });
   if (error) throw new Error(error.message);
   return data;
+}
+
+/** On-demand full refresh — calendar first, then rankings. */
+export async function triggerUnifiedAitaSync() {
+  const calendar = await triggerAitaSync();
+  const rankings = await triggerAitaRankingsSync();
+  return { calendar, rankings };
+}
+
+export async function getAitaRankingsSyncOverview() {
+  const { data, error } = await supabase
+    .from('aita_rankings_sync_state')
+    .select('category, subcategory, last_synced_date, last_checked_at, last_error')
+    .order('last_checked_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  const combos = data || [];
+  const lastChecked = combos.reduce((best, row) => {
+    if (!row.last_checked_at) return best;
+    return !best || row.last_checked_at > best ? row.last_checked_at : best;
+  }, null);
+  return { combos, lastChecked };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 56 — signup approval governance
+// ---------------------------------------------------------------------------
+
+function rowToPendingSignup(row) {
+  return {
+    id: row.id,
+    role: row.role,
+    displayName: row.display_name,
+    aitaReg: row.aita_reg,
+    stateAbbr: row.state_abbr,
+    dateOfBirth: row.date_of_birth,
+    gender: row.gender,
+    clubName: row.club_name,
+    createdAt: row.created_at,
+    aitaMatchVerified: row.aita_match_verified || false,
+  };
+}
+
+export async function getPendingSignupApprovals() {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, role, display_name, aita_reg, state_abbr, date_of_birth, gender, club_name, created_at, aita_match_verified')
+    .eq('account_status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToPendingSignup);
+}
+
+export async function lookupAitaPlayer(aitaReg) {
+  if (!aitaReg) return null;
+  const { data, error } = await supabase
+    .from('aita_players')
+    .select('aita_reg, family_name, first_name, dob, state, gender')
+    .eq('aita_reg', String(aitaReg).trim())
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    regNo: data.aita_reg,
+    name: [data.family_name, data.first_name].filter(Boolean).join(', '),
+    dob: data.dob,
+    state: data.state,
+    gender: data.gender,
+  };
+}
+
+export async function approveSignup(userId, { setVerified = false, aitaMatchVerified = null } = {}) {
+  const { error } = await supabase.rpc('approve_user_signup', {
+    p_user_id: userId,
+    p_set_verified: setVerified,
+    p_aita_match_verified: aitaMatchVerified,
+  });
+  if (error) throw new Error(error.message);
+  await createNotificationsForUsers([userId], {
+    type: 'signup_approved',
+    title: 'Account approved',
+    body: 'Your account has been approved. Welcome to Tennis Tracker!',
+  }).catch(() => {});
+}
+
+export async function rejectSignup(userId, reason = '') {
+  const { error } = await supabase.rpc('reject_user_signup', {
+    p_user_id: userId,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+  await createNotificationsForUsers([userId], {
+    type: 'signup_rejected',
+    title: 'Account not approved',
+    body: reason?.trim() ? reason.trim() : 'Your signup was not approved. Contact the platform admin for help.',
+  }).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------

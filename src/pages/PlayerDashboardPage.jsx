@@ -19,6 +19,7 @@ import SeasonAnalyticsTab from '../components/player/SeasonAnalyticsTab';
 import RecommendationsTab from '../components/player/RecommendationsTab';
 import ProgressTab from '../components/player/ProgressTab';
 import TodayPanel from '../components/player/TodayPanel';
+import PlayerSummaryCard from '../components/player/PlayerSummaryCard';
 
 // Player Coaching Dashboard — multi-segment plan (all player-side tabs
 // implemented: Overview/Tournaments Phase 2, Goals/Training Phase 3,
@@ -112,6 +113,10 @@ function PlayerDashboardInner({ viewPlayerId, isOwnDashboard, viewPlayerName, vi
       viewerRole={viewerRole}
     >
       <TodayPanel playerId={viewPlayerId} circuit={selectedCircuit} isOwnDashboard={isOwnDashboard} />
+
+      {!loading && circuits.length > 0 && isOwnDashboard && allMatches && (
+        <PlayerSummaryCard matches={allMatches} tournamentItems={myTournaments.items} />
+      )}
 
       {!loading && circuits.length > 0 && (
         <>

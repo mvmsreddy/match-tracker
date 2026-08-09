@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import RoleSetupOverlay from './RoleSetupOverlay';
+import AccountPendingOverlay from './AccountPendingOverlay';
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -22,6 +23,10 @@ export default function ProtectedRoute({ children }) {
   // Block access to all pages until the user explicitly picks their role.
   if (!user.roleConfirmed) {
     return <RoleSetupOverlay />;
+  }
+
+  if (user.role !== 'super_admin' && (user.accountStatus === 'pending' || user.accountStatus === 'rejected')) {
+    return <AccountPendingOverlay />;
   }
 
   return children;

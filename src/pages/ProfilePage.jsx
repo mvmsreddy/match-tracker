@@ -496,18 +496,8 @@ export default function ProfilePage() {
               </Field>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Role</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {['player', 'coach', 'parent', 'organizer'].map(r => (
-                    <button
-                      key={r}
-                      type="button"
-                      className={`px-2 py-1.5 rounded-sm text-xs font-semibold border ${form.role === r ? 'border-primary bg-primary/10 text-accent-ink' : 'border-border text-muted-foreground'}`}
-                      onClick={() => handleChange('role', r)}
-                    >
-                      {ROLE_LABELS[r]}
-                    </button>
-                  ))}
-                </div>
+                <Badge variant="secondary">{ROLE_LABELS[form.role] || form.role}</Badge>
+                <div className="text-[10px] text-muted-foreground mt-1">Contact the platform admin to change your role.</div>
               </div>
             </div>
           </Card>

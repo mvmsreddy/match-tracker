@@ -58,7 +58,7 @@ function ensureUsersSeeded() {
   for (const u of DEMO_USERS) {
     if (!profiles[u.id]) {
       profiles[u.id] = {
-        id: u.id, role: u.role, roleConfirmed: true, displayName: u.name,
+        id: u.id, role: u.role, roleConfirmed: true, accountStatus: 'active', displayName: u.name,
         aitaReg: u.aitaReg, ranking: u.ranking, stateAbbr: u.stateAbbr,
       };
       changed = true;
@@ -107,7 +107,14 @@ export async function signup(email, password, name, role = 'player') {
   // RoleSetupOverlay (meant for Google OAuth, which has no role picker) isn't
   // shown redundantly right after.
   const profiles = readJSON(PROFILES_KEY, {});
-  profiles[newUser.id] = { id: newUser.id, role: newUser.role, roleConfirmed: true, displayName: newUser.name };
+  const needsApproval = role === 'player' || role === 'organizer';
+  profiles[newUser.id] = {
+    id: newUser.id,
+    role: newUser.role,
+    roleConfirmed: true,
+    accountStatus: needsApproval ? 'pending' : 'active',
+    displayName: newUser.name,
+  };
   writeJSON(PROFILES_KEY, profiles);
 
   const token = makeToken(newUser);
@@ -209,10 +216,54 @@ export async function getProfile(userId) {
 export async function upsertProfile(userId, profile) {
   await delay(150);
   const profiles = readJSON(PROFILES_KEY, {});
-  const merged = { ...profiles[userId], ...profile, id: userId, roleConfirmed: true };
+  const existing = profiles[userId] || {};
+  const allowRoleSet = profile.allowRoleSet === true;
+  const role = allowRoleSet ? (profile.role || existing.role) : existing.role;
+  const accountStatus = allowRoleSet
+    ? ((role === 'player' || role === 'organizer') ? 'pending' : 'active')
+    : (existing.accountStatus || 'active');
+  const { allowRoleSet: _drop, ...rest } = profile;
+  const merged = {
+    ...existing,
+    ...rest,
+    id: userId,
+    role,
+    roleConfirmed: true,
+    accountStatus,
+  };
   profiles[userId] = merged;
   writeJSON(PROFILES_KEY, profiles);
   return merged;
+}
+
+export async function getPendingSignupApprovals() {
+  await delay(150);
+  const profiles = readJSON(PROFILES_KEY, {});
+  return Object.values(profiles).filter(p => p.accountStatus === 'pending');
+}
+
+export async function approveSignup(userId) {
+  await delay(150);
+  const profiles = readJSON(PROFILES_KEY, {});
+  if (profiles[userId]) {
+    profiles[userId].accountStatus = 'active';
+    writeJSON(PROFILES_KEY, profiles);
+  }
+}
+
+export async function rejectSignup(userId, reason = '') {
+  await delay(150);
+  const profiles = readJSON(PROFILES_KEY, {});
+  if (profiles[userId]) {
+    profiles[userId].accountStatus = 'rejected';
+    profiles[userId].rejectionReason = reason || null;
+    writeJSON(PROFILES_KEY, profiles);
+  }
+}
+
+export async function lookupAitaPlayer() {
+  await delay(100);
+  return null;
 }
 
 export const DEMO_CREDENTIALS = DEMO_USERS.map((u) => ({ email: u.email, password: u.password, role: u.role }));

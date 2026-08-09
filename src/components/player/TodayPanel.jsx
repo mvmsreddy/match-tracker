@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react';
 import * as api from '../../api';
 import { useSegmentMatchSchedule } from '../../hooks/useSegmentMatchSchedule';
+import { useMyTournaments } from '../../hooks/useMyTournaments';
+import { useDeadlineReminders } from '../../hooks/useDeadlineReminders';
 import TodaysMatchHero from './TodaysMatchHero';
+import TomorrowMatchHero from './TomorrowMatchHero';
+import ImportantDatesPanel from './ImportantDatesPanel';
 import MyAitaParticipationCard from './MyAitaParticipationCard';
 import { LogTodayReminder } from '@/components/DashboardExtras';
 import { Button } from '@/components/primitives/button';
 
-// Consolidates everything that used to be scattered across the old
-// single-page dashboard into one "what needs my attention today" list:
-// today's match, pending doubles invitations, tournament entry/withdrawal
-// deadlines + draw-sheet uploads (via MyAitaParticipationCard), and the
-// log-today nudge. Sits above the tab content so it's visible no matter
-// which tab is active. Renders nothing for a coach/parent viewing a linked
-// player — none of these are actions they can take on the player's behalf.
 export default function TodayPanel({ playerId, circuit, isOwnDashboard }) {
   const schedule = useSegmentMatchSchedule(playerId, circuit);
+  const myTournaments = useMyTournaments(playerId);
   const [matches, setMatches] = useState(null);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [interestRows, setInterestRows] = useState([]);
 
   useEffect(() => {
     if (!isOwnDashboard) return;
@@ -27,8 +26,18 @@ export default function TodayPanel({ playerId, circuit, isOwnDashboard }) {
     api.getMyPendingInvitations()
       .then(data => { if (!cancelled) setPendingInvites(data); })
       .catch(() => {});
+    api.getMyAitaParticipation()
+      .then(rows => { if (!cancelled) setInterestRows(rows || []); })
+      .catch(() => { if (!cancelled) setInterestRows([]); });
     return () => { cancelled = true; };
   }, [playerId, isOwnDashboard]);
+
+  useDeadlineReminders({
+    playerId,
+    tournamentItems: myTournaments.items,
+    interestRows,
+    enabled: isOwnDashboard,
+  });
 
   if (!isOwnDashboard) return null;
 
@@ -42,11 +51,17 @@ export default function TodayPanel({ playerId, circuit, isOwnDashboard }) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const loggedToday = matches ? matches.some(m => m.date === today) : true; // avoid a flash before matches load
+  const loggedToday = matches ? matches.some(m => m.date === today) : true;
 
   return (
     <div className="space-y-4">
       {circuit && <TodaysMatchHero upcoming={schedule.upcoming} circuit={circuit} isOwnDashboard={isOwnDashboard} />}
+      {circuit && <TomorrowMatchHero upcoming={schedule.upcoming} circuit={circuit} isOwnDashboard={isOwnDashboard} />}
+
+      <ImportantDatesPanel
+        tournamentItems={myTournaments.items}
+        interestRows={interestRows}
+      />
 
       {pendingInvites.length > 0 && (
         <div className="space-y-2">

@@ -43,6 +43,7 @@ export default function RoleSetupOverlay() {
       await api.upsertProfile(user.id, {
         role: selected,
         displayName: user.displayName || user.name,
+        allowRoleSet: true,
       });
       await refreshProfile();
       // refreshProfile updates user.roleConfirmed → overlay unmounts automatically
@@ -88,7 +89,7 @@ export default function RoleSetupOverlay() {
         </button>
 
         <p className="role-overlay-note">
-          You can change this later from your profile settings.
+          Player and organizer accounts require admin approval before you can use the platform.
         </p>
       </div>
     </div>

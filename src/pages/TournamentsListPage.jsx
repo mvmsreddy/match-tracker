@@ -6,6 +6,7 @@ import { parseFactsheetPdf } from '../utils/parseFactsheet';
 import { getAitaDrawDefaults, mainDrawComposition, qualifyingDrawComposition, seedCountForDraw, DOUBLES_NUM_SEEDS } from '../utils/aitaGradeRules';
 import HostTournamentModal, { DuplicateAitaWarning } from '../components/organizer/HostTournamentModal';
 import OrganizerTournamentCard from '../components/organizer/OrganizerTournamentCard';
+import TournamentCalendarBrowser from '../components/tournaments/TournamentCalendarBrowser';
 import { Card } from '@/components/primitives/card';
 import { Button } from '@/components/primitives/button';
 import { Input } from '@/components/primitives/input';
@@ -95,6 +96,7 @@ export default function TournamentsListPage() {
   // Step 2: event rows
   const [step, setStep] = useState(1);
   const [eventRows, setEventRows] = useState([]);
+  const [pageTab, setPageTab] = useState('mine');
 
   const isOrganizer = user?.role === 'organizer';
 
@@ -312,6 +314,42 @@ export default function TournamentsListPage() {
         )}
       </div>
 
+      {isOrganizer && (
+        <div className="inline-flex gap-1 border border-border rounded-sm p-1 bg-card">
+          <button
+            type="button"
+            onClick={() => setPageTab('mine')}
+            className={cn(
+              'px-4 py-2 rounded-sm text-sm font-semibold transition-colors',
+              pageTab === 'mine' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            My Events
+          </button>
+          <button
+            type="button"
+            onClick={() => setPageTab('browse')}
+            className={cn(
+              'px-4 py-2 rounded-sm text-sm font-semibold transition-colors',
+              pageTab === 'browse' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Browse all tournaments
+          </button>
+        </div>
+      )}
+
+      {isOrganizer && pageTab === 'browse' && (
+        <section className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            Official AITA calendar — nominate yourself as organizer for any event. Admin approval is required before you can run draws.
+          </div>
+          <TournamentCalendarBrowser claimMode />
+        </section>
+      )}
+
+      {(pageTab === 'mine' || !isOrganizer) && (
+      <>
       <HostTournamentModal
         open={showHostModal}
         onClose={() => setShowHostModal(false)}
@@ -672,6 +710,8 @@ export default function TournamentsListPage() {
             )
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

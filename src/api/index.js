@@ -229,6 +229,14 @@ export const listAitaRankingFacets = hasSupabaseConfig ? supabaseApi.listAitaRan
 export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRankingDates  : async () => [];
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
 export const triggerAitaRankingsSync = hasSupabaseConfig ? supabaseApi.triggerAitaRankingsSync : noSupabase;
+export const triggerUnifiedAitaSync  = hasSupabaseConfig ? supabaseApi.triggerUnifiedAitaSync  : async () => ({ calendar: null, rankings: null });
+export const getAitaRankingsSyncOverview = hasSupabaseConfig ? supabaseApi.getAitaRankingsSyncOverview : async () => ({ combos: [], lastChecked: null });
+
+// Phase 56 — signup approval
+export const getPendingSignupApprovals = hasSupabaseConfig ? supabaseApi.getPendingSignupApprovals : mockApi.getPendingSignupApprovals;
+export const lookupAitaPlayer          = hasSupabaseConfig ? supabaseApi.lookupAitaPlayer          : mockApi.lookupAitaPlayer;
+export const approveSignup             = hasSupabaseConfig ? supabaseApi.approveSignup             : mockApi.approveSignup;
+export const rejectSignup              = hasSupabaseConfig ? supabaseApi.rejectSignup              : mockApi.rejectSignup;
 
 // Phase 44 — Computed skill rating (Glicko-2)
 export const getPlayerRating        = hasSupabaseConfig ? supabaseApi.getPlayerRating        : async () => null;
