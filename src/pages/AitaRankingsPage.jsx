@@ -97,6 +97,13 @@ export default function AitaRankingsPage() {
       const rows = (result?.summary || []).reduce((sum, s) => sum + (s.rowsUpserted || 0), 0);
       const newDatesCount = (result?.summary || []).reduce((sum, s) => sum + (s.datesUpserted || 0), 0);
       setSyncMessage(newDatesCount > 0 ? `Synced — ${newDatesCount} new date(s), ${rows} rows.` : 'Synced — no new rankings published since last check.');
+      api.listAitaRankingFacets().then((list) => {
+        setFacets(list);
+        if (list.length > 0 && !category) {
+          setCategory(list[0].category);
+          setSubcategory(list[0].subcategory);
+        }
+      }).catch(() => {});
       if (category && subcategory) {
         api.listAitaRankingDates(category, subcategory).then(list => {
           setDates(list);
@@ -133,7 +140,16 @@ export default function AitaRankingsPage() {
       )}
 
       {facets && facets.length === 0 && !error && (
-        <div className="border border-dashed border-border rounded-sm p-6 text-center text-sm text-muted-foreground">No ranking categories loaded yet.</div>
+        <div className="border border-dashed border-border rounded-sm p-6 text-sm text-muted-foreground space-y-2">
+          <div className="font-semibold text-foreground">No ranking data loaded yet</div>
+          <p>Calendar sync and rankings sync are separate. Rankings need:</p>
+          <ol className="list-decimal list-inside space-y-1">
+            <li>SQL: run <code className="text-xs">phase27_aita_rankings.sql</code> + <code className="text-xs">phase28_aita_rankings_sync.sql</code></li>
+            <li>Deploy Edge Function: <code className="text-xs">npx supabase functions deploy sync-aita-rankings</code></li>
+            <li>Click <strong>Sync Now</strong> above (incremental — only new weekly dates)</li>
+            <li>For full history, run local backfill: <code className="text-xs">node scripts/aita-rankings/backfill.mjs Boys U-12</code></li>
+          </ol>
+        </div>
       )}
 
       {facets && facets.length > 0 && (

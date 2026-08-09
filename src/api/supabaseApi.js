@@ -112,16 +112,53 @@ async function waitForAitaSyncLog(previousStartedAt, { maxWaitMs = 180000, inter
   );
 }
 
-async function waitForRankingsSyncUpdate(previousChecked, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
+async function waitForRankingsSyncUpdate(previousChecked, logStartedBefore, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     await sleep(intervalMs);
+    const { data: latestLog } = await supabase
+      .from('aita_rankings_sync_log')
+      .select('started_at, finished_at, error')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (
+      latestLog?.started_at
+      && latestLog.started_at !== logStartedBefore
+      && latestLog.finished_at
+    ) {
+      return;
+    }
     const overview = await getAitaRankingsSyncOverview();
-    if (overview.lastChecked && overview.lastChecked !== previousChecked) return overview;
+    if (overview.lastChecked && overview.lastChecked !== previousChecked) return;
   }
   throw new Error(
-    'Rankings sync timed out. Deploy sync-aita-rankings or run supabase/phase60_admin_sync_rpc.sql in SQL Editor.',
+    'Rankings sync timed out — sync-aita-rankings Edge Function is probably not deployed. '
+    + 'Run: npx supabase functions deploy sync-aita-rankings',
   );
+}
+
+async function fetchRankingsSyncSummarySince(sinceStartedAt) {
+  let query = supabase
+    .from('aita_rankings_sync_log')
+    .select('category, subcategory, dates_upserted, rows_upserted, error, started_at')
+    .order('started_at', { ascending: false })
+    .limit(16);
+  if (sinceStartedAt) query = query.gt('started_at', sinceStartedAt);
+  const { data, error } = await query;
+  if (error) {
+    if (error.message.includes('aita_rankings_sync_log')) {
+      throw new Error('Rankings tables missing — run supabase/phase27_aita_rankings.sql and phase28_aita_rankings_sync.sql');
+    }
+    throw new Error(error.message);
+  }
+  return (data || []).map((row) => ({
+    category: row.category,
+    subcategory: row.subcategory,
+    datesUpserted: row.dates_upserted,
+    rowsUpserted: row.rows_upserted,
+    error: row.error,
+  }));
 }
 
 async function triggerAitaSyncViaRpc() {
@@ -140,12 +177,35 @@ async function triggerAitaSyncViaRpc() {
 }
 
 async function triggerAitaRankingsSyncViaRpc() {
-  const before = await getAitaRankingsSyncOverview().catch(() => ({ lastChecked: null }));
+  const beforeOverview = await getAitaRankingsSyncOverview().catch(() => ({ lastChecked: null }));
+  const { data: logBeforeRow } = await supabase
+    .from('aita_rankings_sync_log')
+    .select('started_at')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const logStartedBefore = logBeforeRow?.started_at || null;
+
   const { data, error } = await supabase.rpc('admin_trigger_aita_sync', { p_target: 'rankings' });
   if (error) throw error;
   if (!data?.ok) throw new Error('Rankings sync RPC failed');
-  await waitForRankingsSyncUpdate(before.lastChecked);
-  return { ok: true };
+
+  await waitForRankingsSyncUpdate(beforeOverview.lastChecked, logStartedBefore);
+
+  const summary = await fetchRankingsSyncSummarySince(logStartedBefore);
+  if (summary.length === 0) {
+    throw new Error(
+      'Rankings sync queued but no log written — deploy sync-aita-rankings: '
+      + 'npx supabase functions deploy sync-aita-rankings',
+    );
+  }
+
+  const failed = summary.filter((s) => s.error && !s.rowsUpserted);
+  if (failed.length === summary.length) {
+    throw new Error(`Rankings sync failed: ${failed[0].error}`);
+  }
+
+  return { summary, pdfParses: null };
 }
 
 function formatAdminSyncRpcError(rpcErr) {
