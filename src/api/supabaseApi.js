@@ -190,8 +190,11 @@ async function triggerAitaRankingsSyncViaRpc() {
   if (error) throw error;
   if (!data?.ok) throw new Error('Rankings sync RPC failed');
 
-  await waitForRankingsSyncUpdate(beforeOverview.lastChecked, logStartedBefore);
+  return rankingsResultFromSync(logStartedBefore, beforeOverview.lastChecked);
+}
 
+async function rankingsResultFromSync(logStartedBefore, previousChecked) {
+  await waitForRankingsSyncUpdate(previousChecked, logStartedBefore);
   const summary = await fetchRankingsSyncSummarySince(logStartedBefore);
   if (summary.length === 0) {
     throw new Error(
@@ -206,6 +209,55 @@ async function triggerAitaRankingsSyncViaRpc() {
   }
 
   return { summary, pdfParses: null };
+}
+
+function calendarResultFromSyncLog(log) {
+  if (!log) return { error: 'No calendar sync log returned' };
+  if (log.error) return { error: log.error };
+  return {
+    upserted: log.tournamentsUpserted,
+    changed: log.tournamentsChanged,
+    tournamentsUpserted: log.tournamentsUpserted,
+    tournamentsChanged: log.tournamentsChanged,
+  };
+}
+
+async function triggerUnifiedAitaSyncViaRpc() {
+  const calBefore = await getLatestAitaSyncLog().catch(() => null);
+  const rankBeforeOverview = await getAitaRankingsSyncOverview().catch(() => ({ lastChecked: null }));
+  const { data: logBeforeRow } = await supabase
+    .from('aita_rankings_sync_log')
+    .select('started_at')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const logStartedBefore = logBeforeRow?.started_at || null;
+
+  const { data, error } = await supabase.rpc('admin_trigger_aita_sync', { p_target: 'all' });
+  if (error) throw error;
+  if (!data?.ok) throw new Error('Unified sync RPC failed');
+
+  const [calSettled, rankSettled] = await Promise.allSettled([
+    waitForAitaSyncLog(calBefore?.startedAt),
+    rankingsResultFromSync(logStartedBefore, rankBeforeOverview.lastChecked),
+  ]);
+
+  const calendar = calSettled.status === 'fulfilled'
+    ? calendarResultFromSyncLog(calSettled.value)
+    : { error: calSettled.reason?.message || 'Calendar sync failed' };
+
+  const rankings = rankSettled.status === 'fulfilled'
+    ? rankSettled.value
+    : { error: rankSettled.reason?.message || 'Rankings sync failed' };
+
+  const calOk = !calendar.error;
+  const rankOk = !rankings.error;
+
+  if (!calOk && !rankOk) {
+    throw new Error(`Calendar: ${calendar.error}. Rankings: ${rankings.error}.`);
+  }
+
+  return { calendar, rankings, partial: calOk !== rankOk };
 }
 
 function formatAdminSyncRpcError(rpcErr) {
@@ -4531,11 +4583,41 @@ export async function triggerAitaRankingsSync() {
   }
 }
 
-/** On-demand full refresh — calendar first, then rankings. */
+/** On-demand full refresh — calendar + rankings in parallel via RPC. */
 export async function triggerUnifiedAitaSync() {
-  const calendar = await triggerAitaSync();
-  const rankings = await triggerAitaRankingsSync();
-  return { calendar, rankings };
+  try {
+    return await triggerUnifiedAitaSyncViaRpc();
+  } catch (rpcErr) {
+    throw formatAdminSyncRpcError(rpcErr);
+  }
+}
+
+export async function getAitaSyncDiagnostics() {
+  const [
+    calendarLog,
+    { count: calendarCount, error: calendarCountErr },
+    { count: rankingCount, error: rankingCountErr },
+    { data: recentRankLogs, error: rankLogErr },
+    rankingsOverview,
+  ] = await Promise.all([
+    getLatestAitaSyncLog().catch(() => null),
+    supabase.from('aita_tournaments').select('*', { count: 'exact', head: true }),
+    supabase.from('aita_rankings').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('aita_rankings_sync_log')
+      .select('category, subcategory, rows_upserted, dates_upserted, error, started_at, finished_at')
+      .order('started_at', { ascending: false })
+      .limit(5),
+    getAitaRankingsSyncOverview().catch(() => ({ combos: [], lastChecked: null })),
+  ]);
+
+  return {
+    calendarTournamentCount: calendarCountErr ? null : (calendarCount ?? 0),
+    rankingRowCount: rankingCountErr ? null : (rankingCount ?? 0),
+    latestCalendarSync: calendarLog,
+    recentRankingSyncs: rankLogErr ? [] : (recentRankLogs || []),
+    rankingsOverview,
+  };
 }
 
 export async function getAitaRankingsSyncOverview() {

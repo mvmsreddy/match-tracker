@@ -252,6 +252,7 @@ export const listAitaRankingDates  = hasSupabaseConfig ? supabaseApi.listAitaRan
 export const listAitaRankings      = hasSupabaseConfig ? supabaseApi.listAitaRankings      : async () => ({ rows: [], totalCount: 0 });
 export const triggerAitaRankingsSync = hasSupabaseConfig ? supabaseApi.triggerAitaRankingsSync : noSupabase;
 export const triggerUnifiedAitaSync  = hasSupabaseConfig ? supabaseApi.triggerUnifiedAitaSync  : async () => ({ calendar: null, rankings: null });
+export const getAitaSyncDiagnostics  = hasSupabaseConfig ? supabaseApi.getAitaSyncDiagnostics  : async () => null;
 export const getAitaRankingsSyncOverview = hasSupabaseConfig ? supabaseApi.getAitaRankingsSyncOverview : async () => ({ combos: [], lastChecked: null });
 
 // Phase 56 — signup approval

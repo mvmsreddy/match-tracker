@@ -8,9 +8,25 @@ function formatWhen(iso) {
   return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+function formatUnifiedResult(result) {
+  if (!result) return '';
+  const cal = result.calendar;
+  const rank = result.rankings;
+  const calMsg = cal?.error
+    ? `Calendar failed: ${cal.error}`
+    : `Calendar: ${cal?.upserted ?? 0} upserted, ${cal?.changed ?? 0} changed`;
+  const rankRows = (rank?.summary || []).reduce((sum, s) => sum + (s.rowsUpserted || 0), 0);
+  const rankDates = (rank?.summary || []).reduce((sum, s) => sum + (s.datesUpserted || 0), 0);
+  const rankMsg = rank?.error
+    ? `Rankings failed: ${rank.error}`
+    : `Rankings: ${rankDates} new date(s), ${rankRows} rows`;
+  return result.partial ? `${calMsg}. ${rankMsg} (partial success)` : `${calMsg}. ${rankMsg}.`;
+}
+
 export default function SuperAdminOpsPanel() {
   const [calendarLog, setCalendarLog] = useState(null);
   const [rankingsState, setRankingsState] = useState(null);
+  const [diagnostics, setDiagnostics] = useState(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [lastResult, setLastResult] = useState('');
@@ -19,9 +35,11 @@ export default function SuperAdminOpsPanel() {
     Promise.all([
       api.getLatestAitaSyncLog().catch(() => null),
       api.getAitaRankingsSyncOverview?.().catch(() => null),
-    ]).then(([cal, rank]) => {
+      api.getAitaSyncDiagnostics?.().catch(() => null),
+    ]).then(([cal, rank, diag]) => {
       setCalendarLog(cal);
       setRankingsState(rank);
+      setDiagnostics(diag);
     });
   }
 
@@ -33,22 +51,27 @@ export default function SuperAdminOpsPanel() {
     setLastResult('');
     try {
       if (kind === 'calendar') {
-        await api.triggerAitaSync();
-        setLastResult('Calendar sync completed.');
+        const result = await api.triggerAitaSync();
+        setLastResult(`Calendar: ${result?.upserted ?? 0} upserted, ${result?.changed ?? 0} changed.`);
       } else if (kind === 'rankings') {
-        await api.triggerAitaRankingsSync();
-        setLastResult('Rankings sync completed.');
+        const result = await api.triggerAitaRankingsSync();
+        const rows = (result?.summary || []).reduce((sum, s) => sum + (s.rowsUpserted || 0), 0);
+        const dates = (result?.summary || []).reduce((sum, s) => sum + (s.datesUpserted || 0), 0);
+        setLastResult(dates > 0 ? `Rankings: ${dates} new date(s), ${rows} rows.` : 'Rankings: no new dates since last check.');
       } else {
-        await api.triggerUnifiedAitaSync();
-        setLastResult('Calendar + rankings sync completed.');
+        const result = await api.triggerUnifiedAitaSync();
+        setLastResult(formatUnifiedResult(result));
       }
       reload();
     } catch (e) {
       setError(e.message || 'Sync failed');
+      reload();
     } finally {
       setBusy('');
     }
   }
+
+  const latestRankLog = diagnostics?.recentRankingSyncs?.[0];
 
   return (
     <div className="space-y-4">
@@ -59,6 +82,19 @@ export default function SuperAdminOpsPanel() {
             Official calendar and rankings are refreshed daily at midnight IST. Use these buttons for on-demand updates.
           </div>
         </div>
+
+        {diagnostics && (
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-sm border border-border px-3 py-2">
+              <div className="text-muted-foreground">Tournaments in DB</div>
+              <div className="font-bold text-lg">{diagnostics.calendarTournamentCount ?? '—'}</div>
+            </div>
+            <div className="rounded-sm border border-border px-3 py-2">
+              <div className="text-muted-foreground">Ranking rows in DB</div>
+              <div className="font-bold text-lg">{diagnostics.rankingRowCount ?? '—'}</div>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button size="sm" disabled={!!busy} onClick={() => runSync('all')}>
@@ -94,12 +130,21 @@ export default function SuperAdminOpsPanel() {
         <Card className="p-4 text-sm">
           <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">Rankings sync state</div>
           {rankingsState?.combos?.length ? (
-            <div className="text-xs text-muted-foreground">
-              {rankingsState.combos.length} circuit combos tracked.
-              {rankingsState.lastChecked && <> Last checked {formatWhen(rankingsState.lastChecked)}.</>}
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <div>{rankingsState.combos.length} circuit combos tracked.</div>
+              {rankingsState.lastChecked && <div>Last checked {formatWhen(rankingsState.lastChecked)}.</div>}
+              {latestRankLog && (
+                <div>
+                  Last run: {latestRankLog.rows_upserted ?? 0} rows
+                  {latestRankLog.error ? ` · error: ${latestRankLog.error}` : ''}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-xs text-muted-foreground">Run rankings sync to populate state.</div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Run rankings sync to populate state.</div>
+              {latestRankLog?.error && <div className="text-destructive">{latestRankLog.error}</div>}
+            </div>
           )}
         </Card>
       </div>
