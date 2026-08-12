@@ -95,7 +95,42 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForAitaSyncLog(previousStartedAt, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
+async function explainSyncRequestFailure(requestId) {
+  if (!requestId) return null;
+  for (let i = 0; i < 8; i += 1) {
+    const { data, error } = await supabase.rpc('admin_check_sync_request', { p_request_id: requestId });
+    if (error) {
+      if (error.message?.includes('admin_check_sync_request')) {
+        return 'Run the latest phase60_admin_sync_rpc.sql in Supabase SQL Editor (adds admin_check_sync_request).';
+      }
+      return null;
+    }
+    if (data?.pending) {
+      await sleep(1500);
+      continue;
+    }
+    const code = data?.status_code;
+    if (code === 404) {
+      return 'Edge Function not found (HTTP 404) — deploy with: npx supabase functions deploy sync-aita-calendar sync-aita-rankings';
+    }
+    if (code === 401 || code === 403) {
+      return 'Sync auth failed (HTTP ' + code + ') — SYNC_SECRET in platform_sync_config must match the Edge Function SYNC_SECRET secret exactly.';
+    }
+    if (code >= 400) {
+      return `Edge Function error (HTTP ${code}): ${(data.content || data.error_msg || '').slice(0, 200)}`;
+    }
+    if (data?.error_msg) return data.error_msg;
+    return null;
+  }
+  return null;
+}
+
+async function buildSyncTimeoutMessage(fallback, requestId) {
+  const detail = await explainSyncRequestFailure(requestId);
+  return detail ? `${fallback} ${detail}` : fallback;
+}
+
+async function waitForAitaSyncLog(previousStartedAt, requestId, { maxWaitMs = 360000, intervalMs = 4000 } = {}) {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     await sleep(intervalMs);
@@ -107,12 +142,13 @@ async function waitForAitaSyncLog(previousStartedAt, { maxWaitMs = 180000, inter
   const latest = await getLatestAitaSyncLog();
   if (latest?.error) throw new Error(latest.error);
   if (latest && latest.startedAt !== previousStartedAt) return latest;
-  throw new Error(
-    'Sync timed out. Deploy sync-aita-calendar or run supabase/phase60_admin_sync_rpc.sql in SQL Editor.',
-  );
+  throw new Error(await buildSyncTimeoutMessage(
+    'Calendar sync timed out — no aita_sync_log entry appeared.',
+    requestId,
+  ));
 }
 
-async function waitForRankingsSyncUpdate(previousChecked, logStartedBefore, { maxWaitMs = 180000, intervalMs = 3000 } = {}) {
+async function waitForRankingsSyncUpdate(previousChecked, logStartedBefore, requestId, { maxWaitMs = 360000, intervalMs = 4000 } = {}) {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     await sleep(intervalMs);
@@ -132,10 +168,10 @@ async function waitForRankingsSyncUpdate(previousChecked, logStartedBefore, { ma
     const overview = await getAitaRankingsSyncOverview();
     if (overview.lastChecked && overview.lastChecked !== previousChecked) return;
   }
-  throw new Error(
-    'Rankings sync timed out — sync-aita-rankings Edge Function is probably not deployed. '
-    + 'Run: npx supabase functions deploy sync-aita-rankings',
-  );
+  throw new Error(await buildSyncTimeoutMessage(
+    'Rankings sync timed out — no aita_rankings_sync_log entry appeared.',
+    requestId,
+  ));
 }
 
 async function fetchRankingsSyncSummarySince(sinceStartedAt) {
@@ -166,7 +202,7 @@ async function triggerAitaSyncViaRpc() {
   const { data, error } = await supabase.rpc('admin_trigger_aita_sync', { p_target: 'calendar' });
   if (error) throw error;
   if (!data?.ok) throw new Error('Calendar sync RPC failed');
-  const log = await waitForAitaSyncLog(before?.startedAt);
+  const log = await waitForAitaSyncLog(before?.startedAt, data.request_id);
   if (log.error) throw new Error(log.error);
   return {
     upserted: log.tournamentsUpserted,
@@ -190,11 +226,11 @@ async function triggerAitaRankingsSyncViaRpc() {
   if (error) throw error;
   if (!data?.ok) throw new Error('Rankings sync RPC failed');
 
-  return rankingsResultFromSync(logStartedBefore, beforeOverview.lastChecked);
+  return rankingsResultFromSync(logStartedBefore, beforeOverview.lastChecked, data.request_id);
 }
 
-async function rankingsResultFromSync(logStartedBefore, previousChecked) {
-  await waitForRankingsSyncUpdate(previousChecked, logStartedBefore);
+async function rankingsResultFromSync(logStartedBefore, previousChecked, requestId) {
+  await waitForRankingsSyncUpdate(previousChecked, logStartedBefore, requestId);
   const summary = await fetchRankingsSyncSummarySince(logStartedBefore);
   if (summary.length === 0) {
     throw new Error(
@@ -237,9 +273,11 @@ async function triggerUnifiedAitaSyncViaRpc() {
   if (error) throw error;
   if (!data?.ok) throw new Error('Unified sync RPC failed');
 
+  const calendarRequestId = data.calendar_request_id ?? null;
+
   const [calSettled, rankSettled] = await Promise.allSettled([
-    waitForAitaSyncLog(calBefore?.startedAt),
-    rankingsResultFromSync(logStartedBefore, rankBeforeOverview.lastChecked),
+    waitForAitaSyncLog(calBefore?.startedAt, calendarRequestId),
+    rankingsResultFromSync(logStartedBefore, rankBeforeOverview.lastChecked, null),
   ]);
 
   const calendar = calSettled.status === 'fulfilled'

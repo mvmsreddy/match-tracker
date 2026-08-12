@@ -49,9 +49,25 @@ begin
   end if;
 
   if lower(p_target) = 'all' then
-    perform public.admin_trigger_aita_sync('calendar');
-    perform public.admin_trigger_aita_sync('rankings');
-    return jsonb_build_object('ok', true, 'target', 'all');
+    select net.http_post(
+      url := rtrim(v_cfg.supabase_url, '/') || '/functions/v1/sync-aita-calendar',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || v_cfg.service_role_key,
+        'x-sync-secret', v_cfg.sync_secret,
+        'Content-Type', 'application/json'
+      ),
+      body := '{}'::jsonb
+    ) into v_req;
+    perform net.http_post(
+      url := rtrim(v_cfg.supabase_url, '/') || '/functions/v1/sync-aita-rankings',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || v_cfg.service_role_key,
+        'x-sync-secret', v_cfg.sync_secret,
+        'Content-Type', 'application/json'
+      ),
+      body := '{}'::jsonb
+    );
+    return jsonb_build_object('ok', true, 'target', 'all', 'calendar_request_id', v_req);
   end if;
 
   v_fn := case lower(p_target)
@@ -80,6 +96,38 @@ $$;
 
 revoke all on function public.admin_trigger_aita_sync(text) from public;
 grant execute on function public.admin_trigger_aita_sync(text) to authenticated;
+
+-- Read pg_net response for a queued sync (helps diagnose 404 / auth failures).
+create or replace function public.admin_check_sync_request(p_request_id bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_row net._http_response%rowtype;
+begin
+  if auth.uid() is not null and not public.is_super_admin() then
+    raise exception 'forbidden';
+  end if;
+
+  select * into v_row from net._http_response where id = p_request_id;
+  if not found then
+    return jsonb_build_object('pending', true, 'request_id', p_request_id);
+  end if;
+
+  return jsonb_build_object(
+    'pending', false,
+    'request_id', p_request_id,
+    'status_code', v_row.status_code,
+    'error_msg', v_row.error_msg,
+    'content', left(coalesce(v_row.content, ''), 500)
+  );
+end;
+$$;
+
+revoke all on function public.admin_check_sync_request(bigint) from public;
+grant execute on function public.admin_check_sync_request(bigint) to authenticated;
 
 -- ============================================================
 -- STEP 2 — Run this separately AFTER step 1 (replace 3 values):
